@@ -19,10 +19,9 @@
 --- @version January 2012
 ------------------------------------------------------------------------------
 
-module HTML(HtmlExp(..),HtmlPage(..),PageParam(..), 
+module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             HtmlForm(..),FormParam(..),CookieParam(..),
             CgiRef,idOfCgiRef,CgiEnv,HtmlHandler,
-            HtmlElem,Form, -- for backward compatibility
             defaultEncoding, defaultBackground,
             form,standardForm,answerText,answerEncText,
             cookieForm,getCookies,
@@ -41,7 +40,6 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             selection,selectionInitial,multipleSelection,
             hiddenfield,htmlQuote,htmlIsoUmlauts,addAttr,addAttrs,
             showHtmlExps,showHtmlExp,showHtmlPage,
-            showHtmlDoc,showHtmlDocCSS,
             runFormServerWithKey,runFormServerWithKeyAndFormParams,
             intForm,intFormMain,
             getUrlParameter,urlencoded2string,string2urlencoded,
@@ -58,7 +56,7 @@ import HtmlCgi
 import NamedSocket
 import ReadNumeric(readNat,readHex)
 import ReadShowTerm(showQTerm,readsQTerm)
-import Unsafe(showAnyQExpression) -- to show status of cgi server
+--import Unsafe(showAnyQExpression) -- to show status of cgi server
 import Distribution(installDir)
 import IO
 import Profile
@@ -70,7 +68,7 @@ infixl 0 `addFormParam`
 
 ------------------------------------------------------------------------------
 --- The default encoding used in generated web pages.
-defaultEncoding = "iso-8859-1"
+defaultEncoding = "utf-8" --"iso-8859-1"
 
 --- The default background for generated web pages.
 defaultBackground = ("bgcolor","#ffffff")
@@ -106,11 +104,6 @@ data HtmlExp =
  | HtmlStruct String [(String,String)] [HtmlExp]
  | HtmlCRef   HtmlExp CgiRef
  | HtmlEvent  HtmlExp HtmlHandler
-
---- A single HTML element with a tag, attributes, but no contents
---- (deprecated, included only for backward compatibility).
-HtmlElem :: String -> [(String,String)] -> HtmlExp
-HtmlElem tag attrs = HtmlStruct tag attrs []
 
 --- Extracts the textual contents of a list of HTML expressions.
 ---
@@ -198,14 +191,6 @@ data CookieParam = CookieExpire ClockTime
 --- @return an HTML form
 form :: String -> [HtmlExp] -> HtmlForm
 form title hexps = HtmlForm title [BodyAttr defaultBackground] hexps
-
---- A basic HTML form for active web pages
---- (deprecated, included only for backward compatibility).
---- @param title - the title of the form
---- @param hexps - the form's body (list of HTML expressions)
---- @return an HTML form
-Form :: String -> [HtmlExp] -> HtmlForm
-Form = form
 
 --- A standard HTML form for active web pages where the title is included
 --- in the body as the first header.
@@ -891,26 +876,6 @@ showsHtmlOpenTag tag attrs close =
 
 
 ------------------------------------------------------------------------------
---- Transforms HTML expressions into string representation of complete
---- HTML document with title
---- (deprecated, included only for backward compatibility).
---- @param title - the title of the HTML document
---- @param hexps - the body (list of HTML expressions) of the document
---- @return string representation of the HTML document
-showHtmlDoc :: String -> [HtmlExp] -> String
-showHtmlDoc title html = showHtmlPage (page title html)
-
---- Transforms HTML expressions into string representation of complete
---- HTML document with title and a URL for a style sheet file
---- (deprecated, included only for backward compatibility).
---- @param title - the title of the HTML document
---- @param css - the URL for a CSS file for this document
---- @param hexps - the body (list of HTML expressions) of the document
---- @return string representation of the HTML document
-showHtmlDocCSS :: String -> String -> [HtmlExp] -> String
-showHtmlDocCSS title css html =
-  showHtmlPage (page title html `addPageParam` pageCSS css)
-
 --- Transforms HTML page into string representation.
 --- @param page - the HTML page
 --- @return string representation of the HTML document
@@ -1142,12 +1107,13 @@ serveCgiMessagesForForm servertimeout url cgikey portname
   serveCgiMessage state hdl ShowStatus =
     reportStatus state hdl showEventHandler
    where
-    showEventHandler (key,time,_,(_,handler),gkey) = do
+    showEventHandler (key,time,_,(_,_{-handler-}),gkey) = do
       ltime <- toCalendarTime time
       return $ "No. " ++ show key ++ " (" ++ showGroupKey gkey ++
                "), expires at " ++
                calendarTimeToString ltime ++ ": " ++
-               showAnyQExpression handler ++ "\n"
+               --showAnyQExpression handler ++ "\n"
+               "<sorry, can't show handler>\n"
 
   serveCgiMessage state hdl (CgiSubmit scriptenv formenv) = do
       let scriptkey = maybe "" id (lookup "SCRIPTKEY" scriptenv)
@@ -1354,21 +1320,20 @@ numberCgiRefs :: [HtmlExp] -> Int -> ([HtmlExp],Int)
 -- result: translated HTMLExps, new number for cgi-refs
 numberCgiRefs [] i = ([],i)
 numberCgiRefs (HtmlText s : hexps) i =
-   let (nhexps,j) = numberCgiRefs hexps i
-   in (HtmlText s : nhexps, j)
+  case numberCgiRefs hexps i of
+    (nhexps,j) -> (HtmlText s : nhexps, j)
 numberCgiRefs (HtmlStruct tag attrs hexps1 : hexps2) i =
-   let (nhexps1,j) = numberCgiRefs hexps1 i
-       (nhexps2,k) = numberCgiRefs hexps2 j
-   in (HtmlStruct tag attrs nhexps1 : nhexps2, k)
+  case numberCgiRefs hexps1 i of
+    (nhexps1,j) -> case numberCgiRefs hexps2 j of
+                     (nhexps2,k) -> (HtmlStruct tag attrs nhexps1 : nhexps2, k)
 numberCgiRefs (HtmlEvent (HtmlStruct tag attrs hes) handler : hexps) i =
-   let (nhexps,j) = numberCgiRefs hexps i
-   in (HtmlEvent (HtmlStruct tag attrs hes) handler : nhexps, j)
+  case numberCgiRefs hexps i of
+    (nhexps,j) -> (HtmlEvent (HtmlStruct tag attrs hes) handler : nhexps, j)
 numberCgiRefs (HtmlCRef hexp (CgiRef ref) : hexps) i
   | ref =:= ("FIELD_"++show i)
-  = let ([nhexp],j) = numberCgiRefs [hexp] (i+1)
-        (nhexps,k) = numberCgiRefs hexps j
-    in (nhexp : nhexps, k)
-
+  = case numberCgiRefs [hexp] (i+1) of
+      ([nhexp],j) -> case numberCgiRefs hexps j of
+                       (nhexps,k) -> (nhexp : nhexps, k)
 
 -- translate all event handlers into their internal form:
 -- (assumption: all CgiRefs have already been instantiated and eliminated)

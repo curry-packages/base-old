@@ -50,16 +50,16 @@ infixr 0 !
 infixl 1 />=
 
 --- Phantom type for XML data that may be part of a repetition
-data Repeatable
+data Repeatable = Repeatable
 
 --- Phantom type for XML data that must not be part of a repetition
-data NotRepeatable
+data NotRepeatable = NotRepeatable
 
 --- Phantom type for single elements
-data Elem
+data Elem = Elem
 
 --- Phantom type for primitive values, multiple elements and/or attributes
-data NoElem
+data NoElem = NoElem
 
 type Attrs = [(String,String)]
 type Childs = (Attrs,[XmlExp])

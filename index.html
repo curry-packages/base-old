@@ -6,8 +6,8 @@
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-  <link rel="stylesheet" type="text/css" href="http://www.informatik.uni-kiel.de/~pakcs/pakcs.css"/>
-  <title>PAKCS Libraries</title>
+  <link rel="stylesheet" type="text/css" href="http://www-ps.informatik.uni-kiel.de/kics2/kics2.css"/>
+  <title>KiCS2 Libraries</title>
 </head>
 
 <body bgcolor="#ffffff">
@@ -21,7 +21,7 @@
   <td colspan="2">
    <table width="100%" cellspacing="0" >
     <tr>
-     <td class="coloredtitle"><h1>PAKCS: System Libraries</h1></td>
+     <td class="coloredtitle"><h1>KiCS2: System Libraries</h1></td>
     </tr>
    </table>
   </td>
@@ -31,27 +31,27 @@
   <td valign="top" width="30%">
    <table class="fastmenu">
     <tr>
-     <td><img src="http://www.informatik.uni-kiel.de/~pakcs/ball.gif" border="0" alt="o"/>&nbsp;</td>
+     <td><img src="http://www-ps.informatik.uni-kiel.de/kics2/ball.gif" border="0" alt="o"/>&nbsp;</td>
      <td> <a class="button" href="#general">General libraries</a></td>
     </tr>
     <tr>
-     <td><img src="http://www.informatik.uni-kiel.de/~pakcs/ball.gif" border="0" alt="o"/>&nbsp;</td>
+     <td><img src="http://www-ps.informatik.uni-kiel.de/kics2/ball.gif" border="0" alt="o"/>&nbsp;</td>
      <td> <a class="button" href="#algorithms">Data structures and algorithms</a></td>
     </tr>
     <tr>
-     <td><img src="http://www.informatik.uni-kiel.de/~pakcs/ball.gif" border="0" alt="o"/>&nbsp;</td>
+     <td><img src="http://www-ps.informatik.uni-kiel.de/kics2/ball.gif" border="0" alt="o"/>&nbsp;</td>
      <td> <a class="button" href="#web">Libraries for web applications</a></td>
     </tr>
     <tr>
-     <td><img src="http://www.informatik.uni-kiel.de/~pakcs/ball.gif" border="0" alt="o"/>&nbsp;</td>
+     <td><img src="http://www-ps.informatik.uni-kiel.de/kics2/ball.gif" border="0" alt="o"/>&nbsp;</td>
      <td> <a class="button" href="#meta">Libraries for meta-programming</a></td>
     </tr>
     <tr>
-     <td><img src="http://www.informatik.uni-kiel.de/~pakcs/ball.gif" border="0" alt="o"/>&nbsp;</td>
+     <td><img src="http://www-ps.informatik.uni-kiel.de/kics2/ball.gif" border="0" alt="o"/>&nbsp;</td>
      <td> <a class="button" href="CDOC/findex.html">Index to all library functions</a></td>
     </tr>
     <tr>
-     <td><img src="http://www.informatik.uni-kiel.de/~pakcs/ball.gif" border="0" alt="o"/>&nbsp;</td>
+     <td><img src="http://www-ps.informatik.uni-kiel.de/kics2/ball.gif" border="0" alt="o"/>&nbsp;</td>
      <td> <a class="button" href="CDOC/cindex.html">Index to all library constructors</a></td>
     </tr>
    </table>
@@ -62,7 +62,7 @@
 <p>
 Here is the collection of libraries contained in the
 distribution of
-<a href="http://www.informatik.uni-kiel.de/~pakcs/">PAKCS</a>.
+<a href="http://www-ps.informatik.uni-kiel.de/kics2/">KiCS2</a>.
 Most of these libraries have been implemented during the development
 of larger Curry applications. If you have suggestions for
 changes/improvements or if you want to contribute your own library,
@@ -98,20 +98,6 @@ Curry module tester "currytest".
 This library contains some useful functions on characters.
 </li>
 
-<li> <a href="CDOC/CLPFD.html"><code>CLPFD</code></a>:
-This library supports constraint programming with
-finite domain constraints.
-</li>
-
-<li> <a href="CDOC/CLPR.html"><code>CLPR</code></a>:
-This library supports constraint programming with
-arithmetic constraints over real numbers.
-</li>
-
-<li> <a href="CDOC/CLPB.html"><code>CLPB</code></a>:
-This library provides a Boolean constraint solver based on BDDs.
-</li>
-
 <li> <a href="CDOC/Combinatorial.html"><code>Combinatorial</code></a>:
 This library contains a collection of common non-deterministic
 and/or combinatorial operations.
@@ -128,25 +114,6 @@ This library supports reading/writing files in CSV
 by most spreadsheed and database applications.
 </li>
 
-<li> <a href="CDOC/Database.html"><code>Database</code></a>:
-Library for accessing and storing data in databases.
-The contents of a database is represented in this library
-as dynamic predicates that are defined by facts than can change over
-time and can be persistently stored.
-All functions in this library distinguishes between <em>queries</em> that
-access the database and <em>transactions</em> that manipulates data
-in the database. Transactions have a monadic structure.
-Both queries and transactions can be executed as I/O actions.
-However, arbitrary I/O actions cannot be embedded in transactions.
-The ideas of this library are described in
-<a href="http://www.informatik.uni-kiel.de/~mh/papers/PADL08.html">this paper</a>.
-</li>
-
-<li> <a href="CDOC/DaVinci.html"><code>DaVinci</code></a>:
-This library supports the visualization of graphs by the
-<a href="http://www.tzi.de/daVinci/">daVinci graph drawing tool</a>.
-</li>
-
 <li> <a href="CDOC/Directory.html"><code>Directory</code></a>:
 This library supports the access to the directory structure of the
 underlying operating system.
@@ -156,17 +123,6 @@ underlying operating system.
 This library contains functions to obtain information concerning the current
 distribution of the Curry implementation, e.g., compiler version,
 load paths, front end.
-</li>
-
-<li> <a href="CDOC/Dynamic.html"><code>Dynamic</code></a>:
-This library supports the manipulation of dynamic predicates,
-i.e., predicates that are defined by facts than can change over
-time and can be persistently stored.
-The ideas of this library are described in
-<a href="http://www.informatik.uni-kiel.de/~mh/papers/JFLP04_dyn.html">this paper</a>.
-<b>Remark:</b>
-<em>This library has been revised to the library <code>Database</code>.
-Thus, it might not be further supported in the future.</em>
 </li>
 
 <li> <a href="CDOC/FileGoodies.html"><code>FileGoodies</code></a>:
@@ -183,17 +139,6 @@ A global entity has a name declared in the program.
 Its value can be accessed and modified by IO actions.
 Furthermore, global entities can be persistent so that
 their values are stored across different program executions.
-</li>
-
-<li>
-  <a href="CDOC/GlobalVariable.html"><code>GlobalVariable</code></a>:
-  This library implements global variables.
-  A global variable has a name declared in the program.
-  Its value can be accessed and modified by IO actions.
-  Values of global variables can contain logic variables shared with
-  computations running in the same computation space.
-  As a consequence, values of global variables are not kept
-  across different program executions.
 </li>
 
 <li> <a href="CDOC/GUI.html"><code>GUI</code></a>:
@@ -224,28 +169,11 @@ in particular, the implementation of a global state.
 A library to represent JavaScript programs.
 </li>
 
-<li> <a href="CDOC/KeyDatabase.html"><code>KeyDatabase</code></a>:
-This library provides a general interface for databases
-(persistent predicates based on the library <code>Database</code>)
-where each entry consists of a key and an info part.
-</li>
-
 <li> <a href="CDOC/KeyDatabaseSQLite.html"><code>KeyDatabaseSQLite</code></a>:
 This library provides a general interface for databases
-(persistent predicates based on the library <code>Database</code>)
-where each entry consists of a key and an info part.
-It reimplements the interface of the module
-<code>KeyDatabase</code> based on the
-<a href="http://sqlite.org/">SQLite</a> database engine.
-</li>
-
-<li> <a href="CDOC/KeyDB.html"><code>KeyDB</code></a>:
-This library provides a general interface for databases
-(persistent predicates) where each entry consists of a key and an info
-part.
-<b>Remark:</b>
-<em>This library has been revised to the library <code>KeyDatabase</code>.
-Thus, it might not be further supported in the future.</em>
+where each entry consists of a key and an info part
+and is stored in a
+<a href="http://sqlite.org/">SQLite</a> database.
 </li>
 
 <li> <a href="CDOC/List.html"><code>List</code></a>:
@@ -269,15 +197,6 @@ to support a simple implementation of parsers in Curry.
 It is adapted from Rafael Caballero and Francisco J. Lopez-Fraguas:
 A Functional Logic Perspective of Parsing,
 Proc. FLOPS'99, Springer LNCS 1722, pp. 85-99, 1999
-</li>
-
-<li> <a href="CDOC/Ports.html"><code>Ports</code></a>:
-This library supports the development of concurrent and
-distributed applications in Curry by defining ports
-for sending and receiving messages, possibly containing
-logical variables. A detailed description
-of the idea and use of ports can be found
-<a href="http://www.informatik.uni-kiel.de/~mh/papers/PPDP99.html">here</a>.
 </li>
 
 <li> <a href="CDOC/Pretty.html"><code>Pretty</code></a>:
@@ -317,12 +236,10 @@ to strings and vice versa.
 
 <li>
    <a href="CDOC/SetFunctions.html"><code>SetFunctions</code></a>:
-   This library contains a prototypical implementation of set functions
+   This library contains an implementation of set functions
    to encapsulate nondeterministic computations. The general idea of
    set functions is described in
-   <a href="http://www.informatik.uni-kiel.de/~mh/papers/PPDP09.html" target="_blank">this paper</a>
-   but the implementation in this library is more restricted than
-   the general approach.
+   <a href="http://www.informatik.uni-kiel.de/~mh/papers/PPDP09.html" target="_blank">this paper</a>.
 </li>
 
 <li> <a href="CDOC/Socket.html"><code>Socket</code></a>:
@@ -338,13 +255,6 @@ system calls etc.
 <li> <a href="CDOC/Time.html"><code>Time</code></a>:
 This library contains definitions and functions to
 handle date and time information.
-</li>
-
-<li> <a href="CDOC/Tk.html"><code>Tk</code></a>:
-This library contains definitions and functions to
-implement graphical user interfaces for Curry programs.
-It is based on Tcl/Tk and described in detail
-<a href="http://www.informatik.uni-kiel.de/~mh/papers/PADL00.html">here</a>.
 </li>
 
 <li> <a href="CDOC/Unsafe.html"><code>Unsafe</code></a>:
@@ -386,6 +296,11 @@ It serves as the base for the libraries <code>SetRBT</code>
 and <code>TableRBT</code>.
 All the operations on trees are generic, i.e., one has to provide
 explicit order predicates on elements.
+</li>
+
+<li> <a href="CDOC/SearchTree.html"><code>SearchTree</code></a>:
+This library defines a representation of a search space as
+a tree and search strategies on this tree.
 </li>
 
 <li> <a href="CDOC/SetRBT.html"><code>SetRBT</code></a>:
@@ -455,7 +370,7 @@ in particular, downloading of documents accessible by a URL.
 Library to support type-oriented construction of web user interfaces.
 The ideas behind the application and implementation of this library are
 described in paper that is available via
-<a href="http://www.informatik.uni-kiel.de/~pakcs/WUI">this web page</a>.
+<a href="http://www-ps.informatik.uni-kiel.de/kics2/WUI">this web page</a>.
 </li>
 
 <li> <a href="CDOC/XML.html"><code>XML</code></a>:
@@ -476,19 +391,6 @@ here</a> for a description of this library.
 <a name="meta" />
 <h2>Libraries for meta-programming:</h2>
 <ul>
-<li> <a href="CDOC/AbsCurry.html"><code>AbsCurry</code></a>:
-This library contains a definition of an abstract representation
-of Curry programs in Curry. It is only included for backward
-compatibility and should not be used.
-Use the library AbstractCurry instead.
-</li>
-
-<li> <a href="CDOC/AbsCurryIO.html"><code>AbsCurryIO</code></a>:
-This library supports functions to read Curry program in the
-old AbsCurry representation (based on reading files in the
-new AbstractCurry format).
-</li>
-
 <li> <a href="CDOC/AbstractCurry.html"><code>AbstractCurry</code></a>:
 This library contains a definition for representing Curry programs
 in Curry and an I/O action to read Curry programs and
@@ -513,45 +415,12 @@ Curry source code in order to perform simple manipulations of source programs
 (e.g., adding type signatures, removing comments).
 </li>
 
-<li> <a href="CDOC/Flat.html"><code>Flat</code></a>:
-This library supports meta-programming, i.e., the manipulation of
-Curry programs in Curry. For this purpose, the library contains
-definitions of datatypes for the representation of so-called
-FlatCurry programs and an I/O action to read Curry programs
-and transform them into this representation.
-<br />
-<b>Remark:</b>
-<em>This library has been revised to the library <code>FlatCurry</code>.
-In the near future, it will not be further supported.</em>
-</li>
-
-<li> <a href="CDOC/FlatTools.html"><code>FlatTools</code></a>:
-This library extends the library <code>Flat</code> for meta-programming.
-It contains the definition of a show function for a string representation
-of FlatCurry programs, a function for showing FlatCurry expressions in
-(almost) Curry syntax, and an I/O action for storing a FlatCurry program into
-an <code>.flc</code> file (which can be further compiled by the Curry2Prolog
-compiler, compare the PAKCS User Manual).
-<br />
-<b>Remark:</b>
-<em>This library has been revised to the library <code>FlatCurryTools</code>.
-In the near future, it will not be further supported.</em>
-</li>
-
 <li> <a href="CDOC/FlatCurry.html"><code>FlatCurry</code></a>:
 This library supports meta-programming, i.e., the manipulation of
 Curry programs in Curry. For this purpose, the library contains
 definitions of datatypes for the representation of so-called
 FlatCurry programs and an I/O action to read Curry programs
 and transform them into this representation.
-<br />
-<b>Remark:</b>
-<em>This library is a revised version of the library <code>Flat</code>,
-i.e., the representation of FlatCurry programs is improved
-to simplify the implementation of meta-programming tools
-(interpreter, compiler, analyzer etc.).
-In the near future, only this representation will be further
-supported.</em>
 </li>
 
 <li> <a href="CDOC/FlatCurryGoodies.html"><code>FlatCurryGoodies</code></a>:
@@ -571,23 +440,9 @@ into string representations, either in a FlatCurry format
 or in a Curry-like syntax.
 </li>
 
-<li> <a href="CDOC/FlatCurryTools.html"><code>FlatCurryTools</code></a>:
-This library is outdated and might be deleted in future releases.
-Use the library <a href="CDOC/FlatCurryShow.html"><code>FlatCurryShow</code></a>
-instead of this library.
-</li>
-
 <li> <a href="CDOC/FlatCurryXML.html"><code>FlatCurryXML</code></a>:
 This library contains functions to
 convert FlatCurry programs into XML terms and vice versa.
-</li>
-
-<li> <a href="CDOC/FlatXML.html"><code>FlatXML</code></a>:
-This library contains functions to
-convert FlatCurry programs into XML terms and vice versa.
-A detailed specification of the XML format used here can be found in
-<a href="http://www.informatik.uni-kiel.de/~mh/curry/flat/">
- <code>http://www.informatik.uni-kiel.de/~curry/flat/</code></a>.
 </li>
 
 <li> <a href="CDOC/FlexRigid.html"><code>FlexRigid</code></a>:
@@ -607,7 +462,7 @@ of AbstractCurry programs.
 
 <hr />
 
-Back to <a href="http://www.informatik.uni-kiel.de/~pakcs/">Homepage of PAKCS</a>
+Back to <a href="http://www-ps.informatik.uni-kiel.de/kics2/">Homepage of KiCS2</a>
 
 </td>
 </tr>

@@ -267,9 +267,9 @@ callFrontendWithParams :: FrontendTarget -> FrontendParams -> String -> IO ()
 callFrontendWithParams target params progname = do
   parsecurry <- callParseCurry
   let lf      = maybe "" id (logfile params)
-      syscall = "\"" ++ parsecurry ++ "\" " ++ showFrontendTarget target
-                     ++ showFrontendParams 
-                     ++ " " ++ progname
+      syscall = parsecurry ++ " " ++ showFrontendTarget target
+                           ++ showFrontendParams 
+                           ++ " " ++ progname
   if null lf
     then system syscall
     else system (syscall++" > "++lf++" 2>&1")

@@ -8,7 +8,7 @@
 module FileGoodies(separatorChar,pathSeparatorChar,suffixSeparatorChar,
                    isAbsolute,dirName,baseName,splitDirectoryBaseName,
                    stripSuffix,fileSuffix,splitBaseName,splitPath,
-                   findFileInPath,lookupFileInPath,getFileInPath) where
+                   lookupFileInPath,getFileInPath) where
 
 import Directory
 import List(intersperse)
@@ -72,11 +72,6 @@ splitPath [] = []
 splitPath (x:xs) = let (ys,zs) = break (==pathSeparatorChar) (x:xs)
                     in if null zs then [ys]
                                   else ys : splitPath (tail zs)
-
---- Included for backward compatibility.
---- Use <code>lookupFileInPath</code> instead!
-findFileInPath :: String -> [String] -> [String] -> IO (Maybe String)
-findFileInPath = lookupFileInPath
 
 --- Looks up the first file with a possible suffix in a list of directories.
 --- Returns Nothing if such a file does not exist.
