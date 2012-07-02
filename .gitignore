@@ -1,0 +1,10 @@
+# intermediate files
+*~
+.curry
+AllLibraries.curry
+dist
+kics2-libraries.cabal
+
+# documentation
+CDOC
+TEXDOC
