@@ -92,7 +92,7 @@ ${CABAL_FILE}:../Makefile Makefile
 	echo ""                                                      >> $@
 	echo "Library"                                               >> $@
 	echo "  Build-Depends:"                                      >> $@
-	echo "      kics2-runtime-$(VERSION)"                        >> $@
+	echo "      kics2-runtime == $(VERSION)"                     >> $@
 	echo "    , base, old-time, directory, process"              >> $@
 	echo "    , parallel-tree-search, network, unix"             >> $@
 	echo "  Exposed-modules: ${LIB_NAMES_SEP}"                   >> $@
