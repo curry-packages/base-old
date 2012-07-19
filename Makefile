@@ -73,27 +73,33 @@ compilelibs: ${ALLLIBS}
 	../bin/cleancurry AllLibraries
 
 
-PKGNAME=kics2-libraries
-CABAL=${PKGNAME}.cabal
+PACKAGE    = kics2-libraries
+CABAL_FILE = $(PACKAGE).cabal
 
-${CABAL}:../Makefile Makefile
-	echo "Name:           ${PKGNAME}" > ${CABAL}
-	echo "Version:        ${MAJORVERSION}.${MINORVERSION}.${REVISIONVERSION}" >> ${CABAL}
-	echo "Description:    The standard libraries for KiCS2" >> ${CABAL}
-	echo "License:        OtherLicense" >> ${CABAL}
-	echo "Author:         Fabian Reck" >> ${CABAL}
-	echo "Maintainer:     fre@informatik.uni-kiel.de" >> ${CABAL}
-	echo "Build-Type:     Simple" >> ${CABAL}
-	echo "Cabal-Version:  >= 1.9.2" >> ${CABAL}
-	echo "" >> ${CABAL}
-	echo "Library" >> ${CABAL}
-	echo "  Build-Depends: kics2-runtime, base, old-time, directory, process," >> ${CABAL}
-	echo "                 parallel-tree-search, network, unix" >> ${CABAL}
-	echo "  Exposed-modules: ${LIB_NAMES_SEP}" >> ${CABAL}
-	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2" >> ${CABAL}
+.PHONY: unregister
+unregister:
+	-$(GHC-PKG) unregister $(PACKAGE)-$(VERSION)
+
+${CABAL_FILE}:../Makefile Makefile
+	echo "Name:           $(PACKAGE)"                             > $@
+	echo "Version:        $(VERSION)"                            >> $@
+	echo "Description:    The standard libraries for KiCS2"      >> $@
+	echo "License:        OtherLicense"                          >> $@
+	echo "Author:         Fabian Reck"                           >> $@
+	echo "Maintainer:     fre@informatik.uni-kiel.de"            >> $@
+	echo "Build-Type:     Simple"                                >> $@
+	echo "Cabal-Version:  >= 1.9.2"                              >> $@
+	echo ""                                                      >> $@
+	echo "Library"                                               >> $@
+	echo "  Build-Depends:"                                      >> $@
+	echo "      kics2-runtime == $(VERSION)"                     >> $@
+	echo "    , base, old-time, directory, process"              >> $@
+	echo "    , parallel-tree-search, network, unix"             >> $@
+	echo "  Exposed-modules: ${LIB_NAMES_SEP}"                   >> $@
+	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2" >> $@
 
 .PHONY: installlibs
-installlibs : ${CABAL} ${ALLLIBS}
+installlibs : ${CABAL_FILE} ${ALLLIBS}
 	cabal install -O2
 
 .PHONY: all
@@ -170,6 +176,6 @@ clean:
 	rm -f "${DOCDIR}"/*
 	rm -f "${TEXDOCDIR}"/*
 	rm -rf dist
-	rm -f ${CABAL}
-	../bin/cleancurry
-	cd meta && ../../bin/cleancurry
+	rm -f ${CABAL_FILE}
+	${BINDIR}/cleancurry
+	cd meta && ${BINDIR}/cleancurry
