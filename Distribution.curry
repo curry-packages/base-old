@@ -4,8 +4,8 @@
 --- Most of the information is based on the external constants 
 --- <b>curryCompiler...</b>.
 ---
---- @author Bernd Brassel, Michael Hanus
---- @version April 2010
+--- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
+--- @version July 2012
 --------------------------------------------------------------------------------
 
 module Distribution (
@@ -32,6 +32,7 @@ import Char(toLower)
 import System
 import IO
 import FileGoodies
+import FilePath ((</>))
 import PropertyFile
 
 -----------------------------------------------------------------
@@ -77,7 +78,8 @@ curryRuntimeMinorVersion external
 --- current distribution. This file must have the usual format of
 --- property files (see description in module PropertyFile).
 rcFileName :: IO String
-rcFileName = getEnviron "HOME" >>= return . (++"/."++curryCompiler++"rc")
+rcFileName = getEnviron "HOME" >>= return . (</> rcFile)
+  where rcFile = '.' : curryCompiler ++ "rc"
 
 --- Returns the current configuration parameters of the distribution.
 --- This action yields the list of pairs (var,val).
@@ -93,7 +95,7 @@ getRcVar var = getRcVars [var] >>= return . head
 --- Uppercase/lowercase is ignored for the variable names.
 getRcVars :: [String] -> IO [Maybe String]
 getRcVars vars = do
-  rcs <- rcFileContents 
+  rcs <- rcFileContents
   return (map (flip lookup (map (\ (a,b)->(map toLower a,b)) rcs))
               (map (map toLower) vars))
 
@@ -114,12 +116,12 @@ currySubdir = ".curry"
 inCurrySubdir :: String -> String
 inCurrySubdir filename =
   let (base,file) = splitDirectoryBaseName filename
-   in base++'/':currySubdir++'/':file
+   in base </> currySubdir </> file
 
 --- Transforms a directory name into the name of the corresponding
 --- sub directory containing auxiliary files.
 addCurrySubdir :: String -> String
-addCurrySubdir dir = dir++'/':currySubdir
+addCurrySubdir dir = dir </> currySubdir
 
 --- Returns the current path (list of directory names) of the
 --- system libraries.
@@ -128,24 +130,24 @@ getSysLibPath = case curryCompiler of
   "pakcs" -> do pakcspath <- getEnviron "PAKCSLIBPATH"
                 return
                  (if null pakcspath
-                  then [installDir++"/lib",installDir++"/lib/meta"]
+                  then [installDir </> "lib", installDir </> "lib" </> "meta"]
                   else splitPath pakcspath)
-  "kics"  -> return [installDir++"/src/lib"]
-  "kics2" -> return [installDir++"/lib",installDir++"/lib/meta"]
+  "kics"  -> return [installDir </> "src" </> "lib"]
+  "kics2" -> return [installDir </> "lib", installDir </> "lib" </> "meta"]
   _ -> error "Distribution.getSysLibPath: unknown curryCompiler"
 
 
 --- Adds a directory name to a file by looking up the current load path.
 --- An error message is delivered if there is no such file.
 lookupFileInLoadPath :: String -> IO (Maybe String)
-lookupFileInLoadPath fn = 
-  getLoadPathForFile fn >>= lookupFileInPath (baseName fn) [""] 
+lookupFileInLoadPath fn =
+  getLoadPathForFile fn >>= lookupFileInPath (baseName fn) [""]
 
 --- Adds a directory name to a file by looking up the current load path.
 --- An error message is delivered if there is no such file.
 findFileInLoadPath :: String -> IO String
-findFileInLoadPath fn = 
-  getLoadPathForFile fn >>= getFileInPath (baseName fn) [""] 
+findFileInLoadPath fn =
+  getLoadPathForFile fn >>= getFileInPath (baseName fn) [""]
 
 --- Returns the contents of the file found first in the current load path.
 --- An error message is delivered if there is no such file.
@@ -276,12 +278,12 @@ callFrontendWithParams target params progname = do
   return ()
  where
    callParseCurry = case curryCompiler of
-     "pakcs" -> return ("\""++installDir++"/bin/parsecurry\"")
+     "pakcs" -> return ("\"" ++ installDir </> "bin" </> "parsecurry\"")
      "kics"  -> do path <- maybe getLoadPath return (fullPath params)
-                   return ("\""++installDir++"/bin/parsecurry\""++
+                   return ("\"" ++ installDir </> "bin" </> "parsecurry\""++
                            concatMap (" -i"++) path)
      "kics2"  -> do path <- maybe getLoadPath return (fullPath params)
-                    return ("\""++installDir++"/bin/cymake\""++
+                    return ("\"" ++ installDir </> "bin" </> "cymake\"" ++
                             concatMap (\d->" -i\""++d++"\"") path)
      _ -> error "Distribution.callFrontend: unknown curryCompiler"
 
