@@ -28,7 +28,7 @@ LIB_HTML      = $(LIB_CURRY:.curry=.html)
 LIB_TEX       = $(LIB_CURRY:.curry=.tex)
 # lib names without meta/ prefix
 LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
-LIB_NAMES_SEP = $(call comma_sep,$(LIB_NAMES))
+HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
 
 ALLLIBS=AllLibraries.curry
 
@@ -69,7 +69,7 @@ ${CABAL_FILE}:../Makefile Makefile
 	echo "      kics2-runtime == $(VERSION)"                     >> $@
 	echo "    , base, old-time, directory, process"              >> $@
 	echo "    , parallel-tree-search, network, unix"             >> $@
-	echo "  Exposed-modules: $(LIB_NAMES_SEP)"                   >> $@
+	echo "  Exposed-modules: $(HS_LIB_NAMES)"                    >> $@
 	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2" >> $@
 
 .PHONY: installlibs
