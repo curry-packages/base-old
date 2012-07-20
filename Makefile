@@ -20,7 +20,8 @@ add_subdir = $(dir $(file)).curry/$(notdir $(file))
 # a b c -> a, b, c
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
-LIB_CURRY     = $(wildcard *.curry) $(wildcard meta/*.curry)
+ALL_CURRY     = $(wildcard *.curry) $(wildcard meta/*.curry)
+LIB_CURRY     = $(filter-out $(ALLLIBS) $(ALL_CURRY))
 LIB_FCY       = $(foreach file, $(LIB_CURRY:.curry=.fcy), $(add_subdir))
 LIB_ACY       = $(foreach file, $(LIB_CURRY:.curry=.acy), $(add_subdir))
 LIB_HTML      = $(LIB_CURRY:.curry=.html)
