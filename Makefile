@@ -69,7 +69,9 @@ ${CABAL_FILE}:../Makefile Makefile
 	echo "      kics2-runtime == $(VERSION)"                     >> $@
 	echo "    , base, old-time, directory, process"              >> $@
 	echo "    , parallel-tree-search, network"                   >> $@
-	echo "  if !os(windows)"                                     >> $@
+	echo "  if os(windows)"                                      >> $@
+	echo "    Build-Depends: Win32"                              >> $@
+	echo "  else"                                                >> $@
 	echo "    Build-Depends: unix"                               >> $@
 	echo "  Exposed-modules: $(HS_LIB_NAMES)"                    >> $@
 	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2" >> $@
