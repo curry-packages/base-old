@@ -2,7 +2,7 @@
 # in particular, to generate the documentation
 
 CYMAKE       = $(BINDIR)/cymake
-CYMAKEPARAMS = --no-verb --no-warn --no-overlap-warn -i. -imeta
+CYMAKEPARAMS = --extended --no-verb --no-warn --no-overlap-warn -i. -imeta
 
 # directory for HTML documentation files:
 DOCDIR=CDOC
