@@ -93,9 +93,7 @@ system cmd = do
   win       = isWindows
   -- This is a work around for GHC ticket #5376
   -- (http://hackage.haskell.org/trac/ghc/ticket/5376)
-  escapedCmd
-    | win       = '\"' : cmd ++ "\""
-    | otherwise = cmd
+  escapedCmd = if win then '\"' : cmd ++ "\"" else cmd
   envToExport (var, val)
     | win       = "set " ++ var ++ "=" ++ concatMap escapeWinSpecials val
                   ++ " && "
