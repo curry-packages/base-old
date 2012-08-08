@@ -2,7 +2,7 @@
 --- Library with some useful operations on lists.
 ---
 --- @author Michael Hanus
---- @version April 2011
+--- @version July 2012
 ------------------------------------------------------------------------------
 
 module List
