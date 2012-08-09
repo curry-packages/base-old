@@ -20,8 +20,6 @@ getCPUTime :: IO Int
 getCPUTime external
 
 --- Returns the current elapsed time of the process in milliseconds.
---- This operation is not supported (always returns 0),
---- only included for compatibility reasons.
 
 getElapsedTime :: IO Int
 getElapsedTime external
@@ -87,25 +85,14 @@ getProgName external
 
 system :: String -> IO Int
 system cmd = do
-  envs <- readGlobal environ
-  prim_system $## (concatMap envToExport envs ++ escapedCmd)
+   envs <- readGlobal environ
+   prim_system $## (concatMap envToExport envs ++ cmd)
  where
-  win       = isWindows
-  -- This is a work around for GHC ticket #5376
-  -- (http://hackage.haskell.org/trac/ghc/ticket/5376)
-  escapedCmd
-    | win       = '\"' : cmd ++ "\""
-    | otherwise = cmd
-  envToExport (var, val)
-    | win       = "set " ++ var ++ "=" ++ concatMap escapeWinSpecials val
-                  ++ " && "
-    | otherwise = var ++ "='" ++ concatMap encodeShellSpecials val
-                  ++ "' ; export " ++ var ++ " ; "
+   envToExport (var,val) =
+     var++"='"++ concatMap encodeShellSpecials val ++"' ; export "++var++" ; "
 
-  escapeWinSpecials c   | c `elem` "<>|&^" = ['^', c]
-                        | otherwise        = [c]
-  encodeShellSpecials c | c == '\'' = map chr [39,34,39,34,39]
-                        | otherwise = [c]
+   encodeShellSpecials c | c=='\''   = map chr [39,34,39,34,39]
+                         | otherwise = [c]
 
 prim_system :: String -> IO Int
 prim_system external
