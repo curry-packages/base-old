@@ -122,4 +122,4 @@ isPosix = not isWindows
 
 --- Is the underlying operating system a Windows system?
 isWindows :: Bool
-isWindows = False -- windows not yet supported
+isWindows external

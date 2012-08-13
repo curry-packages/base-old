@@ -41,4 +41,8 @@
   <library>prim_system</library>
   <entry>prim_sleep</entry>
  </primitive>
+ <primitive name="isWindows" arity="0">
+  <library>prim_system</library>
+  <entry>isWindows</entry>
+ </primitive>
 </primitives>
