@@ -5,7 +5,7 @@
 --- an AbstractCurry program in standard Curry syntax.
 ---
 --- @author Martin Engelke, Bernd Brassel, Michael Hanus, Marion Mueller,
----         Parissa Sadeghi, Björn Peemöller
+---         Parissa Sadeghi, Bjoern Peemoeller
 --- @version June 2012
 ------------------------------------------------------------------------------
 
