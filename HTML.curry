@@ -16,20 +16,19 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version January 2012
+--- @version August 2012
 ------------------------------------------------------------------------------
 
-module HTML(HtmlExp(..),HtmlPage(..),PageParam(..), 
+module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             HtmlForm(..),FormParam(..),CookieParam(..),
             CgiRef,idOfCgiRef,CgiEnv,HtmlHandler,
-            HtmlElem,Form, -- for backward compatibility
             defaultEncoding, defaultBackground,
             form,standardForm,answerText,answerEncText,
             cookieForm,getCookies,
-            page,standardPage,pageEnc,pageCSS,addPageParam,
+            page,standardPage,pageEnc,pageCSS,pageMetaInfo,addPageParam,
             formEnc,formCSS,addFormParam,
             htxt,htxts,hempty,nbsp,h1,h2,h3,h4,h5,
-            par,emphasize,bold,italic,code,
+            par,emphasize,strong,bold,italic,code,
             center,blink,teletype,pre,verbatim,address,href,anchor,
             ulist,olist,litem,dlist,table,headedTable,addHeadings,
             hrule,breakline,image,
@@ -41,7 +40,6 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             selection,selectionInitial,multipleSelection,
             hiddenfield,htmlQuote,htmlIsoUmlauts,addAttr,addAttrs,
             showHtmlExps,showHtmlExp,showHtmlPage,
-            showHtmlDoc,showHtmlDocCSS,
             runFormServerWithKey,runFormServerWithKeyAndFormParams,
             intForm,intFormMain,
             getUrlParameter,urlencoded2string,string2urlencoded,
@@ -70,7 +68,7 @@ infixl 0 `addFormParam`
 
 ------------------------------------------------------------------------------
 --- The default encoding used in generated web pages.
-defaultEncoding = "iso-8859-1"
+defaultEncoding = "utf-8" --"iso-8859-1"
 
 --- The default background for generated web pages.
 defaultBackground = ("bgcolor","#ffffff")
@@ -106,11 +104,6 @@ data HtmlExp =
  | HtmlStruct String [(String,String)] [HtmlExp]
  | HtmlCRef   HtmlExp CgiRef
  | HtmlEvent  HtmlExp HtmlHandler
-
---- A single HTML element with a tag, attributes, but no contents
---- (deprecated, included only for backward compatibility).
-HtmlElem :: String -> [(String,String)] -> HtmlExp
-HtmlElem tag attrs = HtmlStruct tag attrs []
 
 --- Extracts the textual contents of a list of HTML expressions.
 ---
@@ -198,14 +191,6 @@ data CookieParam = CookieExpire ClockTime
 --- @return an HTML form
 form :: String -> [HtmlExp] -> HtmlForm
 form title hexps = HtmlForm title [BodyAttr defaultBackground] hexps
-
---- A basic HTML form for active web pages
---- (deprecated, included only for backward compatibility).
---- @param title - the title of the form
---- @param hexps - the form's body (list of HTML expressions)
---- @return an HTML form
-Form :: String -> [HtmlExp] -> HtmlForm
-Form = form
 
 --- A standard HTML form for active web pages where the title is included
 --- in the body as the first header.
@@ -337,9 +322,11 @@ data HtmlPage = HtmlPage String [PageParam] [HtmlExp]
 --- @cons PageEnc - the encoding scheme of this page
 --- @cons PageCSS s - a URL for a CSS file for this page
 --- @cons PageJScript s - a URL for a Javascript file for this page
+--- @cons PageMeta as - meta information (in form of attributes) for this page
 data PageParam = PageEnc     String
                | PageCSS     String
                | PageJScript String
+               | PageMeta    [(String,String)]
 
 --- An encoding scheme for a HTML page.
 pageEnc :: String -> PageParam
@@ -348,6 +335,11 @@ pageEnc enc = PageEnc enc
 --- A URL for a CSS file for a HTML page.
 pageCSS :: String -> PageParam
 pageCSS css = PageCSS css
+
+--- Meta information for a HTML page. The argument is a list of
+--- attributes included in the meta-tag for this page.
+pageMetaInfo :: [(String,String)] -> PageParam
+pageMetaInfo attrs = PageMeta attrs
 
 --- A basic HTML web page with the default encoding.
 --- @param title - the title of the page
@@ -422,6 +414,10 @@ par hexps = HtmlStruct "p" [] hexps
 --- Emphasize
 emphasize      :: [HtmlExp] -> HtmlExp
 emphasize hexps = HtmlStruct "em" [] hexps
+
+--- Strong (more emphasized) text.
+strong      :: [HtmlExp] -> HtmlExp
+strong hexps = HtmlStruct "strong" [] hexps
 
 --- Boldface
 bold      :: [HtmlExp] -> HtmlExp
@@ -891,26 +887,6 @@ showsHtmlOpenTag tag attrs close =
 
 
 ------------------------------------------------------------------------------
---- Transforms HTML expressions into string representation of complete
---- HTML document with title
---- (deprecated, included only for backward compatibility).
---- @param title - the title of the HTML document
---- @param hexps - the body (list of HTML expressions) of the document
---- @return string representation of the HTML document
-showHtmlDoc :: String -> [HtmlExp] -> String
-showHtmlDoc title html = showHtmlPage (page title html)
-
---- Transforms HTML expressions into string representation of complete
---- HTML document with title and a URL for a style sheet file
---- (deprecated, included only for backward compatibility).
---- @param title - the title of the HTML document
---- @param css - the URL for a CSS file for this document
---- @param hexps - the body (list of HTML expressions) of the document
---- @return string representation of the HTML document
-showHtmlDocCSS :: String -> String -> [HtmlExp] -> String
-showHtmlDocCSS title css html =
-  showHtmlPage (page title html `addPageParam` pageCSS css)
-
 --- Transforms HTML page into string representation.
 --- @param page - the HTML page
 --- @return string representation of the HTML document
@@ -931,6 +907,7 @@ showHtmlPage (HtmlPage title params html) =
                  []]
   param2html (PageJScript js) =
      [HtmlStruct "script" [("type","text/javascript"),("src",js)] []]
+  param2html (PageMeta as) = [HtmlStruct "meta" as []]
 
 
 --- Standard header for generated HTML pages.
