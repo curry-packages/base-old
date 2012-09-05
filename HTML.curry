@@ -16,7 +16,7 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version August 2012
+--- @version September 2012
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
@@ -39,7 +39,7 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             textfield,password,textarea,checkbox,checkedbox,
             radio_main,radio_main_off,radio_other,
             selection,selectionInitial,multipleSelection,
-            hiddenfield,htmlQuote,htmlIsoUmlauts,addAttr,addAttrs,
+            hiddenfield,htmlQuote,htmlIsoUmlauts,addAttr,addAttrs,addClass,
             showHtmlExps,showHtmlExp,showHtmlPage,
             showHtmlDoc,showHtmlDocCSS,
             runFormServerWithKey,runFormServerWithKeyAndFormParams,
@@ -65,6 +65,7 @@ import Profile
 
 infixl 0 `addAttr`
 infixl 0 `addAttrs`
+infixl 0 `addClass`
 infixl 0 `addPageParam`
 infixl 0 `addFormParam`
 
@@ -820,6 +821,9 @@ addAttrs (HtmlEvent hexp handler) attrs =
 addAttrs (HtmlCRef  hexp cref) attrs =
     HtmlCRef (addAttrs hexp attrs) cref
 
+--- Adds a class attribute to an HTML element.
+addClass :: HtmlExp -> String -> HtmlExp
+addClass hexp cls = addAttr hexp ("class",cls)
 
 ------------------------------------------------------------------------------
 -- Auxiliaries for faster show (could be later put into a standard library)
@@ -864,8 +868,9 @@ getTag (HtmlCRef   he _)    = getTag he
 -- is this a tag where a line break can be safely added?
 tagWithLn t = t/="" &&
               t `elem` ["br","p","li","ul","ol","dl","dt","dd","hr",
-                        "h1","h2","h3","h4","h5","h6",
-                        "html","title","head","body","form","table","tr","td"]
+                        "h1","h2","h3","h4","h5","h6","div",
+                        "html","title","head","body","link","script",
+                        "form","table","tr","td"]
 
 
 --- Transforms a single HTML expression into string representation.
