@@ -1242,15 +1242,15 @@ showAnswerFormInEnv withlength url key hform@(HtmlForm _ _ _) crefnr = do
   (htmlstring,evhs) <- showHtmlFormInEnv url key hform crefnr
   return (addHtmlContentType withlength htmlstring, evhs)
 showAnswerFormInEnv _ _ _ (HtmlAnswer ctype cont) _ = do
-  return ("Content-Type: "++ctype++"\n\n"++cont, [])
+  return ("Content-Length: " ++ show (length cont) ++
+          "\nContent-Type: "++ctype++"\n\n"++cont, [])
 
 
 -- Adds the initial content lines to an HTML string.
 -- If the first argument is True, the content length is computed and also added.
 addHtmlContentType withlength htmlstring =
     (if withlength
-     then "Connection: close\nContent-Length: " ++
-          show (length htmlstring) ++ "\n"
+     then "Content-Length: " ++ show (length htmlstring) ++ "\n"
      else "") ++
     "Content-Type: text/html\n\n" ++ htmlstring
 
