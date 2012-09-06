@@ -20,11 +20,12 @@ import Char
 import NamedSocket
 import CPNS(unregisterPort)
 import IO
-import IOExts(exclusiveIO)
+import IOExts(exclusiveIO,connectToCommand)
 import Directory(doesFileExist,getCurrentDirectory)
 import ReadNumeric
 import ReadShowTerm
 import Time
+import List
 
 --------------------------------------------------------------------------
 -- Should the log messages of the server stored in a log file?
@@ -233,7 +234,7 @@ trySendScriptServerMessage portname msg =
 submitToServerOrStart url serverargs loadbalance pname scriptkey
                       serverprog cgiServerEnv =
    connectToSocketRepeat scriptServerTimeOut done 0 completeportname >>=
-   maybe (system servercmd >> done)
+   maybe (execAndCopyOutput servercmd)
          (\h ->
            if loadbalance/=Standard
            then cgiSubmit h
@@ -292,6 +293,35 @@ submitToServerOrStart url serverargs loadbalance pname scriptkey
                     else return (Just pscriptkey) )
      else findOtherReadyServerInPorts ps
 
+-- Execute a command and copy its output to stdout.
+-- This is necessary since some web servers do not transfer
+-- the output of cgi programs if the process is not terminated.
+execAndCopyOutput :: String -> IO ()
+execAndCopyOutput cmd = do
+  h <- connectToCommand cmd
+  clen <- copyUntilEmptyLine h 0
+  if clen==0 then copyOutput h else copyOutputLength h clen
+  hClose h
+ where
+  copyUntilEmptyLine h clen = do
+    l <- hGetLine h
+    putStrLn l
+    let clen' = if "Content-Length:" `isPrefixOf` l
+                then maybe clen fst (readNat (drop 15 l))
+                else clen
+    if null l then return clen' else copyUntilEmptyLine h clen'
+
+  copyOutput h = do
+    eof <- hIsEOF h
+    if eof
+     then done
+     else hGetLine h >>= putStrLn >> copyOutput h
+
+  copyOutputLength h n = do
+    if n>0 then hGetChar h >>= putChar >> copyOutputLength h (n-1)
+           else done
+
+-- Copy stdin to the given output handle and close it after eof.
 hPutStrAndClose h = do
   eof <- hIsEOF h
   if eof
