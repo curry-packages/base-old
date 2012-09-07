@@ -1067,8 +1067,9 @@ runFormServerWithKeyAndFormParams url cgikey formparams hformact = do
     _ -> (defaultCgiServerTimeout,args)
 
   startCgiServer timeout port scriptkey = do
-    time <- getClockTime
-    (state,htmlstring) <- computeFormInStateAndEnv True url cgikey formparams
+    time  <- getClockTime
+    ltime <- toCalendarTime time
+    (state,htmlstring) <- computeFormInStateAndEnv url cgikey formparams
                              (initialServerState time) scriptkey hformact []
     putStr htmlstring
     hClose stdout
@@ -1077,7 +1078,6 @@ runFormServerWithKeyAndFormParams url cgikey formparams hformact = do
      else -- start server process:
       do let portname = port++scriptkey
          socket <- listenOn portname
-         ltime <- toCalendarTime time
          putErrLn $ calendarTimeToString ltime ++
                     ": server started on port " ++ portname
          registerCgiServer url portname
@@ -1183,7 +1183,7 @@ serveCgiMessagesForForm servertimeout url cgikey portname
                mfe
    where
     serveFormInEnv rstate scriptkey hformact cenv = do
-      (nstate,htmlstring) <- computeFormInStateAndEnv False url cgikey fparams
+      (nstate,htmlstring) <- computeFormInStateAndEnv url cgikey fparams
                                                 rstate scriptkey hformact cenv
       hPutStrLn hdl htmlstring
       hClose hdl
@@ -1201,13 +1201,12 @@ serveCgiMessagesForForm servertimeout url cgikey portname
     serveCgiMessages state
 
 -- computes a HTML form w.r.t. a state and a cgi environment:
-computeFormInStateAndEnv isinitform url cgikey fparams state scriptkey
-                         hformact cenv =
+computeFormInStateAndEnv url cgikey fparams state scriptkey hformact cenv =
   catch tryComputeForm
         (\e -> do uparam <- getUrlParameter
                   return (state,errorAsHtml e uparam))
  where
-  errorAsHtml e urlparam = addHtmlContentType isinitform $ showHtmlPage $
+  errorAsHtml e urlparam = addHtmlContentType $ showHtmlPage $
    page "Server Error"
     [h1 [htxt "Error: Failure during computation"],
      par [htxt "Your request cannot be processed due to a run-time error:"],
@@ -1221,7 +1220,7 @@ computeFormInStateAndEnv isinitform url cgikey fparams state scriptkey
   tryComputeForm = do
     cform <- hformact
     let (cookiestring,hform) = extractCookies cform
-    (htmlstring,evhs) <- showAnswerFormInEnv isinitform url scriptkey
+    (htmlstring,evhs) <- showAnswerFormInEnv url scriptkey
                                              (addFormParams hform fparams)
                                              (getMaxFieldNr cenv + 1)
     nstate <- storeEnvHandlers state
@@ -1270,22 +1269,19 @@ getNextFormAndCgiEnv state cgikey newcenv = do
 
 
 -- put the HTML string corresponding to an HtmlForm with HTTP header on stdout:
-showAnswerFormInEnv :: Bool -> String -> String -> HtmlForm -> Int
+showAnswerFormInEnv :: String -> String -> HtmlForm -> Int
                       -> IO (String,[(HtmlHandler,String)])
-showAnswerFormInEnv withlength url key hform@(HtmlForm _ _ _) crefnr = do
+showAnswerFormInEnv url key hform@(HtmlForm _ _ _) crefnr = do
   (htmlstring,evhs) <- showHtmlFormInEnv url key hform crefnr
-  return (addHtmlContentType withlength htmlstring, evhs)
-showAnswerFormInEnv _ _ _ (HtmlAnswer ctype cont) _ = do
+  return (addHtmlContentType htmlstring, evhs)
+showAnswerFormInEnv _ _ (HtmlAnswer ctype cont) _ = do
   return ("Content-Length: " ++ show (length cont) ++
           "\nContent-Type: "++ctype++"\n\n"++cont, [])
 
 
--- Adds the initial content lines to an HTML string.
--- If the first argument is True, the content length is computed and also added.
-addHtmlContentType withlength htmlstring =
-    (if withlength
-     then "Content-Length: " ++ show (length htmlstring) ++ "\n"
-     else "") ++
+-- Adds the initial content lines (including content length) to an HTML string.
+addHtmlContentType htmlstring =
+    "Content-Length: " ++ show (length htmlstring) ++ "\n" ++
     "Content-Type: text/html\n\n" ++ htmlstring
 
 -- return the HTML string corresponding to an HtmlForm:

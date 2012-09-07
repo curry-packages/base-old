@@ -7,12 +7,12 @@
 --- server implementing the application.
 ---
 --- @author Michael Hanus
---- @version November 2007
+--- @version September 2012
 ------------------------------------------------------------------------------
 
 module HtmlCgi(CgiServerMsg(..),runCgiServerCmd,
                cgiServerRegistry,registerCgiServer,unregisterCgiServer,
-               readCgiServerMsg,noHandlerPage,main)
+               readCgiServerMsg,noHandlerPage,submitForm)
   where
 
 import System
@@ -62,7 +62,9 @@ readCgiServerMsg handle = do
      _ -> return Nothing
 
 --------------------------------------------------------------------------
--- Read arguments and start script:
+-- Main program to start a cgi script. It reads arguments and starts a small
+-- script to forward the arguments to a cgi server process.
+--
 -- Optional script arguments:
 -- "-servertimeout n": The timeout period for the cgi server in milliseconds.
 --                     If the cgi server process does not receive any request
@@ -72,7 +74,7 @@ readCgiServerMsg handle = do
 -- "-loadbalance <t>": specifies kind of load balancing (see makecurrycgi)
 --                     Current possible values for <t>:
 --                     "no|standard|multiple"
-main = do
+submitForm = do
   args <- getArgs
   let (serverargs,lb,rargs) = stripServerArgs "" NoBalance args
   case rargs of
@@ -112,24 +114,24 @@ runCgiServerCmd portname cmd = case cmd of
     cs <- hGetContents h
     if length cs < 7
      then do h' <- trySendScriptServerMessage portname SketchStatus
-             hPutStrAndClose h'
+             copyOutputAndClose h'
              putChar '\n'
      else putStrLn cs
   ShowStatus ->  do
     h <- trySendScriptServerMessage portname ShowStatus
-    hPutStrAndClose h
+    copyOutputAndClose h
   SketchStatus -> do
     h <- trySendScriptServerMessage portname SketchStatus
-    hPutStrAndClose h
+    copyOutputAndClose h
   SketchHandlers -> do
      -- for upward compatibility with previous implementations:
     lh <- trySendScriptServerMessage portname GetLoad
     cs <- hGetContents lh
     if length cs < 7
      then do h <- trySendScriptServerMessage portname SketchHandlers
-             hPutStrAndClose h
+             copyOutputAndClose h
      else do h <- trySendScriptServerMessage portname SketchStatus
-             hPutStrAndClose h
+             copyOutputAndClose h
   _ -> error "HtmlCgi.runCgiServerCmd: called with illegal command!"
 
 --- Translates a cgi progname and key into a name for a port:
@@ -147,7 +149,7 @@ cgiInteractiveScript portname = do
  where
   sendToServerAndPrintOrFail cgiEnviron newcenv = do
     h <- trySendScriptServerMessage portname (CgiSubmit cgiEnviron newcenv)
-    hPutStrAndClose h
+    copyOutputAndClose h
 
   errorPage e =
     "Content-type: text/html\n\n" ++
@@ -180,7 +182,8 @@ cgiScript url serverargs loadbalance portname serverprog = do
     h <- trySendScriptServerMessage (portname++scriptKey) 
                                     (CgiSubmit cgiEnviron newcenv)
     eof <- hIsEOF h
-    if eof then failed else hPutStrAndClose h
+    if eof then error "Html.cgiScript: unexpected EOF failure"
+           else copyOutputAndClose h
 
 -- get a new unique key for a script:
 getFreshKey :: IO String
@@ -244,7 +247,7 @@ submitToServerOrStart url serverargs loadbalance pname scriptkey
              then submitToOtherServer
              else connectToSocketRepeat scriptServerTimeOut done 0
                                         completeportname >>=
-                  maybe (system servercmd >> done) cgiSubmit )
+                  maybe (execAndCopyOutput servercmd) cgiSubmit )
  where
   completeportname = pname++scriptkey++"@localhost"
   cmd = serverprog ++ serverargs ++ " -port \"" ++ pname
@@ -256,7 +259,7 @@ submitToServerOrStart url serverargs loadbalance pname scriptkey
     let cgiEnviron = ("SCRIPTKEY",scriptkey) : cgiServerEnv
     hPutStrLn h (showQTerm (CgiSubmit cgiEnviron []))
     hFlush h
-    hPutStrAndClose h
+    copyOutputAndClose h
 
   getLoadOfServer h = do
     hPutStrLn h (showQTerm GetLoad)
@@ -297,36 +300,35 @@ submitToServerOrStart url serverargs loadbalance pname scriptkey
 -- This is necessary since some web servers do not transfer
 -- the output of cgi programs if the process is not terminated.
 execAndCopyOutput :: String -> IO ()
-execAndCopyOutput cmd = do
-  h <- connectToCommand cmd
-  clen <- copyUntilEmptyLine h 0
-  if clen==0 then copyOutput h else copyOutputLength h clen
+execAndCopyOutput cmd = connectToCommand cmd >>= copyOutputAndClose
+
+-- Copy input from the given handle to stdout and close it after eof.
+copyOutputAndClose :: Handle -> IO ()
+copyOutputAndClose h = do
+  clen <- copyUntilEmptyLine 0
+  if clen==0 then copyOutputUntilEOF else copyOutputLength clen
   hClose h
  where
-  copyUntilEmptyLine h clen = do
+  copyUntilEmptyLine clen = do
     l <- hGetLine h
     putStrLn l
     let clen' = if "Content-Length:" `isPrefixOf` l
                 then maybe clen fst (readNat (drop 15 l))
                 else clen
-    if null l then return clen' else copyUntilEmptyLine h clen'
+    if null l then return clen' else copyUntilEmptyLine clen'
 
-  copyOutput h = do
+  copyOutputUntilEOF = do
     eof <- hIsEOF h
     if eof
      then done
-     else hGetLine h >>= putStrLn >> copyOutput h
+     else hGetLine h >>= putStrLn >> copyOutputUntilEOF
 
-  copyOutputLength h n = do
-    if n>0 then hGetChar h >>= putChar >> copyOutputLength h (n-1)
+  copyOutputLength n = do
+    if n>0 then hGetChar h >>= putChar >> copyOutputLength (n-1)
            else done
 
--- Copy stdin to the given output handle and close it after eof.
-hPutStrAndClose h = do
-  eof <- hIsEOF h
-  if eof
-   then hClose h
-   else hGetChar h >>= putChar >> hPutStrAndClose h
+-- Puts a line to stderr:
+putErrLn s = hPutStrLn stderr s >> hFlush stderr
 
 ------------------------------------------------------------------------------
 --- Gets the list of variable/value pairs sent from the browser for the
