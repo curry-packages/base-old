@@ -21,7 +21,7 @@ add_subdir = $(dir $(file)).curry/$(notdir $(file))
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
 ALL_CURRY     = $(wildcard *.curry) $(wildcard meta/*.curry)
-LIB_CURRY     = $(filter-out $(ALLLIBS), $(ALL_CURRY))
+LIB_CURRY     = $(filter-out $(EXCLUDES), $(ALL_CURRY))
 LIB_FCY       = $(foreach file, $(LIB_CURRY:.curry=.fcy), $(add_subdir))
 LIB_ACY       = $(foreach file, $(LIB_CURRY:.curry=.acy), $(add_subdir))
 LIB_HTML      = $(LIB_CURRY:.curry=.html)
@@ -31,6 +31,8 @@ LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
 HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
 
 ALLLIBS=AllLibraries.curry
+MAINGOAL=Curry_Main_Goal.curry
+EXCLUDES= $(ALLLIBS) $(MAINGOAL)
 
 PACKAGE    = kics2-libraries
 CABAL_FILE = $(PACKAGE).cabal
@@ -43,7 +45,7 @@ CABAL_FILE = $(PACKAGE).cabal
 .PHONY: compilelibs
 compilelibs: $(ALLLIBS)
 	"${REPL}" :set v2 :set path ${LIBDIR}:${LIBDIR}/meta :l $< :eval main :quit
-	$(BINDIR)/cleancurry $(basename $<)
+#	$(BINDIR)/cleancurry $(basename $<)
 
 $(ALLLIBS): $(LIB_CURRY) Makefile
 	rm -f $@
