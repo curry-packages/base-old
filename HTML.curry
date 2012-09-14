@@ -22,7 +22,6 @@
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             HtmlForm(..),FormParam(..),CookieParam(..),
             CgiRef,idOfCgiRef,CgiEnv,HtmlHandler,
-            HtmlElem,Form, -- for backward compatibility
             defaultEncoding, defaultBackground,
             form,standardForm,answerText,answerEncText,
             cookieForm,getCookies,
@@ -41,7 +40,6 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             selection,selectionInitial,multipleSelection,
             hiddenfield,htmlQuote,htmlIsoUmlauts,addAttr,addAttrs,addClass,
             showHtmlExps,showHtmlExp,showHtmlPage,
-            showHtmlDoc,showHtmlDocCSS,
             runFormServerWithKey,runFormServerWithKeyAndFormParams,
             intForm,intFormMain,
             getUrlParameter,urlencoded2string,string2urlencoded,
@@ -107,11 +105,6 @@ data HtmlExp =
  | HtmlStruct String [(String,String)] [HtmlExp]
  | HtmlCRef   HtmlExp CgiRef
  | HtmlEvent  HtmlExp HtmlHandler
-
---- A single HTML element with a tag, attributes, but no contents
---- (deprecated, included only for backward compatibility).
-HtmlElem :: String -> [(String,String)] -> HtmlExp
-HtmlElem tag attrs = HtmlStruct tag attrs []
 
 --- Extracts the textual contents of a list of HTML expressions.
 ---
@@ -199,14 +192,6 @@ data CookieParam = CookieExpire ClockTime
 --- @return an HTML form
 form :: String -> [HtmlExp] -> HtmlForm
 form title hexps = HtmlForm title [BodyAttr defaultBackground] hexps
-
---- A basic HTML form for active web pages
---- (deprecated, included only for backward compatibility).
---- @param title - the title of the form
---- @param hexps - the form's body (list of HTML expressions)
---- @return an HTML form
-Form :: String -> [HtmlExp] -> HtmlForm
-Form = form
 
 --- A standard HTML form for active web pages where the title is included
 --- in the body as the first header.
@@ -907,26 +892,6 @@ showsHtmlOpenTag tag attrs close =
 
 
 ------------------------------------------------------------------------------
---- Transforms HTML expressions into string representation of complete
---- HTML document with title
---- (deprecated, included only for backward compatibility).
---- @param title - the title of the HTML document
---- @param hexps - the body (list of HTML expressions) of the document
---- @return string representation of the HTML document
-showHtmlDoc :: String -> [HtmlExp] -> String
-showHtmlDoc title html = showHtmlPage (page title html)
-
---- Transforms HTML expressions into string representation of complete
---- HTML document with title and a URL for a style sheet file
---- (deprecated, included only for backward compatibility).
---- @param title - the title of the HTML document
---- @param css - the URL for a CSS file for this document
---- @param hexps - the body (list of HTML expressions) of the document
---- @return string representation of the HTML document
-showHtmlDocCSS :: String -> String -> [HtmlExp] -> String
-showHtmlDocCSS title css html =
-  showHtmlPage (page title html `addPageParam` pageCSS css)
-
 --- Transforms HTML page into string representation.
 --- @param page - the HTML page
 --- @return string representation of the HTML document

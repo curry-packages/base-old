@@ -91,8 +91,8 @@ system cmd = do
    envToExport (var,val) =
      var++"='"++ concatMap encodeShellSpecials val ++"' ; export "++var++" ; "
 
-   encodeShellSpecials c | c=='\''   = map chr [39,34,39,34,39]
-                         | otherwise = [c]
+   encodeShellSpecials c = if c == '\'' then map chr [39,34,39,34,39]
+                                        else [c]
 
 prim_system :: String -> IO Int
 prim_system external
