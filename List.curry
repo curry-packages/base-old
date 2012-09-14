@@ -94,7 +94,7 @@ intersperse _   []         = []
 intersperse _   [x]        = [x]
 intersperse sep (x1:x2:xs) = x1 : sep : intersperse sep (x2:xs)
 
---- `intercalate' xs xss` is equivalent to `(concat (intersperse xs xss))`.
+--- `intercalate xs xss` is equivalent to `(concat (intersperse xs xss))`.
 --- It inserts the list `xs` in between the lists in `xss` and
 --- concatenates the result.
 intercalate :: [a] -> [[a]] -> [a]
