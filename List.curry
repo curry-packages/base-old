@@ -1,18 +1,22 @@
 ------------------------------------------------------------------------------
 --- Library with some useful operations on lists.
 ---
---- @author Michael Hanus
---- @version July 2012
+--- @author Michael Hanus, Bjoern Peemoeller
+--- @version September 2012
 ------------------------------------------------------------------------------
 
 module List
   ( elemIndex, elemIndices, find, findIndex, findIndices
   , nub, nubBy, delete, deleteBy, (\\), union, intersect
-  , intersperse, transpose, partition
+  , intersperse, intercalate, transpose, permutations, partition
   , group, groupBy, inits, tails, replace
   , isPrefixOf, isSuffixOf, isInfixOf
   , sortBy, insertBy
   , last, init
+  , sum, product, maximum, minimum
+  , scanl, scanl1, scanr, scanr1
+  , mapAccumL, mapAccumR
+  , cycle, unfoldr
   ) where
 
 import Maybe (listToMaybe)
@@ -41,7 +45,6 @@ findIndex p              = listToMaybe . findIndices p
 --- Returns the list of indices of list elements satisfying a predicate.
 findIndices             :: (a -> Bool) -> [a] -> [Int]
 findIndices p xs         = [ i | (x,i) <- zip xs [0..], p x ]
-
 
 --- Removes all duplicates in the argument list.
 nub                   :: [a] -> [a]
@@ -91,6 +94,12 @@ intersperse _   []         = []
 intersperse _   [x]        = [x]
 intersperse sep (x1:x2:xs) = x1 : sep : intersperse sep (x2:xs)
 
+--- `intercalate' xs xss` is equivalent to `(concat (intersperse xs xss))`.
+--- It inserts the list `xs` in between the lists in `xss` and
+--- concatenates the result.
+intercalate :: [a] -> [[a]] -> [a]
+intercalate xs xss = concat (intersperse xs xss)
+
 --- Transposes the rows and columns of the argument.
 ---
 --- Example: `(transpose [[1,2,3],[4,5,6]]) = [[1,4],[2,5],[3,6]]`
@@ -98,6 +107,17 @@ transpose               :: [[a]] -> [[a]]
 transpose []             = []
 transpose ([] : xss)     = transpose xss
 transpose ((x:xs) : xss) = (x : map head xss) : transpose (xs : map tail xss)
+
+--- Returns the list of all permutations of the argument.
+permutations           :: [a] -> [[a]]
+permutations xs0       =  xs0 : perms xs0 []
+  where
+  perms []     _  = []
+  perms (t:ts) is = foldr interleave (perms ts (t:is)) (permutations is)
+    where interleave    xs     r = let (_, zs) = interleave' id xs r in zs
+          interleave' _ []     r = (ts, r)
+          interleave' f (y:ys) r = let (us, zs) = interleave' (f . (y:)) ys r
+                                    in  (y:us, f (t:y:us) : zs)
 
 --- Partitions a list into a pair of lists where the first list
 --- contains those elements that satisfy the predicate argument
@@ -197,3 +217,76 @@ last (_:x:xs) = last (x:xs)
 init :: [a] -> [a]
 init [_]      = []
 init (x:y:xs) = x : init (y:xs)
+
+--- Returns the sum of a list of integers.
+sum :: [Int] -> Int
+sum ns = foldl (+) 0 ns
+
+--- Returns the product of a list of integers.
+product :: [Int] -> Int
+product ns = foldl (*) 1 ns
+
+--- Returns the maximum of a non-empty list.
+maximum :: [a] -> a
+maximum xs@(_:_) =  foldl1 max xs
+
+--- Returns the minimum of a non-empty list.
+minimum :: [a] -> a
+minimum xs@(_:_) =  foldl1 max xs
+
+--- `scanl` is similar to `foldl`, but returns a list of successive
+--- reduced values from the left:
+---   scanl f z [x1, x2, ...] == [z, z `f` x1, (z `f` x1) `f` x2, ...]
+scanl        :: (a -> b -> a) -> a -> [b] -> [a]
+scanl f q ls =  q : (case ls of
+                      []   -> []
+                      x:xs -> scanl f (f q x) xs)
+
+--- `scanl1` is a variant of `scanl` that has no starting value argument:
+---  scanl1 f [x1, x2, ...] == [x1, x1 `f` x2, ...]
+scanl1          :: (a -> a -> a) -> [a] -> [a]
+scanl1 _ []     =  []
+scanl1 f (x:xs) =  scanl f x xs
+
+--- `scanr` is the right-to-left dual of `scanl`.
+scanr             :: (a -> b -> b) -> b -> [a] -> [b]
+scanr _ q0 []     =  [q0]
+scanr f q0 (x:xs) =  f x q : qs
+                     where qs@(q:_) = scanr f q0 xs
+
+--- `scanr1` is a variant of `scanr` that has no starting value argument.
+scanr1                :: (a -> a -> a) -> [a] -> [a]
+scanr1 _ []           =  []
+scanr1 _ [x]          =  [x]
+scanr1 f (x:xs@(_:_)) =  f x q : qs
+                         where qs@(q:_) = scanr1 f xs
+
+--- The `mapAccumL` function behaves like a combination of `map` and
+--- `foldl`; it applies a function to each element of a list, passing
+--- an accumulating parameter from left to right, and returning a final
+--- value of this accumulator together with the new list.
+mapAccumL :: (acc -> x -> (acc, y)) -> acc -> [x] -> (acc, [y])
+mapAccumL _ s []        =  (s, [])
+mapAccumL f s (x:xs)    =  (s'',y:ys)
+                           where (s', y ) = f s x
+                                 (s'',ys) = mapAccumL f s' xs
+
+--- The `mapAccumR` function behaves like a combination of `map` and
+--- `foldr`; it applies a function to each element of a list, passing
+--- an accumulating parameter from right to left, and returning a final
+--- value of this accumulator together with the new list.
+mapAccumR :: (acc -> x -> (acc, y)) -> acc -> [x] -> (acc, [y])
+mapAccumR _ s []        =  (s, [])
+mapAccumR f s (x:xs)    =  (s'', y:ys)
+                           where (s'',y ) = f s' x
+                                 (s', ys) = mapAccumR f s xs
+
+--- Builds an infinite list from a finite one.
+cycle :: [a] -> [a]
+cycle xs@(_:_) = ys where ys = xs ++ ys
+
+--- Builds a list from a seed value.
+unfoldr :: (b -> Maybe (a, b)) -> b -> [a]
+unfoldr f b  = case f b of
+  Just (a, new_b) -> a : unfoldr f new_b
+  Nothing         -> []
