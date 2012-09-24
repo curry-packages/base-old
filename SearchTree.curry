@@ -1,15 +1,18 @@
 ------------------------------------------------------------------------------
 --- This library defines a representation of a search space as
 --- a tree and various search strategies on this tree.
+--- This module implements **strong encapsulation** as discussed in
+--- [this paper](http://www.informatik.uni-kiel.de/~mh/papers/JFLP04_findall.html)
 ---
 --- @author  Michael Hanus, Bjoern Peemoeller, Fabian Reck
---- @version March 2012
+--- @version September 2012
 ------------------------------------------------------------------------------
 
 module SearchTree
   ( SearchTree (..), someSearchTree, getSearchTree
   , isDefined, showSearchTree, searchTreeSize
   , allValuesDFS, allValuesBFS, allValuesIDS, allValuesIDSwith
+  , someValue, someValueBy
   ) where
 
 --- A search tree is a value, a failure, or a choice between to search trees.
@@ -133,15 +136,15 @@ allBFS (t:ts) = values (t:ts) |++| allBFS (children (t:ts))
 
 --- Return all values in a search tree via iterative-deepening search.
 allValuesIDS :: SearchTree a -> [a]
-allValuesIDS t = vsToList (allValuesIDSwith 100 (2*) t)
+allValuesIDS t = allValuesIDSwith 100 (2*) t
 
 --- Return all values in a search tree via iterative-deepening search.
 --- The first argument is the initial depth bound and
 --- the second argument is a function to increase the depth in each
 --- iteration.
-allValuesIDSwith :: Int -> (Int -> Int) -> SearchTree a -> ValueSequence a
+allValuesIDSwith :: Int -> (Int -> Int) -> SearchTree a -> [a]
 allValuesIDSwith initdepth incrdepth st =
-  iterIDS initdepth (collectInBounds 0 initdepth st)
+  vsToList (iterIDS initdepth (collectInBounds 0 initdepth st))
  where
   iterIDS _ Nil = emptyVS
   iterIDS n (Cons x xs) = addVS x (iterIDS n xs)
@@ -173,3 +176,24 @@ concA Abort       (FCons d xs) = FCons d (concA Abort xs)
 concA Nil         ys = ys
 concA (Cons x xs) ys = Cons x (concA xs ys)
 concA (FCons d xs) ys = FCons d (concA xs ys)
+
+
+--- Returns some value for an expression.
+---
+--- Note that this operation is not purely declarative since
+--- the computed value depends on the ordering of the program rules.
+--- Thus, this operation should be used only if the expression
+--- has a single value. It fails if the expression has no value.
+someValue :: a -> a
+someValue = someValueBy allValuesBFS
+
+--- Returns some value for an expression w.r.t. a search strategy.
+--- A search strategy is an operation to traverse a search tree
+--- and collect all values, e.g., `allValuesDFS` or `allValuesBFS`.
+---
+--- Note that this operation is not purely declarative since
+--- the computed value depends on the ordering of the program rules.
+--- Thus, this operation should be used only if the expression
+--- has a single value. It fails if the expression has no value.
+someValueBy :: (SearchTree a -> [a]) -> a -> a
+someValueBy strategy x = head (strategy (someSearchTree x))
