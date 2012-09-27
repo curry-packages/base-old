@@ -44,7 +44,7 @@ CABAL_FILE = $(PACKAGE).cabal
 # compile all libraries:
 .PHONY: compilelibs
 compilelibs: $(ALLLIBS)
-	"${REPL}" :set v2 :set path ${LIBDIR}:${LIBDIR}/meta :l $< :eval main :quit
+	"${REPL}" ${REPL_OPTS} :set path ${LIBDIR}:${LIBDIR}/meta :l $< :eval main :quit
 #	$(BINDIR)/cleancurry $(basename $<)
 
 $(ALLLIBS): $(LIB_CURRY) Makefile
