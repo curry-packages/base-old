@@ -11,7 +11,9 @@
 module SearchTree
   ( SearchTree (..), someSearchTree, getSearchTree
   , isDefined, showSearchTree, searchTreeSize
+  , Strategy, dfsStrategy, bfsStrategy, idsStrategy, idsStrategyWith
   , allValuesDFS, allValuesBFS, allValuesIDS, allValuesIDSwith
+  , ValueSequence, vsToList
   , someValue, someValueBy
   ) where
 
@@ -38,6 +40,8 @@ vsToList external
 
 (|++|) :: ValueSequence a -> ValueSequence a -> ValueSequence a
 (|++|) external
+
+type Strategy a = SearchTree a -> ValueSequence a
 
 --- Returns the search tree for some expression.
 getSearchTree :: a -> IO (SearchTree a)
@@ -106,16 +110,16 @@ searchTreeSize (Or t1 t2) = let (v1, f1, o1) = searchTreeSize t1
 
 --- Return all values in a search tree via depth-first search
 allValuesDFS :: SearchTree a -> [a]
-allValuesDFS = vsToList . allValuesDFS' 
+allValuesDFS = vsToList . dfsStrategy 
 
-allValuesDFS' :: SearchTree a -> ValueSequence a
-allValuesDFS' (Fail d)  = failVS d
-allValuesDFS' (Value x) = addVS x emptyVS
-allValuesDFS' (Or x y)  = allValuesDFS' x |++| allValuesDFS' y
+dfsStrategy :: Strategy a
+dfsStrategy (Fail d)  = failVS d
+dfsStrategy (Value x) = addVS x emptyVS
+dfsStrategy (Or x y)  = dfsStrategy x |++| dfsStrategy y
 
 --- Return all values in a search tree via breadth-first search
 allValuesBFS :: SearchTree a -> [a]
-allValuesBFS t = vsToList (allBFS [t])
+allValuesBFS t = vsToList (bfsStrategy t)
 
 children :: [SearchTree a] -> [SearchTree a]
 children []             = []
@@ -133,18 +137,40 @@ allBFS :: [SearchTree a] -> ValueSequence a
 allBFS []     = emptyVS
 allBFS (t:ts) = values (t:ts) |++| allBFS (children (t:ts))
 
+bfsStrategy :: Strategy a
+bfsStrategy t = allBFS [t]
+
+
+
+--- The default initial search depth for IDS
+defIDSDepth :: Int
+defIDSDepth = 100
+
+--- The default increasing function for IDS
+defIDSInc :: Int -> Int
+defIDSInc = (2*)
 
 --- Return all values in a search tree via iterative-deepening search.
 allValuesIDS :: SearchTree a -> [a]
-allValuesIDS t = allValuesIDSwith 100 (2*) t
+allValuesIDS t = allValuesIDSwith defIDSDepth defIDSInc t
+
+idsStrategy :: Strategy a
+idsStrategy t = idsStrategyWith defIDSDepth defIDSInc t
+
+--- Return the list of all values in a search tree via iterative-deepening search.
+--- The first argument is the initial depth bound and
+--- the second argument is a function to increase the depth in each
+--- iteration.
+allValuesIDSwith :: Int -> (Int -> Int) -> SearchTree a -> [a]
+allValuesIDSwith initdepth incrdepth = vsToList . idsStrategyWith initdepth incrdepth
 
 --- Return all values in a search tree via iterative-deepening search.
 --- The first argument is the initial depth bound and
 --- the second argument is a function to increase the depth in each
 --- iteration.
-allValuesIDSwith :: Int -> (Int -> Int) -> SearchTree a -> [a]
-allValuesIDSwith initdepth incrdepth st =
-  vsToList (iterIDS initdepth (collectInBounds 0 initdepth st))
+idsStrategyWith :: Int -> (Int -> Int) -> Strategy a
+idsStrategyWith initdepth incrdepth st =
+  iterIDS initdepth (collectInBounds 0 initdepth st)
  where
   iterIDS _ Nil = emptyVS
   iterIDS n (Cons x xs) = addVS x (iterIDS n xs)
@@ -156,8 +182,8 @@ allValuesIDSwith initdepth incrdepth st =
 collectInBounds :: Int -> Int -> SearchTree a -> AbortList a
 collectInBounds oldbound newbound st = collectLevel newbound st
  where
-  collectLevel d (Fail fd)  = if d <=newbound-oldbound then FCons fd Nil else Nil
-  collectLevel d (Value x) = if d<=newbound-oldbound then Cons x Nil else Nil
+  collectLevel d (Fail fd)  = if d <newbound-oldbound then FCons fd Nil else Nil
+  collectLevel d (Value x) = if d<newbound-oldbound then Cons x Nil else Nil
   collectLevel d (Or x y)  =
     if d>0 then concA (collectLevel (d-1) x) (collectLevel (d-1) y)
            else Abort
