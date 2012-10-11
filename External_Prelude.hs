@@ -608,7 +608,7 @@ external_d_C_ensureNotFree x cs =
     _            -> x
 
 external_d_C_failed :: NonDet a => ConstStore -> a
-external_d_C_failed _ = failCons 0 defFailInfo
+external_d_C_failed _ = failCons 0 (customFail "failed")
 
 external_d_OP_eq_eq :: Curry a => a -> a -> ConstStore -> C_Bool
 external_d_OP_eq_eq  = (=?=)
@@ -738,8 +738,8 @@ external_d_OP_eq_colon_eq = (=:=)
 external_d_C_success :: ConstStore -> C_Success
 external_d_C_success _ = C_Success
 
-external_d_OP_ampersand :: C_Success -> C_Success -> ConstStore -> C_Success
-external_d_OP_ampersand = (&)
+external_d_OP_amp :: C_Success -> C_Success -> ConstStore -> C_Success
+external_d_OP_amp = (&)
 
 -- IO stuff
 
