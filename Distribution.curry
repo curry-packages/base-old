@@ -215,7 +215,7 @@ data FrontendParams =
 
 --- The default parameters of the front end.
 defaultParams :: FrontendParams
-defaultParams = FrontendParams False False True Nothing Nothing Nothing
+defaultParams = FrontendParams False True True Nothing Nothing Nothing
 
 --- Set quiet mode of the front end.
 setQuiet :: Bool -> FrontendParams -> FrontendParams
