@@ -20,7 +20,7 @@ module Distribution (
 
   FrontendTarget(..), 
   
-  FrontendParams, defaultParams,
+  FrontendParams, defaultParams, rcParams,
   quiet, extended, overlapWarn, fullPath, outfile, logfile,
   setQuiet, setExtended, setOverlapWarn, setFullPath, setOutfile, setLogfile,
 
@@ -184,7 +184,6 @@ getLoadPathForFile file = do
  where
   addCurrySubdirs = concatMap (\ d -> [d, addCurrySubdir d])
 
-
 -------------------------------------------------------------------
 -- calling the front end
 -------------------------------------------------------------------
@@ -216,6 +215,16 @@ data FrontendParams =
 --- The default parameters of the front end.
 defaultParams :: FrontendParams
 defaultParams = FrontendParams False True True Nothing Nothing Nothing
+
+--- The default parameters of the front end as configured by the compiler
+--- specific resource configuration file.
+rcParams :: IO FrontendParams
+rcParams = do
+  mbExtended    <- getRcVar "curryextensions"
+  mbOverlapWarn <- getRcVar "warnoverlapping"
+  return $ setExtended    (mbExtended    /= Just "no")
+         $ setOverlapWarn (mbOverlapWarn /= Just "no")
+         $ defaultParams
 
 --- Set quiet mode of the front end.
 setQuiet :: Bool -> FrontendParams -> FrontendParams
@@ -275,7 +284,9 @@ logfile  (FrontendParams _ _ _ _ _ x) = x
 --- @param target - the kind of target file to be generated
 --- @param progname - the name of the main module of the application to be compiled
 callFrontend :: FrontendTarget -> String -> IO ()
-callFrontend target = callFrontendWithParams target defaultParams
+callFrontend target p = do
+  params <- rcParams
+  callFrontendWithParams target params p
 
 --- In order to make sure that compiler generated files (like .fcy, .fint, .acy)
 --- are up to date, one can call the front end of the Curry compiler
