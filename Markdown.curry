@@ -347,9 +347,10 @@ markdownText2HTML = mdDoc2html . fromMarkdownText
 
 --- Translate a markdown text into a complete HTML text
 --- that can be viewed as a standalone document by a browser.
-markdownText2CompleteHTML :: String -> String
-markdownText2CompleteHTML s =
-   showHtmlPage (page "Markdown Syntax" (markdownText2HTML s))
+--- The first argument is the title of the document.
+markdownText2CompleteHTML :: String -> String -> String
+markdownText2CompleteHTML title mdtxt =
+   showHtmlPage (page title (markdownText2HTML mdtxt))
 
 -----------------------------------------------------------------------
 --- Translate markdown document to a LaTeX string where the first
