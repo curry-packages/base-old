@@ -70,7 +70,7 @@ ${CABAL_FILE}:../Makefile Makefile
 	echo "  Build-Depends:"                                      >> $@
 	echo "      kics2-runtime == $(VERSION)"                     >> $@
 	echo "    , base, old-time, directory, process"              >> $@
-	echo "    , parallel-tree-search, network"                   >> $@
+	echo "    , parallel-tree-search, network, time"             >> $@
 	echo "  if os(windows)"                                      >> $@
 	echo "    Build-Depends: Win32"                              >> $@
 	echo "  else"                                                >> $@
