@@ -220,8 +220,7 @@ defaultParams = FrontendParams False True True Nothing Nothing Nothing
 --- specific resource configuration file.
 rcParams :: IO FrontendParams
 rcParams = do
-  mbExtended    <- getRcVar "curryextensions"
-  mbOverlapWarn <- getRcVar "warnoverlapping"
+  [mbExtended,mbOverlapWarn] <- getRcVars ["curryextensions","warnoverlapping"]
   return $ setExtended    (mbExtended    /= Just "no")
          $ setOverlapWarn (mbOverlapWarn /= Just "no")
          $ defaultParams
