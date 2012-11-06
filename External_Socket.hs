@@ -2,6 +2,7 @@
 import Network
 import Network.Socket
 import Control.Concurrent
+import Control.Concurrent.Thread.Delay(delay)
 import qualified Curry_Prelude as CP
 
 type C_Socket = PrimData Socket
@@ -37,7 +38,8 @@ wait s t = do
   mv <- newEmptyMVar
   tacc <- forkIO (Network.accept s >>= \ (h,s,_) ->
                   putMVar mv (Just (s,OneHandle h)))
-  ttim <- forkIO (threadDelay (t*1000) >> putMVar mv Nothing)
+  ttim <- forkIO (delay ((fromIntegral t :: Integer)*1000)
+                  >> putMVar mv Nothing)
   res <- takeMVar mv
   maybe (killThread tacc) (\_ -> killThread ttim) res
   return res
