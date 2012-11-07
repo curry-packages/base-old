@@ -46,7 +46,7 @@ import PropertyFile
 -- the compiler might be able to eliminate
 -- them at compile time.
 
---- The name of the Curry compiler (e.g., "pakcs" or "kics").
+--- The name of the Curry compiler (e.g., "pakcs" or "kics2").
 curryCompiler :: String
 curryCompiler external
 
