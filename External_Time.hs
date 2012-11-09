@@ -40,7 +40,7 @@ instance ConvertCurryHaskell C_ClockTime Clock.UTCTime where
   toCurry (Clock.UTCTime day diff) = 
    let (y,m,d) = Cal.toGregorian day in
       toCurry (T.addToClockTime  
-                  (T.TimeDiff 0 0 0 0 0 (round diff) 0)
+                  (T.TimeDiff 0 0 0 0 0 (round (toRational diff)) 0)
                   (T.toClockTime (T.CalendarTime (fromIntegral y) 
                                                  (toEnum (m - 1)) 
                                                  d 0 0 0 0 undefined 
