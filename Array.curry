@@ -47,7 +47,7 @@ emptyDefaultArray default = Array default Empty
 --- will be overwritten. Likewise the last entry with a given index
 --- will be contained in the result array.
 (//) :: Array b -> [(Int,b)] -> Array b
-Array default array // modifications = 
+(//) (Array default array) modifications = 
   Array default 
     (foldr (\ (n,v) a -> at (default n) a n (const v)) array modifications)
 
