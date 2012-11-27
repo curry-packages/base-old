@@ -5,7 +5,7 @@
 --- <b>curryCompiler...</b>.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version July 2012
+--- @version October 2012
 --------------------------------------------------------------------------------
 
 module Distribution (
@@ -20,9 +20,9 @@ module Distribution (
 
   FrontendTarget(..), 
   
-  FrontendParams, defaultParams,
-  quiet, fullPath, outfile, logfile,
-  setQuiet, setFullPath, setOutfile, setLogfile,
+  FrontendParams, defaultParams, rcParams,
+  quiet, extended, overlapWarn, fullPath, outfile, logfile,
+  setQuiet, setExtended, setOverlapWarn, setFullPath, setOutfile, setLogfile,
 
   callFrontend,callFrontendWithParams
   ) where
@@ -46,7 +46,7 @@ import PropertyFile
 -- the compiler might be able to eliminate
 -- them at compile time.
 
---- The name of the Curry compiler (e.g., "pakcs" or "kics").
+--- The name of the Curry compiler (e.g., "pakcs" or "kics2").
 curryCompiler :: String
 curryCompiler external
 
@@ -169,8 +169,8 @@ getLoadPath = getLoadPathForFile "xxx"
 getLoadPathForFile :: String -> IO [String]
 getLoadPathForFile file = do
   syslib <- getSysLibPath
-  mblib <- getRcVar "Libraries"
-  let fileDir = dirName file 
+  mblib  <- getRcVar "Libraries"
+  let fileDir = dirName file
   if curryCompiler `elem` ["pakcs","kics","kics2"] then
     do currypath <- getEnviron "CURRYPATH"
        let llib = maybe [] splitPath mblib
@@ -182,8 +182,7 @@ getLoadPathForFile file = do
 
     else error "Distribution.getLoadPathForFile: unknown curryCompiler"
  where
-  addCurrySubdirs = concatMap (\d->[d,addCurrySubdir d])
-
+  addCurrySubdirs = concatMap (\ d -> [d, addCurrySubdir d])
 
 -------------------------------------------------------------------
 -- calling the front end
@@ -191,73 +190,102 @@ getLoadPathForFile file = do
 
 --- Data type for representing the different target files that can be produced
 --- by the front end of the Curry compiler.
---- @cons FCY - FlatCurry file ending with .fcy
+--- @cons FCY  - FlatCurry file ending with .fcy
 --- @cons FINT - FlatCurry interface file ending with .fint
---- @cons ACY - AbstractCurry file ending with .acy
+--- @cons ACY  - AbstractCurry file ending with .acy
 --- @cons UACY - Untyped (without type checking) AbstractCurry file ending with .uacy
 --- @cons HTML - colored HTML representation of source program
---- @cons CY - source representation employed by the frontend
+--- @cons CY   - source representation employed by the frontend
 data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY
 
 --- Abstract data type for representing parameters supported by the front end
 --- of the Curry compiler.
 -- The parameters are of the form
--- FrontendParams Quiet FullPath OutFile LogFile
+-- FrontendParams Quiet Extended NoOverlapWarn FullPath OutFile LogFile
 -- where
---   Quiet - work silently
+--   Quiet         - work silently
+--   Extended      - support extended Curry syntax
+--   OverlapWarn   - warn for overlapping rules
 --   FullPath dirs - the complete list of directory names for loading modules
---   OutFile file - output file (currently, only relevant for HTML target)
---   LogFile file - store all output (including errors) of the front end in file
+--   OutFile file  - output file (currently, only relevant for HTML target)
+--   LogFile file  - store all output (including errors) of the front end in file
 data FrontendParams =
-  FrontendParams Bool (Maybe [String]) (Maybe String) (Maybe String)
+  FrontendParams Bool Bool Bool (Maybe [String]) (Maybe String) (Maybe String)
 
 --- The default parameters of the front end.
 defaultParams :: FrontendParams
-defaultParams = FrontendParams False Nothing Nothing Nothing
+defaultParams = FrontendParams False True True Nothing Nothing Nothing
+
+--- The default parameters of the front end as configured by the compiler
+--- specific resource configuration file.
+rcParams :: IO FrontendParams
+rcParams = do
+  [mbExtended,mbOverlapWarn] <- getRcVars ["curryextensions","warnoverlapping"]
+  return $ setExtended    (mbExtended    /= Just "no")
+         $ setOverlapWarn (mbOverlapWarn /= Just "no")
+         $ defaultParams
 
 --- Set quiet mode of the front end.
 setQuiet :: Bool -> FrontendParams -> FrontendParams
-setQuiet s (FrontendParams _ x y z) = FrontendParams s x y z
+setQuiet s (FrontendParams _ v w x y z) = FrontendParams s v w x y z
+
+--- Set extended mode of the front end.
+setExtended :: Bool -> FrontendParams -> FrontendParams
+setExtended s (FrontendParams a _ w x y z) = FrontendParams a s w x y z
+
+--- Set overlap warn mode of the front end.
+setOverlapWarn :: Bool -> FrontendParams -> FrontendParams
+setOverlapWarn s (FrontendParams a b _ x y z) = FrontendParams a b s x y z
 
 --- Set the full path of the front end.
 --- If this parameter is set, the front end searches all modules
 --- in this path (instead of using the default path).
 setFullPath ::  [String] -> FrontendParams -> FrontendParams 
-setFullPath s (FrontendParams x _ y z) = FrontendParams x (Just s) y z
+setFullPath s (FrontendParams a b c _ y z) = FrontendParams a b c (Just s) y z
 
 --- Set the outfile parameter of the front end.
 --- Relevant for HTML generation.
 setOutfile ::  String -> FrontendParams -> FrontendParams 
-setOutfile  s (FrontendParams x y _ z) = FrontendParams x y (Just s) z
+setOutfile  s (FrontendParams a b c d _ z) = FrontendParams a b c d (Just s) z
 
 --- Set the logfile parameter of the front end.
 --- If this parameter is set, all messages produced by the front end
 --- are stored in this file.
 setLogfile ::  String -> FrontendParams -> FrontendParams 
-setLogfile  s (FrontendParams x y z _) = FrontendParams x y z (Just s)
+setLogfile  s (FrontendParams a b c d e _) = FrontendParams a b c d e (Just s)
 
 --- Returns the value of the "quiet" parameter.
 quiet :: FrontendParams -> Bool
-quiet (FrontendParams x _ _ _) = x
+quiet (FrontendParams x _ _ _ _ _) = x
+
+--- Returns the value of the "extended" parameter.
+extended :: FrontendParams -> Bool
+extended (FrontendParams _ x _ _ _ _) = x
+
+--- Returns the value of the "overlapWarn" parameter.
+overlapWarn :: FrontendParams -> Bool
+overlapWarn (FrontendParams _ _ x _ _ _) = x
 
 --- Returns the full path parameter of the front end.
 fullPath :: FrontendParams -> Maybe [String]
-fullPath (FrontendParams _ x _ _) = x
+fullPath (FrontendParams _ _ _ x _ _) = x
 
 --- Returns the outfile parameter of the front end.
 outfile :: FrontendParams -> Maybe String
-outfile  (FrontendParams _ _ x _) = x
+outfile  (FrontendParams _ _ _ _ x _) = x
 
 --- Returns the logfile parameter of the front end.
 logfile :: FrontendParams -> Maybe String
-logfile  (FrontendParams _ _ _ x) = x
+logfile  (FrontendParams _ _ _ _ _ x) = x
 
 --- In order to make sure that compiler generated files (like .fcy, .fint, .acy)
 --- are up to date, one can call the front end of the Curry compiler with this action.
 --- @param target - the kind of target file to be generated
 --- @param progname - the name of the main module of the application to be compiled
 callFrontend :: FrontendTarget -> String -> IO ()
-callFrontend target = callFrontendWithParams target defaultParams
+callFrontend target p = do
+  params <- rcParams
+  callFrontendWithParams target params p
 
 --- In order to make sure that compiler generated files (like .fcy, .fint, .acy)
 --- are up to date, one can call the front end of the Curry compiler
@@ -274,7 +302,7 @@ callFrontendWithParams target params progname = do
                            ++ " " ++ progname
   if null lf
     then system syscall
-    else system (syscall++" > "++lf++" 2>&1")
+    else system (syscall ++ " > " ++ lf ++ " 2>&1")
   return ()
  where
    callParseCurry = case curryCompiler of
@@ -294,13 +322,16 @@ callFrontendWithParams target params progname = do
    showFrontendTarget HTML = "--html"
    showFrontendTarget CY   = "--parse-only"
 
-   showFrontendParams =
-     (if quiet params then runQuiet else "")
-     ++ (maybe "" (" -o "++) (outfile params))
-     ++ (maybe "" (\p -> if curryCompiler=="pakcs"
-                         then " --fullpath " ++ concat (intersperse ":" p)
-                         else "")
-               (fullPath params))
+   showFrontendParams = concat
+    [ if quiet       params then runQuiet      else ""
+    , if extended    params then " --extended" else ""
+    , if overlapWarn params then ""            else " --no-overlap-warn"
+    , maybe "" (" -o "++) (outfile params)
+    , maybe "" (\p -> if curryCompiler=="pakcs"
+                      then " --fullpath " ++ concat (intersperse ":" p)
+                      else "")
+              (fullPath params)
+    ]
 
    runQuiet = if curryCompiler=="pakcs"
               then " --quiet "
@@ -308,4 +339,3 @@ callFrontendWithParams target params progname = do
 
 rcErr :: String -> a -> IO a
 rcErr s x = hPutStrLn stderr (s ++ " undefined in rc file") >> return x
-

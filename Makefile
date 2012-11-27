@@ -70,7 +70,8 @@ ${CABAL_FILE}:../Makefile Makefile
 	echo "  Build-Depends:"                                      >> $@
 	echo "      kics2-runtime == $(VERSION)"                     >> $@
 	echo "    , base, old-time, directory, process"              >> $@
-	echo "    , parallel-tree-search, network"                   >> $@
+	echo "    , parallel-tree-search, network, time"             >> $@
+	echo "    , unbounded-delays"                                >> $@
 	echo "  if os(windows)"                                      >> $@
 	echo "    Build-Depends: Win32"                              >> $@
 	echo "  else"                                                >> $@
@@ -80,7 +81,7 @@ ${CABAL_FILE}:../Makefile Makefile
 
 .PHONY: installlibs
 installlibs : ${CABAL_FILE} ${ALLLIBS}
-	cabal install -O2
+	cabal install -O2 --ghc-options="$(GHC_OPTIONS)"
 
 .PHONY: all
 all: fcy acy
