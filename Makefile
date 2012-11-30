@@ -81,7 +81,7 @@ ${CABAL_FILE}:../Makefile Makefile
 
 .PHONY: installlibs
 installlibs : ${CABAL_FILE} ${ALLLIBS}
-	cabal install -O2 --ghc-options="$(GHC_OPTIONS)"
+	$(CABAL_INSTALL) -O2 --ghc-options="$(GHC_OPTIONS)"
 
 .PHONY: all
 all: fcy acy
