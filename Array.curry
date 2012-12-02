@@ -84,7 +84,7 @@ at default (Entry v al ar) n f
 --- @param a - array to look up in
 --- @param n - index, where to look 
 (!) :: Array b -> Int -> b
-Array default array ! i = from (default i) array i
+(Array default array) ! i = from (default i) array i
 
 from :: a -> Entry a -> Int -> a
 from default Empty _ = default

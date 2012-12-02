@@ -207,7 +207,7 @@ string = Conv rd sh
 ---
 --- @return Nondeterministic choice of XML converters
 (!) :: XmlConv rep elem a -> XmlConv rep elem a -> XmlConv rep elem a
-Conv rd1 sh1 ! Conv rd2 sh2 = Conv rd sh
+(Conv rd1 sh1) ! (Conv rd2 sh2) = Conv rd sh
  where
   rd childs = rd1 childs ? rd2 childs
   sh x = sh1 x ? sh2 x
