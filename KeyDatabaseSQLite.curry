@@ -178,7 +178,7 @@ failT = errorT . TError UserDefinedError
 --- If the first transaction is aborted with an error, the second
 --- transaction is not executed.
 (|>>=) :: Transaction a -> (a -> Transaction b) -> Transaction b
-Trans action |>>= f = Trans $
+(Trans action) |>>= f = Trans $
   do result <- action
      case result of
        Error err -> return $ Error err

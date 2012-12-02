@@ -35,21 +35,21 @@ prim_neg external
 
 --- Result is true iff both arguments are true.
 (.&&) :: Boolean -> Boolean -> Boolean
-B x .&& B y = B ((prim_and $!y) $! x)
+(B x) .&& (B y) = B ((prim_and $!y) $! x)
 
 prim_and :: Int -> Int -> Int
 prim_and external
 
 --- Result is true iff at least one argument is true.
 (.||) :: Boolean -> Boolean -> Boolean
-B x .|| B y = B ((prim_or $!y) $! x)
+(B x) .|| (B y) = B ((prim_or $!y) $! x)
 
 prim_or :: Int -> Int -> Int
 prim_or external
 
 --- Result is true iff exactly one argument is true.
 (./=) :: Boolean -> Boolean -> Boolean
-B x ./= B y = B ((prim_xor $!y) $! x)
+(B x) ./= (B y) = B ((prim_xor $!y) $! x)
 
 prim_xor :: Int -> Int -> Int
 prim_xor external
