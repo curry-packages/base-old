@@ -608,7 +608,7 @@ external_d_C_ensureNotFree x cs =
     _            -> x
 
 external_d_C_failed :: NonDet a => ConstStore -> a
-external_d_C_failed _ = failCons 0 (customFail "failed")
+external_d_C_failed _ = failCons 0 (customFail "Call to function `failed'")
 
 external_d_OP_eq_eq :: Curry a => a -> a -> ConstStore -> C_Bool
 external_d_OP_eq_eq  = (=?=)
@@ -651,7 +651,7 @@ external_d_OP_star x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_OP_star` b) 
 
 external_d_C_quot :: C_Int -> C_Int -> ConstStore -> C_Int
 external_d_C_quot (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_C_Int defCover defFailInfo
+  | y ==# 0#  = Fail_C_Int defCover (customFail "Division by Zero")
   | otherwise = C_Int (x `quotInt#` y)
 external_d_C_quot (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_C_quotInteger` y) cs)
 external_d_C_quot (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_C_quotInteger` (primint2curryint y)) cs)
@@ -660,7 +660,7 @@ external_d_C_quot x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_C_quot` b) cs
 
 external_d_C_rem :: C_Int -> C_Int -> ConstStore -> C_Int
 external_d_C_rem (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_C_Int defCover defFailInfo
+  | y ==# 0#  = Fail_C_Int defCover (customFail "Division by Zero")
   | otherwise = C_Int (x `remInt#` y)
 external_d_C_rem (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_C_remInteger` y) cs)
 external_d_C_rem (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_C_remInteger` (primint2curryint y)) cs)
@@ -669,7 +669,7 @@ external_d_C_rem x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_C_rem` b) cs2)
 
 external_d_C_quotRem :: C_Int -> C_Int -> ConstStore -> OP_Tuple2 C_Int C_Int
 external_d_C_quotRem (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_OP_Tuple2 defCover defFailInfo
+  | y ==# 0#  = Fail_OP_Tuple2 defCover (customFail "Division by Zero")
   | otherwise = OP_Tuple2 (C_Int (x `quotInt#` y)) (C_Int (x `remInt#` y))
 external_d_C_quotRem (C_Int      x) (C_CurryInt y) cs = (mkIntTuple `d_dollar_bang` (((primint2curryint x) `d_C_quotRemInteger` y) cs)) cs
 external_d_C_quotRem (C_CurryInt x) (C_Int      y) cs = (mkIntTuple `d_dollar_bang` ((x `d_C_quotRemInteger` (primint2curryint y)) cs)) cs
@@ -678,7 +678,7 @@ external_d_C_quotRem x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_C_quotRem`
 
 external_d_C_div :: C_Int -> C_Int -> ConstStore -> C_Int
 external_d_C_div (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_C_Int defCover defFailInfo
+  | y ==# 0#  = Fail_C_Int defCover (customFail "Division by Zero")
   | otherwise = C_Int (x `divInt#` y)
 external_d_C_div (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_C_divInteger` y) cs)
 external_d_C_div (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_C_divInteger` (primint2curryint y)) cs)
@@ -699,7 +699,7 @@ x# `divInt#` y#
 
 external_d_C_mod :: C_Int -> C_Int -> ConstStore -> C_Int
 external_d_C_mod (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_C_Int defCover defFailInfo
+  | y ==# 0#  = Fail_C_Int defCover (customFail "Division by Zero")
   | otherwise = C_Int (x `modInt#` y)
 external_d_C_mod (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_C_modInteger` y) cs)
 external_d_C_mod (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_C_modInteger` (primint2curryint y)) cs)
@@ -718,7 +718,7 @@ x# `modInt#` y#
 -- TODO: $! instead of $#?
 external_d_C_divMod :: C_Int -> C_Int ->  ConstStore -> OP_Tuple2 C_Int C_Int
 external_d_C_divMod (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_OP_Tuple2 defCover defFailInfo
+  | y ==# 0#  = Fail_OP_Tuple2 defCover (customFail "Division by Zero")
   | otherwise = OP_Tuple2 (C_Int (x `divInt#` y)) (C_Int (x `modInt#` y))
 external_d_C_divMod (C_Int      x) (C_CurryInt y) cs = (mkIntTuple `d_OP_dollar_hash` (((primint2curryint x) `d_C_divModInteger` y) cs)) cs
 external_d_C_divMod (C_CurryInt x) (C_Int      y) cs = (mkIntTuple `d_OP_dollar_hash` ((x `d_C_divModInteger` (primint2curryint y)) cs)) cs
