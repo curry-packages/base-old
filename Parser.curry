@@ -6,7 +6,7 @@
 ---               In Proc. FLOPS'99, Springer LNCS 1722, pp. 85-99, 1999
 ---
 --- @author Michael Hanus
---- @version March 2000
+--- @version December 2012
 ------------------------------------------------------------------------------
 
 module Parser where
@@ -35,8 +35,7 @@ type ParserRep rep token = rep -> Parser token
 
 --- Combines two parsers without representation in an alternative manner.
 (<|>)  :: Parser t -> Parser t -> Parser t
-p <|> _ = \sentence -> p sentence
-_ <|> q = \sentence -> q sentence
+p <|> q = \sentence -> p sentence ? q sentence
 
 
 --- Combines two parsers with representation in an alternative manner.
