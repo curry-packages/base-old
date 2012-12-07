@@ -74,6 +74,7 @@ cExpr	      = eSeq1	"var" Var int
               ! eSeq2	"case" cr cExpr (rep cBranch)
 	      ! eSeq2	"fcase" cf cExpr (rep cBranch)
 	      ! eSeq2	"letrec" Let (rep cBind) cExpr
+        ! eSeq2 "typed" Typed cExpr cTypeExpr
 cLit	      = eSeq1	"intc" Intc int
 	      ! eSeq1	"floatc" Floatc float
 	      ! eSeq1	"charc" Charc (adapt (chr,ord) int)
