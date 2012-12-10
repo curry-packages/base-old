@@ -792,9 +792,10 @@ rnmAllVars f = trExpr (Var . f) Lit Comb lt (Free . map f) Or Case branch Typed
 
 --- update all qualified names in expression
 updQNames :: Update Expr QName
-updQNames f = trExpr Var Lit comb Let Free Or Case (Branch . updPatCons f) Typed
+updQNames f = trExpr Var Lit comb Let Free Or Case (Branch . updPatCons f) typed
  where
   comb ct name args = Comb ct (f name) args
+  typed e ty = Typed e (updQNamesInTypeExpr f ty)
 
 -- BranchExpr ----------------------------------------------------------------
 
