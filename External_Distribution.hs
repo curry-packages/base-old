@@ -11,13 +11,16 @@ external_d_C_curryCompilerMinorVersion ::  ConstStore -> CP.C_Int
 external_d_C_curryCompilerMinorVersion _ = toCurry I.minorVersion
 
 external_d_C_curryRuntime ::  ConstStore -> CP.C_String
-external_d_C_curryRuntime _ = toCurry I.runtime
+-- external_d_C_curryRuntime _ = toCurry I.runtime
+external_d_C_curryRuntime _ = toCurry "ghc"
 
 external_d_C_curryRuntimeMajorVersion ::  ConstStore -> CP.C_Int
-external_d_C_curryRuntimeMajorVersion _ = toCurry I.runtimeMajor
+-- external_d_C_curryRuntimeMajorVersion _ = toCurry I.runtimeMajor
+external_d_C_curryRuntimeMajorVersion _ = toCurry (7 :: Int)
 
 external_d_C_curryRuntimeMinorVersion ::  ConstStore -> CP.C_Int
-external_d_C_curryRuntimeMinorVersion _ = toCurry I.runtimeMinor
+-- external_d_C_curryRuntimeMinorVersion _ = toCurry I.runtimeMinor
+external_d_C_curryRuntimeMinorVersion _ = toCurry (4 :: Int)
 
 external_d_C_installDir ::  ConstStore -> CP.C_String
 external_d_C_installDir _ = toCurry I.installDir
