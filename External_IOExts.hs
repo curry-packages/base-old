@@ -98,9 +98,6 @@ instance NormalForm (C_IORef a) where
   ($##) cont (Choices_C_IORef cd i ios)    cs = gnfChoices cont cd i ios cs
   ($##) cont (Guard_C_IORef cd c io)       cs = guardCons cd c ((cont $## io) (addCs c cs))
   ($##) _    (Fail_C_IORef cd info)        cs = failCons cd info
-  ($!<) cont (Choice_C_IORef cd i x y)     = nfChoiceIO cont cd i x y
-  ($!<) cont (Choices_C_IORef cd i xs)     = nfChoicesIO cont cd i xs
-  ($!<) cont x                             = cont x
   searchNF _ cont ioref@(C_IORef _)        = cont ioref
 
 instance Unifiable (C_IORef a) where

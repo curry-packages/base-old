@@ -72,7 +72,6 @@ instance Coverable (C_ValueSequence a) where
 instance NormalForm (C_ValueSequence a) where
  ($!!)    = error "SearchTree: ValueSequence: ($!!)"
  ($##)    = error "SearchTree: ValueSequence: ($##)"
- ($!<)    = error "SearchTree: ValueSequence: ($!<)"
  searchNF = error "SearchTree: ValueSequence: searchNF"
 
 external_d_C_emptyVS :: ConstStore -> C_ValueSequence a

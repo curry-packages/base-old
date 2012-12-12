@@ -53,9 +53,6 @@ instance NormalForm (C_Global a) where
   ($##) cont (Choices_C_Global cd i gs)   cs = gnfChoices cont cd i gs cs
   ($##) cont (Guard_C_Global cd c g)      cs = guardCons cd c ((cont $## g) (addCs c cs))
   ($##) _    (Fail_C_Global cd info)      cs = failCons cd info
-  ($!<) cont (Choice_C_Global cd i g1 g2)    = nfChoiceIO cont cd i g1 g2
-  ($!<) cont (Choices_C_Global cd i gs)      = nfChoicesIO cont cd i gs
-  ($!<) cont x                               = cont x
   searchNF _ cont g@(C_Global_Temp _)        = cont g
   searchNF _ cont g@(C_Global_Pers _)        = cont g
 
