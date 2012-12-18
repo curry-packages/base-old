@@ -136,10 +136,6 @@ instance NormalForm C_Int where
   ($##) cont (Choices_C_Int cd i xs) cs = gnfChoices cont cd i xs cs
   ($##) cont (Guard_C_Int cd c x) cs = guardCons cd c ((cont $## x) (addCs c cs))
   ($##) _ (Fail_C_Int cd info) _ = failCons cd info
-  ($!<) cont (C_CurryInt x1) = (\y1 -> cont (C_CurryInt y1)) $!< x1
-  ($!<) cont (Choice_C_Int cd i x y) = nfChoiceIO cont cd i x y
-  ($!<) cont (Choices_C_Int cd i xs) = nfChoicesIO cont cd i xs
-  ($!<) cont x = cont x
   searchNF search cont x@(C_Int _) = cont x
   searchNF search cont (C_CurryInt x1) = search (\y1 -> cont (C_CurryInt y1)) x1
   searchNF _ _ x = error ("Prelude.Int.searchNF: no constructor: " ++ (show x))
@@ -283,9 +279,6 @@ instance NormalForm C_Float where
   ($##) cont (Choices_C_Float cd i xs) cs = gnfChoices cont cd i xs cs
   ($##) cont (Guard_C_Float cd c x) cs = guardCons cd c ((cont $## x) (addCs c cs))
   ($##) _ (Fail_C_Float cd info) _ = failCons cd info
-  ($!<) cont (Choice_C_Float cd i x y) = nfChoiceIO cont cd i x y
-  ($!<) cont (Choices_C_Float cd i xs) = nfChoicesIO cont cd i xs
-  ($!<) cont x = cont x
   searchNF search cont x@(C_Float _) = cont x
   searchNF _ _ x = error ("Prelude.Float.searchNF: no constructor: " ++ (show x))
 
@@ -400,10 +393,6 @@ instance NormalForm C_Char where
   ($##) cont (Choices_C_Char cd i xs) cs = gnfChoices cont cd i xs cs
   ($##) cont (Guard_C_Char cd c x) cs = guardCons cd c ((cont $## x) (addCs c cs))
   ($##) _ (Fail_C_Char cd info) _ = failCons cd info
-  ($!<) cont (CurryChar x)         =( cont . CurryChar) $!< x
-  ($!<) cont (Choice_C_Char cd i x y) = nfChoiceIO cont cd i x y
-  ($!<) cont (Choices_C_Char cd i xs) = nfChoicesIO cont cd i xs
-  ($!<) cont x = cont x
   searchNF search cont c@(C_Char _) = cont c
   searchNF search cont (CurryChar x) = search (cont . CurryChar) x
   searchNF _ _ x = error ("Prelude.Char.searchNF: no constructor: " ++ (show x))
