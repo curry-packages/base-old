@@ -30,6 +30,7 @@ getFlexRigid (Or e1 e2) =
 getFlexRigid (Case ctype e bs) =
    foldr joinCaseTypes (if ctype==Flex then KnownFlex else KnownRigid)
          (map getFlexRigid (e : map (\(Branch _ be)->be) bs))
+getFlexRigid (Typed e _) = getFlexRigid e
 
 joinCaseTypes ConflictFR ConflictFR = ConflictFR
 joinCaseTypes ConflictFR UnknownFR  = ConflictFR

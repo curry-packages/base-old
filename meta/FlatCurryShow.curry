@@ -99,6 +99,8 @@ showFlatExpr (Case Rigid e bs) =
   "(Case Rigid " ++ showFlatExpr e ++ showFlatList showFlatBranch bs ++ ")"
 showFlatExpr (Case Flex e bs) =
   "(Case Flex " ++ showFlatExpr e ++ showFlatList showFlatBranch bs ++ ")"
+showFlatExpr (Typed e ty) =
+  "(Typed " ++ showFlatExpr e ++ ' ' : showFlatTypeExpr ty ++ ")"
 
 showFlatLit (Intc   i) = "(Intc " ++ show i ++ ")"
 showFlatLit (Floatc f) = "(Floatc " ++ show f ++ ")"
@@ -233,6 +235,8 @@ showCurryExpr tf nested b (Case ctype e cs) =
      showCurryExpr tf True b e ++ " of\n " ++
      showCurryElems (showCurryCase tf (b+2)) cs ++ sceBlanks b)
 
+showCurryExpr tf nested b (Typed e ty) =
+  showBracketsIf nested (showCurryExpr tf True b e ++ " :: " ++ showCurryType tf False ty)
 
 showCurryVar i = "v" ++ show i
 

@@ -370,6 +370,7 @@ allFuncCallsOfExpr (Or expr1 expr2) =
 allFuncCallsOfExpr (Case _ expr branchExprs) =
     allFuncCallsOfExpr expr ++
     concatMap allFuncCallsOfBranchExpr branchExprs
+allFuncCallsOfExpr (Typed expr _) = allFuncCallsOfExpr expr
 
 
 --- Get all function calls in a branch expression in case expressions.
@@ -406,6 +407,7 @@ allConsOfExpr (Case _ expr branchExprs) =
  where
   consOfBranch (Branch (LPattern _) e) = allConsOfExpr e
   consOfBranch (Branch (Pattern c _) e) = union [c] (allConsOfExpr e)
+allConsOfExpr (Typed expr _) = allConsOfExpr expr
 
 
 --- Get all type constructors in a function declaration.
