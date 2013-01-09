@@ -39,13 +39,19 @@ instance Curry (PrimData a) where
 
 -- BEGIN GENERATED FROM PrimTypes.curry
 instance Curry_Prelude.Curry C_Success where
-  (=?=) (Choice_C_Success cd i x y) z cs = narrow cd i ((x Curry_Prelude.=?= z) cs) ((y Curry_Prelude.=?= z) cs)
-  (=?=) (Choices_C_Success cd i xs) y cs = narrows cs cd i (\x -> (x Curry_Prelude.=?= y) cs) xs
-  (=?=) (Guard_C_Success cd c e) y cs = guardCons cd c ((e Curry_Prelude.=?= y) (addCs c cs))
+  (=?=) (Choice_C_Success cd i x y) z cs = narrow cd i ((x Curry_Prelude.=?= z) cs)
+                                                       ((y Curry_Prelude.=?= z) cs)
+  (=?=) (Choices_C_Success cd i xs) y cs = narrows cs cd i 
+                                            (\x -> (x Curry_Prelude.=?= y) cs) xs
+  (=?=) (Guard_C_Success cd c e) y cs = guardCons cd c 
+                                          ((e Curry_Prelude.=?= y)(addCs c cs))
   (=?=) (Fail_C_Success cd info) _ _ = failCons cd info
-  (=?=) z (Choice_C_Success cd i x y) cs = narrow cd i ((z Curry_Prelude.=?= x) cs) ((z Curry_Prelude.=?= y) cs)
-  (=?=) y (Choices_C_Success cd i xs) cs = narrows cs cd i (\x -> (y Curry_Prelude.=?= x) cs) xs
-  (=?=) y (Guard_C_Success cd c e) cs = guardCons cd c ((y Curry_Prelude.=?= e) (addCs c cs))
+  (=?=) z (Choice_C_Success cd i x y) cs = narrow cd i ((z Curry_Prelude.=?= x) cs)
+                                                       ((z Curry_Prelude.=?= y) cs)
+  (=?=) y (Choices_C_Success cd i xs) cs = narrows cs cd i 
+                                            (\x -> (y Curry_Prelude.=?= x) cs) xs
+  (=?=) y (Guard_C_Success cd c e) cs = guardCons cd c
+                                           ((y Curry_Prelude.=?= e) (addCs c cs))
   (=?=) _ (Fail_C_Success cd info) _ = failCons cd info
   (=?=) C_Success C_Success cs = Curry_Prelude.C_True
   (<?=) (Choice_C_Success cd i x y) z cs = narrow cd i ((x Curry_Prelude.<?= z) cs) ((y Curry_Prelude.<?= z) cs)
@@ -121,36 +127,36 @@ instance NonDet C_Int where
   match _ _ _ _ _ f x = f x
 
 instance Generable C_Int where
-  generate s = Choices_C_Int defCover (freeID [1] s) [C_CurryInt (generate (leftSupply s))]
+  generate s cd = Choices_C_Int cd (freeID [1] s) [C_CurryInt (generate (leftSupply s) cd)]
 
 instance NormalForm C_Int where
-  ($!!) cont x@(C_Int _) cs = cont x cs
-  ($!!) cont (C_CurryInt x1) cs = ((\y1 -> cont (C_CurryInt y1)) $!! x1) cs
-  ($!!) cont (Choice_C_Int cd i x y) cs = nfChoice cont cd i x y cs
-  ($!!) cont (Choices_C_Int cd i xs) cs = nfChoices cont cd i xs cs
-  ($!!) cont (Guard_C_Int cd c x) cs = guardCons cd c ((cont $!! x) (addCs c cs))
-  ($!!) _ (Fail_C_Int cd info) _ = failCons cd info
-  ($##) cont x@(C_Int _) cs = cont x cs
-  ($##) cont (C_CurryInt x1) cs = ((\y1 -> cont (C_CurryInt y1)) $## x1) cs
-  ($##) cont (Choice_C_Int cd i x y) cs = gnfChoice cont cd i x y cs
-  ($##) cont (Choices_C_Int cd i xs) cs = gnfChoices cont cd i xs cs
-  ($##) cont (Guard_C_Int cd c x) cs = guardCons cd c ((cont $## x) (addCs c cs))
-  ($##) _ (Fail_C_Int cd info) _ = failCons cd info
+  ($!!) cont x@(C_Int _) cd cs = cont x cd cs
+  ($!!) cont (C_CurryInt x1) cd cs = ((\y1 -> cont (C_CurryInt y1)) $!! x1) cd cs
+  ($!!) cont (Choice_C_Int d i x y) cd cs = nfChoice cont d i x y cd cs
+  ($!!) cont (Choices_C_Int d i xs) cd cs = nfChoices cont d i xs cd cs
+  ($!!) cont (Guard_C_Int d c x) cd cs = guardCons d c ((cont $!! x) cd $! (addCs c cs))
+  ($!!) _ (Fail_C_Int cd info) _ _ = failCons cd info
+  ($##) cont x@(C_Int _) cd cs = cont x cd cs
+  ($##) cont (C_CurryInt x1) cd cs = ((\y1 -> cont (C_CurryInt y1)) $## x1) cd cs
+  ($##) cont (Choice_C_Int d i x y) cd cs = gnfChoice cont d i x y cd cs
+  ($##) cont (Choices_C_Int d i xs) cd cs = gnfChoices cont d i xs cd cs
+  ($##) cont (Guard_C_Int d c x) cd cs = guardCons d c ((cont $## x) cd $! (addCs c cs))
+  ($##) _ (Fail_C_Int d info) _ _ = failCons d info
   searchNF search cont x@(C_Int _) = cont x
   searchNF search cont (C_CurryInt x1) = search (\y1 -> cont (C_CurryInt y1)) x1
   searchNF _ _ x = error ("Prelude.Int.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Int where
-  (=.=) (C_Int      x1) (C_Int      y1) _ = if (x1 ==# y1) then C_Success else Fail_C_Success defCover defFailInfo
-  (=.=) (C_Int      x1) (C_CurryInt y1) cs = ((primint2curryint x1) =:= y1) cs
-  (=.=) (C_CurryInt x1) (C_Int      y1) cs = (x1 =:= (primint2curryint y1)) cs
-  (=.=) (C_CurryInt x1) (C_CurryInt y1) cs = (x1 =:= y1) cs
-  (=.=) _ _ _ = Fail_C_Success defCover defFailInfo
-  (=.<=) (C_Int      x1) (C_Int      y1) _ = if (x1 ==# y1) then C_Success else Fail_C_Success defCover defFailInfo
-  (=.<=) (C_Int      x1) (C_CurryInt y1) cs = ((primint2curryint x1) =:<= y1) cs
-  (=.<=) (C_CurryInt x1) (C_Int      y1) cs = (x1 =:<= (primint2curryint y1)) cs
-  (=.<=) (C_CurryInt x1) (C_CurryInt y1) cs = (x1 =:<= y1) cs
-  (=.<=) _ _ _= Fail_C_Success defCover defFailInfo
+  (=.=) (C_Int      x1) (C_Int      y1) cd _ = if (x1 ==# y1) then C_Success else Fail_C_Success cd defFailInfo
+  (=.=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =:= y1) cd cs
+  (=.=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =:= (primint2curryint y1)) cd cs
+  (=.=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =:= y1) cd cs
+  (=.=) _ _cd  _ = Fail_C_Success cd defFailInfo
+  (=.<=) (C_Int      x1) (C_Int      y1) cd _ = if (x1 ==# y1) then C_Success else Fail_C_Success cd defFailInfo
+  (=.<=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =:<= y1) cd cs
+  (=.<=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =:<= (primint2curryint y1)) cd cs
+  (=.<=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =:<= y1) cd cs
+  (=.<=) _ _ cd _= Fail_C_Success defCover cd 
   bind i (C_Int      x2) = (i :=: ChooseN 0 1) : bind (leftID i) (primint2curryint x2)
   bind i (C_CurryInt x2) = (i :=: ChooseN 0 1) : bind (leftID i) x2
   bind i (Choice_C_Int cd j l r) = [(ConstraintChoice cd j (bind i l) (bind i r))]
@@ -169,39 +175,31 @@ instance Unifiable C_Int where
   lazyBind i (Guard_C_Int cd cs e) = getConstrList cs ++ [(i :=: (LazyBind (lazyBind i e)))]
 
 instance Curry_Prelude.Curry C_Int where
-  (=?=) (Choice_C_Int cd i x y) z cs = narrow cd i ((x =?= z) cs) ((y =?= z) cs)
-  (=?=) (Choices_C_Int cd i xs) y cs = narrows cs cd i (\x -> (x =?= y) cs) xs
-  (=?=) (Guard_C_Int cd c x) y cs = guardCons cd c ((x =?= y) (addCs c cs))
-  (=?=) (Fail_C_Int cd info) _ _ = failCons cd info
-  (=?=) z (Choice_C_Int cd i x y) cs = narrow cd i ((z =?= x) cs) ((z =?= y) cs)
-  (=?=) y (Choices_C_Int cd i xs) cs = narrows cs cd i (\x -> (y =?= x) cs) xs
-  (=?=) y (Guard_C_Int cd c x) cs = guardCons cd c ((y =?= x) (addCs c cs))
-  (=?=) _ (Fail_C_Int cd info) _ = failCons cd info
-  (=?=) (C_Int      x1) (C_Int      y1) _ = toCurry (x1 ==# y1)
-  (=?=) (C_Int      x1) (C_CurryInt y1) cs = ((primint2curryint x1) =?= y1) cs
-  (=?=) (C_CurryInt x1) (C_Int      y1) cs = (x1 =?= (primint2curryint y1)) cs
-  (=?=) (C_CurryInt x1) (C_CurryInt y1) cs = (x1 =?= y1) cs
-  (<?=) (Choice_C_Int cd i x y) z cs = narrow cd i ((x <?= z) cs) ((y <?= z) cs)
-  (<?=) (Choices_C_Int cd i xs) y cs = narrows cs cd i (\x -> (x<?= y) cs) xs
-  (<?=) (Guard_C_Int cd c x) y cs = guardCons cd c ((x <?= y) (addCs c cs))
-  (<?=) (Fail_C_Int cd info) _ _ = failCons cd info
-  (<?=) z (Choice_C_Int cd i x y) cs = narrow cd i ((z <?= x) cs) ((z <?= y) cs)
-  (<?=) y (Choices_C_Int cd i xs) cs = narrows cs cd i (\x -> (y <?= x) cs) xs
-  (<?=) y (Guard_C_Int cd c x) cs = guardCons cd c ((y <?= x) (addCs c cs))
-  (<?=) _ (Fail_C_Int cd info) _ = failCons cd info
-  (<?=) (C_Int      x1) (C_Int      y1) _ = toCurry (x1 <=# y1)
-  (<?=) (C_Int      x1) (C_CurryInt y1) cs = ((primint2curryint x1) `d_C_lteqInteger` y1) cs
-  (<?=) (C_CurryInt x1) (C_Int      y1) cs = (x1 `d_C_lteqInteger` (primint2curryint y1)) cs
-  (<?=) (C_CurryInt x1) (C_CurryInt y1) cs = (x1 `d_C_lteqInteger` y1) cs
+  (=?=) (Choice_C_Int d i x y) z cd cs = narrow d i ((x =?= z) cd cs) ((y =?= z) cd cs)
+  (=?=) (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x =?= y) cd cs) xs
+  (=?=) (Guard_C_Int d c x) y cd cs = guardCons d c ((x =?= y) cd $! (addCs c cs))
+  (=?=) (Fail_C_Int d info) _ _ _ = failCons d info
+  (=?=) z (Choice_C_Int d i x y) cd cs = narrow d i ((z =?= x) cd cs) ((z =?= y) cd cs)
+  (=?=) y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y =?= x) cd cs) xs
+  (=?=) y (Guard_C_Int d c x) cd cs = guardCons d c ((y =?= x) cd $! (addCs c cs))
+  (=?=) _ (Fail_C_Int d info) _ _ = failCons d info
+  (=?=) (C_Int      x1) (C_Int      y1) _ _ = toCurry (x1 ==# y1)
+  (=?=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =?= y1) cd cs
+  (=?=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =?= (primint2curryint y1)) cd cs
+  (=?=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =?= y1) cd cs
+  (<?=) (Choice_C_Int d i x y) z cd cs = narrow d i ((x <?= z) cd cs) ((y <?= z) cd cs)
+  (<?=) (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x<?= y) cd cs) xs
+  (<?=) (Guard_C_Int d c x) y cd cs = guardCons d c ((x <?= y) cd $! (addCs c cs))
+  (<?=) (Fail_C_Int d info) _ _ _ = failCons d info
+  (<?=) z (Choice_C_Int d i x y) cd cs = narrow d i ((z <?= x) cd cs) ((z <?= y) cd cs)
+  (<?=) y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y <?= x) cd cs) xs
+  (<?=) y (Guard_C_Int d c x) cd cs = guardCons d c ((y <?= x) cd $! (addCs c cs))
+  (<?=) _ (Fail_C_Int d info) _ _ = failCons d info
+  (<?=) (C_Int      x1) (C_Int      y1) _ _ = toCurry (x1 <=# y1)
+  (<?=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) `d_C_lteqInteger` y1) cd cs
+  (<?=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 `d_C_lteqInteger` (primint2curryint y1)) cd cs
+  (<?=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
 -- END GENERATED FROM PrimTypes.curry
-
-instance Coverable C_Int where
-  cover x@(C_Int _)             = x
-  cover (C_CurryInt x)          = C_CurryInt (cover x)
-  cover (Choice_C_Int cd i x y) = Choice_C_Int (incCover cd) i (cover x) (cover y)
-  cover (Choices_C_Int cd i xs) = Choices_C_Int (incCover cd) i (map cover xs)
-  cover (Fail_C_Int cd info)    = Fail_C_Int (incCover cd) info
-  cover (Guard_C_Int cd cs x)   = Guard_C_Int (incCover cd) cs (cover x)
 
 primint2curryint :: Int# -> BinInt
 primint2curryint n
@@ -269,22 +267,22 @@ instance Generable C_Float where
   generate _ = error "No generator for C_Float"
 
 instance NormalForm C_Float where
-  ($!!) cont x@(C_Float _) cs = cont x cs
-  ($!!) cont (Choice_C_Float cd i x y) cs = nfChoice cont cd i x y cs
-  ($!!) cont (Choices_C_Float cd i xs) cs = nfChoices cont cd i xs cs
-  ($!!) cont (Guard_C_Float cd c x) cs = guardCons cd c ((cont $!! x) (addCs c cs))
-  ($!!) _ (Fail_C_Float cd info) _ = failCons cd info
-  ($##) cont x@(C_Float _) cs = cont x cs
-  ($##) cont (Choice_C_Float cd i x y) cs = gnfChoice cont cd i x y cs
-  ($##) cont (Choices_C_Float cd i xs) cs = gnfChoices cont cd i xs cs
-  ($##) cont (Guard_C_Float cd c x) cs = guardCons cd c ((cont $## x) (addCs c cs))
-  ($##) _ (Fail_C_Float cd info) _ = failCons cd info
+  ($!!) cont x@(C_Float _) cd cs = cont x cd cs
+  ($!!) cont (Choice_C_Float d i x y) cd cs = nfChoice cont d i x y cd cs
+  ($!!) cont (Choices_C_Float d i xs) cd cs = nfChoices cont d i xs cd cs
+  ($!!) cont (Guard_C_Float d c x) cd cs = guardCons d c ((cont $!! x) cd $! (addCs c cs))
+  ($!!) _ (Fail_C_Float d info) _ _ = failCons d info
+  ($##) cont x@(C_Float _) cd cs = cont x cd cs
+  ($##) cont (Choice_C_Float d i x y) cd cs = gnfChoice cont d i x y cd cs
+  ($##) cont (Choices_C_Float d i xs) cd cs = gnfChoices cont d i xs cd cs
+  ($##) cont (Guard_C_Float d c x) cd cs = guardCons d c ((cont $## x) cd $! (addCs c cs))
+  ($##) _ (Fail_C_Float d info) _ _ = failCons d info
   searchNF search cont x@(C_Float _) = cont x
   searchNF _ _ x = error ("Prelude.Float.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Float where
-  (=.=) _ _ _  = Fail_C_Success defCover defFailInfo
-  (=.<=) _ _ _ = Fail_C_Success defCover defFailInfo
+  (=.=) _ _ cd _  = Fail_C_Success cd defFailInfo
+  (=.<=) _ _ cd _ = Fail_C_Success cd defFailInfo
   bind i (Choice_C_Float cd j l r) = [(ConstraintChoice cd j (bind i l) (bind i r))]
   bind i (Choices_C_Float cd j@(FreeID _ _) xs) = bindOrNarrow i cd j xs
   bind i (Choices_C_Float cd j@(NarrowedID _ _) xs) = [(ConstraintChoices cd j (map (bind i) xs))]
@@ -299,31 +297,24 @@ instance Unifiable C_Float where
   lazyBind i (Guard_C_Float cd cs e) = getConstrList cs ++ [(i :=: (LazyBind (lazyBind i e)))]
 
 instance Curry C_Float where
-  (=?=) (Choice_C_Float cd i x y) z cs = narrow cd i ((x =?= z) cs) ((y =?= z) cs)
-  (=?=) (Choices_C_Float cd i xs) y cs = narrows cs cd i (\x -> (x =?= y) cs) xs
-  (=?=) (Guard_C_Float cd c x) y cs = guardCons cd c ((x =?= y) (addCs c cs))
-  (=?=) (Fail_C_Float cd info) _ _= failCons cd info
-  (=?=) z (Choice_C_Float cd i x y) cs = narrow cd i ((z =?= x) cs) ((z =?= y) cs)
-  (=?=) y (Choices_C_Float cd i xs) cs = narrows cs cd i (\x -> (y =?= x) cs) xs
-  (=?=) y (Guard_C_Float cd c x) cs = guardCons cd c ((y =?= x) (addCs c cs))
-  (=?=) _ (Fail_C_Float cd info) _ = failCons cd info
-  (=?=) (C_Float x1) (C_Float y1) _ = toCurry (x1 `eqFloat#` y1)
-  (<?=) (Choice_C_Float cd i x y) z cs = narrow cd i ((x <?= z) cs) ((y <?= z) cs)
-  (<?=) (Choices_C_Float cd i xs) y cs = narrows cs cd i (\x -> (x <?= y) cs) xs
-  (<?=) (Guard_C_Float cd c x) y cs = guardCons cd c ((x <?= y) (addCs c cs))
-  (<?=) (Fail_C_Float cd info) _ _ = failCons cd info
-  (<?=) z (Choice_C_Float cd i x y) cs = narrow cd i ((z <?= x) cs) ((z <?= y) cs)
-  (<?=) y (Choices_C_Float cd i xs) cs = narrows cs cd i (\x -> (y <?= x) cs) xs
-  (<?=) y (Guard_C_Float cd c x) cs = guardCons cd c ((y <?= x) (addCs c cs))
-  (<?=) _ (Fail_C_Float cd info) _ = failCons cd info
-  (<?=) (C_Float x1) (C_Float y1) _ = toCurry (x1 `leFloat#` y1)
-
-instance Coverable C_Float where
-  cover f@(C_Float _)          = f
-  cover (Choice_C_Float cd i x y) = Choice_C_Float (incCover cd) i (cover x) (cover y)
-  cover (Choices_C_Float cd i xs) = Choices_C_Float (incCover cd) i (map cover xs)
-  cover (Fail_C_Float cd info) = Fail_C_Float (incCover cd) info
-  cover (Guard_C_Float cd cs x)   = Guard_C_Float (incCover cd) cs (cover x)
+  (=?=) (Choice_C_Float d i x y) z cd cs = narrow d i ((x =?= z) cd cs) ((y =?= z) cd cs)
+  (=?=) (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x =?= y) cd cs) xs
+  (=?=) (Guard_C_Float d c x) y cd cs = guardCons d c ((x =?= y) cd  $! (addCs c cs))
+  (=?=) (Fail_C_Float d info) _ _ _= failCons d info
+  (=?=) z (Choice_C_Float d i x y) cd cs = narrow d i ((z =?= x) cd cs) ((z =?= y) cd cs)
+  (=?=) y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y =?= x) cd cs) xs
+  (=?=) y (Guard_C_Float d c x) cd cs = guardCons d c ((y =?= x) cd  $! (addCs c cs))
+  (=?=) _ (Fail_C_Float d info) _ _ = failCons d info
+  (=?=) (C_Float x1) (C_Float y1) _ _ = toCurry (x1 `eqFloat#` y1)
+  (<?=) (Choice_C_Float d i x y) z cd cs = narrow d i ((x <?= z) cd cs) ((y <?= z) cd cs)
+  (<?=) (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x <?= y) cd cs) xs
+  (<?=) (Guard_C_Float d c x) y cd cs = guardCons d c ((x <?= y) cd $! (addCs c cs))
+  (<?=) (Fail_C_Float d info) _ _ _ = failCons d info
+  (<?=) z (Choice_C_Float d i x y) cd cs = narrow d i ((z <?= x) cd cs) ((z <?= y) cd cs)
+  (<?=) y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y <?= x) cd cs) xs
+  (<?=) y (Guard_C_Float d c x) cd cs = guardCons d c ((y <?= x) cd $! (addCs c cs))
+  (<?=) _ (Fail_C_Float d info) _ _ = failCons d info
+  (<?=) (C_Float x1) (C_Float y1) _ _ = toCurry (x1 `leFloat#` y1)
 
 -- ---------------------------------------------------------------------------
 -- Char
@@ -381,35 +372,35 @@ instance Generable C_Char where
   generate s = Choices_C_Char defCover (freeID [1] s) [CurryChar (generate (leftSupply s))]
 
 instance NormalForm C_Char where
-  ($!!) cont x@(C_Char _) cs = cont x cs
-  ($!!) cont (CurryChar x) cs = ((cont . CurryChar) $!! x) cs
-  ($!!) cont (Choice_C_Char cd i x y) cs = nfChoice cont cd i x y cs
-  ($!!) cont (Choices_C_Char cd i xs) cs = nfChoices cont cd i xs cs
-  ($!!) cont (Guard_C_Char cd c x) cs = guardCons cd c ((cont $!! x) (addCs c cs))
-  ($!!) _ (Fail_C_Char cd info) _ = failCons cd info
-  ($##) cont x@(C_Char _) cs = cont x cs
-  ($##) cont (CurryChar x) cs = ((cont . CurryChar) $## x) cs
-  ($##) cont (Choice_C_Char cd i x y) cs = gnfChoice cont cd i x y cs
-  ($##) cont (Choices_C_Char cd i xs) cs = gnfChoices cont cd i xs cs
-  ($##) cont (Guard_C_Char cd c x) cs = guardCons cd c ((cont $## x) (addCs c cs))
-  ($##) _ (Fail_C_Char cd info) _ = failCons cd info
+  ($!!) cont x@(C_Char _) cd cs = cont x cd cs
+  ($!!) cont (CurryChar x) cd cs = ((cont . CurryChar) $!! x) cd cs
+  ($!!) cont (Choice_C_Char d i x y) cd cs = nfChoice cont d i x y cd cs
+  ($!!) cont (Choices_C_Char d i xs) cd cs = nfChoices cont d i xs cd cs
+  ($!!) cont (Guard_C_Char d c x) cd cs = guardCons d c ((cont $!! x) cd $! (addCs c cs))
+  ($!!) _ (Fail_C_Char d info) _ _ = failCons d info
+  ($##) cont x@(C_Char _) cd cs = cont x cd cs
+  ($##) cont (CurryChar x) cd cs = ((cont . CurryChar) $## x) cd cs
+  ($##) cont (Choice_C_Char d i x y) cd cs = gnfChoice cont d i x y cd cs
+  ($##) cont (Choices_C_Char d i xs) cd cs = gnfChoices cont d i xs cd cs
+  ($##) cont (Guard_C_Char d c x) cd cs = guardCons d c ((cont $## x) cd $! (addCs c cs))
+  ($##) _ (Fail_C_Char d info) _ _ = failCons d info
   searchNF search cont c@(C_Char _) = cont c
   searchNF search cont (CurryChar x) = search (cont . CurryChar) x
   searchNF _ _ x = error ("Prelude.Char.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Char where
-  (=.=) (C_Char       x1) (C_Char      x2) _ | x1 `eqChar#` x2 = C_Success
-                                             | otherwise = Fail_C_Success defCover defFailInfo
-  (=.=) (C_Char       x1) (CurryChar x2)   cs = (primChar2CurryChar x1 =:= x2) cs
-  (=.=) (CurryChar  x1) (C_Char      x2)   cs = (x1 =:= primChar2CurryChar x2) cs
-  (=.=) (CurryChar x1)    (CurryChar   x2) cs = (x1 =:= x2) cs
-  (=.=) _                 _                _  = Fail_C_Success defCover defFailInfo
-  (=.<=) (C_Char       x1) (C_Char      x2) _ | x1 `eqChar#` x2 = C_Success
-                                              | otherwise = Fail_C_Success defCover defFailInfo
-  (=.<=) (C_Char       x1) (CurryChar x2)   cs = (primChar2CurryChar x1 =:<= x2) cs
-  (=.<=) (CurryChar  x1) (C_Char      x2)   cs = (x1 =:<= primChar2CurryChar x2) cs
-  (=.<=) (CurryChar x1)    (CurryChar   x2) cs = (x1 =:<= x2) cs
-  (=.<=) _                 _                _  = Fail_C_Success defCover defFailInfo
+  (=.=) (C_Char       x1) (C_Char      x2) cd _ | x1 `eqChar#` x2 = C_Success
+                                                | otherwise = Fail_C_Success cd defFailInfo
+  (=.=) (C_Char       x1) (CurryChar x2)   cd cs = (primChar2CurryChar x1 =:= x2) cd cs
+  (=.=) (CurryChar  x1) (C_Char      x2)   cd cs = (x1 =:= primChar2CurryChar x2) cd cs
+  (=.=) (CurryChar x1)    (CurryChar   x2) cd cs = (x1 =:= x2) cd cs
+  (=.=) _                 _                cd _  = Fail_C_Success cd  defFailInfo
+  (=.<=) (C_Char       x1) (C_Char      x2) cd _ | x1 `eqChar#` x2 = C_Success
+                                                 | otherwise = Fail_C_Success cd defFailInfo
+  (=.<=) (C_Char       x1) (CurryChar x2)   cd cs = (primChar2CurryChar x1 =:<= x2) cd cs
+  (=.<=) (CurryChar  x1) (C_Char      x2)   cd cs = (x1 =:<= primChar2CurryChar x2) cd cs
+  (=.<=) (CurryChar x1)    (CurryChar   x2) cd cs = (x1 =:<= x2) cd cs
+  (=.<=) _                 _                cd _  = Fail_C_Success cd defFailInfo
   bind i (C_Char    x) = (i :=: ChooseN 0 1) : bind (leftID i) (primChar2CurryChar x)
   bind i (CurryChar x) = (i :=: ChooseN 0 1) : bind (leftID i) x
   bind i (Choice_C_Char cd j l r) = [(ConstraintChoice cd j (bind i l) (bind i r))]
@@ -428,38 +419,30 @@ instance Unifiable C_Char where
   lazyBind i (Guard_C_Char cd cs e) = getConstrList cs ++ [(i :=: (LazyBind (lazyBind i e)))]
 
 instance Curry C_Char where
-  (=?=) (Choice_C_Char cd i x y) z cs = narrow cd i ((x =?= z) cs) ((y =?= z) cs)
-  (=?=) (Choices_C_Char cd i xs) y cs = narrows cs cd i (\x -> (x =?= y) cs) xs
-  (=?=) (Guard_C_Char cd c x) y cs = guardCons cd c ((x =?= y) (addCs c cs))
-  (=?=) (Fail_C_Char cd info) _ _ = failCons cd info
-  (=?=) z (Choice_C_Char cd i x y) cs = narrow cd i ((z =?= x) cs) ((z =?= y) cs)
-  (=?=) y (Choices_C_Char cd i xs) cs = narrows cs cd i (\x -> (y =?= x) cs) xs
-  (=?=) y (Guard_C_Char cd c x) cs = guardCons cd c ((y =?= x) (addCs c cs))
-  (=?=) _ (Fail_C_Char cd info) _ = failCons cd info
-  (=?=) (C_Char x1) (C_Char y1) _ = toCurry (x1 `eqChar#` y1)
-  (=?=) (C_Char      x1) (CurryChar y1) cs = ((primChar2CurryChar x1) =?= y1) cs
-  (=?=) (CurryChar x1) (C_Char      y1) cs = (x1 =?= (primChar2CurryChar y1)) cs
-  (=?=) (CurryChar x1) (CurryChar y1) cs = (x1 =?= y1) cs
-  (<?=) (Choice_C_Char cd i x y) z cs = narrow cd i ((x <?= z) cs) ((y <?= z) cs)
-  (<?=) (Choices_C_Char cd i xs) y cs = narrows cs cd i (\x -> (x <?= y) cs) xs
-  (<?=) (Guard_C_Char cd c x) y cs = guardCons cd c ((x <?= y) (addCs c cs))
-  (<?=) (Fail_C_Char cd info) _ _ = failCons cd info
-  (<?=) z (Choice_C_Char cd i x y) cs = narrow cd i ((z <?= x) cs) ((z <?= y) cs)
-  (<?=) y (Choices_C_Char cd i xs) cs = narrows cs cd i (\x -> (y <?= x) cs) xs
-  (<?=) y (Guard_C_Char cd c x) cs = guardCons cd c ((y <?= x) (addCs c cs))
-  (<?=) _ (Fail_C_Char cd info) _ = failCons cd info
-  (<?=) (C_Char x1) (C_Char y1) _ = toCurry (x1 `leChar#` y1)
-  (<?=) (C_Char      x1) (CurryChar y1) cs = ((primChar2CurryChar x1) `d_C_lteqInteger` y1) cs
-  (<?=) (CurryChar x1) (C_Char      y1) cs = (x1 `d_C_lteqInteger` (primChar2CurryChar y1)) cs
-  (<?=) (CurryChar x1) (CurryChar y1) cs = (x1 `d_C_lteqInteger` y1) cs
-
-instance Coverable C_Char where
-  cover c@(C_Char _)          = c
-  cover (CurryChar x)         = CurryChar (cover x)
-  cover (Choice_C_Char cd i x y) = Choice_C_Char (incCover cd) i (cover x) (cover y)
-  cover (Choices_C_Char cd i xs) = Choices_C_Char (incCover cd) i (map cover xs)
-  cover (Fail_C_Char cd info) = Fail_C_Char (incCover cd) info
-  cover (Guard_C_Char cd cs x)   = Guard_C_Char (incCover cd) cs (cover x)
+  (=?=) (Choice_C_Char d i x y) z cd cs = narrow d i ((x =?= z) cd cs) ((y =?= z) cd cs)
+  (=?=) (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x =?= y) cd cs) xs
+  (=?=) (Guard_C_Char d c x) y cd cs = guardCons d c ((x =?= y) cd $! (addCs c cs))
+  (=?=) (Fail_C_Char d info) _ _ _ = failCons d info
+  (=?=) z (Choice_C_Char d i x y) cd cs = narrow d i ((z =?= x) cd cs) ((z =?= y) cd cs)
+  (=?=) y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y =?= x) cd cs) xs
+  (=?=) y (Guard_C_Char d c x) cd cs = guardCons d c ((y =?= x) cd $! (addCs c cs))
+  (=?=) _ (Fail_C_Char d info) _ _ = failCons d info
+  (=?=) (C_Char x1) (C_Char y1) _ _ = toCurry (x1 `eqChar#` y1)
+  (=?=) (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) =?= y1) cd cs
+  (=?=) (CurryChar x1) (C_Char      y1) cd cs = (x1 =?= (primChar2CurryChar y1)) cd cs
+  (=?=) (CurryChar x1) (CurryChar y1) cd cs = (x1 =?= y1) cd cs
+  (<?=) (Choice_C_Char d i x y) z cd cs = narrow d i ((x <?= z) cd cs) ((y <?= z) cd cs)
+  (<?=) (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x <?= y) cd cs) xs
+  (<?=) (Guard_C_Char d c x) y cd cs = guardCons d c ((x <?= y) cd $! (addCs c cs))
+  (<?=) (Fail_C_Char d info) _ _ _ = failCons d info
+  (<?=) z (Choice_C_Char d i x y) cd cs = narrow d i ((z <?= x) cd cs) ((z <?= y) cd cs)
+  (<?=) y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y <?= x) cd cs) xs
+  (<?=) y (Guard_C_Char d c x) cd cs = guardCons d c ((y <?= x) cd $! (addCs c cs))
+  (<?=) _ (Fail_C_Char d info) _ _ = failCons d info
+  (<?=) (C_Char x1) (C_Char y1) _ _ = toCurry (x1 `leChar#` y1)
+  (<?=) (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) `d_C_lteqInteger` y1) cd cs
+  (<?=) (CurryChar x1) (C_Char      y1) cd cs = (x1 `d_C_lteqInteger` (primChar2CurryChar y1)) cd cs
+  (<?=) (CurryChar x1) (CurryChar y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
 
 
 primChar2CurryChar :: Char# -> BinInt
@@ -586,93 +569,93 @@ showsPrec4CurryList d cl =
 -- External DFO
 -- -------------
 
-external_d_C_ensureNotFree :: Curry a => a -> ConstStore -> a
-external_d_C_ensureNotFree x cs =
+external_d_C_ensureNotFree :: Curry a => a -> Cover -> ConstStore -> a
+external_d_C_ensureNotFree x cd cs =
   case try x of
-    Choice cd i a b  -> choiceCons cd i (external_d_C_ensureNotFree a cs)
-                                        (external_d_C_ensureNotFree b cs)
-    Narrowed cd i xs -> choicesCons cd i (map (flip external_d_C_ensureNotFree cs) xs)
-    Free cd i xs     -> narrows cs cd i (flip external_d_C_ensureNotFree cs) xs
-    Guard cd c e    -> guardCons cd c (external_d_C_ensureNotFree e (addCs c cs))
-    _            -> x
+    Choice d i a b  -> choiceCons d i (external_d_C_ensureNotFree a cd cs)
+                                      (external_d_C_ensureNotFree b cd cs)
+    Narrowed d i xs -> choicesCons d i (\x -> flip external_d_C_ensureNotFree x cd cs) xs)
+    Free d i xs     -> narrows cs d i (\x -> flip external_d_C_ensureNotFree x cd cs) xs
+    Guard d c e     -> guardCons d c (external_d_C_ensureNotFree e cd $! (addCs c cs))
+    _               -> x
 
-external_d_C_failed :: NonDet a => ConstStore -> a
-external_d_C_failed _ = failCons 0 defFailInfo
+external_d_C_failed :: NonDet a => Cover -> ConstStore -> a
+external_d_C_failed cd _ = failCons cd defFailInfo
 
-external_d_OP_eq_eq :: Curry a => a -> a -> ConstStore -> C_Bool
+external_d_OP_eq_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Bool
 external_d_OP_eq_eq  = (=?=)
 
-external_d_OP_lt_eq :: Curry a => a -> a -> ConstStore -> C_Bool
+external_d_OP_lt_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Bool
 external_d_OP_lt_eq = (<?=)
 
 -- characters
 
-external_d_C_prim_ord :: C_Char -> ConstStore -> C_Int
-external_d_C_prim_ord (C_Char c)    _ = C_Int (ord# c)
-external_d_C_prim_ord (CurryChar c) _ = C_CurryInt c
+external_d_C_prim_ord :: C_Char -> Cover -> ConstStore -> C_Int
+external_d_C_prim_ord (C_Char c)    _ _ = C_Int (ord# c)
+external_d_C_prim_ord (CurryChar c) _ _ = C_CurryInt c
 
-external_d_C_prim_chr :: C_Int -> ConstStore -> C_Char
-external_d_C_prim_chr (C_Int i)      _ = C_Char (chr# i)
-external_d_C_prim_chr (C_CurryInt i) _ = CurryChar i
+external_d_C_prim_chr :: C_Int -> Cover -> ConstStore -> C_Char
+external_d_C_prim_chr (C_Int i)      _ _ = C_Char (chr# i)
+external_d_C_prim_chr (C_CurryInt i) _ _ = CurryChar i
 
 -- int arithmetics
 
-external_d_OP_plus :: C_Int -> C_Int -> ConstStore -> C_Int
-external_d_OP_plus (C_Int      x) (C_Int      y) _  = C_Int (x +# y)
-external_d_OP_plus (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_OP_plus_hash` y) cs)
-external_d_OP_plus (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_OP_plus_hash` (primint2curryint y)) cs)
-external_d_OP_plus (C_CurryInt x) (C_CurryInt y) cs = C_CurryInt ((x `d_OP_plus_hash` y) cs)
-external_d_OP_plus x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_OP_plus` b) cs2)) `d_OP_dollar_hash` y) cs1) `d_OP_dollar_hash` x) cs
+external_d_OP_plus :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_OP_plus (C_Int      x) (C_Int      y) _ _  = C_Int (x +# y)
+external_d_OP_plus (C_Int      x) (C_CurryInt y) cd cs = C_CurryInt (((primint2curryint x) `d_OP_plus_hash` y) cd cs)
+external_d_OP_plus (C_CurryInt x) (C_Int      y) cd cs = C_CurryInt ((x `d_OP_plus_hash` (primint2curryint y)) cd cs)
+external_d_OP_plus (C_CurryInt x) (C_CurryInt y) cd cs = C_CurryInt ((x `d_OP_plus_hash` y) cd cs)
+external_d_OP_plus x y cd cs = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_OP_plus` b) cd2 cs2)) `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_OP_minus :: C_Int -> C_Int -> ConstStore -> C_Int
-external_d_OP_minus (C_Int      x) (C_Int      y) _  = C_Int (x -# y)
-external_d_OP_minus (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_OP_minus_hash` y) cs)
-external_d_OP_minus (C_CurryInt x) (C_Int y)      cs = C_CurryInt ((x `d_OP_minus_hash` (primint2curryint y)) cs)
-external_d_OP_minus (C_CurryInt x) (C_CurryInt y) cs = C_CurryInt ((x `d_OP_minus_hash` y) cs)
-external_d_OP_minus x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_OP_minus` b) cs2 )) `d_OP_dollar_hash` y) cs1) `d_OP_dollar_hash` x) cs
+external_d_OP_minus :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_OP_minus (C_Int      x) (C_Int      y) _ _  = C_Int (x -# y)
+external_d_OP_minus (C_Int      x) (C_CurryInt y) cd cs = C_CurryInt (((primint2curryint x) `d_OP_minus_hash` y) cd cs)
+external_d_OP_minus (C_CurryInt x) (C_Int y)      cd cs = C_CurryInt ((x `d_OP_minus_hash` (primint2curryint y)) cd cs)
+external_d_OP_minus (C_CurryInt x) (C_CurryInt y) cd cs = C_CurryInt ((x `d_OP_minus_hash` y) cd cs)
+external_d_OP_minus x y cd cs = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_OP_minus` b) cd2 cs2 )) `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_OP_star :: C_Int -> C_Int -> ConstStore -> C_Int
-external_d_OP_star (C_Int      x) (C_Int      y) _  = C_Int (x *# y)
-external_d_OP_star (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_OP_star_hash` y) cs)
-external_d_OP_star (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_OP_star_hash` (primint2curryint y)) cs)
-external_d_OP_star (C_CurryInt x) (C_CurryInt y) cs = C_CurryInt ((x `d_OP_star_hash` y) cs)
-external_d_OP_star x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_OP_star` b) cs2)) `d_OP_dollar_hash` y) cs1) `d_OP_dollar_hash` x) cs
+external_d_OP_star :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_OP_star (C_Int      x) (C_Int      y) _ _  = C_Int (x *# y)
+external_d_OP_star (C_Int      x) (C_CurryInt y) cd cs = C_CurryInt (((primint2curryint x) `d_OP_star_hash` y) cd cs)
+external_d_OP_star (C_CurryInt x) (C_Int      y) cd cs = C_CurryInt ((x `d_OP_star_hash` (primint2curryint y)) cd cs)
+external_d_OP_star (C_CurryInt x) (C_CurryInt y) cd cs = C_CurryInt ((x `d_OP_star_hash` y) cd cs)
+external_d_OP_star x y cd cs = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_OP_star` b) cd2 cs2)) `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_C_quot :: C_Int -> C_Int -> ConstStore -> C_Int
-external_d_C_quot (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_C_Int defCover defFailInfo
+external_d_C_quot :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_C_quot (C_Int      x) (C_Int      y) cd _
+  | y ==# 0#  = Fail_C_Int cd defFailInfo
   | otherwise = C_Int (x `quotInt#` y)
-external_d_C_quot (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_C_quotInteger` y) cs)
-external_d_C_quot (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_C_quotInteger` (primint2curryint y)) cs)
-external_d_C_quot (C_CurryInt x) (C_CurryInt y) cs = C_CurryInt ((x `d_C_quotInteger` y) cs)
-external_d_C_quot x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_C_quot` b) cs2 )) `d_OP_dollar_hash` y) cs1) `d_OP_dollar_hash` x) cs
+external_d_C_quot (C_Int      x) (C_CurryInt y) cd cs = C_CurryInt (((primint2curryint x) `d_C_quotInteger` y) cd cs)
+external_d_C_quot (C_CurryInt x) (C_Int      y) cd cs = C_CurryInt ((x `d_C_quotInteger` (primint2curryint y)) cd cs)
+external_d_C_quot (C_CurryInt x) (C_CurryInt y) cd cs = C_CurryInt ((x `d_C_quotInteger` y) cd cs)
+external_d_C_quot x y cd cs = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_quot` b) cd2 cs2 )) `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_C_rem :: C_Int -> C_Int -> ConstStore -> C_Int
-external_d_C_rem (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_C_Int defCover defFailInfo
+external_d_C_rem :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_C_rem (C_Int      x) (C_Int      y) cd _
+  | y ==# 0#  = Fail_C_Int cd defFailInfo
   | otherwise = C_Int (x `remInt#` y)
-external_d_C_rem (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_C_remInteger` y) cs)
-external_d_C_rem (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_C_remInteger` (primint2curryint y)) cs)
-external_d_C_rem (C_CurryInt x) (C_CurryInt y) cs = C_CurryInt ((x `d_C_remInteger` y) cs)
-external_d_C_rem x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_C_rem` b) cs2)) `d_OP_dollar_hash` y) cs1) `d_OP_dollar_hash` x) cs
+external_d_C_rem (C_Int      x) (C_CurryInt y) cd cs = C_CurryInt (((primint2curryint x) `d_C_remInteger` y) cd cs)
+external_d_C_rem (C_CurryInt x) (C_Int      y) cd cs = C_CurryInt ((x `d_C_remInteger` (primint2curryint y)) cd cs)
+external_d_C_rem (C_CurryInt x) (C_CurryInt y) cd cs = C_CurryInt ((x `d_C_remInteger` y) cd cs)
+external_d_C_rem x y cd cs = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_rem` b) cd2 cs2)) `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_C_quotRem :: C_Int -> C_Int -> ConstStore -> OP_Tuple2 C_Int C_Int
-external_d_C_quotRem (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_OP_Tuple2 defCover defFailInfo
+external_d_C_quotRem :: C_Int -> C_Int -> Cover -> ConstStore -> OP_Tuple2 C_Int C_Int
+external_d_C_quotRem (C_Int      x) (C_Int      y) cd _
+  | y ==# 0#  = Fail_OP_Tuple2 cd defFailInfo
   | otherwise = OP_Tuple2 (C_Int (x `quotInt#` y)) (C_Int (x `remInt#` y))
-external_d_C_quotRem (C_Int      x) (C_CurryInt y) cs = (mkIntTuple `d_dollar_bang` (((primint2curryint x) `d_C_quotRemInteger` y) cs)) cs
-external_d_C_quotRem (C_CurryInt x) (C_Int      y) cs = (mkIntTuple `d_dollar_bang` ((x `d_C_quotRemInteger` (primint2curryint y)) cs)) cs
-external_d_C_quotRem (C_CurryInt x) (C_CurryInt y) cs = (mkIntTuple `d_dollar_bang` ((x `d_C_quotRemInteger` y) cs)) cs
-external_d_C_quotRem x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_C_quotRem` b) cs2)) `d_OP_dollar_hash` y) cs1) `d_OP_dollar_hash` x) cs
+external_d_C_quotRem (C_Int      x) (C_CurryInt y) cd cs = (mkIntTuple `d_dollar_bang` (((primint2curryint x) `d_C_quotRemInteger` y) cd cs)) cd cs
+external_d_C_quotRem (C_CurryInt x) (C_Int      y) cd cs = (mkIntTuple `d_dollar_bang` ((x `d_C_quotRemInteger` (primint2curryint y)) cd cs)) cd cs
+external_d_C_quotRem (C_CurryInt x) (C_CurryInt y) cd cs = (mkIntTuple `d_dollar_bang` ((x `d_C_quotRemInteger` y) cd cs)) cd cs
+external_d_C_quotRem x y cd cs = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_quotRem` b) cd2 cs2)) `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_C_div :: C_Int -> C_Int -> ConstStore -> C_Int
-external_d_C_div (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_C_Int defCover defFailInfo
+external_d_C_div :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_C_div (C_Int      x) (C_Int      y) cd _
+  | y ==# 0#  = Fail_C_Int cd defFailInfo
   | otherwise = C_Int (x `divInt#` y)
-external_d_C_div (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_C_divInteger` y) cs)
-external_d_C_div (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_C_divInteger` (primint2curryint y)) cs)
-external_d_C_div (C_CurryInt x) (C_CurryInt y) cs = C_CurryInt ((x `d_C_divInteger` y) cs)
-external_d_C_div x y cs = ((\a cs1-> ((\b cs2-> ((a `external_d_C_div` b) cs2)) `d_OP_dollar_hash` y) cs1) `d_OP_dollar_hash` x) cs
+external_d_C_div (C_Int      x) (C_CurryInt y) cd cs = C_CurryInt (((primint2curryint x) `d_C_divInteger` y) cd cs)
+external_d_C_div (C_CurryInt x) (C_Int      y) cd cs = C_CurryInt ((x `d_C_divInteger` (primint2curryint y)) cd cs)
+external_d_C_div (C_CurryInt x) (C_CurryInt y) cd cs = C_CurryInt ((x `d_C_divInteger` y) cd cs)
+external_d_C_div x y cd cs = ((\a cd1 cs1-> ((\b cd2 cs2-> ((a `external_d_C_div` b) cd2 cs2)) `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
 -- PrimOp taken from GHC.Base
 divInt# :: Int# -> Int# -> Int#
@@ -686,14 +669,14 @@ x# `divInt#` y#
     | (x# <# 0#) && (y# ># 0#) = ((x# +# 1#) `quotInt#` y#) -# 1#
     | otherwise                = x# `quotInt#` y#
 
-external_d_C_mod :: C_Int -> C_Int -> ConstStore -> C_Int
-external_d_C_mod (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_C_Int defCover defFailInfo
+external_d_C_mod :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_C_mod (C_Int      x) (C_Int      y) cd _
+  | y ==# 0#  = Fail_C_Int cd defFailInfo
   | otherwise = C_Int (x `modInt#` y)
-external_d_C_mod (C_Int      x) (C_CurryInt y) cs = C_CurryInt (((primint2curryint x) `d_C_modInteger` y) cs)
-external_d_C_mod (C_CurryInt x) (C_Int      y) cs = C_CurryInt ((x `d_C_modInteger` (primint2curryint y)) cs)
-external_d_C_mod (C_CurryInt x) (C_CurryInt y) cs = C_CurryInt ((x `d_C_modInteger` y) cs)
-external_d_C_mod x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_C_mod` b)) cs2) `d_OP_dollar_hash` y) cs1) `d_OP_dollar_hash` x) cs
+external_d_C_mod (C_Int      x) (C_CurryInt y) cd cs = C_CurryInt (((primint2curryint x) `d_C_modInteger` y) cd cs)
+external_d_C_mod (C_CurryInt x) (C_Int      y) cd cs = C_CurryInt ((x `d_C_modInteger` (primint2curryint y)) cd cs)
+external_d_C_mod (C_CurryInt x) (C_CurryInt y) cd cs = C_CurryInt ((x `d_C_modInteger` y) cd cs)
+external_d_C_mod x y cd cs = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_mod` b)) cd2 cs2) `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
 -- PrimOp taken from GHC.Base
 modInt# :: Int# -> Int# -> Int#
@@ -705,68 +688,68 @@ x# `modInt#` y#
     !r# = x# `remInt#` y#
 
 -- TODO: $! instead of $#?
-external_d_C_divMod :: C_Int -> C_Int ->  ConstStore -> OP_Tuple2 C_Int C_Int
-external_d_C_divMod (C_Int      x) (C_Int      y) _
-  | y ==# 0#  = Fail_OP_Tuple2 defCover defFailInfo
+external_d_C_divMod :: C_Int -> C_Int ->  Cover -> ConstStore -> OP_Tuple2 C_Int C_Int
+external_d_C_divMod (C_Int      x) (C_Int      y) cd _
+  | y ==# 0#  = Fail_OP_Tuple2 cd defFailInfo
   | otherwise = OP_Tuple2 (C_Int (x `divInt#` y)) (C_Int (x `modInt#` y))
-external_d_C_divMod (C_Int      x) (C_CurryInt y) cs = (mkIntTuple `d_OP_dollar_hash` (((primint2curryint x) `d_C_divModInteger` y) cs)) cs
-external_d_C_divMod (C_CurryInt x) (C_Int      y) cs = (mkIntTuple `d_OP_dollar_hash` ((x `d_C_divModInteger` (primint2curryint y)) cs)) cs
-external_d_C_divMod (C_CurryInt x) (C_CurryInt y) cs = (mkIntTuple `d_OP_dollar_hash` ((x `d_C_divModInteger` y) cs)) cs
-external_d_C_divMod x y cs = ((\a cs1 -> ((\b cs2 -> ((a `external_d_C_divMod` b) cs2 )) `d_OP_dollar_hash` y) cs1) `d_OP_dollar_hash` x) cs
+external_d_C_divMod (C_Int      x) (C_CurryInt y) cd cs = (mkIntTuple `d_OP_dollar_hash` (((primint2curryint x) `d_C_divModInteger` y) cd cs)) cd cs
+external_d_C_divMod (C_CurryInt x) (C_Int      y) cd cs = (mkIntTuple `d_OP_dollar_hash` ((x `d_C_divModInteger` (primint2curryint y)) cd cs)) cd cs
+external_d_C_divMod (C_CurryInt x) (C_CurryInt y) cd cs = (mkIntTuple `d_OP_dollar_hash` ((x `d_C_divModInteger` y) cd cs)) cd cs
+external_d_C_divMod x y cd cs = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_divMod` b) cd2 cs2 )) `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-mkIntTuple :: OP_Tuple2 BinInt BinInt -> ConstStore -> OP_Tuple2 C_Int C_Int
-mkIntTuple (OP_Tuple2 d m) _ = OP_Tuple2 (C_CurryInt d) (C_CurryInt m)
+mkIntTuple :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> OP_Tuple2 C_Int C_Int
+mkIntTuple (OP_Tuple2 d m) _ _ = OP_Tuple2 (C_CurryInt d) (C_CurryInt m)
 
-external_d_C_negateFloat :: C_Float -> ConstStore -> C_Float
-external_d_C_negateFloat (C_Float x) _ = C_Float (negateFloat# x)
-external_d_C_negateFloat x cs          = (external_d_C_negateFloat `d_OP_dollar_hash` x) cs
+external_d_C_negateFloat :: C_Float -> Cover -> ConstStore -> C_Float
+external_d_C_negateFloat (C_Float x) _ _ = C_Float (negateFloat# x)
+external_d_C_negateFloat x cd cs          = (external_d_C_negateFloat `d_OP_dollar_hash` x) cd cs
 
-external_d_OP_eq_colon_eq :: Unifiable a => a -> a -> ConstStore -> C_Success
+external_d_OP_eq_colon_eq :: Unifiable a => a -> a -> Cover -> ConstStore -> C_Success
 external_d_OP_eq_colon_eq = (=:=)
 
-external_d_C_success :: ConstStore -> C_Success
-external_d_C_success _ = C_Success
+external_d_C_success :: Cover -> ConstStore -> C_Success
+external_d_C_success _ _ = C_Success
 
-external_d_OP_ampersand :: C_Success -> C_Success -> ConstStore -> C_Success
+external_d_OP_ampersand :: C_Success -> C_Success -> Cover -> ConstStore -> C_Success
 external_d_OP_ampersand = (&)
 
 -- IO stuff
 
-external_d_C_return :: a -> ConstStore -> C_IO a
-external_d_C_return a _ = fromIO (return a)
+external_d_C_return :: a -> Cover -> ConstStore -> C_IO a
+external_d_C_return a _ _ = fromIO (return a)
 
-external_d_C_prim_putChar :: C_Char -> ConstStore -> C_IO OP_Unit
-external_d_C_prim_putChar c _ = toCurry putChar c
+external_d_C_prim_putChar :: C_Char -> Cover -> ConstStore -> C_IO OP_Unit
+external_d_C_prim_putChar c _ _ = toCurry putChar c
 
-external_d_C_getChar :: ConstStore -> C_IO C_Char
-external_d_C_getChar _ = toCurry getChar
+external_d_C_getChar :: Cover _> ConstStore -> C_IO C_Char
+external_d_C_getChar _ _ = toCurry getChar
 
-external_d_C_prim_readFile :: C_String -> ConstStore -> C_IO C_String
-external_d_C_prim_readFile s cs = toCurry readFile s
-
--- TODO: Problem: s is not evaluated to enable lazy IO and therefore could
--- be non-deterministic
-external_d_C_prim_writeFile :: C_String -> C_String -> ConstStore -> C_IO OP_Unit
-external_d_C_prim_writeFile s1 s2 _ = toCurry writeFile s1 s2
+external_d_C_prim_readFile :: C_String -> Cover -> ConstStore -> C_IO C_String
+external_d_C_prim_readFile s _ _ = toCurry readFile s
 
 -- TODO: Problem: s is not evaluated to enable lazy IO and therefore could
 -- be non-deterministic
-external_d_C_prim_appendFile :: C_String -> C_String -> ConstStore -> C_IO OP_Unit
-external_d_C_prim_appendFile s1 s2 _ = toCurry appendFile s1 s2
+external_d_C_prim_writeFile :: C_String -> C_String -> Cover -> ConstStore -> C_IO OP_Unit
+external_d_C_prim_writeFile s1 s2 _ _ = toCurry writeFile s1 s2
 
-external_d_OP_gt_gt_eq :: (Curry t0, Curry t1) => C_IO t0 -> (t0 -> ConstStore -> C_IO t1) -> ConstStore -> C_IO t1
-external_d_OP_gt_gt_eq m f cs = fromIO $ do
+-- TODO: Problem: s is not evaluated to enable lazy IO and therefore could
+-- be non-deterministic
+external_d_C_prim_appendFile :: C_String -> C_String -> Cover -> ConstStore -> C_IO OP_Unit
+external_d_C_prim_appendFile s1 s2 _ _ = toCurry appendFile s1 s2
+
+external_d_OP_gt_gt_eq :: (Curry t0, Curry t1) => C_IO t0 -> (t0 -> Cover -> ConstStore -> C_IO t1) -> Cover -> ConstStore -> C_IO t1
+external_d_OP_gt_gt_eq m f cd cs = fromIO $ do
   x <- toIO m cs
   cs1 <- lookupGlobalCs
   let cs2 = combineCs cs cs1
-  toIO  (f x cs2) cs2
+  toIO  (f x cd cs2) cs2
 
-external_nd_OP_gt_gt_eq :: (Curry t0, Curry t1) => C_IO t0 -> Func t0 (C_IO t1) -> IDSupply -> ConstStore -> C_IO t1
-external_nd_OP_gt_gt_eq m f s cs = fromIO $ do
+external_nd_OP_gt_gt_eq :: (Curry t0, Curry t1) => C_IO t0 -> Func t0 (C_IO t1) -> IDSupply -> Cover -> ConstStore -> C_IO t1
+external_nd_OP_gt_gt_eq m f s cd cs = fromIO $ do
  x <- toIO m cs
  cs1 <- lookupGlobalCs
  let cs2 = combineCs cs cs1
- toIO (nd_apply f x s cs2) cs2
+ toIO (nd_apply f x s cd cs2) cs2
 
 -- Exception handling
 
@@ -782,19 +765,19 @@ instance ConvertCurryHaskell C_IOError CurryException where
   fromCurry (C_NondetError s) = NondetException $ fromCurry s
   fromCurry _                 = internalError "non-deterministic IOError"
 
-external_d_C_prim_error :: C_String -> ConstStore -> a
-external_d_C_prim_error s _ = C.throw $ UserException (fromCurry s)
+external_d_C_prim_error :: C_String -> Cover -> ConstStore -> a
+external_d_C_prim_error s _ _ = C.throw $ UserException (fromCurry s)
 
-external_d_C_prim_ioError :: C_IOError -> ConstStore -> C_IO a
-external_d_C_prim_ioError e _ = C.throw $ (fromCurry e :: CurryException)
+external_d_C_prim_ioError :: C_IOError -> Cover -> ConstStore -> C_IO a
+external_d_C_prim_ioError e _ _ = C.throw $ (fromCurry e :: CurryException)
 
-external_d_C_catch :: C_IO a -> (C_IOError -> ConstStore -> C_IO a) -> ConstStore -> C_IO a
-external_d_C_catch act hndl cs = fromIO $ C.catches (toIO act cs) handlers
-  where handlers = exceptionHandlers cs (\e -> hndl e cs)
+external_d_C_catch :: C_IO a -> (C_IOError -> Cover -> ConstStore -> C_IO a) -> Cover -> ConstStore -> C_IO a
+external_d_C_catch act hndl cd cs = fromIO $ C.catches (toIO act cs) handlers
+  where handlers = exceptionHandlers cs (\e -> hndl e cd cs)
 
-external_nd_C_catch :: C_IO a -> Func C_IOError (C_IO a) -> IDSupply -> ConstStore -> C_IO a
-external_nd_C_catch act hndl s cs = fromIO $ C.catches (toIO act cs) handlers
-  where handlers = exceptionHandlers cs (\e -> nd_apply hndl e s cs)
+external_nd_C_catch :: C_IO a -> Func C_IOError (C_IO a) -> IDSupply -> Cover -> ConstStore -> C_IO a
+external_nd_C_catch act hndl s cd cs = fromIO $ C.catches (toIO act cs) handlers
+  where handlers = exceptionHandlers cs (\e -> nd_apply hndl e s cd cs)
 
 exceptionHandlers :: ConstStore -> (C_IOError -> C_IO a) -> [C.Handler a]
 exceptionHandlers cs hndl =
@@ -804,46 +787,46 @@ exceptionHandlers cs hndl =
 
 -- other stuff
 
-external_d_C_prim_show :: Show a => a -> ConstStore -> C_String
-external_d_C_prim_show a _ = toCurry (show a)
+external_d_C_prim_show :: Show a => a -> Cover -> ConstStore -> C_String
+external_d_C_prim_show a _ _ = toCurry (show a)
 
-external_d_C_cond :: Curry a => C_Success -> a -> ConstStore -> a
-external_d_C_cond succ a cs = ((\_ _ -> a) `d_OP_dollar_hash` succ) cs
+external_d_C_cond :: Curry a => C_Success -> a -> Cover -> ConstStore -> a
+external_d_C_cond succ a cd cs = ((\_ _ _ -> a) `d_OP_dollar_hash` succ) cd cs
 
-external_d_OP_eq_colon_lt_eq :: Curry a => a -> a -> ConstStore -> C_Success
+external_d_OP_eq_colon_lt_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Success
 external_d_OP_eq_colon_lt_eq = (=:<=)
 
 -- External ND
 -- -----------
 
-external_nd_OP_qmark :: NonDet a => a -> a -> IDSupply -> ConstStore -> a
-external_nd_OP_qmark x y ids _ = let i = thisID ids in i `seq` choiceCons defCover i x y
+external_nd_OP_qmark :: NonDet a => a -> a -> IDSupply -> Cover -> ConstStore -> a
+external_nd_OP_qmark x y ids cd _ = let i = thisID ids in i `seq` choiceCons cd i x y
 
 -- External HO
 -- -----------
 
-external_d_OP_dollar_bang :: (NonDet a, NonDet b) => (a -> ConstStore -> b) -> a -> ConstStore -> b
+external_d_OP_dollar_bang :: (NonDet a, NonDet b) => (a -> Cover -> ConstStore -> b) -> a -> Cover -> ConstStore -> b
 external_d_OP_dollar_bang = d_dollar_bang
 
-external_nd_OP_dollar_bang :: (NonDet a, NonDet b) => (Func a b) -> a -> IDSupply -> ConstStore -> b
+external_nd_OP_dollar_bang :: (NonDet a, NonDet b) => (Func a b) -> a -> IDSupply -> Cover -> ConstStore -> b
 external_nd_OP_dollar_bang = nd_dollar_bang
 
-external_d_OP_dollar_bang_bang :: (NormalForm a, NonDet b) => (a -> ConstStore -> b) -> a -> ConstStore -> b
+external_d_OP_dollar_bang_bang :: (NormalForm a, NonDet b) => (a -> Cover -> ConstStore -> b) -> a -> Cover -> ConstStore -> b
 external_d_OP_dollar_bang_bang = ($!!)
 
-external_nd_OP_dollar_bang_bang :: (NormalForm a, NonDet b) => Func a b -> a -> IDSupply -> ConstStore -> b
-external_nd_OP_dollar_bang_bang f x s cs = ((\y cs1-> nd_apply f y s cs1) $!! x) cs
+external_nd_OP_dollar_bang_bang :: (NormalForm a, NonDet b) => Func a b -> a -> IDSupply -> Cover -> ConstStore -> b
+external_nd_OP_dollar_bang_bang f x s cd cs = ((\y cd1 cs1-> nd_apply f y s cd1 cs1) $!! x) cd cs
 
-external_d_OP_dollar_hash_hash :: (NormalForm a, NonDet b) => (a -> ConstStore -> b) -> a -> ConstStore -> b
+external_d_OP_dollar_hash_hash :: (NormalForm a, NonDet b) => (a -> Cover -> ConstStore -> b) -> a -> Cover -> ConstStore -> b
 external_d_OP_dollar_hash_hash = ($##)
 
-external_nd_OP_dollar_hash_hash :: (NormalForm a, NonDet b) => Func a b -> a -> IDSupply -> ConstStore -> b
-external_nd_OP_dollar_hash_hash f x s cs = ((\y cs1 -> nd_apply f y s cs1) $## x) cs
+external_nd_OP_dollar_hash_hash :: (NormalForm a, NonDet b) => Func a b -> a -> IDSupply -> Cover -> ConstStore -> b
+external_nd_OP_dollar_hash_hash f x s cd cs = ((\y cd1 cs1 -> nd_apply f y s cd1 cs1) $## x) cd cs
 
-external_d_C_apply :: (a -> ConstStore -> b) -> a -> ConstStore -> b
+external_d_C_apply :: (a -> Cover -> ConstStore -> b) -> a -> Cover -> ConstStore -> b
 external_d_C_apply = d_apply
 
-external_nd_C_apply :: NonDet b => Func a b -> a -> IDSupply -> ConstStore -> b
+external_nd_C_apply :: NonDet b => Func a b -> a -> IDSupply -> Cover -> ConstStore -> b
 external_nd_C_apply = nd_apply
 
 

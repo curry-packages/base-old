@@ -21,35 +21,35 @@ foreign import stdcall unsafe "windows.h GetCurrentProcessId"
   getProcessID :: IO ProcessId
 #endif
 
-external_d_C_getCPUTime :: ConstStore -> CP.C_IO CP.C_Int
-external_d_C_getCPUTime _ = toCurry (getCPUTime >>= return . (`div` (10 ^ 9)))
+external_d_C_getCPUTime :: Cover -> ConstStore -> CP.C_IO CP.C_Int
+external_d_C_getCPUTime _ _ = toCurry (getCPUTime >>= return . (`div` (10 ^ 9)))
 
-external_d_C_getElapsedTime :: ConstStore -> CP.C_IO CP.C_Int
-external_d_C_getElapsedTime _ = toCurry (return 0 :: IO Int)
+external_d_C_getElapsedTime :: Cover -> ConstStore -> CP.C_IO CP.C_Int
+external_d_C_getElapsedTime _ _ = toCurry (return 0 :: IO Int)
 
-external_d_C_getArgs :: ConstStore -> CP.C_IO (CP.OP_List CP.C_String)
-external_d_C_getArgs _ = toCurry getArgs
+external_d_C_getArgs :: Cover -> ConstStore -> CP.C_IO (CP.OP_List CP.C_String)
+external_d_C_getArgs _ _ = toCurry getArgs
 
-external_d_C_prim_getEnviron :: CP.C_String -> ConstStore -> CP.C_IO CP.C_String
-external_d_C_prim_getEnviron str _ =
+external_d_C_prim_getEnviron :: CP.C_String -> Cover -> ConstStore -> CP.C_IO CP.C_String
+external_d_C_prim_getEnviron str _ _ =
   toCurry (handle handleIOException . getEnv) str
   where
   handleIOException :: IOException -> IO String
   handleIOException _ = return ""
 
-external_d_C_getHostname :: ConstStore -> CP.C_IO CP.C_String
-external_d_C_getHostname _ = toCurry getHostName
+external_d_C_getHostname :: Cover -> ConstStore -> CP.C_IO CP.C_String
+external_d_C_getHostname _ _ = toCurry getHostName
 
-external_d_C_getPID :: ConstStore -> CP.C_IO CP.C_Int
-external_d_C_getPID _ = toCurry $ do
+external_d_C_getPID :: Cover -> ConstStore -> CP.C_IO CP.C_Int
+external_d_C_getPID _ _ = toCurry $ do
   pid <- getProcessID
   return (fromIntegral pid :: Int)
 
-external_d_C_getProgName :: ConstStore -> CP.C_IO CP.C_String
-external_d_C_getProgName _ = toCurry getProgName
+external_d_C_getProgName :: Cover -> ConstStore -> CP.C_IO CP.C_String
+external_d_C_getProgName _ _ = toCurry getProgName
 
-external_d_C_prim_system :: CP.C_String -> ConstStore -> CP.C_IO CP.C_Int
-external_d_C_prim_system str _ = toCurry system str
+external_d_C_prim_system :: CP.C_String -> Cover -> ConstStore -> CP.C_IO CP.C_Int
+external_d_C_prim_system str _ _ = toCurry system str
 
 instance ConvertCurryHaskell CP.C_Int ExitCode where
   toCurry ExitSuccess     = toCurry (0 :: Int)
@@ -58,16 +58,16 @@ instance ConvertCurryHaskell CP.C_Int ExitCode where
   fromCurry j = let i = fromCurry j :: Int
                 in if i == 0 then ExitSuccess else ExitFailure i
 
-external_d_C_prim_exitWith :: CP.Curry a => CP.C_Int -> ConstStore -> CP.C_IO a
-external_d_C_prim_exitWith c _ = fromIO (exitWith (fromCurry c))
+external_d_C_prim_exitWith :: CP.Curry a => CP.C_Int -> Cover -> ConstStore -> CP.C_IO a
+external_d_C_prim_exitWith c _ _ = fromIO (exitWith (fromCurry c))
 
-external_d_C_prim_sleep :: CP.C_Int -> ConstStore -> CP.C_IO CP.OP_Unit
-external_d_C_prim_sleep x _ =
+external_d_C_prim_sleep :: CP.C_Int -> Cover -> ConstStore -> CP.C_IO CP.OP_Unit
+external_d_C_prim_sleep x _ _ =
   toCurry (\i -> system ("sleep "++show (i :: Int)) >> return ()) x -- TODO
 
-external_d_C_isWindows :: ConstStore -> CP.C_Bool
+external_d_C_isWindows :: Cover -> ConstStore -> CP.C_Bool
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
-external_d_C_isWindows _ = CP.C_True
+external_d_C_isWindows _ _ = CP.C_True
 #else
-external_d_C_isWindows _ = CP.C_False
+external_d_C_isWindows _ _ = CP.C_False
 #endif

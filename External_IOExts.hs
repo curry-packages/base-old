@@ -6,19 +6,20 @@ import Control.Concurrent (forkIO)
 import System.IO
 import qualified Curry_Prelude as CP
 
-external_d_C_prim_execCmd :: CP.C_String
- -> ConstStore -> CP.C_IO (CP.OP_Tuple3 Curry_IO.C_Handle Curry_IO.C_Handle Curry_IO.C_Handle)
-external_d_C_prim_execCmd str _ = toCurry
+external_d_C_prim_execCmd :: CP.C_String -> Cover -> ConstStore 
+  -> CP.C_IO (CP.OP_Tuple3 Curry_IO.C_Handle Curry_IO.C_Handle Curry_IO.C_Handle)
+external_d_C_prim_execCmd str _ _ = toCurry
   (\s -> do (h1,h2,h3,_) <- runInteractiveCommand s
             return (OneHandle h1, OneHandle h2, OneHandle h3)) str
 
 external_d_C_prim_evalCmd :: CP.C_String -> CP.OP_List CP.C_String -> CP.C_String
-  -> ConstStore -> CP.C_IO (CP.OP_Tuple3 CP.C_Int CP.C_String CP.C_String)
-external_d_C_prim_evalCmd cmd args input _
+  -> Cover -> ConstStore -> CP.C_IO (CP.OP_Tuple3 CP.C_Int CP.C_String CP.C_String)
+external_d_C_prim_evalCmd cmd args input _ _
   = toCurry readProcessWithExitCode cmd args input
 
-external_d_C_prim_connectToCmd :: CP.C_String -> ConstStore -> CP.C_IO Curry_IO.C_Handle
-external_d_C_prim_connectToCmd str _ = toCurry
+external_d_C_prim_connectToCmd :: CP.C_String -> Cover -> ConstStore
+                               -> CP.C_IO Curry_IO.C_Handle
+external_d_C_prim_connectToCmd str _ _ = toCurry
   (\s -> do (hin,hout,herr,_) <- runInteractiveCommand s
             forkIO (forwardError herr)
             return (InOutHandle hout hin)) str
@@ -39,13 +40,15 @@ type Assocs = [(String,String)]
 assocs :: IORef Assocs
 assocs = unsafePerformIO (newIORef [])
 
-external_d_C_prim_setAssoc :: CP.C_String -> CP.C_String -> ConstStore -> CP.C_IO CP.OP_Unit
-external_d_C_prim_setAssoc str1 str2 _ = toCurry
+external_d_C_prim_setAssoc :: CP.C_String -> CP.C_String -> Cover -> ConstStore
+                           -> CP.C_IO CP.OP_Unit
+external_d_C_prim_setAssoc str1 str2 _ _ = toCurry
   (\key val -> do as <- readIORef assocs
                   writeIORef assocs ((key,val):as)) str1 str2
 
-external_d_C_prim_getAssoc :: CP.C_String -> ConstStore -> CP.C_IO (CP.C_Maybe (CP.C_String))
-external_d_C_prim_getAssoc str _ = toCurry
+external_d_C_prim_getAssoc :: CP.C_String -> Cover -> ConstStore
+                           -> CP.C_IO (CP.C_Maybe (CP.C_String))
+external_d_C_prim_getAssoc str _ _ = toCurry
   (\key -> do as <- readIORef assocs
               return (lookup key as)) str
 
@@ -88,16 +91,18 @@ instance Generable (C_IORef a) where
   generate _ = error "ERROR: no generator for IORef"
 
 instance NormalForm (C_IORef a) where
-  ($!!) cont ioref@(C_IORef _)          cs = cont ioref cs
-  ($!!) cont (Choice_C_IORef cd i io1 io2) cs = nfChoice cont cd i io1 io2 cs
-  ($!!) cont (Choices_C_IORef cd i ios)    cs = nfChoices cont cd  i ios cs
-  ($!!) cont (Guard_C_IORef cd c io)       cs = guardCons cd c ((cont $!! io) (addCs c cs))
-  ($!!) _    (Fail_C_IORef cd info)     cs = failCons cd info
-  ($##) cont io@(C_IORef _)             cs = cont io cs
-  ($##) cont (Choice_C_IORef cd i io1 io2) cs = gnfChoice cont cd i io1 io2 cs
-  ($##) cont (Choices_C_IORef cd i ios)    cs = gnfChoices cont cd i ios cs
-  ($##) cont (Guard_C_IORef cd c io)       cs = guardCons cd c ((cont $## io) (addCs c cs))
-  ($##) _    (Fail_C_IORef cd info)        cs = failCons cd info
+  ($!!) cont ioref@(C_IORef _)            cd cs = cont ioref cd cs
+  ($!!) cont (Choice_C_IORef d i io1 io2) cd cs = nfChoice cont d i io1 io2 cd cs
+  ($!!) cont (Choices_C_IORef d i ios)    cd cs = nfChoices cont d  i ios cd
+  ($!!) cont (Guard_C_IORef d c io)       cd cs 
+    = guardCons d c ((cont $!! io) cd $! (addCs c cs))
+  ($!!) _    (Fail_C_IORef d info)        _  _  = failCons d info
+  ($##) cont io@(C_IORef _)               cd cs = cont io cd cs
+  ($##) cont (Choice_C_IORef d i io1 io2) cd cs = gnfChoice cont d i io1 io2 cd cs
+  ($##) cont (Choices_C_IORef d i ios)    cd cs = gnfChoices cont d i ios cd cs
+  ($##) cont (Guard_C_IORef d c io)       cd cs 
+    = guardCons d c ((cont $## io) cd $! (addCs c cs))
+  ($##) _    (Fail_C_IORef d info)        cd cs = failCons d info
   searchNF _ cont ioref@(C_IORef _)        = cont ioref
 
 instance Unifiable (C_IORef a) where
@@ -118,24 +123,19 @@ instance CP.Curry a => CP.Curry (C_IORef a) where
   (=?=) = error "(==) is undefined for IORefs"
   (<?=) = error "(<=) is undefined for IORefs"
 
-instance Coverable (C_IORef a) where
-  cover (Choice_C_IORef cd i x y) = Choice_C_IORef (incCover cd) i (cover x) (cover y)
-  cover (Choices_C_IORef cd i xs) = Choices_C_IORef (incCover cd) i (map cover xs)
-  cover (Fail_C_IORef cd info)    = Fail_C_IORef (incCover cd) info
-  cover (Guard_C_IORef cd cs x)   = Guard_C_IORef (incCover cd) cs (cover x)
-  cover r@(C_IORef _)             = r
-
 instance ConvertCurryHaskell (C_IORef a) (IORef a) where
   fromCurry (C_IORef r) = r
   fromCurry _           = error "IORef with no ground term occurred"
   toCurry r             = C_IORef r
 
-external_d_C_newIORef :: CP.Curry a => a -> ConstStore -> CP.C_IO (C_IORef a)
-external_d_C_newIORef cv _ = toCurry (newIORef cv)
+external_d_C_newIORef :: CP.Curry a => a -> Cover -> ConstStore 
+                      -> CP.C_IO (C_IORef a)
+external_d_C_newIORef cv _ _ = toCurry (newIORef cv)
 
-external_d_C_prim_readIORef :: CP.Curry a => C_IORef a -> ConstStore -> CP.C_IO a
-external_d_C_prim_readIORef ref _ = fromIO (readIORef (fromCurry ref))
+external_d_C_prim_readIORef :: CP.Curry a => C_IORef a -> Cover -> ConstStore
+                            -> CP.C_IO a
+external_d_C_prim_readIORef ref _ _ = fromIO (readIORef (fromCurry ref))
 
 external_d_C_prim_writeIORef :: CP.Curry a => C_IORef a -> a
-                                           -> ConstStore -> CP.C_IO CP.OP_Unit
-external_d_C_prim_writeIORef ref cv _ = toCurry (writeIORef (fromCurry ref) cv)
+                             -> Cover -> ConstStore -> CP.C_IO CP.OP_Unit
+external_d_C_prim_writeIORef ref cv _ _ = toCurry (writeIORef (fromCurry ref) cv)

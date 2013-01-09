@@ -43,21 +43,21 @@ set0 :: b -> Values b
 set0 f = set0With dfsStrategy f
 
 set0With :: Strategy b -> b -> Values b
-set0With s f = allVs s f 
+set0With s f = Values (vsToList (s someSearchTree f))
 
 --- Combinator to transform a unary function into a corresponding set function.
 set1 :: (a1 -> b) -> a1 -> Values b
 set1 f x = set1With dfsStrategy f x
 
 set1With :: Strategy b -> (a1 -> b) -> a1 -> Values b
-set1With s f x = allVs s (f (cover x))
+set1With s f x = allVs s (\_ -> f x))
 
 --- Combinator to transform a binary function into a corresponding set function.
 set2 :: (a1 -> a2 -> b) -> a1 -> a2 -> Values b
 set2 f x1 x2 = set2With dfsStrategy f x1 x2
 
 set2With :: Strategy b -> (a1 -> a2 -> b) -> a1 -> a2 -> Values b
-set2With s f x1 x2 = allVs s (f (cover x1) (cover x2))
+set2With s f x1 x2 = allVs s (\_ -> f x1 x2)
 
 --- Combinator to transform a function of arity 3
 --- into a corresponding set function.
@@ -65,7 +65,7 @@ set3 :: (a1 -> a2 -> a3 -> b) -> a1 -> a2 -> a3 -> Values b
 set3 f x1 x2 x3 = set3With dfsStrategy f x1 x2 x3
 
 set3With :: Strategy b -> (a1 -> a2 -> a3 -> b) -> a1 -> a2 -> a3 -> Values b
-set3With s f x1 x2 x3 = allVs s (f (cover x1) (cover x2) (cover x3))
+set3With s f x1 x2 x3 = allVs s (\_ -> f  x1 x2 x3)
 
 --- Combinator to transform a function of arity 4
 --- into a corresponding set function.
@@ -73,7 +73,7 @@ set4 :: (a1 -> a2 -> a3 -> a4 -> b) -> a1 -> a2 -> a3 -> a4 -> Values b
 set4 f x1 x2 x3 x4 = set4With dfsStrategy f x1 x2 x3 x4
 
 set4With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> b) -> a1 -> a2 -> a3 -> a4 -> Values b
-set4With s f x1 x2 x3 x4 = allVs s (f (cover x1) (cover x2) (cover x3) (cover x4))
+set4With s f x1 x2 x3 x4 = allVs s (\_ -> f x1 x2 x3 x4)
 
 --- Combinator to transform a function of arity 5
 --- into a corresponding set function.
@@ -83,7 +83,7 @@ set5 f x1 x2 x3 x4 x5 = set5With dfsStrategy f x1 x2 x3 x4 x5
 
 set5With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> a5 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> Values b
-set5With s f x1 x2 x3 x4 x5 = allVs s (f (cover x1)(cover x2)(cover x3)(cover x4)(cover x5))
+set5With s f x1 x2 x3 x4 x5 = allVs s (\_ -> f x1 x2 x3 x4 x5)
 
 --- Combinator to transform a function of arity 6
 --- into a corresponding set function.
@@ -94,7 +94,7 @@ set6 f x1 x2 x3 x4 x5 x6 = set6With dfsStrategy f x1 x2 x3 x4 x5 x6
 set6With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> Values b
 set6With s f x1 x2 x3 x4 x5 x6 =
- allVs s (f (cover x1)(cover x2)(cover x3)(cover x4)(cover x5)(cover x6))
+ allVs s (\_ -> f x1 x2 x3 x4 x5 x6)
 
 --- Combinator to transform a function of arity 7
 --- into a corresponding set function.
@@ -105,21 +105,18 @@ set7 f x1 x2 x3 x4 x5 x6 x7 = set7With dfsStrategy f x1 x2 x3 x4 x5 x6 x7
 set7With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> Values b
 set7With s f x1 x2 x3 x4 x5 x6 x7 = 
- allVs s (f (cover x1)(cover x2)(cover x3)
-            (cover x4)(cover x5)(cover x6)(cover x7))
+ allVs s (\_ -> f x1 x2 x3 x4 x5 x6 x7)
 
 ------------------------------------------------------------------------
 -- Axuiliaries:
 
 -- collect all values of an expression in a list:
-allVs s x = Values (vsToList (s (someSearchTree x)))
+allVs s f = Values (vsToList (s ((incDepth $!! someSearchTree) ((incDepth $!! f) ()))))
 
--- Function that covers identifiers
-cover :: a -> a
-cover external
+incDepth :: (a -> b) -> a -> b
+incDepth external 
 
-
-------------------------------------------------------------------------
+----------------------------------------------------------------------
 --- Abstract type representing multisets of values.
 
 data Values a = Values [a]

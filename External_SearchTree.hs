@@ -28,7 +28,7 @@ instance MonadSearch C_SearchTree where
   szero (I# d) _   = C_Fail (Curry_Prelude.C_Int d)
   constrainMSearch = Guard_C_SearchTree
 
-external_d_C_someSearchTree :: NormalForm a => a -> ConstStore -> C_SearchTree a
+external_d_C_someSearchTree :: NormalForm a => a -> Cover -> ConstStore -> C_SearchTree a
 external_d_C_someSearchTree = encapsulatedSearch
 
 external_d_OP_bar_plus_plus_bar ::  Curry_Prelude.Curry a =>

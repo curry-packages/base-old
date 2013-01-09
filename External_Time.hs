@@ -47,14 +47,14 @@ instance ConvertCurryHaskell C_ClockTime Clock.UTCTime where
                                                  undefined undefined 0 undefined)))
      
 
-external_d_C_getClockTime :: ConstStore -> CP.C_IO C_ClockTime
-external_d_C_getClockTime _ = toCurry T.getClockTime
+external_d_C_getClockTime :: Cover -> ConstStore -> CP.C_IO C_ClockTime
+external_d_C_getClockTime _ _ = toCurry T.getClockTime
 
-external_d_C_prim_toCalendarTime :: C_ClockTime -> ConstStore -> CP.C_IO C_CalendarTime
-external_d_C_prim_toCalendarTime ct _ = toCurry T.toCalendarTime ct
+external_d_C_prim_toCalendarTime :: C_ClockTime -> Cover -> ConstStore -> CP.C_IO C_CalendarTime
+external_d_C_prim_toCalendarTime ct _ _ = toCurry T.toCalendarTime ct
 
-external_d_C_prim_toUTCTime :: C_ClockTime -> ConstStore -> C_CalendarTime
-external_d_C_prim_toUTCTime ct _ = toCurry T.toUTCTime ct
+external_d_C_prim_toUTCTime :: C_ClockTime -> Cover -> ConstStore -> C_CalendarTime
+external_d_C_prim_toUTCTime ct _ _ = toCurry T.toUTCTime ct
 
-external_d_C_prim_toClockTime :: C_CalendarTime -> ConstStore -> C_ClockTime
-external_d_C_prim_toClockTime ct _ = toCurry T.toClockTime ct
+external_d_C_prim_toClockTime :: C_CalendarTime -> Cover -> ConstStore -> C_ClockTime
+external_d_C_prim_toClockTime ct _ _ = toCurry T.toClockTime ct
