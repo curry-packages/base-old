@@ -208,6 +208,7 @@ data Expr = Var VarIndex
           | Free [VarIndex] Expr
           | Or Expr Expr
           | Case CaseType Expr [BranchExpr]
+          | Typed Expr TypeExpr
 
 
 --- Data type for representing branches in a case expression.
