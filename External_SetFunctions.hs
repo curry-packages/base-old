@@ -1,8 +1,4 @@
 
-
-external_d_C_cover :: Coverable a => a -> ConstStore -> a
-external_d_C_cover x _ = cover x
-
 external_d_C_incDepth :: (a -> Cover -> ConstStore -> b) 
                          -> Cover -> ConstStore 
                          -> (a -> Cover -> ConstStore -> b)

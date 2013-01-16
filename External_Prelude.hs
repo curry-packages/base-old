@@ -23,7 +23,7 @@ import PrimTypes
 -- ---------------------------------------------------------------------------
 
 -- Class for Curry types
-class (Show a, Read a, NonDet a, Generable a, NormalForm a, Unifiable a, Coverable a)
+class (Show a, Read a, NonDet a, Generable a, NormalForm a, Unifiable a)
       => Curry a where
   -- implementation of strict equalit (==) for a data type
   (=?=) :: a -> a -> ConstStore -> C_Bool

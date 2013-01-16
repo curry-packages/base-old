@@ -66,9 +66,6 @@ instance NonDet (C_ValueSequence a) where
 instance Generable (C_ValueSequence a) where
   generate = error "SearchTree: ValueSequence: generate"
 
-instance Coverable (C_ValueSequence a) where
-  cover   = error "SearchTree: ValueSequence: cover"
-
 instance NormalForm (C_ValueSequence a) where
  ($!!)    = error "SearchTree: ValueSequence: ($!!)"
  ($##)    = error "SearchTree: ValueSequence: ($##)"
