@@ -34,15 +34,18 @@ external_d_C_prim_waitForSocketAccept :: C_Socket -> CP.C_Int
 external_d_C_prim_waitForSocketAccept s i _ = toCurry wait s i
 
 wait :: Socket -> Int -> IO (Maybe (String,CurryHandle))
-wait s t = do
-  mv <- newEmptyMVar
-  tacc <- forkIO (Network.accept s >>= \ (h,s,_) ->
-                  putMVar mv (Just (s,OneHandle h)))
-  ttim <- forkIO (delay ((fromIntegral t :: Integer)*1000)
-                  >> putMVar mv Nothing)
-  res <- takeMVar mv
-  maybe (killThread tacc) (\_ -> killThread ttim) res
-  return res
+wait s t =
+  if t<0
+  then Network.accept s >>= \ (h,s,_) -> return (Just (s,OneHandle h))
+  else do
+    mv <- newEmptyMVar
+    tacc <- forkIO (Network.accept s >>= \ (h,s,_) ->
+                    putMVar mv (Just (s,OneHandle h)))
+    ttim <- forkIO (delay ((fromIntegral t :: Integer)*1000)
+                    >> putMVar mv Nothing)
+    res <- takeMVar mv
+    maybe (killThread tacc) (\_ -> killThread ttim) res
+    return res
 
 external_d_C_prim_sClose :: C_Socket -> ConstStore -> CP.C_IO CP.OP_Unit
 external_d_C_prim_sClose s _ = toCurry sClose s
