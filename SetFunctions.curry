@@ -24,19 +24,21 @@
 --- i.e., duplicates are not removed.
 ---
 --- @author Michael Hanus
---- @version Fri Apr 27 15:02:19 CEST 2012
+--- @version January 2013
 ------------------------------------------------------------------------
 
 module SetFunctions
          (set0,set1,set2,set3,set4,set5,set6,set7,
           set0With,set1With,set2With,set3With,set4With,set5With,set6With,set7With,
           Values,isEmpty,valueOf,
+          choose,chooseValue,select,selectValue,
           mapValues,foldValues,minValue,maxValue,
           values2list,printValues,sortValues,sortValuesBy)
  where
 
 import Sort(mergeSort)
 import SearchTree
+import List(delete)
 
 --- Combinator to transform a 0-ary function into a corresponding set function.
 set0 :: b -> Values b
@@ -131,6 +133,50 @@ isEmpty (Values vs) = null vs
 --- Is some value an element of a multiset of values?
 valueOf :: a -> Values a -> Bool
 valueOf e (Values s) = e `elem` s
+
+--- Chooses (non-deterministically) some value in a multiset of values
+--- and returns the chosen value and the remaining multiset of values.
+--- Thus, if we consider the operation `chooseValue` by
+---
+---     chooseValue x = fst (choose x)
+---
+--- then `(set1 chooseValue)` is the identity on value sets, i.e.,
+--- `(set1 chooseValue s)` contains the same elements as the
+--- value set `s`.
+choose :: Values a -> (a,Values a)
+choose (Values vs) = (x, Values xs)
+  where x = foldr1 (?) vs
+        xs = delete x vs
+
+--- Chooses (non-deterministically) some value in a multiset of values
+--- and returns the chosen value.
+--- Thus, `(set1 chooseValue)` is the identity on value sets, i.e.,
+--- `(set1 chooseValue s)` contains the same elements as the
+--- value set `s`.
+chooseValue :: Values a -> a
+chooseValue s = fst (choose s)
+
+--- Selects (indeterministically) some value in a multiset of values
+--- and returns the selected value and the remaining multiset of values.
+--- Thus, `select` has always at most one value.
+--- It fails if the value set is empty.
+---
+--- **NOTE:**
+--- The usage of this operation is only safe (i.e., does not destroy
+--- completeness) if all values in the argument set are identical.
+select :: Values a -> (a,Values a)
+select (Values (x:xs)) = (x, Values xs)
+
+--- Selects (indeterministically) some value in a multiset of values
+--- and returns the selected value.
+--- Thus, `selectValue` has always at most one value.
+--- It fails if the value set is empty.
+---
+--- **NOTE:**
+--- The usage of this operation is only safe (i.e., does not destroy
+--- completeness) if all values in the argument set are identical.
+selectValue :: Values a -> a
+selectValue s = fst (select s)
 
 --- Accumulates all elements of a multiset of values by applying a binary
 --- operation. This is similarly to fold on lists, but the binary operation
