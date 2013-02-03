@@ -1,26 +1,27 @@
 ------------------------------------------------------------------------
---- This module contains a prototypical implementation of
---- set functions in PAKCS. The general idea of set functions
+--- This module contains an implementation of set functions.
+--- The general idea of set functions
 --- is described in:
 ---
---- S. Antoy, M. Hanus: Set Functions for Functional Logic Programming
---- Proc. 11th International Conference on Principles and Practice
---- of Declarative Programming (PPDP'09), pp. 73-82, ACM Press, 2009
+--- > S. Antoy, M. Hanus: Set Functions for Functional Logic Programming
+--- > Proc. 11th International Conference on Principles and Practice
+--- > of Declarative Programming (PPDP'09), pp. 73-82, ACM Press, 2009
 ---
---- Intuition: If f is an n-ary function, then (setn f) is a set-valued
+--- Intuition: If `f` is an n-ary function, then `(setn f)` is a set-valued
 --- function that collects all non-determinism caused by f (but not
 --- the non-determinism caused by evaluating arguments!) in a set.
---- Thus, (setn f a1 ... an) returns the set of all
---- values of (f b1 ... bn) where b1,...,bn are values
---- of the arguments a1,...,an (i.e., the arguments are
+--- Thus, `(setn f a1 ... an)` returns the set of all
+--- values of `(f b1 ... bn)` where `b1`,...,`bn` are values
+--- of the arguments `a1`,...,`an` (i.e., the arguments are
 --- evaluated "outside" this capsule so that the non-determinism
 --- caused by evaluating these arguments is not captured in this capsule
---- but yields several results for (setn...).
---- Similarly, logical variables occuring in a1,...,an are not bound
+--- but yields several results for `(setn...)`.
+--- Similarly, logical variables occuring in `a1`,...,`an` are not bound
 --- inside this capsule (but causes a suspension until they are bound).
 --- The set of values returned by a set function is represented
---- by an abstract type "Values" on which several operations are
---- defined in this module.
+--- by an abstract type 'Values' on which several operations are
+--- defined in this module. Actually, it is a multiset of values,
+--- i.e., duplicates are not removed.
 ---
 --- Restrictions:
 --- 1. The set is a multiset, i.e., it might contain multiple values.
@@ -36,7 +37,7 @@
 --- the interface is not stable and might change.
 ---
 --- @author Michael Hanus
---- @version Fri Apr 15 03:40:12 CEST 2011
+--- @version January 2013
 ------------------------------------------------------------------------
 
 module SetFunctions
