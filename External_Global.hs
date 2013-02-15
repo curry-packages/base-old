@@ -40,48 +40,48 @@ instance NonDet (C_Global a) where
   match _ _ _ _ _ valF    x                    = valF x
 
 instance Generable (C_Global a) where
-  generate _ = error "ERROR: no generator for Global"
+  generate _ _ = error "ERROR: no generator for Global"
 
 instance NormalForm (C_Global a) where
   ($!!) cont g@(C_Global_Temp _)         cd cs = cont g cd cs
   ($!!) cont g@(C_Global_Pers _)         cd cs = cont g cd cs
   ($!!) cont (Choice_C_Global d i g1 g2) cd cs = nfChoice cont d i g1 g2 cd cs
   ($!!) cont (Choices_C_Global d i gs)   cd cs = nfChoices cont d i gs cd cs
-  ($!!) cont (Guard_C_Global d c g)      cd cs 
-    = guardCons d c ((cont $!! g) cd $! (addCs c cs))
+  ($!!) cont (Guard_C_Global d c g)      cd cs = guardCons d c ((cont $!! g) cd 
+                                                    $! (addCs c cs))
   ($!!) _    (Fail_C_Global d info)      _  _  = failCons d info
   ($##) cont g@(C_Global_Temp _)         cd cs = cont g cd cs
   ($##) cont g@(C_Global_Pers _)         cd cs = cont g cd cs
   ($##) cont (Choice_C_Global d i g1 g2) cd cs = gnfChoice cont d i g1 g2 cd cs
   ($##) cont (Choices_C_Global d i gs)   cd cs = gnfChoices cont d i gs cd cs
-  ($##) cont (Guard_C_Global d c g)      cd cs 
-    = guardCons d c ((cont $## g) cd $!  (addCs c cs))
-  ($##) _    (Fail_C_Global cd info)      cs = failCons cd info
-  searchNF _ cont g@(C_Global_Temp _)        = cont g
-  searchNF _ cont g@(C_Global_Pers _)        = cont g
+  ($##) cont (Guard_C_Global d c g)      cd cs = guardCons d c ((cont $## g) cd 
+                                                    $!  (addCs c cs))
+  ($##) _    (Fail_C_Global cd info)     _  _  = failCons cd info
+  searchNF _ cont g@(C_Global_Temp _)          = cont g
+  searchNF _ cont g@(C_Global_Pers _)          = cont g
 
 instance Unifiable (C_Global a) where
-  (=.=) (C_Global_Temp ref1) (C_Global_Temp ref2) _
+  (=.=) (C_Global_Temp ref1) (C_Global_Temp ref2) _ _
     | ref1 == ref2 = C_Success
-  (=.=) (C_Global_Pers f1) (C_Global_Pers f2) _
+  (=.=) (C_Global_Pers f1) (C_Global_Pers f2) _ _
     | f1 == f2  = C_Success
-  (=.=) _ _ _ = Fail_C_Success 0 defFailInfo
+  (=.=) _ _ cd _ = Fail_C_Success cd defFailInfo
   (=.<=) = (=.=)
-  bind i (Choice_C_Global cd j l r) 
-    = [(ConstraintChoice cd j (bind i l) (bind i r))]
-  bind i (Choices_C_Global cd j@(FreeID _ _) xs) = bindOrNarrow i cd j xs
-  bind i (Choices_C_Global cd j@(NarrowedID _ _) xs) 
-    = [(ConstraintChoices cd j (map (bind i) xs))]
-  bind _ (Fail_C_Global cd info) = [Unsolvable info]
-  bind i (Guard_C_Global _ cs e) = (getConstrList cs) ++ (bind i e)
-  lazyBind i (Choice_C_Global cd j l r) 
-    = [(ConstraintChoice cd j (lazyBind i l) (lazyBind i r))]
-  lazyBind i (Choices_C_Global cd j@(FreeID _ _) xs) = lazyBindOrNarrow i cd j xs
-  lazyBind i (Choices_C_Global cd j@(NarrowedID _ _) xs) 
-    = [(ConstraintChoices cd j (map (lazyBind i) xs))]
-  lazyBind _ (Fail_C_Global cd info) = [Unsolvable info]
-  lazyBind i (Guard_C_Global _ cs e) 
-    = (getConstrList cs) ++ [(i :=: (LazyBind (lazyBind i e)))]
+  bind cd i (Choice_C_Global d j l r) 
+    = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
+  bind cd i (Choices_C_Global d j@(FreeID _ _) xs) = bindOrNarrow cd i d j xs
+  bind cd i (Choices_C_Global d j@(NarrowedID _ _) xs) 
+    = [(ConstraintChoices d j (map (bind cd i) xs))]
+  bind _ _ (Fail_C_Global _ info) = [Unsolvable info]
+  bind cd i (Guard_C_Global _ cs e) = (getConstrList cs) ++ (bind cd i e)
+  lazyBind cd i (Choice_C_Global d j l r) 
+    = [(ConstraintChoice d j (lazyBind cd i l) (lazyBind cd i r))]
+  lazyBind cd i (Choices_C_Global d j@(FreeID _ _) xs) = lazyBindOrNarrow cd i d j xs
+  lazyBind cd i (Choices_C_Global d j@(NarrowedID _ _) xs) 
+    = [(ConstraintChoices d j (map (lazyBind cd i) xs))]
+  lazyBind _ _ (Fail_C_Global cd info) = [Unsolvable info]
+  lazyBind cd i (Guard_C_Global _ cs e) 
+    = (getConstrList cs) ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
 instance CP.Curry a => CP.Curry (C_Global a) where
   (=?=) = error "(==) is undefined for Globals"

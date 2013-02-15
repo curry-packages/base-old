@@ -45,14 +45,14 @@ set0 :: b -> Values b
 set0 f = set0With dfsStrategy f
 
 set0With :: Strategy b -> b -> Values b
-set0With s f = Values (vsToList (s someSearchTree f))
+set0With s f = Values (vsToList (s (someSearchTree f)))
 
 --- Combinator to transform a unary function into a corresponding set function.
 set1 :: (a1 -> b) -> a1 -> Values b
 set1 f x = set1With dfsStrategy f x
 
 set1With :: Strategy b -> (a1 -> b) -> a1 -> Values b
-set1With s f x = allVs s (\_ -> f x))
+set1With s f x = allVs s (\_ -> f x)
 
 --- Combinator to transform a binary function into a corresponding set function.
 set2 :: (a1 -> a2 -> b) -> a1 -> a2 -> Values b

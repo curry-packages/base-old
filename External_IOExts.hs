@@ -88,12 +88,12 @@ instance NonDet (C_IORef a) where
   match _ _ _ _ _ f x                                          = f x
 
 instance Generable (C_IORef a) where
-  generate _ = error "ERROR: no generator for IORef"
+  generate _ _ = error "ERROR: no generator for IORef"
 
 instance NormalForm (C_IORef a) where
   ($!!) cont ioref@(C_IORef _)            cd cs = cont ioref cd cs
   ($!!) cont (Choice_C_IORef d i io1 io2) cd cs = nfChoice cont d i io1 io2 cd cs
-  ($!!) cont (Choices_C_IORef d i ios)    cd cs = nfChoices cont d  i ios cd
+  ($!!) cont (Choices_C_IORef d i ios)    cd cs = nfChoices cont d  i ios cd cs
   ($!!) cont (Guard_C_IORef d c io)       cd cs 
     = guardCons d c ((cont $!! io) cd $! (addCs c cs))
   ($!!) _    (Fail_C_IORef d info)        _  _  = failCons d info
@@ -108,16 +108,16 @@ instance NormalForm (C_IORef a) where
 instance Unifiable (C_IORef a) where
   (=.=) _ _ = error "(=.=) for C_IORef"
   (=.<=) _ _ = error "(=.<=) for C_IORef"
-  bind i (Choice_C_IORef cd j l r) = [(ConstraintChoice cd j (bind i l) (bind i r))]
-  bind i (Choices_C_IORef cd j@(FreeID _ _) xs) = bindOrNarrow i cd j xs
-  bind i (Choices_C_IORef cd j@(NarrowedID _ _) xs) = [(ConstraintChoices cd j (map (bind i) xs))]
-  bind _ (Fail_C_IORef cd info) = [Unsolvable info]
-  bind i (Guard_C_IORef _ cs e) = (getConstrList cs) ++ (bind i e)
-  lazyBind i (Choice_C_IORef cd j l r) = [(ConstraintChoice cd j (lazyBind i l) (lazyBind i r))]
-  lazyBind i (Choices_C_IORef cd j@(FreeID _ _) xs) = lazyBindOrNarrow i cd j xs
-  lazyBind i (Choices_C_IORef cd j@(NarrowedID _ _) xs) = [(ConstraintChoices cd j (map (lazyBind i) xs))]
-  lazyBind _ (Fail_C_IORef cd info) = [Unsolvable info]
-  lazyBind i (Guard_C_IORef _ cs e) = (getConstrList cs) ++ [(i :=: (LazyBind (lazyBind i e)))]
+  bind cd i (Choice_C_IORef d j l r) = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
+  bind cd i (Choices_C_IORef d j@(FreeID _ _) xs) = bindOrNarrow cd i d j xs
+  bind cd i (Choices_C_IORef d j@(NarrowedID _ _) xs) = [(ConstraintChoices d j (map (bind cd i) xs))]
+  bind _  _ (Fail_C_IORef cd info) = [Unsolvable info]
+  bind cd i (Guard_C_IORef _ cs e) = (getConstrList cs) ++ (bind cd i e)
+  lazyBind cd i (Choice_C_IORef d j l r) = [(ConstraintChoice d j (lazyBind cd i l) (lazyBind cd i r))]
+  lazyBind cd i (Choices_C_IORef d j@(FreeID _ _) xs) = lazyBindOrNarrow cd i d j xs
+  lazyBind cd i (Choices_C_IORef d j@(NarrowedID _ _) xs) = [(ConstraintChoices d j (map (lazyBind cd i) xs))]
+  lazyBind _  _ (Fail_C_IORef cd info) = [Unsolvable info]
+  lazyBind cd i (Guard_C_IORef _ cs e) = (getConstrList cs) ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
 instance CP.Curry a => CP.Curry (C_IORef a) where
   (=?=) = error "(==) is undefined for IORefs"

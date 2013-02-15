@@ -50,7 +50,7 @@ external_d_C_prim_removeDirectory s _ _ = toCurry removeDirectory s
 
 external_d_C_prim_renameFile :: CP.C_String -> CP.C_String -> Cover -> ConstStore 
                              -> CP.C_IO CP.OP_Unit
-external_d_C_prim_renameFile s1 s2 _ = toCurry renameFile s1 s2
+external_d_C_prim_renameFile s1 s2 _ _ = toCurry renameFile s1 s2
 
 external_d_C_prim_renameDirectory :: CP.C_String -> CP.C_String 
                                   -> Cover -> ConstStore 

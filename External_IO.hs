@@ -111,4 +111,4 @@ external_d_C_prim_hIsReadable h _ _ = toCurry (hIsReadable . inputHandle) h
 
 external_d_C_prim_hIsWritable :: C_Handle -> Cover -> ConstStore 
                               -> CP.C_IO CP.C_Bool
-external_d_C_prim_hIsWritable h _ = toCurry (hIsWritable . outputHandle) h
+external_d_C_prim_hIsWritable h _ _ = toCurry (hIsWritable . outputHandle) h
