@@ -23,6 +23,19 @@
 --- defined in this module. Actually, it is a multiset of values,
 --- i.e., duplicates are not removed.
 ---
+--- Restrictions:
+--- 1. The set is a multiset, i.e., it might contain multiple values.
+--- 2. The multiset of values is completely evaluated when demanded.
+---    Thus, if it is infinite, its evaluation will not terminate
+---    even if only some elements (e.g., for a containment test)
+---    are demanded. However, for the emptiness test, at most one
+---    value will be computed
+--- 3. The arguments of a set function are strictly evaluated before
+---    the set functions itself will be evaluated.
+---
+--- Since this implementation is restricted and prototypical,
+--- the interface is not stable and might change.
+---
 --- @author Michael Hanus
 --- @version January 2013
 ------------------------------------------------------------------------
