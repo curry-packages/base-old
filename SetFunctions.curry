@@ -113,7 +113,7 @@ set7With s f x1 x2 x3 x4 x5 x6 x7 =
 -- Axuiliaries:
 
 -- collect all values of an expression in a list:
-allVs s f = Values (vsToList (s ((incDepth $!! someSearchTree) ((incDepth $!! f) ()))))
+allVs s f = Values (vsToList ((incDepth $!! s) ((incDepth $!! someSearchTree) ((incDepth $!! f) ()))))
 
 incDepth :: (a -> b) -> a -> b
 incDepth external 
