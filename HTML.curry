@@ -16,7 +16,7 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version September 2012
+--- @version February 2013
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
@@ -25,7 +25,8 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             defaultEncoding, defaultBackground,
             form,standardForm,answerText,answerEncText,
             cookieForm,getCookies,
-            page,standardPage,pageEnc,pageCSS,pageMetaInfo,addPageParam,
+            page,standardPage,
+            pageEnc,pageCSS,pageMetaInfo,pageLinkInfo,addPageParam,
             formEnc,formCSS,addFormParam,
             htxt,htxts,hempty,nbsp,h1,h2,h3,h4,h5,
             par,emphasize,strong,bold,italic,code,
@@ -324,10 +325,12 @@ data HtmlPage = HtmlPage String [PageParam] [HtmlExp]
 --- @cons PageCSS s - a URL for a CSS file for this page
 --- @cons PageJScript s - a URL for a Javascript file for this page
 --- @cons PageMeta as - meta information (in form of attributes) for this page
+--- @cons PageLink as - link information (in form of attributes) for this page
 data PageParam = PageEnc     String
                | PageCSS     String
                | PageJScript String
                | PageMeta    [(String,String)]
+               | PageLink    [(String,String)]
 
 --- An encoding scheme for a HTML page.
 pageEnc :: String -> PageParam
@@ -338,9 +341,14 @@ pageCSS :: String -> PageParam
 pageCSS css = PageCSS css
 
 --- Meta information for a HTML page. The argument is a list of
---- attributes included in the meta-tag for this page.
+--- attributes included in the `meta`-tag in the header for this page.
 pageMetaInfo :: [(String,String)] -> PageParam
 pageMetaInfo attrs = PageMeta attrs
+
+--- Link information for a HTML page. The argument is a list of
+--- attributes included in the `link`-tag in the header for this page.
+pageLinkInfo :: [(String,String)] -> PageParam
+pageLinkInfo attrs = PageLink attrs
 
 --- A basic HTML web page with the default encoding.
 --- @param title - the title of the page
@@ -913,6 +921,7 @@ showHtmlPage (HtmlPage title params html) =
   param2html (PageJScript js) =
      [HtmlStruct "script" [("type","text/javascript"),("src",js)] []]
   param2html (PageMeta as) = [HtmlStruct "meta" as []]
+  param2html (PageLink as) = [HtmlStruct "link" as []]
 
 
 --- Standard header for generated HTML pages.
