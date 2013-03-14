@@ -178,6 +178,50 @@ select (Values (x:xs)) = (x, Values xs)
 selectValue :: Values a -> a
 selectValue s = fst (select s)
 
+--- Chooses (non-deterministically) some value in a multiset of values
+--- and returns the chosen value and the remaining multiset of values.
+--- Thus, if we consider the operation `chooseValue` by
+---
+---     chooseValue x = fst (choose x)
+---
+--- then `(set1 chooseValue)` is the identity on value sets, i.e.,
+--- `(set1 chooseValue s)` contains the same elements as the
+--- value set `s`.
+choose :: Values a -> (a,Values a)
+choose (Values _ vs) = (x, Values (null xs) xs)
+  where x = foldr1 (?) vs
+        xs = delete x vs
+
+--- Chooses (non-deterministically) some value in a multiset of values
+--- and returns the chosen value.
+--- Thus, `(set1 chooseValue)` is the identity on value sets, i.e.,
+--- `(set1 chooseValue s)` contains the same elements as the
+--- value set `s`.
+chooseValue :: Values a -> a
+chooseValue s = fst (choose s)
+
+--- Selects (indeterministically) some value in a multiset of values
+--- and returns the selected value and the remaining multiset of values.
+--- Thus, `select` has always at most one value.
+--- It fails if the value set is empty.
+---
+--- **NOTE:**
+--- The usage of this operation is only safe (i.e., does not destroy
+--- completeness) if all values in the argument set are identical.
+select :: Values a -> (a,Values a)
+select (Values _ (x:xs)) = (x, Values (null xs) xs)
+
+--- Selects (indeterministically) some value in a multiset of values
+--- and returns the selected value.
+--- Thus, `selectValue` has always at most one value.
+--- It fails if the value set is empty.
+---
+--- **NOTE:**
+--- The usage of this operation is only safe (i.e., does not destroy
+--- completeness) if all values in the argument set are identical.
+selectValue :: Values a -> a
+selectValue s = fst (select s)
+
 --- Accumulates all elements of a multiset of values by applying a binary
 --- operation. This is similarly to fold on lists, but the binary operation
 --- must be <b>commutative</b> so that the result is independent of the order
