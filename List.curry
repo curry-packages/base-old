@@ -105,7 +105,7 @@ intercalate xs xss = concat (intersperse xs xss)
 --- Example: `(transpose [[1,2,3],[4,5,6]]) = [[1,4],[2,5],[3,6]]`
 transpose               :: [[a]] -> [[a]]
 transpose []             = []
-transpose ([] : xss)     = transpose xss
+transpose ([]     : xss) = transpose xss
 transpose ((x:xs) : xss) = (x : map head xss) : transpose (xs : map tail xss)
 
 --- Returns the list of all permutations of the argument.
@@ -147,29 +147,28 @@ groupBy eq (x:xs) = (x:ys) : groupBy eq zs
                     where (ys,zs) = span (eq x) xs
 
 --- Breaks a the second lsit argument into pieces separated by the first
--- list argument, consuming the delimiter. An empty delimiter is
--- invalid, and will cause an error to be raised.
+--- list argument, consuming the delimiter. An empty delimiter is
+--- invalid, and will cause an error to be raised.
 splitOn :: [a] -> [a] -> [[a]]
-splitOn [] _ = error "splitOn called with an empty pattern"
-splitOn [x] ys = split (x ==) ys
-splitOn xs ys = go ys
- where go [] = [[]]
-       go l@(y:ys) | isPrefixOf xs l = [] : go (drop len l)
-                   | otherwise       = let (zs:zss) = go ys in (y:zs):zss
-       len = length xs
+splitOn []          _  = error "splitOn called with an empty pattern"
+splitOn [x]         xs = split (x ==) xs
+splitOn sep@(_:_:_) xs = go xs
+  where go []                           = [[]]
+        go l@(y:ys) | sep `isPrefixOf` l = [] : go (drop len l)
+                    | otherwise         = let (zs:zss) = go ys in (y:zs):zss
+        len = length sep
 
--- Splits a List into components delimited by separators,
--- where the predicate returns True for a separator element.  The
--- resulting components do not contain the separators.  Two adjacent
--- separators result in an empty component in the output.  eg.
---
--- > split (=='a') "aabbaca" == ["","","bb","c",""]
--- > split (=='a') ""        == [""]
-
+--- Splits a List into components delimited by separators,
+--- where the predicate returns True for a separator element.
+--- The resulting components do not contain the separators.
+--- Two adjacent separators result in an empty component in the output.
+---
+--- > split (=='a') "aabbaca" == ["","","bb","c",""]
+--- > split (=='a') ""        == [""]
 split :: (a -> Bool) -> [a] -> [[a]]
-split p [] = [[]]
-split p (x:xs) | p x = []: split p xs
-               | otherwise = let (ys:yss) = split p xs in (x:ys):yss 
+split _ []                 = [[]]
+split p (x:xs) | p x       = [] : split p xs
+               | otherwise = let (ys:yss) = split p xs in (x:ys):yss
 
 --- Returns all initial segments of a list, starting with the shortest.
 --- Example: `inits [1,2,3] == [[],[1],[1,2],[1,2,3]]`
