@@ -2,15 +2,15 @@
 --- A finite map is an efficient purely functional data structure 
 --- to store a mapping from keys to values.
 --- In order to store the mapping efficiently, an irreflexive(!) order predicate 
---- has to be given, i.e., the order predicate <code>le</code> should not satisfy
---- <code>(le x x)</code> for some key <code>x</code>.
+--- has to be given, i.e., the order predicate `le` should not satisfy
+--- `(le x x)` for some key `x`.
 ---
---- Example: To store a mapping from Int -&gt; String, the finite map needs
---- a Boolean predicate like (&lt;).
+--- Example: To store a mapping from `Int -> String`, the finite map needs
+--- a Boolean predicate like `(<)`.
 --- This version was ported from a corresponding Haskell library
 ---
 --- @author Frank Huch, Bernd Brassel
---- @version May 2005
+--- @version March 2013
 -----------------------------------------------------------------------------
 
 module FiniteMap (
@@ -81,7 +81,7 @@ emptyFM le = FM le EmptyFM
 unitFM :: (LeKey key) -> key -> elt -> FM key elt
 unitFM le key elt = FM le (unitFM' key elt)
 
-unitFM' key elt = Branch key elt 1 EmptyFM EmptyFM
+unitFM' key elt = BranchFM key elt 1 EmptyFM EmptyFM
 
 
 --- Builts a finite map from given list of tuples (key,element).
@@ -103,12 +103,12 @@ addToFM (FM le fm) key elt = FM le (addToFM' le fm key elt)
 addToFM' le fm key elt = addToFM_C' le (\ _ new -> new) fm key elt
 
 addToFM_C' _ _ EmptyFM key elt = unitFM' key elt
-addToFM_C' le combiner (Branch key elt size fm_l fm_r) new_key new_elt
+addToFM_C' le combiner (BranchFM key elt size fm_l fm_r) new_key new_elt
   = if le new_key key
     then mkBalBranch key elt (addToFM_C' le combiner fm_l new_key new_elt) fm_r
     else
       if new_key==key
-      then Branch new_key (combiner elt new_elt) size fm_l fm_r
+      then BranchFM new_key (combiner elt new_elt) size fm_l fm_r
       else mkBalBranch key elt fm_l (addToFM_C' le combiner fm_r new_key new_elt)
 
 
@@ -152,7 +152,7 @@ delFromFM :: FM key elt -> key   -> FM key elt
 delFromFM (FM le fm) del_key = FM le (delFromFM' le fm del_key)
 
 delFromFM' _ EmptyFM _ = EmptyFM
-delFromFM' le (Branch key elt _ fm_l fm_r) del_key
+delFromFM' le (BranchFM key elt _ fm_l fm_r) del_key
   = if le del_key key
     then mkBalBranch key elt (delFromFM' le fm_l del_key) fm_r
     else
@@ -171,10 +171,10 @@ updFM :: FM a b -> a -> (b -> b) -> FM a b
 updFM (FM lt fm) i f = FM lt (upd fm)
   where
     upd EmptyFM                          =  EmptyFM
-    upd (Branch k x h l r) 
-            | i==k       =  Branch k (f x) h l r   
-            | lt i k     =  Branch k x h (upd l) r  
-            | otherwise  =  Branch k x h l (upd r) 
+    upd (BranchFM k x h l r) 
+            | i==k       =  BranchFM k (f x) h l r   
+            | lt i k     =  BranchFM k x h (upd l) r  
+            | otherwise  =  BranchFM k x h l (upd r) 
 
 --- Combines delFrom and lookup.
 splitFM :: FM a b -> a -> Maybe (FM a b,(a,b))
@@ -190,13 +190,13 @@ plusFM :: FM key elt -> FM key elt -> FM key elt
 plusFM (FM le1 fm1) (FM _ fm2) = FM le1 (plusFM' le1 fm1 fm2)
 
 plusFM' _  EmptyFM fm2 = fm2
-plusFM' _  (Branch split_key1 elt1 s1 left1 right1) EmptyFM =
-  (Branch split_key1 elt1 s1 left1 right1)
-plusFM' le (Branch split_key1 elt1 s1 left1 right1)
-           (Branch split_key elt2 _ left right)
+plusFM' _  (BranchFM split_key1 elt1 s1 left1 right1) EmptyFM =
+  (BranchFM split_key1 elt1 s1 left1 right1)
+plusFM' le (BranchFM split_key1 elt1 s1 left1 right1)
+           (BranchFM split_key elt2 _ left right)
   = mkVBalBranch le split_key elt2 (plusFM' le lts left) (plusFM' le gts right)
   where
-    fm1 = Branch split_key1 elt1 s1 left1 right1
+    fm1 = BranchFM split_key1 elt1 s1 left1 right1
     lts     = splitLT le fm1 split_key
     gts     = splitGT le fm1 split_key
 
@@ -208,19 +208,19 @@ plusFM_C combiner (FM le1 fm1) (FM _ fm2) =
   FM le1 (plusFM_C' le1 combiner fm1 fm2)
 
 plusFM_C' _  _        EmptyFM fm2 = fm2
-plusFM_C' _  _        (Branch split_key1 elt1 s1 left1 right1) EmptyFM =
-          Branch split_key1 elt1 s1 left1 right1
-plusFM_C' le combiner (Branch split_key1 elt1 s1 left1 right1)
-                      (Branch split_key elt2 _ left right)
+plusFM_C' _  _        (BranchFM split_key1 elt1 s1 left1 right1) EmptyFM =
+          BranchFM split_key1 elt1 s1 left1 right1
+plusFM_C' le combiner (BranchFM split_key1 elt1 s1 left1 right1)
+                      (BranchFM split_key elt2 _ left right)
   = mkVBalBranch le split_key new_elt
                  (plusFM_C' le combiner lts left)
                  (plusFM_C' le combiner gts right)
   where
-    fm1 = Branch split_key1 elt1 s1 left1 right1
+    fm1 = BranchFM split_key1 elt1 s1 left1 right1
     lts     = splitLT le fm1 split_key
     gts     = splitGT le fm1 split_key
     new_elt = case lookupFM' le fm1 split_key of
-                Nothing   -> elt2
+                Nothing    -> elt2
                 Just elt1' -> combiner elt1' elt2
 
 --- (minusFM a1 a2) deletes from a1 any bindings which are bound in a2
@@ -228,14 +228,14 @@ minusFM :: FM key elt -> FM key elt -> FM key elt
 minusFM (FM le1 fm1) (FM _ fm2) = FM le1 (minusFM' le1 fm1 fm2)
 
 minusFM' _  EmptyFM _ = EmptyFM
-minusFM' _  (Branch split_key1 elt1 s1 left1 right1) EmptyFM =
-  Branch split_key1 elt1 s1 left1 right1
-minusFM' le (Branch split_key1 elt1 s1 left1 right1)
-            (Branch split_key _ _ left right)
+minusFM' _  (BranchFM split_key1 elt1 s1 left1 right1) EmptyFM =
+  BranchFM split_key1 elt1 s1 left1 right1
+minusFM' le (BranchFM split_key1 elt1 s1 left1 right1)
+            (BranchFM split_key _ _ left right)
   = glueVBal le (minusFM' le lts left) (minusFM' le gts right)
        -- The two can be way different, so we need glueVBal
   where
-    fm1 = Branch split_key1 elt1 s1 left1 right1
+    fm1 = BranchFM split_key1 elt1 s1 left1 right1
     lts = splitLT le fm1 split_key  -- NB gt and lt, so the equal ones
     gts = splitGT le fm1 split_key  -- are not in either.
 
@@ -254,9 +254,9 @@ intersectFM_C combiner (FM le1 fm1) (FM _ fm2) =
   FM le1 (intersectFM_C' le1 combiner fm1 fm2)
 
 intersectFM_C' _  _        _        EmptyFM = EmptyFM
-intersectFM_C' _  _        EmptyFM (Branch _ _ _ _ _) = EmptyFM
-intersectFM_C' le combiner (Branch split_key1 elt1 s1 left1 right1)
-                           (Branch split_key elt2 _ left right)
+intersectFM_C' _  _        EmptyFM (BranchFM _ _ _ _ _) = EmptyFM
+intersectFM_C' le combiner (BranchFM split_key1 elt1 s1 left1 right1)
+                           (BranchFM split_key elt2 _ left right)
 
   | isJust maybe_elt1   -- split_elt *is* in intersection
   = mkVBalBranch le split_key (combiner elt1' elt2) 
@@ -268,7 +268,7 @@ intersectFM_C' le combiner (Branch split_key1 elt1 s1 left1 right1)
                 (intersectFM_C' le combiner gts right)
 
   where
-    fm1 = Branch split_key1 elt1 s1 left1 right1
+    fm1 = BranchFM split_key1 elt1 s1 left1 right1
     lts = splitLT le fm1 split_key      -- NB gt and lt, so the equal ones
     gts = splitGT le fm1 split_key      -- are not in either.
 
@@ -284,7 +284,7 @@ foldFM :: (key -> elt -> a -> a) -> a -> FM key elt -> a
 foldFM k z (FM le fm) = foldFM' le k z fm
 
 foldFM' _  _ z EmptyFM = z
-foldFM' le k z (Branch key elt _ fm_l fm_r)
+foldFM' le k z (BranchFM key elt _ fm_l fm_r)
   = foldFM' le k (k key elt (foldFM' le k z fm_r)) fm_l
 
 --- Applies a given function on every element in the map.
@@ -292,8 +292,8 @@ mapFM :: (key -> elt1 -> elt2) -> FM key elt1 -> FM key elt2
 mapFM f (FM le fm) = FM le (mapFM' le f fm)
 
 mapFM' _  _ EmptyFM = EmptyFM
-mapFM' le f (Branch key elt size fm_l fm_r)
-  = Branch key (f key elt) size (mapFM' le f fm_l) (mapFM' le f fm_r)
+mapFM' le f (BranchFM key elt size fm_l fm_r)
+  = BranchFM key (f key elt) size (mapFM' le f fm_l) (mapFM' le f fm_r)
 
 --- Yields a new finite map with only those key/element pairs matching the
 --- given predicate.
@@ -301,7 +301,7 @@ filterFM  :: (key -> elt -> Bool) -> FM key elt -> FM key elt
 filterFM p (FM le fm) = FM le (filterFM' le p fm)
 
 filterFM' _  _ EmptyFM = EmptyFM
-filterFM' le p (Branch key elt _ fm_l fm_r)
+filterFM' le p (BranchFM key elt _ fm_l fm_r)
   | p key elt          -- Keep the item
   = mkVBalBranch le key elt (filterFM' le p fm_l) (filterFM' le p fm_r)
 
@@ -315,10 +315,10 @@ filterFM' le p (Branch key elt _ fm_l fm_r)
 --- How many elements does given map contain?
 sizeFM :: FM _ _ -> Int
 sizeFM (FM _ EmptyFM)               = 0
-sizeFM (FM _ (Branch _ _ size _ _)) = size
+sizeFM (FM _ (BranchFM _ _ size _ _)) = size
 
 sizeFM' EmptyFM              = 0
-sizeFM' (Branch _ _ size _ _) = size
+sizeFM' (BranchFM _ _ size _ _) = size
 
 
 --- Do two given maps contain the same key/element pairs?
@@ -340,7 +340,7 @@ lookupFM :: FM key elt -> key -> Maybe elt
 lookupFM (FM le fm) key = lookupFM' le fm key
 
 lookupFM' _  EmptyFM _   = Nothing
-lookupFM' le (Branch key elt _ fm_l fm_r) key_to_find
+lookupFM' le (BranchFM key elt _ fm_l fm_r) key_to_find
   = if le key_to_find key
     then lookupFM' le fm_l key_to_find
     else if key_to_find==key
@@ -367,8 +367,8 @@ minFM :: FM a b -> Maybe (a,b)
 minFM = min . tree
   where
    min EmptyFM            = Nothing
-   min (Branch k x _ l _) | l==EmptyFM = Just (k,x)
-                          | otherwise  = min l
+   min (BranchFM k x _ l _) | l==EmptyFM = Just (k,x)
+                            | otherwise  = min l
 
 --- Retrieves the greatest key/element pair in the finite map 
 --- according to the basic key ordering.
@@ -376,8 +376,8 @@ maxFM :: FM a b -> Maybe (a,b)
 maxFM = max . tree
   where
     max EmptyFM            = Nothing
-    max (Branch k x _ _ r) | r==EmptyFM = Just (k,x)
-                           | otherwise  = max r
+    max (BranchFM k x _ _ r) | r==EmptyFM = Just (k,x)
+                             | otherwise  = max r
 
 
 
@@ -410,7 +410,7 @@ fmToListPreOrder :: FM key elt -> [(key,elt)]
 fmToListPreOrder (FM _ fm) = pre fm []
    where
      pre EmptyFM xs = xs
-     pre (Branch k x _ l r) xs = (k,x):pre l (pre r xs)
+     pre (BranchFM k x _ l r) xs = (k,x):pre l (pre r xs)
 
 --- Sorts a given list by inserting and retrieving from finite map.
 --- Duplicates are deleted.
@@ -444,7 +444,7 @@ tree (FM _ fm) = fm
 
 data FiniteMap key elt
   = EmptyFM
-  | Branch key elt             -- Key and elt stored here
+  | BranchFM key elt             -- Key and elt stored here
     Int{-STRICT-}              -- Size >= 1
     (FiniteMap key elt)        -- Children
     (FiniteMap key elt)
@@ -472,7 +472,7 @@ mkBranch :: Int
          -> FiniteMap key elt
 
 mkBranch _{-which-} key elt fm_l fm_r =
-    let result = Branch key elt (unbox (1 + left_size + right_size)) fm_l fm_r
+    let result = BranchFM key elt (unbox (1 + left_size + right_size)) fm_l fm_r
     in
       result
       --    if sizeFM result <= 8 then
@@ -484,13 +484,13 @@ mkBranch _{-which-} key elt fm_l fm_r =
   where
     {-left_ok  = case fm_l of
                  EmptyFM                         -> True
-                 Branch _ _ _ _ _  -> cmpWithBiggest_left_key key
+                 BranchFM _ _ _ _ _  -> cmpWithBiggest_left_key key
 
     cmpWithBiggest_left_key key' = le (fst (findMax fm_l)) key'
 
     right_ok = case fm_r of
                  EmptyFM                         -> True
-                 Branch _ _ _ _ _ -> cmpWithSmallest_right_key key
+                 BranchFM _ _ _ _ _ -> cmpWithSmallest_right_key key
 
     cmpWithSmallest_right_key key' = le key' (fst (findMin fm_r))
 
@@ -519,7 +519,7 @@ mkBalBranch key elt fm_L fm_R
 
   | size_r > sIZE_RATIO * size_l        -- Right tree too big
   = case fm_R of
-        Branch _ _ _ fm_rl fm_rr ->
+        BranchFM _ _ _ fm_rl fm_rr ->
               if sizeFM' fm_rl < 2 * sizeFM' fm_rr
                 then single_L fm_L fm_R
                 else double_L fm_L fm_R
@@ -527,7 +527,7 @@ mkBalBranch key elt fm_L fm_R
 
   | size_l > sIZE_RATIO * size_r        -- Left tree too big
   = case fm_L of
-        Branch _ _ _ fm_ll fm_lr ->
+        BranchFM _ _ _ fm_ll fm_lr ->
               if sizeFM' fm_lr < 2 * sizeFM' fm_ll
                 then single_R fm_L fm_R
                 else double_R fm_L fm_R
@@ -540,17 +540,17 @@ mkBalBranch key elt fm_L fm_R
     size_l   = sizeFM' fm_L
     size_r   = sizeFM' fm_R
 
-    single_L fm_l (Branch key_r elt_r _ fm_rl fm_rr)
+    single_L fm_l (BranchFM key_r elt_r _ fm_rl fm_rr)
         = mkBranch 3{-which-} key_r elt_r (mkBranch 4{-which-} key elt fm_l fm_rl) fm_rr
 
-    double_L fm_l (Branch key_r elt_r _ (Branch key_rl elt_rl _ fm_rll fm_rlr) fm_rr)
+    double_L fm_l (BranchFM key_r elt_r _ (BranchFM key_rl elt_rl _ fm_rll fm_rlr) fm_rr)
         = mkBranch 5{-which-} key_rl elt_rl (mkBranch 6{-which-} key   elt   fm_l   fm_rll)
                                  (mkBranch 7{-which-} key_r elt_r fm_rlr fm_rr)
 
-    single_R (Branch key_l elt_l _ fm_ll fm_lr) fm_r
+    single_R (BranchFM key_l elt_l _ fm_ll fm_lr) fm_r
         = mkBranch 8{-which-} key_l elt_l fm_ll (mkBranch 9{-which-} key elt fm_lr fm_r)
 
-    double_R (Branch key_l elt_l _ fm_ll (Branch key_lr elt_lr _ fm_lrl fm_lrr)) fm_r
+    double_R (BranchFM key_l elt_l _ fm_ll (BranchFM key_lr elt_lr _ fm_lrl fm_lrr)) fm_r
         = mkBranch 10{-which-} key_lr elt_lr (mkBranch 11{-which-} key_l elt_l fm_ll  fm_lrl)
                                  (mkBranch 12{-which-} key   elt   fm_lrr fm_r)
 
@@ -566,11 +566,11 @@ mkVBalBranch :: (LeKey key)
 --           (c) all keys in r are > key
 
 mkVBalBranch le key elt EmptyFM fm_r = addToFM' le fm_r key elt
-mkVBalBranch le key elt (Branch key_l elt_l s_l fm_ll fm_lr) EmptyFM = 
-   addToFM' le (Branch key_l elt_l s_l fm_ll fm_lr) key elt
+mkVBalBranch le key elt (BranchFM key_l elt_l s_l fm_ll fm_lr) EmptyFM = 
+   addToFM' le (BranchFM key_l elt_l s_l fm_ll fm_lr) key elt
   
-mkVBalBranch le key elt (Branch key_l elt_l s_l fm_ll fm_lr)
-                        (Branch key_r elt_r s_r fm_rl fm_rr)
+mkVBalBranch le key elt (BranchFM key_l elt_l s_l fm_ll fm_lr)
+                        (BranchFM key_r elt_r s_r fm_rl fm_rr)
   | sIZE_RATIO * size_l < size_r
   = mkBalBranch key_r elt_r (mkVBalBranch le key elt fm_l fm_rl) fm_rr
 
@@ -581,8 +581,8 @@ mkVBalBranch le key elt (Branch key_l elt_l s_l fm_ll fm_lr)
   = mkBranch 13{-which-} key elt fm_l fm_r
 
   where
-    fm_l = Branch key_l elt_l s_l fm_ll fm_lr
-    fm_r = Branch key_r elt_r s_r fm_rl fm_rr
+    fm_l = BranchFM key_l elt_l s_l fm_ll fm_lr
+    fm_r = BranchFM key_r elt_r s_r fm_rl fm_rr
     size_l = sizeFM' fm_l
     size_r = sizeFM' fm_r
 
@@ -621,8 +621,8 @@ glueVBal le fm_l fm_r =
     else if isEmptyFM' fm_r
            then fm_l
            else 
-             let Branch key_l elt_l _ fm_ll fm_lr = fm_l
-                 Branch key_r elt_r _ fm_rl fm_rr = fm_r
+             let BranchFM key_l elt_l _ fm_ll fm_lr = fm_l
+                 BranchFM key_r elt_r _ fm_rl fm_rr = fm_r
                  --(mid_key_l,mid_elt_l) = findMax fm_l
                  --(mid_key_r,mid_elt_r) = findMin fm_r
                  size_l = sizeFM' fm_l
@@ -651,7 +651,7 @@ splitLT, splitGT :: (LeKey key) -> FiniteMap key elt -> key
 -- splitGT fm split_key  =  fm restricted to keys >  split_key
 
 splitLT _  EmptyFM _ = EmptyFM
-splitLT le (Branch key elt _ fm_l fm_r) split_key
+splitLT le (BranchFM key elt _ fm_l fm_r) split_key
   = if le split_key key
     then splitLT le fm_l split_key
     else if split_key == key
@@ -659,7 +659,7 @@ splitLT le (Branch key elt _ fm_l fm_r) split_key
          else mkVBalBranch le key elt fm_l (splitLT le fm_r split_key)
 
 splitGT _  EmptyFM _ = EmptyFM
-splitGT le (Branch key elt _ fm_l fm_r) split_key
+splitGT le (BranchFM key elt _ fm_l fm_r) split_key
   = if le split_key key
     then mkVBalBranch le key elt (splitGT le fm_l split_key) fm_r
     else if split_key == key
@@ -667,26 +667,26 @@ splitGT le (Branch key elt _ fm_l fm_r) split_key
          else splitGT le fm_r split_key
 
 findMin :: FiniteMap key elt -> (key,elt)
-findMin (Branch key elt _ EmptyFM _) = (key,elt)
-findMin (Branch _   _   _ (Branch key_l elt_l s_l fm_ll fm_lr)_) =
-      findMin (Branch key_l elt_l s_l fm_ll fm_lr)
+findMin (BranchFM key elt _ EmptyFM _) = (key,elt)
+findMin (BranchFM _   _   _ (BranchFM key_l elt_l s_l fm_ll fm_lr)_) =
+      findMin (BranchFM key_l elt_l s_l fm_ll fm_lr)
 
 deleteMin :: (LeKey key) -> FiniteMap key elt -> FiniteMap key elt
-deleteMin _  (Branch _   _   _ EmptyFM fm_r) = fm_r
-deleteMin le (Branch key elt _ (Branch key_l elt_l s_l fm_ll fm_lr) fm_r) =
-  mkBalBranch key elt (deleteMin le (Branch key_l elt_l s_l fm_ll fm_lr))
+deleteMin _  (BranchFM _   _   _ EmptyFM fm_r) = fm_r
+deleteMin le (BranchFM key elt _ (BranchFM key_l elt_l s_l fm_ll fm_lr) fm_r) =
+  mkBalBranch key elt (deleteMin le (BranchFM key_l elt_l s_l fm_ll fm_lr))
                          fm_r
 
 findMax :: FiniteMap key elt -> (key,elt)
-findMax (Branch key elt _ _ EmptyFM) = (key,elt)
-findMax (Branch _   _   _ _  (Branch key_r elt_r s_r fm_rl fm_rr)) =
-  findMax (Branch key_r elt_r s_r fm_rl fm_rr)
+findMax (BranchFM key elt _ _ EmptyFM) = (key,elt)
+findMax (BranchFM _   _   _ _  (BranchFM key_r elt_r s_r fm_rl fm_rr)) =
+  findMax (BranchFM key_r elt_r s_r fm_rl fm_rr)
 
 deleteMax :: (LeKey key) -> FiniteMap key elt -> FiniteMap key elt
-deleteMax _  (Branch _   _   _ fm_l EmptyFM) = fm_l
-deleteMax le (Branch key elt _ fm_l (Branch key_r elt_r s_r fm_rl fm_rr)) =
+deleteMax _  (BranchFM _   _   _ fm_l EmptyFM) = fm_l
+deleteMax le (BranchFM key elt _ fm_l (BranchFM key_r elt_r s_r fm_rl fm_rr)) =
   mkBalBranch key elt fm_l
-              (deleteMax le (Branch key_r elt_r s_r fm_rl fm_rr))
+              (deleteMax le (BranchFM key_r elt_r s_r fm_rl fm_rr))
 
 
 
