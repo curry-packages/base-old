@@ -16,13 +16,13 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version February 2013
+--- @version April 2013
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             HtmlForm(..),FormParam(..),CookieParam(..),
             CgiRef,idOfCgiRef,CgiEnv,HtmlHandler,
-            defaultEncoding, defaultBackground,
+            defaultEncoding,
             form,standardForm,answerText,answerEncText,
             cookieForm,getCookies,
             page,standardPage,
@@ -71,9 +71,6 @@ infixl 0 `addFormParam`
 ------------------------------------------------------------------------------
 --- The default encoding used in generated web pages.
 defaultEncoding = "utf-8" --"iso-8859-1"
-
---- The default background for generated web pages.
-defaultBackground = ("bgcolor","#ffffff")
 
 ------------------------------------------------------------------------------
 --- The (abstract) data type for representing references to input elements
@@ -192,7 +189,7 @@ data CookieParam = CookieExpire ClockTime
 --- @param hexps - the form's body (list of HTML expressions)
 --- @return an HTML form
 form :: String -> [HtmlExp] -> HtmlForm
-form title hexps = HtmlForm title [BodyAttr defaultBackground] hexps
+form title hexps = HtmlForm title [] hexps
 
 --- A standard HTML form for active web pages where the title is included
 --- in the body as the first header.
@@ -910,7 +907,7 @@ showHtmlPage (HtmlPage title params html) =
                   [HtmlStruct "head" []
                        ([HtmlStruct "title" [] [HtmlText (htmlQuote title)]] ++
                        concatMap param2html params),
-                   HtmlStruct "body" [defaultBackground] html])
+                   HtmlStruct "body" [] html])
  where
   param2html (PageEnc enc) =
      [HtmlStruct "meta" [("http-equiv","Content-Type"),
