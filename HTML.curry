@@ -16,17 +16,18 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version August 2012
+--- @version April 2013
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             HtmlForm(..),FormParam(..),CookieParam(..),
             CgiRef,idOfCgiRef,CgiEnv,HtmlHandler,
-            defaultEncoding, defaultBackground,
+            defaultEncoding,
             form,standardForm,answerText,answerEncText,
             cookieForm,getCookies,
-            page,standardPage,pageEnc,pageCSS,pageMetaInfo,addPageParam,
-            formEnc,formCSS,addFormParam,
+            page,standardPage,
+            pageEnc,pageCSS,pageMetaInfo,pageLinkInfo,pageBodyAttr,addPageParam,
+            formEnc,formCSS,formBodyAttr,addFormParam,
             htxt,htxts,hempty,nbsp,h1,h2,h3,h4,h5,
             par,emphasize,strong,bold,italic,code,
             center,blink,teletype,pre,verbatim,address,href,anchor,
@@ -38,7 +39,7 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             textfield,password,textarea,checkbox,checkedbox,
             radio_main,radio_main_off,radio_other,
             selection,selectionInitial,multipleSelection,
-            hiddenfield,htmlQuote,htmlIsoUmlauts,addAttr,addAttrs,
+            hiddenfield,htmlQuote,htmlIsoUmlauts,addAttr,addAttrs,addClass,
             showHtmlExps,showHtmlExp,showHtmlPage,
             runFormServerWithKey,runFormServerWithKeyAndFormParams,
             intForm,intFormMain,
@@ -63,15 +64,13 @@ import Profile
 
 infixl 0 `addAttr`
 infixl 0 `addAttrs`
+infixl 0 `addClass`
 infixl 0 `addPageParam`
 infixl 0 `addFormParam`
 
 ------------------------------------------------------------------------------
 --- The default encoding used in generated web pages.
 defaultEncoding = "utf-8" --"iso-8859-1"
-
---- The default background for generated web pages.
-defaultBackground = ("bgcolor","#ffffff")
 
 ------------------------------------------------------------------------------
 --- The (abstract) data type for representing references to input elements
@@ -173,6 +172,12 @@ formEnc enc = FormEnc enc
 formCSS :: String -> FormParam
 formCSS css = FormCSS css
 
+--- Optional attribute for the body element of the HTML form.
+--- More than one occurrence is allowed, i.e., all such attributes are
+--- collected.
+formBodyAttr :: (String,String) -> FormParam
+formBodyAttr attr = BodyAttr attr
+
 --- A cookie to be sent to the client's browser when a HTML form is
 --- requested.
 formCookie :: (String,String) -> FormParam
@@ -190,7 +195,7 @@ data CookieParam = CookieExpire ClockTime
 --- @param hexps - the form's body (list of HTML expressions)
 --- @return an HTML form
 form :: String -> [HtmlExp] -> HtmlForm
-form title hexps = HtmlForm title [BodyAttr defaultBackground] hexps
+form title hexps = HtmlForm title [] hexps
 
 --- A standard HTML form for active web pages where the title is included
 --- in the body as the first header.
@@ -323,10 +328,15 @@ data HtmlPage = HtmlPage String [PageParam] [HtmlExp]
 --- @cons PageCSS s - a URL for a CSS file for this page
 --- @cons PageJScript s - a URL for a Javascript file for this page
 --- @cons PageMeta as - meta information (in form of attributes) for this page
-data PageParam = PageEnc     String
-               | PageCSS     String
-               | PageJScript String
-               | PageMeta    [(String,String)]
+--- @cons PageLink as - link information (in form of attributes) for this page
+--- @cons PageBodyAttr attr - optional attribute for the body element of the
+---                           page (more than one occurrence is allowed)
+data PageParam = PageEnc      String
+               | PageCSS      String
+               | PageJScript  String
+               | PageMeta     [(String,String)]
+               | PageLink     [(String,String)]
+               | PageBodyAttr (String,String)
 
 --- An encoding scheme for a HTML page.
 pageEnc :: String -> PageParam
@@ -337,9 +347,20 @@ pageCSS :: String -> PageParam
 pageCSS css = PageCSS css
 
 --- Meta information for a HTML page. The argument is a list of
---- attributes included in the meta-tag for this page.
+--- attributes included in the `meta`-tag in the header for this page.
 pageMetaInfo :: [(String,String)] -> PageParam
 pageMetaInfo attrs = PageMeta attrs
+
+--- Link information for a HTML page. The argument is a list of
+--- attributes included in the `link`-tag in the header for this page.
+pageLinkInfo :: [(String,String)] -> PageParam
+pageLinkInfo attrs = PageLink attrs
+
+--- Optional attribute for the body element of the web page.
+--- More than one occurrence is allowed, i.e., all such attributes are
+--- collected.
+pageBodyAttr :: (String,String) -> PageParam
+pageBodyAttr attr = PageBodyAttr attr
 
 --- A basic HTML web page with the default encoding.
 --- @param title - the title of the page
@@ -805,6 +826,9 @@ addAttrs (HtmlEvent hexp handler) attrs =
 addAttrs (HtmlCRef  hexp cref) attrs =
     HtmlCRef (addAttrs hexp attrs) cref
 
+--- Adds a class attribute to an HTML element.
+addClass :: HtmlExp -> String -> HtmlExp
+addClass hexp cls = addAttr hexp ("class",cls)
 
 ------------------------------------------------------------------------------
 -- Auxiliaries for faster show (could be later put into a standard library)
@@ -849,8 +873,9 @@ getTag (HtmlCRef   he _)    = getTag he
 -- is this a tag where a line break can be safely added?
 tagWithLn t = t/="" &&
               t `elem` ["br","p","li","ul","ol","dl","dt","dd","hr",
-                        "h1","h2","h3","h4","h5","h6",
-                        "html","title","head","body","form","table","tr","td"]
+                        "h1","h2","h3","h4","h5","h6","div",
+                        "html","title","head","body","link","script",
+                        "form","table","tr","td"]
 
 
 --- Transforms a single HTML expression into string representation.
@@ -897,7 +922,7 @@ showHtmlPage (HtmlPage title params html) =
                   [HtmlStruct "head" []
                        ([HtmlStruct "title" [] [HtmlText (htmlQuote title)]] ++
                        concatMap param2html params),
-                   HtmlStruct "body" [defaultBackground] html])
+                   HtmlStruct "body" bodyattrs html])
  where
   param2html (PageEnc enc) =
      [HtmlStruct "meta" [("http-equiv","Content-Type"),
@@ -908,7 +933,10 @@ showHtmlPage (HtmlPage title params html) =
   param2html (PageJScript js) =
      [HtmlStruct "script" [("type","text/javascript"),("src",js)] []]
   param2html (PageMeta as) = [HtmlStruct "meta" as []]
+  param2html (PageLink as) = [HtmlStruct "link" as []]
+  param2html (PageBodyAttr _) = [] -- these attributes are separately processed
 
+  bodyattrs = [attr | (PageBodyAttr attr) <- params]
 
 --- Standard header for generated HTML pages.
 htmlPrelude =
@@ -1027,8 +1055,9 @@ runFormServerWithKeyAndFormParams url cgikey formparams hformact = do
     _ -> (defaultCgiServerTimeout,args)
 
   startCgiServer timeout port scriptkey = do
-    time <- getClockTime
-    (state,htmlstring) <- computeFormInStateAndEnv True url cgikey formparams
+    time  <- getClockTime
+    ltime <- toCalendarTime time
+    (state,htmlstring) <- computeFormInStateAndEnv url cgikey formparams
                              (initialServerState time) scriptkey hformact []
     putStr htmlstring
     hClose stdout
@@ -1037,7 +1066,6 @@ runFormServerWithKeyAndFormParams url cgikey formparams hformact = do
      else -- start server process:
       do let portname = port++scriptkey
          socket <- listenOn portname
-         ltime <- toCalendarTime time
          putErrLn $ calendarTimeToString ltime ++
                     ": server started on port " ++ portname
          registerCgiServer url portname
@@ -1143,7 +1171,7 @@ serveCgiMessagesForForm servertimeout url cgikey portname
                mfe
    where
     serveFormInEnv rstate scriptkey hformact cenv = do
-      (nstate,htmlstring) <- computeFormInStateAndEnv False url cgikey fparams
+      (nstate,htmlstring) <- computeFormInStateAndEnv url cgikey fparams
                                                 rstate scriptkey hformact cenv
       hPutStrLn hdl htmlstring
       hClose hdl
@@ -1161,13 +1189,12 @@ serveCgiMessagesForForm servertimeout url cgikey portname
     serveCgiMessages state
 
 -- computes a HTML form w.r.t. a state and a cgi environment:
-computeFormInStateAndEnv isinitform url cgikey fparams state scriptkey
-                         hformact cenv =
+computeFormInStateAndEnv url cgikey fparams state scriptkey hformact cenv =
   catch tryComputeForm
         (\e -> do uparam <- getUrlParameter
                   return (state,errorAsHtml e uparam))
  where
-  errorAsHtml e urlparam = addHtmlContentType isinitform $ showHtmlPage $
+  errorAsHtml e urlparam = addHtmlContentType $ showHtmlPage $
    page "Server Error"
     [h1 [htxt "Error: Failure during computation"],
      par [htxt "Your request cannot be processed due to a run-time error:"],
@@ -1181,7 +1208,7 @@ computeFormInStateAndEnv isinitform url cgikey fparams state scriptkey
   tryComputeForm = do
     cform <- hformact
     let (cookiestring,hform) = extractCookies cform
-    (htmlstring,evhs) <- showAnswerFormInEnv isinitform url scriptkey
+    (htmlstring,evhs) <- showAnswerFormInEnv url scriptkey
                                              (addFormParams hform fparams)
                                              (getMaxFieldNr cenv + 1)
     nstate <- storeEnvHandlers state
@@ -1230,22 +1257,19 @@ getNextFormAndCgiEnv state cgikey newcenv = do
 
 
 -- put the HTML string corresponding to an HtmlForm with HTTP header on stdout:
-showAnswerFormInEnv :: Bool -> String -> String -> HtmlForm -> Int
+showAnswerFormInEnv :: String -> String -> HtmlForm -> Int
                       -> IO (String,[(HtmlHandler,String)])
-showAnswerFormInEnv withlength url key hform@(HtmlForm _ _ _) crefnr = do
+showAnswerFormInEnv url key hform@(HtmlForm _ _ _) crefnr = do
   (htmlstring,evhs) <- showHtmlFormInEnv url key hform crefnr
-  return (addHtmlContentType withlength htmlstring, evhs)
-showAnswerFormInEnv _ _ _ (HtmlAnswer ctype cont) _ = do
-  return ("Content-Type: "++ctype++"\n\n"++cont, [])
+  return (addHtmlContentType htmlstring, evhs)
+showAnswerFormInEnv _ _ (HtmlAnswer ctype cont) _ = do
+  return ("Content-Length: " ++ show (length cont) ++
+          "\nContent-Type: "++ctype++"\n\n"++cont, [])
 
 
--- Adds the initial content lines to an HTML string.
--- If the first argument is True, the content length is computed and also added.
-addHtmlContentType withlength htmlstring =
-    (if withlength
-     then "Connection: close\nContent-Length: " ++
-          show (length htmlstring) ++ "\n"
-     else "") ++
+-- Adds the initial content lines (including content length) to an HTML string.
+addHtmlContentType htmlstring =
+    "Content-Length: " ++ show (length htmlstring) ++ "\n" ++
     "Content-Type: text/html\n\n" ++ htmlstring
 
 -- return the HTML string corresponding to an HtmlForm:
