@@ -26,8 +26,8 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             form,standardForm,answerText,answerEncText,
             cookieForm,getCookies,
             page,standardPage,
-            pageEnc,pageCSS,pageMetaInfo,pageLinkInfo,addPageParam,
-            formEnc,formCSS,addFormParam,
+            pageEnc,pageCSS,pageMetaInfo,pageLinkInfo,pageBodyAttr,addPageParam,
+            formEnc,formCSS,formBodyAttr,addFormParam,
             htxt,htxts,hempty,nbsp,h1,h2,h3,h4,h5,
             par,emphasize,strong,bold,italic,code,
             center,blink,teletype,pre,verbatim,address,href,anchor,
@@ -171,6 +171,12 @@ formEnc enc = FormEnc enc
 --- A URL for a CSS file for a HTML form.
 formCSS :: String -> FormParam
 formCSS css = FormCSS css
+
+--- Optional attribute for the body element of the HTML form.
+--- More than one occurrence is allowed, i.e., all such attributes are
+--- collected.
+formBodyAttr :: (String,String) -> FormParam
+formBodyAttr attr = BodyAttr attr
 
 --- A cookie to be sent to the client's browser when a HTML form is
 --- requested.
@@ -323,11 +329,14 @@ data HtmlPage = HtmlPage String [PageParam] [HtmlExp]
 --- @cons PageJScript s - a URL for a Javascript file for this page
 --- @cons PageMeta as - meta information (in form of attributes) for this page
 --- @cons PageLink as - link information (in form of attributes) for this page
-data PageParam = PageEnc     String
-               | PageCSS     String
-               | PageJScript String
-               | PageMeta    [(String,String)]
-               | PageLink    [(String,String)]
+--- @cons PageBodyAttr attr - optional attribute for the body element of the
+---                           page (more than one occurrence is allowed)
+data PageParam = PageEnc      String
+               | PageCSS      String
+               | PageJScript  String
+               | PageMeta     [(String,String)]
+               | PageLink     [(String,String)]
+               | PageBodyAttr (String,String)
 
 --- An encoding scheme for a HTML page.
 pageEnc :: String -> PageParam
@@ -346,6 +355,12 @@ pageMetaInfo attrs = PageMeta attrs
 --- attributes included in the `link`-tag in the header for this page.
 pageLinkInfo :: [(String,String)] -> PageParam
 pageLinkInfo attrs = PageLink attrs
+
+--- Optional attribute for the body element of the web page.
+--- More than one occurrence is allowed, i.e., all such attributes are
+--- collected.
+pageBodyAttr :: (String,String) -> PageParam
+pageBodyAttr attr = PageBodyAttr attr
 
 --- A basic HTML web page with the default encoding.
 --- @param title - the title of the page
@@ -907,7 +922,7 @@ showHtmlPage (HtmlPage title params html) =
                   [HtmlStruct "head" []
                        ([HtmlStruct "title" [] [HtmlText (htmlQuote title)]] ++
                        concatMap param2html params),
-                   HtmlStruct "body" [] html])
+                   HtmlStruct "body" bodyattrs html])
  where
   param2html (PageEnc enc) =
      [HtmlStruct "meta" [("http-equiv","Content-Type"),
@@ -919,7 +934,9 @@ showHtmlPage (HtmlPage title params html) =
      [HtmlStruct "script" [("type","text/javascript"),("src",js)] []]
   param2html (PageMeta as) = [HtmlStruct "meta" as []]
   param2html (PageLink as) = [HtmlStruct "link" as []]
+  param2html (PageBodyAttr _) = [] -- these attributes are separately processed
 
+  bodyattrs = [attr | (PageBodyAttr attr) <- params]
 
 --- Standard header for generated HTML pages.
 htmlPrelude =
