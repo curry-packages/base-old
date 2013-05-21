@@ -5,7 +5,7 @@
 --- [this paper](http://www.informatik.uni-kiel.de/~mh/papers/JFLP04_findall.html)
 ---
 --- @author  Michael Hanus, Bjoern Peemoeller, Fabian Reck
---- @version September 2012
+--- @version April 2013
 ------------------------------------------------------------------------------
 
 module SearchTree
@@ -14,7 +14,7 @@ module SearchTree
   , Strategy, dfsStrategy, bfsStrategy, idsStrategy, idsStrategyWith
   , allValuesDFS, allValuesBFS, allValuesIDS, allValuesIDSwith
   , ValueSequence, vsToList
-  , someValue, someValueBy
+  , getAllValuesWith, someValue, someValueWith
   ) where
 
 --- A search tree is a value, a failure, or a choice between to search trees.
@@ -204,6 +204,19 @@ concA (Cons x xs) ys = Cons x (concA xs ys)
 concA (FCons d xs) ys = FCons d (concA xs ys)
 
 
+--- Gets all values of an expression w.r.t. a search strategy.
+--- A search strategy is an operation to traverse a search tree
+--- and collect all values, e.g., 'dfsStrategy' or 'bfsStrategy'.
+--- Conceptually, all values are computed on a copy of the expression,
+--- i.e., the evaluation of the expression does not share any results.
+--- Moreover, the evaluation suspends as long as the expression
+--- contains unbound variables.
+getAllValuesWith :: Strategy a -> a -> IO [a]
+getAllValuesWith strategy exp = do
+  t <- getSearchTree exp
+  return (vsToList (strategy t))
+
+
 --- Returns some value for an expression.
 ---
 --- Note that this operation is not purely declarative since
@@ -211,15 +224,15 @@ concA (FCons d xs) ys = FCons d (concA xs ys)
 --- Thus, this operation should be used only if the expression
 --- has a single value. It fails if the expression has no value.
 someValue :: a -> a
-someValue = someValueBy allValuesBFS
+someValue = someValueWith bfsStrategy
 
 --- Returns some value for an expression w.r.t. a search strategy.
 --- A search strategy is an operation to traverse a search tree
---- and collect all values, e.g., `allValuesDFS` or `allValuesBFS`.
+--- and collect all values, e.g., 'dfsStrategy' or 'bfsStrategy'.
 ---
 --- Note that this operation is not purely declarative since
 --- the computed value depends on the ordering of the program rules.
 --- Thus, this operation should be used only if the expression
 --- has a single value. It fails if the expression has no value.
-someValueBy :: (SearchTree a -> [a]) -> a -> a
-someValueBy strategy x = head (strategy (someSearchTree x))
+someValueWith :: Strategy a -> a -> a
+someValueWith strategy x = head (vsToList (strategy (someSearchTree x)))

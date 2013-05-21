@@ -829,10 +829,10 @@ external_nd_C_apply = nd_apply
 -- -------------------
 
 -- external_d_C_try :: (a -> Success) -> [a -> Success]
-external_d_C_try = error "external_dho_C_try"
+external_d_C_try = error "Prelude.external_d_C_try called"
 
 -- external_nd_C_try :: Func a Success -> [Func a Success]
-external_nd_C_try = error "external_ndho_C_try"
+external_nd_C_try = error "Prelude.external_nd_C_try called"
 
 -- Functions on Integer and Nat added from PrimTypes
 -- -------------------------------------------------
