@@ -54,7 +54,7 @@ $(ALLLIBS): $(LIB_CURRY) Makefile
 
 .PHONY: unregister
 unregister:
-	-$(GHC-PKG) unregister $(PACKAGE)-$(VERSION)
+	-$(GHC-PKG) unregister --package-db=$(PKGDB) $(PACKAGE)-$(VERSION)
 
 ${CABAL_FILE}:../Makefile Makefile
 	echo "Name:           $(PACKAGE)"                             > $@
@@ -81,7 +81,7 @@ ${CABAL_FILE}:../Makefile Makefile
 
 .PHONY: installlibs
 installlibs : ${CABAL_FILE} ${ALLLIBS}
-	$(CABAL_INSTALL) -O2 --ghc-options="$(GHC_OPTIONS)"
+	$(CABAL_INSTALL)
 
 .PHONY: all
 all: fcy acy
