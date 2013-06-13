@@ -1,6 +1,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-import System.IO
-import Control.Concurrent
+import           Control.Concurrent
+import qualified Control.Exception  as C (IOException, catch, throw)
+import           Control.Monad           (zipWithM)
+import           System.IO
+import           System.IO.Error         (isEOFError)
+
 import qualified Curry_Prelude as CP
 
 type C_Handle = PrimData CurryHandle
@@ -56,43 +60,41 @@ external_d_C_prim_hSeek :: C_Handle -> C_SeekMode -> CP.C_Int
 external_d_C_prim_hSeek handle mode i _ _
   = toCurry (hSeek . inputHandle) handle mode i
 
-
-external_d_C_prim_hWaitForInput :: C_Handle -> CP.C_Int -> Cover -> ConstStore 
+external_d_C_prim_hWaitForInput :: C_Handle -> CP.C_Int -> Cover -> ConstStore  
                                 -> CP.C_IO CP.C_Bool
-external_d_C_prim_hWaitForInput handle i _ _ =
-  toCurry (myhWaitForInput . inputHandle) handle i
-  where
+external_d_C_prim_hWaitForInput handle timeout _ _
+  = toCurry (myhWaitForInput . inputHandle) handle timeout
 
 myhWaitForInput :: Handle -> Int -> IO Bool
-myhWaitForInput h i =
-  if i < 0
-  then hIsEOF h >>= return . not
-  else hWaitForInput h i
-
+myhWaitForInput h timeout = C.catch (hWaitForInput h timeout) handler
+  where
+  handler :: C.IOException -> IO Bool
+  handler e = if isEOFError e then return False else C.throw e
 
 external_d_C_prim_hWaitForInputs :: CP.OP_List C_Handle -> CP.C_Int
                                  -> Cover -> ConstStore -> CP.C_IO CP.C_Int
 external_d_C_prim_hWaitForInputs hs i _ _ = toCurry selectHandle hs i
 
 selectHandle :: [CurryHandle] -> Int -> IO Int
-selectHandle handles t = do
+selectHandle handles timeout = do
   mvar <- newEmptyMVar
-  threads <- mapM (\ (i,h) -> forkIO (waitOnHandle (inputHandle h) i t mvar))
-                  (zip [0..] handles)
+  threads <- zipWithM
+              (\ i h -> forkIO (waitOnHandle (inputHandle h) i timeout mvar))
+              [0 ..] handles
   inspectRes (length handles) mvar threads
 
 inspectRes :: Int -> MVar (Maybe Int) -> [ThreadId] -> IO Int
 inspectRes 0 _    _       = return (-1)
 inspectRes n mvar threads = do
-  res <- readMVar mvar
+  res <- takeMVar mvar
   case res of
-    Nothing -> inspectRes (n-1) mvar threads
+    Nothing -> inspectRes (n - 1) mvar threads
     Just v  -> mapM_ killThread threads >> return v
 
 waitOnHandle :: Handle -> Int -> Int -> MVar (Maybe Int) -> IO ()
-waitOnHandle h v t mvar = do
-   	    ready <- myhWaitForInput h t
-  	    putMVar mvar (if ready then Just v else Nothing)
+waitOnHandle h v timeout mvar = do
+  ready <- myhWaitForInput h timeout
+  putMVar mvar (if ready then Just v else Nothing)
 
 external_d_C_prim_hWaitForInputsOrMsg ::
  CP.Curry a => CP.OP_List C_Handle -> CP.OP_List a -> Cover -> ConstStore 
