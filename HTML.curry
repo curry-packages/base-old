@@ -70,7 +70,7 @@ infixl 0 `addFormParam`
 
 ------------------------------------------------------------------------------
 --- The default encoding used in generated web pages.
-defaultEncoding = "iso-8859-1"
+defaultEncoding = "utf-8" --"iso-8859-1"
 
 ------------------------------------------------------------------------------
 --- The (abstract) data type for representing references to input elements
