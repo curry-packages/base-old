@@ -11,7 +11,7 @@
 --- see the documentation of the respective module.
 ---
 --- @author  Jonas Oberschweiber, Björn Peemöller, Michael Hanus
---- @version April 2013
+--- @version June 2013
 ------------------------------------------------------------------------------
 
 module AnnotatedFlatCurry
@@ -19,8 +19,9 @@ module AnnotatedFlatCurry
   , module FlatCurry
   ) where
 
-import FlatCurry ( QName, VarIndex, Visibility (..)
-                 , TypeDecl (..), OpDecl (..), TypeExpr (..)
+import FlatCurry ( QName, VarIndex, Visibility (..), TVarIndex
+                 , TypeDecl (..), OpDecl (..), Fixity (..)
+                 , TypeExpr (..), ConsDecl (..)
                  , Literal (..), CombType (..), CaseType (..)
                  )
 
