@@ -735,6 +735,15 @@ mapIO f            = sequenceIO . map f
 mapIO_            :: (a -> IO _) -> [a] -> IO ()
 mapIO_ f           = sequenceIO_ . map f
 
+--- Folds a list of elements using an binary I/O action and a value
+--- for the empty list.
+foldIO :: (a -> b -> IO a) -> a -> [b] -> IO a
+foldIO _ a []      =  return a
+foldIO f a (x:xs)  =  f a x >>= \fax -> foldIO f fax xs
+
+--- Apply a pure function to the result of an I/O action.
+liftIO :: (a -> b) -> IO a -> IO b
+liftIO f m = m >>= return . f
 
 ----------------------------------------------------------------
 -- Non-determinism and free variables:
