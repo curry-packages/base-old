@@ -109,7 +109,7 @@ prim_error external
 --- A non-reducible polymorphic function.
 --- It is useful to express a failure in a search branch of the execution.
 --- It could be defined by: <code>failed = head []</code>
-failed :: _ 
+failed :: _
 failed external
 
 
@@ -121,13 +121,13 @@ data Bool = False | True
 (&&)            :: Bool -> Bool -> Bool
 True  && x      = x
 False && _      = False
- 
+
 
 --- Sequential disjunction on Booleans.
 (||)            :: Bool -> Bool -> Bool
 True  || _      = True
 False || x      = x
- 
+
 
 --- Negation on Booleans.
 not             :: Bool -> Bool
@@ -646,7 +646,7 @@ prim_appendFile external
 putStr            :: String -> IO ()
 putStr []         = done
 putStr (c:cs)     = putChar c >> putStr cs
- 
+
 --- Action to print a string with a newline on stdout.
 putStrLn          :: String -> IO ()
 putStrLn cs       = putStr cs >> putChar '\n'
@@ -784,14 +784,14 @@ getSomeValue :: a -> IO a
 getSomeValue e = return (findfirst (=:=e))
 
 --- Basic search control operator.
-try     :: (a->Success) -> [a->Success]
+try     :: (a -> Success) -> [a -> Success]
 try external
 
 --- Inject operator which adds the application of the unary
 --- procedure p to the search variable to the search goal
 --- taken from Oz. p x comes before g x to enable a test+generate
 --- form in a sequential implementation.
-inject  :: (a->Success) -> (a->Success) -> (a->Success) 
+inject  :: (a -> Success) -> (a -> Success) -> (a -> Success)
 inject g p = \x -> p x & g x
 
 --- Computes all solutions via a a depth-first strategy.
@@ -807,22 +807,22 @@ inject g p = \x -> p x & g x
 -- The following solveAll algorithm is faster.
 -- For comparison we have solveAll2, which implements the above algorithm.
 
-solveAll     :: (a->Success) -> [a->Success]
+solveAll     :: (a -> Success) -> [a -> Success]
 solveAll g = evalall (try g)
   where
     evalall []      = []
-    evalall [a]     = [a] 
+    evalall [a]     = [a]
     evalall (a:b:c) = evalall3 (try a) (b:c)
 
     evalall2 []    = []
     evalall2 (a:b) = evalall3 (try a) b
-    
+
     evalall3 []      b  = evalall2 b
     evalall3 [l]     b  = l : evalall2 b
     evalall3 (c:d:e) b  = evalall3 (try c) (d:e ++b)
 
 
-solveAll2  :: (a->Success) -> [a->Success]
+solveAll2  :: (a -> Success) -> [a -> Success]
 solveAll2 g = evalResult (try g)
         where
           evalResult []      = []
@@ -831,7 +831,7 @@ solveAll2 g = evalResult (try g)
 
 
 --- Gets the first solution via a depth-first strategy.
-once :: (a->Success) -> (a->Success)
+once :: (a -> Success) -> (a -> Success)
 once g = head (solveAll g)
 
 
@@ -839,52 +839,52 @@ once g = head (solveAll g)
 --- a specified operator that can always take a decision which
 --- of two solutions is better.
 --- In general, the comparison operation should be rigid in its arguments!
-best           :: (a->Success) -> (a->a->Bool) -> [a->Success]
+best           :: (a -> Success) -> (a -> a -> Bool) -> [a -> Success]
 best g cmp = bestHelp [] (try g) []
  where
    bestHelp [] []     curbest = curbest
    bestHelp [] (y:ys) curbest = evalY (try (constrain y curbest)) ys curbest
    bestHelp (x:xs) ys curbest = evalX (try x) xs ys curbest
-   
+
    evalY []        ys curbest = bestHelp [] ys curbest
    evalY [newbest] ys _       = bestHelp [] ys [newbest]
    evalY (c:d:xs)  ys curbest = bestHelp (c:d:xs) ys curbest
-   
+
    evalX []        xs ys curbest = bestHelp xs ys curbest
    evalX [newbest] xs ys _       = bestHelp [] (xs++ys) [newbest]
    evalX (c:d:e)   xs ys curbest = bestHelp ((c:d:e)++xs) ys curbest
-   
+
    constrain y []        = y
    constrain y [curbest] =
-       inject y (\v -> let w free in curbest w & cmp v w =:= True)
+      inject y (\v -> let w free in curbest w & cmp v w  =:= True)
 
 
 --- Gets all solutions via a depth-first strategy and unpack
 --- the values from the lambda-abstractions.
 --- Similar to Prolog's findall.
-findall :: (a->Success) -> [a]
+findall :: (a -> Success) -> [a]
 findall g = map unpack (solveAll g)
 
 
 --- Gets the first solution via a depth-first strategy
 --- and unpack the values from the search goals.
-findfirst :: (a->Success) -> a
+findfirst :: (a -> Success) -> a
 findfirst g = head (findall g)
 
 --- Shows the solution of a solved constraint.
-browse  :: (_->Success) -> IO ()
+browse  :: (_ -> Success) -> IO ()
 browse g = putStr (show (unpack g))
 
---- Unpacks solutions from a list of lambda abstractions and write 
+--- Unpacks solutions from a list of lambda abstractions and write
 --- them to the screen.
 browseList :: [_ -> Success] -> IO ()
-browseList [] = done
+browseList []     = done
 browseList (g:gs) = browse g >> putChar '\n' >> browseList gs
 
 
 --- Unpacks a solution's value from a (solved) search goal.
 unpack  :: (a -> Success) -> a
-unpack g | g x  = x  where x free
+unpack g | g x = x where x free
 
 
 --- Identity function used by the partial evaluator
@@ -894,16 +894,16 @@ PEVAL x = x
 
 --- Evaluates the argument to normal form and returns it.
 normalForm :: a -> a
-normalForm x | x=:=y = y where y free
+normalForm x | x =:= y = y where y free
 
 --- Evaluates the argument to ground normal form and returns it.
 --- Suspends as long as the normal form of the argument is not ground.
 groundNormalForm :: a -> a
-groundNormalForm x | y==y = y where y = normalForm x
+groundNormalForm x | y == y = y where y = normalForm x
 
 -- Only for internal use:
 -- Represenation of higher-order applications in FlatCurry.
-apply :: (a->b) -> a -> b
+apply :: (a -> b) -> a -> b
 apply external
 
 -- Only for internal use:
