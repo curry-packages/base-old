@@ -116,8 +116,8 @@ rnmProg name p = updProgName (const name) (updQNamesInProg rnm p)
 -- Selectors
 
 --- transform type declaration
-trType :: (QName -> Visibility -> [Int] -> [ConsDecl] -> a) ->
-          (QName -> Visibility -> [Int] -> TypeExpr   -> a) -> TypeDecl -> a
+trType :: (QName -> Visibility -> [TVarIndex] -> [ConsDecl] -> a) ->
+          (QName -> Visibility -> [TVarIndex] -> TypeExpr   -> a) -> TypeDecl -> a
 trType typ _      (Type    name vis params  cs) = typ name vis params cs
 trType _  typesyn (TypeSyn name vis params syn) = typesyn name vis params syn
 
@@ -150,7 +150,7 @@ isTypeSyn = trType (\_ _ _ _ -> False) (\_ _ _ _ -> True)
 --- update type declaration
 updType :: (QName -> QName) ->
            (Visibility -> Visibility) ->
-           ([Int] -> [Int]) ->
+           ([TVarIndex] -> [TVarIndex]) ->
            ([ConsDecl] -> [ConsDecl]) ->
            (TypeExpr -> TypeExpr)     -> TypeDecl -> TypeDecl
 updType fn fv fp fc fs = trType typ typesyn
@@ -267,7 +267,7 @@ tConsArgs :: TypeExpr -> [TypeExpr]
 tConsArgs (TCons _ args) = args
 
 --- transform type expression
-trTypeExpr :: (Int -> a) ->
+trTypeExpr :: (TVarIndex -> a) ->
               (QName -> [a] -> a) ->
               (a -> a -> a) -> TypeExpr -> a
 trTypeExpr tvar _ _ (TVar n) = tvar n
@@ -294,7 +294,7 @@ isFuncType = trTypeExpr (\_ -> False) (\_ _ -> False) (\_ _ -> True)
 -- Update Operations
 
 --- update all type variables
-updTVars :: (Int -> TypeExpr) -> TypeExpr -> TypeExpr
+updTVars :: (TVarIndex -> TypeExpr) -> TypeExpr -> TypeExpr
 updTVars tvar = trTypeExpr tvar TCons FuncType
 
 --- update all type constructors
@@ -309,18 +309,18 @@ updFuncTypes = trTypeExpr TVar TCons
 
 --- get argument types from functional type
 argTypes :: TypeExpr -> [TypeExpr]
-argTypes (TVar _) = []
-argTypes (TCons _ _) = []
+argTypes (TVar           _) = []
+argTypes (TCons        _ _) = []
 argTypes (FuncType dom ran) = dom : argTypes ran
 
 --- get result type from (nested) functional type
 resultType :: TypeExpr -> TypeExpr
-resultType (TVar n) = TVar n
+resultType (TVar          n) = TVar n
 resultType (TCons name args) = TCons name args
-resultType (FuncType _ ran) = resultType ran
+resultType (FuncType  _ ran) = resultType ran
 
 --- rename variables in type expression
-rnmAllVarsInTypeExpr :: (Int -> Int) -> TypeExpr -> TypeExpr
+rnmAllVarsInTypeExpr :: (TVarIndex -> TVarIndex) -> TypeExpr -> TypeExpr
 rnmAllVarsInTypeExpr f = updTVars (TVar . f)
 
 --- update all qualified names in type expression
@@ -439,11 +439,11 @@ isExternal :: AFuncDecl _ -> Bool
 isExternal = isRuleExternal . funcRule
 
 --- get variable names in a function declaration
-allVarsInFunc :: AFuncDecl _ -> [Int]
+allVarsInFunc :: AFuncDecl _ -> [VarIndex]
 allVarsInFunc = allVarsInRule . funcRule
 
 --- get arguments of function, if not externally defined
-funcArgs :: AFuncDecl _ -> [Int]
+funcArgs :: AFuncDecl a -> [(VarIndex, a)]
 funcArgs = ruleArgs . funcRule
 
 --- get body of function, if not externally defined
@@ -468,7 +468,7 @@ updQNamesInFunc :: Update (AFuncDecl _) QName
 updQNamesInFunc f = updFunc f id id (updQNamesInTypeExpr f) (updQNamesInRule f)
 
 --- update arguments of function, if not externally defined
-updFuncArgs :: Update (AFuncDecl _) [VarIndex]
+updFuncArgs :: Update (AFuncDecl a) [(VarIndex, a)]
 updFuncArgs = updFuncRule . updRuleArgs
 
 --- update body of function, if not externally defined
@@ -478,63 +478,65 @@ updFuncBody = updFuncRule . updRuleBody
 -- Rule ------------------------------------------------------------------------
 
 --- transform rule
-trRule :: ([Int] -> AExpr a -> b) -> (String -> b) -> ARule a -> b
-trRule rule _   (ARule args exp) = rule args exp
-trRule _    ext (AExternal    s) = ext s
+trRule :: (a -> [(VarIndex, a)] -> AExpr a -> b) -> (a -> String -> b)
+       -> ARule a -> b
+trRule rule _   (ARule     a vs e) = rule a vs e
+trRule _    ext (AExternal a    s) = ext a s
 
 -- Selectors
 
 --- get rules arguments if it's not external
-ruleArgs :: ARule _ -> [Int]
-ruleArgs = trRule (\args _ -> args) failed
+ruleArgs :: ARule a -> [(VarIndex, a)]
+ruleArgs = trRule (\_ vs _ -> vs) failed
 
 --- get rules body if it's not external
 ruleBody :: ARule a -> AExpr a
-ruleBody = trRule (\_ exp -> exp) failed
+ruleBody = trRule (\_ _ e -> e) failed
 
 --- get rules external declaration
 ruleExtDecl :: ARule _ -> String
-ruleExtDecl = trRule failed id
+ruleExtDecl = trRule failed (\_ s -> s)
 
 -- Test Operations
 
 --- is rule external?
 isRuleExternal :: ARule _ -> Bool
-isRuleExternal = trRule (\_ _ -> False) (\_ -> True)
+isRuleExternal = trRule (\_ _ _ -> False) (\_ _ -> True)
 
 -- Update Operations
 
 --- update rule
-updRule :: ([Int] -> [Int])
+updRule :: (a -> a)
+        -> ([(VarIndex, a)] -> [(VarIndex, a)])
         -> (AExpr a -> AExpr a)
         -> (String -> String)
         -> ARule a -> ARule a
-updRule fa fe fs = trRule rule ext
+updRule fa fvs fe fs = trRule rule ext
  where
-  rule args exp = ARule (fa args) (fe exp)
-  ext s = AExternal (fs s)
+  rule a vs e = ARule     (fa a) (fvs vs) (fe e)
+  ext  a    s = AExternal (fa a) (fs s)
 
 --- update rules arguments
-updRuleArgs :: Update (ARule _) [VarIndex]
-updRuleArgs f = updRule f id id
+updRuleArgs :: Update (ARule a) [(VarIndex, a)]
+updRuleArgs f = updRule id f id id
 
 --- update rules body
 updRuleBody :: Update (ARule a) (AExpr a)
-updRuleBody f = updRule id f id
+updRuleBody f = updRule id id f id
 
 --- update rules external declaration
 updRuleExtDecl :: Update (ARule _) String
-updRuleExtDecl f = updRule id id f
+updRuleExtDecl f = updRule id id id f
 
 -- Auxiliary Functions
 
 --- get variable names in a functions rule
-allVarsInRule :: ARule _ -> [Int]
-allVarsInRule = trRule (\args body -> args ++ allVars body) (\_ -> [])
+allVarsInRule :: ARule _ -> [VarIndex]
+allVarsInRule = trRule (\_ vs e -> map fst vs ++ allVars e) (\_ _ -> [])
 
 --- rename all variables in rule
 rnmAllVarsInRule :: Update (ARule _) VarIndex
-rnmAllVarsInRule f = updRule (map f) (rnmAllVars f) id
+rnmAllVarsInRule f = updRule id (map (\(v,a) -> (f v, a))) (rnmAllVars f) id
 
 --- update all qualified names in rule
 updQNamesInRule :: Update (ARule _) QName
@@ -577,7 +579,7 @@ missingArgs = trCombType 0 id 0 id
 -- Selectors
 
 --- get internal number of variable
-varNr :: AExpr _ -> Int
+varNr :: AExpr _ -> VarIndex
 varNr (AVar _ n) = n
 
 --- get literal if expression is literal expression
@@ -590,7 +592,7 @@ combType (AComb _ ct _ _) = ct
 
 --- get name of a combined expression
 combName :: AExpr _ -> QName
-combName (AComb _ _ name _) = name
+combName (AComb _ _ name _) = fst name
 
 --- get arguments of a combined expression
 combArgs :: AExpr a -> [AExpr a]
@@ -601,7 +603,7 @@ missingCombArgs :: AExpr _ -> Int
 missingCombArgs = missingArgs . combType
 
 --- get indices of variables in let declaration
-letBinds :: AExpr a -> [(Int, AExpr a)]
+letBinds :: AExpr a -> [(VarIndex, AExpr a)]
 letBinds (ALet _ vs _) = vs
 
 --- get body of let declaration
@@ -609,7 +611,7 @@ letBody :: AExpr a -> AExpr a
 letBody (ALet _ _ e) = e
 
 --- get variable indices from declaration of free variables
-freeVars :: AExpr _ -> [Int]
+freeVars :: AExpr _ -> [VarIndex]
 freeVars (AFree _ vs _) = map fst vs
 
 --- get expression from declaration of free variables
@@ -679,7 +681,7 @@ isCase e = case e of
 --- transform expression
 trExpr :: (a -> VarIndex -> b)
        -> (a -> Literal -> b)
-       -> (a -> CombType -> QName -> [b] -> b)
+       -> (a -> CombType -> (QName, a) -> [b] -> b)
        -> (a -> [(VarIndex, b)] -> b -> b)
        -> (a -> [(VarIndex, a)] -> b -> b)
        -> (a -> b -> b -> b)
@@ -724,16 +726,16 @@ updLiterals :: (a -> Literal -> AExpr a) -> AExpr a -> AExpr a
 updLiterals lit = trExpr AVar lit AComb ALet AFree AOr ACase ABranch ATyped
 
 --- update all combined expressions in given expression
-updCombs :: (a -> CombType -> QName -> [AExpr a] -> AExpr a)
+updCombs :: (a -> CombType -> (QName, a) -> [AExpr a] -> AExpr a)
          -> AExpr a -> AExpr a
 updCombs comb = trExpr AVar ALit comb ALet AFree AOr ACase ABranch ATyped
 
 --- update all let expressions in given expression
-updLets :: (a -> [(Int, AExpr a)] -> AExpr a -> AExpr a) -> AExpr a -> AExpr a
+updLets :: (a -> [(VarIndex, AExpr a)] -> AExpr a -> AExpr a) -> AExpr a -> AExpr a
 updLets lt = trExpr AVar ALit AComb lt AFree AOr ACase ABranch ATyped
 
 --- update all free declarations in given expression
-updFrees :: (a -> [(Int, a)] -> AExpr a -> AExpr a) -> AExpr a -> AExpr a
+updFrees :: (a -> [(VarIndex, a)] -> AExpr a -> AExpr a) -> AExpr a -> AExpr a
 updFrees fr = trExpr AVar ALit AComb ALet fr AOr ACase ABranch ATyped
 
 --- update all or expressions in given expression
@@ -778,7 +780,7 @@ isGround exp = case exp of
   _ -> isLit exp
 
 --- get all variables (also pattern variables) in expression
-allVars :: AExpr _ -> [Int]
+allVars :: AExpr _ -> [VarIndex]
 allVars e = trExpr var lit comb lt fr or cas branch typed e []
  where
   var _ = (:)
@@ -788,25 +790,25 @@ allVars e = trExpr var lit comb lt fr or cas branch typed e []
   fr _ vs exp = (map fst vs ++) . exp
   or _ = (.)
   cas _ _ exp bs = exp . foldr (.) id bs
-  branch pat exp = ((args pat)++) . exp
-  args pat | isConsPattern pat = patArgs pat
+  branch pat exp = (args pat ++) . exp
+  args pat | isConsPattern pat = map fst (patArgs pat)
            | otherwise = []
   typed _ = const
 
 --- rename all variables (also in patterns) in expression
-rnmAllVars :: Update (AExpr _) Int
+rnmAllVars :: Update (AExpr _) VarIndex
 rnmAllVars f = trExpr var ALit AComb lt fre AOr ACase branch ATyped
  where
    var a = AVar a . f
    fre a vs b = AFree a (map (\(v, x) -> (f v, x)) vs) b
    lt a = ALet a . map (\ (n,exp) -> (f n,exp))
-   branch = ABranch . updPatArgs (map f)
+   branch = ABranch . updPatArgs (map (\(v, a) -> (f v, a)))
 
 --- update all qualified names in expression
 updQNames :: Update (AExpr _) QName
 updQNames f = trExpr AVar ALit comb ALet AFree AOr ACase branch typed
  where
-  comb a ct name args = AComb a ct (f name) args
+  comb a ct (name, b) args = AComb a ct (f name, b) args
   branch = ABranch . updPatCons f
   typed a e ty = ATyped a e (updQNamesInTypeExpr f ty)
 
@@ -848,7 +850,7 @@ updBranchExpr = updBranch id
 -- Pattern -------------------------------------------------------------------
 
 --- transform pattern
-trPattern :: (a -> QName -> [VarIndex] -> b) -> (a -> Literal -> b)
+trPattern :: (a -> (QName, a) -> [(VarIndex, a)] -> b) -> (a -> Literal -> b)
           -> APattern a -> b
 trPattern pattern _        (APattern  a name args) = pattern a name args
 trPattern _       lpattern (ALPattern a         l) = lpattern a l
@@ -857,10 +859,10 @@ trPattern _       lpattern (ALPattern a         l) = lpattern a l
 
 --- get name from constructor pattern
 patCons :: APattern _ -> QName
-patCons = trPattern (\_ name _ -> name) failed
+patCons = trPattern (\_ name _ -> fst name) failed
 
 --- get arguments from constructor pattern
-patArgs :: APattern _ -> [Int]
+patArgs :: APattern a -> [(VarIndex, a)]
 patArgs = trPattern (\_ _ args -> args) failed
 
 --- get literal from literal pattern
@@ -876,9 +878,10 @@ isConsPattern = trPattern (\ _ _ _ -> True) (\ _ _ -> False)
 -- Update Operations
 
 --- update pattern
-updPattern :: (QName -> QName) ->
-              ([Int] -> [Int]) ->
-              (Literal -> Literal) -> APattern a -> APattern a
+updPattern :: ((QName, a) -> (QName, a))
+           -> ([(VarIndex, a)] -> [(VarIndex, a)])
+           -> (Literal -> Literal)
+           -> APattern a -> APattern a
 updPattern fn fa fl = trPattern apattern alpattern
  where
   apattern a name args = APattern a (fn name) (fa args)
@@ -886,10 +889,10 @@ updPattern fn fa fl = trPattern apattern alpattern
 
 --- update constructors name of pattern
 updPatCons :: (QName -> QName) -> APattern a -> APattern a
-updPatCons f = updPattern f id id
+updPatCons f = updPattern (\(n,a) -> (f n, a)) id id
 
 --- update arguments of constructor pattern
-updPatArgs :: ([Int] -> [Int]) -> APattern a -> APattern a
+updPatArgs :: ([(VarIndex, a)] -> [(VarIndex, a)]) -> APattern a -> APattern a
 updPatArgs f = updPattern id f id
 
 --- update literal of pattern
@@ -900,7 +903,30 @@ updPatLiteral f = updPattern id id f
 
 --- build expression from pattern
 patExpr :: APattern a -> AExpr a
-patExpr = trPattern (\a name vs -> AComb a ConsCall name (map (AVar a) vs)) ALit
+patExpr = trPattern (\a name vs -> AComb a ConsCall name (map var vs)) ALit
+  where var (v, a) = AVar a v
+
+-- Retrieval of the annotation
+
+annRule :: ARule a -> a
+annRule (ARule a   _ _) = a
+annRule (AExternal a _) = a
+
+--- Extract the annotation of an annotated expression.
+annExpr :: AExpr a -> a
+annExpr (AComb  a _ _ _) = a
+annExpr (ACase  a _ _ _) = a
+annExpr (AVar   a _    ) = a
+annExpr (ALit   a _    ) = a
+annExpr (AOr    a _ _  ) = a
+annExpr (ALet   a _ _  ) = a
+annExpr (AFree  a _ _  ) = a
+annExpr (ATyped a _ _  ) = a
+
+--- Extract the annotation of an annotated pattern.
+annPattern :: APattern a -> a
+annPattern (APattern  a _ _) = a
+annPattern (ALPattern a _  ) = a
 
 -- Remove annotation
 
@@ -911,14 +937,15 @@ unAnnFuncDecl :: AFuncDecl _ -> FC.FuncDecl
 unAnnFuncDecl = trFunc (\f ar vs ty r -> FC.Func f ar vs ty (unAnnRule r))
 
 unAnnRule :: ARule _ -> FC.Rule
-unAnnRule = trRule (\vs e -> FC.Rule vs (unAnnExpr e)) FC.External
+unAnnRule = trRule (\_ vs e -> FC.Rule (map fst vs) (unAnnExpr e))
+                   (\_ s -> FC.External s)
 
 unAnnExpr :: AExpr _ -> FC.Expr
 unAnnExpr = trExpr var lit comb lett fre or cse branch typed
   where
   var   _       v = FC.Var v
   lit   _       l = FC.Lit l
-  comb  _ ct n es = FC.Comb ct n es
+  comb  _ ct n es = FC.Comb ct (fst n) es
   lett  _    bs e = FC.Let bs e
   fre   _    vs e = FC.Free (map fst vs) e
   or    _     a b = FC.Or a b
@@ -927,4 +954,6 @@ unAnnExpr = trExpr var lit comb lett fre or cse branch typed
   typed _    e ty = FC.Typed e ty
 
 unAnnPattern :: APattern _ -> FC.Pattern
-unAnnPattern = trPattern (\_ qn vs -> FC.Pattern qn vs) (\_ l -> FC.LPattern l)
+unAnnPattern = trPattern (\_ qn vs -> FC.Pattern (fst qn) (map fst vs))
+                         (\_ l -> FC.LPattern l)
+
