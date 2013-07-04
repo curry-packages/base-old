@@ -11,7 +11,7 @@
 --- see the documentation of the respective module.
 ---
 --- @author  Jonas Oberschweiber, Björn Peemöller, Michael Hanus
---- @version June 2013
+--- @version July 2013
 ------------------------------------------------------------------------------
 
 module AnnotatedFlatCurry
@@ -36,14 +36,14 @@ data AFuncDecl a = AFunc QName Arity Visibility TypeExpr (ARule a)
 
 --- Annotated function rule
 data ARule a
-  = ARule [VarIndex] (AExpr a)
-  | AExternal String
+  = ARule     a [(VarIndex, a)] (AExpr a)
+  | AExternal a String
 
 --- Annotated expression
 data AExpr a
   = AVar   a VarIndex
   | ALit   a Literal
-  | AComb  a CombType QName [AExpr a]
+  | AComb  a CombType (QName, a) [AExpr a]
   | ALet   a [(VarIndex, AExpr a)] (AExpr a)
   | AFree  a [(VarIndex, a)] (AExpr a)
   | AOr    a (AExpr a) (AExpr a)
@@ -55,22 +55,5 @@ data ABranchExpr a = ABranch (APattern a) (AExpr a)
 
 --- Annotated pattern
 data APattern a
-  = APattern a QName [VarIndex] --- constructor pattern
-  | ALPattern a Literal         --- literal pattern
-
---- Extract the annotation of an annotated expression.
-exprAnnotation :: AExpr a -> a
-exprAnnotation (AComb  ann _ _ _) = ann
-exprAnnotation (ACase  ann _ _ _) = ann
-exprAnnotation (AVar   ann _    ) = ann
-exprAnnotation (ALit   ann _    ) = ann
-exprAnnotation (AOr    ann _ _  ) = ann
-exprAnnotation (ALet   ann _ _  ) = ann
-exprAnnotation (AFree  ann _ _  ) = ann
-exprAnnotation (ATyped ann _ _  ) = ann
-
---- Extract the annotation of an annotated pattern.
-patAnnotation :: APattern a -> a
-patAnnotation (APattern  ann _ _) = ann
-patAnnotation (ALPattern ann _  ) = ann
-
+  = APattern  a (QName, a) [(VarIndex, a)] --- constructor pattern
+  | ALPattern a Literal                    --- literal pattern
