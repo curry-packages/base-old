@@ -36,6 +36,8 @@ EXCLUDES = $(ALLLIBS) $(MAINGOAL)
 
 PACKAGE    = kics2-libraries
 CABAL_FILE = $(PACKAGE).cabal
+# lib dependencies as comma separated list
+CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
 
 ########################################################################
 # support for global installation
@@ -69,9 +71,7 @@ ${CABAL_FILE}:../Makefile Makefile
 	echo "Library"                                               >> $@
 	echo "  Build-Depends:"                                      >> $@
 	echo "      kics2-runtime == $(VERSION)"                     >> $@
-	echo "    , base, old-time, directory, process"              >> $@
-	echo "    , parallel-tree-search, network, time"             >> $@
-	echo "    , unbounded-delays"                                >> $@
+	echo "    , $(CABAL_LIBDEPS)"                                >> $@
 	echo "  if os(windows)"                                      >> $@
 	echo "    Build-Depends: Win32"                              >> $@
 	echo "  else"                                                >> $@
