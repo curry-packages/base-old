@@ -30,9 +30,9 @@ LIB_TEX       = $(LIB_CURRY:.curry=.tex)
 LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
 HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
 
-ALLLIBS=AllLibraries.curry
-MAINGOAL=Curry_Main_Goal.curry
-EXCLUDES= $(ALLLIBS) $(MAINGOAL)
+ALLLIBS  = AllLibraries.curry
+MAINGOAL = Curry_Main_Goal.curry
+EXCLUDES = $(ALLLIBS) $(MAINGOAL)
 
 PACKAGE    = kics2-libraries
 CABAL_FILE = $(PACKAGE).cabal
@@ -54,7 +54,7 @@ $(ALLLIBS): $(LIB_CURRY) Makefile
 
 .PHONY: unregister
 unregister:
-	-$(GHC-PKG) unregister --package-db=$(PKGDB) $(PACKAGE)-$(VERSION)
+	-$(GHC_UNREGISTER) $(PACKAGE)-$(VERSION)
 
 ${CABAL_FILE}:../Makefile Makefile
 	echo "Name:           $(PACKAGE)"                             > $@
