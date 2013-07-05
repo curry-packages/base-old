@@ -17,7 +17,7 @@ LIB_CURRY = Prelude.curry \
 	    Constraint.curry CPNS.curry CSV.curry  \
             Database.curry DaVinci.curry Dequeue.curry Directory.curry \
 	    Distribution.curry Dynamic.curry \
-            FileGoodies.curry FiniteMap.curry Float.curry \
+            FileGoodies.curry FiniteMap.curry Float.curry Function.curry \
 	    GetOpt.curry \
 	    Global.curry GlobalVariable.curry GraphInductive.curry GUI.curry \
 	    HTML.curry HtmlCgi.curry HtmlParser.curry \
