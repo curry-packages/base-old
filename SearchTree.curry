@@ -17,7 +17,7 @@ module SearchTree
   , getAllValuesWith, someValue, someValueWith
   ) where
 
---- A search tree is a value, a failure, or a choice between to search trees.
+--- A search tree is a value, a failure, or a choice between two search trees.
 data SearchTree a = Value a
                   | Fail Int
                   | Or (SearchTree a) (SearchTree a)
