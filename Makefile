@@ -30,12 +30,14 @@ LIB_TEX       = $(LIB_CURRY:.curry=.tex)
 LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
 HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
 
-ALLLIBS=AllLibraries.curry
-MAINGOAL=Curry_Main_Goal.curry
-EXCLUDES= $(ALLLIBS) $(MAINGOAL)
+ALLLIBS  = AllLibraries.curry
+MAINGOAL = Curry_Main_Goal.curry
+EXCLUDES = $(ALLLIBS) $(MAINGOAL)
 
 PACKAGE    = kics2-libraries
 CABAL_FILE = $(PACKAGE).cabal
+# lib dependencies as comma separated list
+CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
 
 ########################################################################
 # support for global installation
@@ -54,7 +56,7 @@ $(ALLLIBS): $(LIB_CURRY) Makefile
 
 .PHONY: unregister
 unregister:
-	-$(GHC-PKG) unregister --package-db=$(PKGDB) $(PACKAGE)-$(VERSION)
+	-$(GHC_UNREGISTER) $(PACKAGE)-$(VERSION)
 
 ${CABAL_FILE}:../Makefile Makefile
 	echo "Name:           $(PACKAGE)"                             > $@
@@ -69,9 +71,7 @@ ${CABAL_FILE}:../Makefile Makefile
 	echo "Library"                                               >> $@
 	echo "  Build-Depends:"                                      >> $@
 	echo "      kics2-runtime == $(VERSION)"                     >> $@
-	echo "    , base, old-time, directory, process"              >> $@
-	echo "    , parallel-tree-search, network, time"             >> $@
-	echo "    , unbounded-delays"                                >> $@
+	echo "    , $(CABAL_LIBDEPS)"                                >> $@
 	echo "  if os(windows)"                                      >> $@
 	echo "    Build-Depends: Win32"                              >> $@
 	echo "  else"                                                >> $@
