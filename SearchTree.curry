@@ -17,29 +17,12 @@ module SearchTree
   , getAllValuesWith, someValue, someValueWith
   ) where
 
+import ValueSequence
+
 --- A search tree is a value, a failure, or a choice between two search trees.
 data SearchTree a = Value a
                   | Fail Int
                   | Or (SearchTree a) (SearchTree a)
-
--- A value sequence is a sequence of values that
--- implements the semantics of set functions w.r.t. failures
-data ValueSequence _ -- external
-
-emptyVS :: ValueSequence a
-emptyVS external
-
-addVS :: a -> ValueSequence a -> ValueSequence a
-addVS external
-
-failVS :: Int -> ValueSequence a
-failVS external
-
-vsToList :: ValueSequence a -> [a]
-vsToList external
-
-(|++|) :: ValueSequence a -> ValueSequence a -> ValueSequence a
-(|++|) external
 
 type Strategy a = SearchTree a -> ValueSequence a
 
