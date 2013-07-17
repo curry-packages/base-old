@@ -15,7 +15,7 @@
 
 module UnsafeSearchTree
   ( SearchTree (..), someSearchTree, getSearchTree
-  , isDefined, showSearchTree, searchTreeSize, isVar, getVarId
+  , isDefined, showSearchTree, searchTreeSize, isVar, identicalVars, varId
   , Strategy, dfsStrategy, bfsStrategy, idsStrategy, idsStrategyWith
   , allValuesDFS, allValuesBFS, allValuesIDS, allValuesIDSwith
   , ValueSequence, vsToList
@@ -31,22 +31,43 @@ data SearchTree a = Value a
 
 
 --- Tests whether the argument is a free variable
---- This function is only useful when applied to
---- a part of a result of a encapsulated expression
---- if the argument stems from a Value-Node of
+--- This function is only meaningful when applied to
+--- a part of a result of an encapsulated expression
+--- if the argument stems from a `Value` node of
 --- a SearchTree
 
 isVar :: a -> Bool
-isVar x = maybe False (const True) (getVarId x)
+isVar x = maybe False (const True) (lookupVarId x)
+
+--- Tests whether both arguments are identical free variables.
+--- This function is only meaningful when applied to
+--- parts of a result of an encapsulated expression
+--- if the argument stems from a `Value` node of
+--- a SearchTree
+
+identicalVars :: a -> a -> Bool
+identicalVars x y =
+  maybe False (\xi -> maybe False (==xi) (lookupVarId y)) (lookupVarId x)
+
+--- Returns the unique identifier of a free variable,
+--- if the argument was not a free variable, otherwise an error is raised.
+--- This function is only meaningful when applied to
+--- a part of a result of an encapsulated expression
+--- if the argument stems from a `Value` node of
+--- a SearchTree
+varId :: a -> Int
+varId x = maybe (error "UnsafeSearchTree.varId: argument not a variable")
+                id
+                (lookupVarId x)
 
 --- Returns the unique identifier of a free variable
 --- or Nothing, if the argument was not a free variable.
 --- This function is only useful when applied to
 --- a part of a result of a encapsulated expression
---- if the argument stems from a Value-Node of
+--- if the argument stems from a `Value` node of
 --- a SearchTree
-getVarId :: a -> Maybe Int
-getVarId external
+lookupVarId :: a -> Maybe Int
+lookupVarId external
 
 type Strategy a = SearchTree a -> ValueSequence a
 

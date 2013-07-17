@@ -33,8 +33,8 @@ external_d_C_someSearchTree :: NormalForm a => a -> Cover -> ConstStore -> C_Sea
 external_d_C_someSearchTree = encapsulatedSearch
 
 
-external_d_C_getVarId :: Basics.NonDet a => a -> Cover -> ConstStore -> Curry_Prelude.C_Maybe (Curry_Prelude.C_Int)
-external_d_C_getVarId x _ _ = case try x of
+external_d_C_lookupVarId :: Basics.NonDet a => a -> Cover -> ConstStore -> Curry_Prelude.C_Maybe (Curry_Prelude.C_Int)
+external_d_C_lookupVarId x _ _ = case try x of
   Free _ i _   -> Curry_Prelude.C_Just (Basics.toCurry (Basics.getKey i))
   _            -> Curry_Prelude.C_Nothing
 
