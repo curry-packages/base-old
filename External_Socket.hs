@@ -1,8 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+import Control.Concurrent
+import Control.Monad (when)
 import Network
 import Network.Socket
-import Control.Concurrent
-import Control.Concurrent.Thread.Delay(delay)
+
 import qualified Curry_Prelude as CP
 
 type C_Socket = PrimData Socket
@@ -33,19 +34,26 @@ external_d_C_prim_waitForSocketAccept :: C_Socket -> CP.C_Int
  -> Cover -> ConstStore -> CP.C_IO (CP.C_Maybe (CP.OP_Tuple2 (CP.OP_List CP.C_Char) Curry_IO.C_Handle))
 external_d_C_prim_waitForSocketAccept s i _ _ = toCurry wait s i
 
-wait :: Socket -> Int -> IO (Maybe (String,CurryHandle))
+wait :: Socket -> Int -> IO (Maybe (String, CurryHandle))
 wait s t =
-  if t<0
-  then Network.accept s >>= \ (h,s,_) -> return (Just (s,OneHandle h))
+  if t < 0
+  then Network.accept s >>= \ (h, s, _) -> return (Just (s, OneHandle h))
   else do
     mv <- newEmptyMVar
-    tacc <- forkIO (Network.accept s >>= \ (h,s,_) ->
-                    putMVar mv (Just (s,OneHandle h)))
-    ttim <- forkIO (delay ((fromIntegral t :: Integer)*1000)
+    tacc <- forkIO (Network.accept s >>= \ (h, s, _) ->
+                    putMVar mv (Just (s, OneHandle h)))
+    ttim <- forkIO (delay ((fromIntegral t :: Integer) * 1000)
                     >> putMVar mv Nothing)
     res <- takeMVar mv
     maybe (killThread tacc) (\_ -> killThread ttim) res
     return res
+
+-- Like 'threadDelay', but not bounded by an 'Int'
+delay :: Integer -> IO ()
+delay time = do
+  let maxWait = min time $ toInteger (maxBound :: Int)
+  threadDelay $ fromInteger maxWait
+  when (maxWait /= time) $ delay (time - maxWait)
 
 external_d_C_prim_sClose :: C_Socket -> Cover -> ConstStore -> CP.C_IO CP.OP_Unit
 external_d_C_prim_sClose s _ _ = toCurry sClose s
