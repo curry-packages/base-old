@@ -158,6 +158,7 @@ hReady h = hWaitForInput h 0
 
 
 --- Reads a character from an input handle and returns it.
+--- Throws an error if the end of file has been reached.
 hGetChar    :: Handle -> IO Char
 hGetChar h = prim_hGetChar $# h
 
@@ -165,6 +166,9 @@ prim_hGetChar :: Handle -> IO Char
 prim_hGetChar external
 
 --- Reads a line from an input handle and returns it.
+--- Throws an error if the end of file has been reached while reading
+--- the *first* character. If the end of file is reached later in the line,
+--- it ist treated as a line terminator and the (partial) line is returned.
 hGetLine  :: Handle -> IO String
 hGetLine h = do c  <- hGetChar h
                 if c == '\n'
