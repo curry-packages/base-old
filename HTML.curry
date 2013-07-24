@@ -1281,7 +1281,9 @@ showHtmlFormInEnv url key (HtmlForm ftitle fparams fhexp) crefnr = do
   --putStrLn (showHtmlExps [pre [par (env2html cenv),hrule]]) --debug
   (title,params,hexps,firsthandler,evhs) <-
     htmlForm2html (HtmlForm ftitle fparams fhexp) crefnr
-  return (showForm [("SCRIPTKEY",key),("DEFAULT","EVENT_"++firsthandler)]
+  return (showForm (if null evhs
+                    then []
+                    else [("SCRIPTKEY",key),("DEFAULT","EVENT_"++firsthandler)])
                    (if qstr=="" then url else url++"?"++qstr)
                    (HtmlForm title params hexps),
           evhs)
@@ -1404,7 +1406,7 @@ showForm cenv url (HtmlForm title params html) =
                  ([HtmlStruct "title" [] [HtmlText (htmlQuote title)]] ++
                   concatMap param2html params),
       HtmlStruct "body" bodyattrs
-       ((if null url then id
+       ((if null url || null cenv then id
          else \he->[HtmlStruct "form"
                                ([("method","post"),("action",url)]
                                 ++ onsubmitattr ++ targetattr)
