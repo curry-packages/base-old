@@ -16,7 +16,7 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version April 2013
+--- @version July 2013
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
