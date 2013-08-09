@@ -84,12 +84,10 @@ installlibs : ${CABAL_FILE} ${ALLLIBS}
 all: fcy acy
 
 .PHONY: fcy
-fcy:
-	${MAKE} $(LIB_FCY)
+fcy: $(LIB_FCY)
 
 .PHONY: acy
-acy:
-	${MAKE} $(LIB_ACY)
+acy: $(LIB_ACY)
 
 # generate all FlatCurry files in subdirectory .curry:
 .curry/%.fcy: %.curry
@@ -107,6 +105,8 @@ meta/.curry/%.acy: meta/%.curry
 
 ##############################################################################
 # create HTML documentation files for system libraries
+##############################################################################
+
 .PHONY: doc
 doc: $(LIB_CURRY)
 	@mkdir -p "${DOCDIR}"
@@ -132,6 +132,8 @@ meta/%.html: ../meta/%.curry $(CURRYDOC)
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
+##############################################################################
+
 .PHONY: texdoc
 texdoc: $(LIB_CURRY)
 	@mkdir -p "${TEXDOCDIR}"
@@ -153,10 +155,10 @@ $(CURRYDOC):
 	$(MAKE) -f ../Makefile currydoc
 
 # clean all generated files
-.PHONY: clean
-clean:
-	rm -f "${DOCDIR}"/*
-	rm -f "${TEXDOCDIR}"/*
+.PHONY: cleanall
+cleanall:
+	rm -rf "${DOCDIR}"
+	rm -rf "${TEXDOCDIR}"
 	rm -rf dist
 	rm -f ${CABAL_FILE}
 	$(CLEANCURRY)
