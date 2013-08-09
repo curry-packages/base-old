@@ -1,15 +1,12 @@
 # Makefile for various compilations of the system libraries,
 # in particular, to generate the documentation
 
-CYMAKE       = $(BINDIR)/cymake
 CYMAKEPARAMS = --extended --no-verb --no-warn --no-overlap-warn -i. -imeta
 
 # directory for HTML documentation files:
 DOCDIR=CDOC
 # directory for LaTeX documentation files:
 TEXDOCDIR=TEXDOC
-# the currydoc program:
-CURRYDOC = $(BINDIR)/currydoc
 
 # replacement stuff
 comma     := ,
@@ -34,8 +31,8 @@ ALLLIBS  = AllLibraries.curry
 MAINGOAL = Curry_Main_Goal.curry
 EXCLUDES = $(ALLLIBS) $(MAINGOAL)
 
-PACKAGE    = kics2-libraries
-CABAL_FILE = $(PACKAGE).cabal
+PACKAGE       = kics2-libraries
+CABAL_FILE    = $(PACKAGE).cabal
 # lib dependencies as comma separated list
 CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
 
@@ -119,19 +116,19 @@ doc: $(LIB_CURRY)
 	@cd "${DOCDIR}" && rm -f meta DOINDEX
 
 .PHONY: htmlindex
-htmlindex:
+htmlindex: $(CURRYDOC)
 	@echo "Generating index pages for Curry libraries:"
 	@echo $(LIB_NAMES)
-	@"${CURRYDOC}" --onlyindexhtml "${DOCDIR}" $(LIB_NAMES)
+	@"$(CURRYDOC)" --onlyindexhtml "${DOCDIR}" $(LIB_NAMES)
 
 # generate individual documentations for libraries:
-%.html: ../%.curry
+%.html: ../%.curry $(CURRYDOC)
 	@touch DOINDEX
-	cd .. && "${CURRYDOC}" --noindexhtml "${DOCDIR}" $*
+	cd .. && "$(CURRYDOC)" --noindexhtml "${DOCDIR}" $*
 
-meta/%.html: ../meta/%.curry
+meta/%.html: ../meta/%.curry $(CURRYDOC)
 	@touch DOINDEX
-	cd .. && "${CURRYDOC}" --noindexhtml "${DOCDIR}" $*
+	cd .. && "$(CURRYDOC)" --noindexhtml "${DOCDIR}" $*
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
@@ -144,13 +141,16 @@ texdoc: $(LIB_CURRY)
 	@cd "${TEXDOCDIR}" && rm -f meta
 
 # generate individual LaTeX documentations for libraries:
-%.tex: ../%.curry
-	cd .. && "${CURRYDOC}" --tex "${TEXDOCDIR}" $*
+%.tex: ../%.curry $(CURRYDOC)
+	cd .. && "$(CURRYDOC)" --tex "${TEXDOCDIR}" $*
 	touch LAST
 
-meta/%.tex: ../meta/%.curry
-	cd .. && "${CURRYDOC}" --tex "${TEXDOCDIR}" $*
+meta/%.tex: ../meta/%.curry $(CURRYDOC)
+	cd .. && "$(CURRYDOC)" --tex "${TEXDOCDIR}" $*
 	touch LAST
+
+$(CURRYDOC):
+	$(MAKE) -f ../Makefile currydoc
 
 # clean all generated files
 .PHONY: clean
@@ -159,5 +159,5 @@ clean:
 	rm -f "${TEXDOCDIR}"/*
 	rm -rf dist
 	rm -f ${CABAL_FILE}
-	${BINDIR}/cleancurry
-	cd meta && ${BINDIR}/cleancurry
+	$(CLEANCURRY)
+	cd meta && $(CLEANCURRY)
