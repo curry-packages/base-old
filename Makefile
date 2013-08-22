@@ -9,6 +9,8 @@ LIBDOCDIR := CDOC
 # directory for LaTeX documentation files
 TEXDOCDIR := $(DOCDIR)/src/lib
 
+KICS2C     = $(COMP) -v2 -i. -imeta
+
 # replacement stuff
 comma     := ,
 empty     :=
@@ -18,7 +20,7 @@ add_subdir = $(dir $(file)).curry/$(notdir $(file))
 # a b c -> a, b, c
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
-LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry))
+LIB_CURRY     = $(filter-out Curry_Main_Goal.curry, $(wildcard *.curry meta/*.curry))
 LIB_FCY       = $(foreach file, $(LIB_CURRY:.curry=.fcy), $(add_subdir))
 LIB_ACY       = $(foreach file, $(LIB_CURRY:.curry=.acy), $(add_subdir))
 # lib names without directory prefix
@@ -26,9 +28,6 @@ LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
 LIB_HTML      = $(foreach lib, $(LIB_NAMES), $(LIBDOCDIR)/$(lib).html)
 LIB_TEX       = $(foreach lib, $(LIB_NAMES), $(TEXDOCDIR)/$(lib).tex)
 HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
-
-ALLLIBS       = AllLibraries.curry
-EXCLUDES      = $(ALLLIBS) Curry_Main_Goal.curry
 
 PACKAGE       = kics2-libraries
 CABAL_FILE    = $(PACKAGE).cabal
@@ -40,13 +39,8 @@ CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
 
 .PHONY: install
 install: $(CABAL_FILE)
-	$(MAKE) compile
+	for i in $(LIB_CURRY) ; do $(COMP) -i. -imeta $$i; done
 	$(CABAL_INSTALL)
-
-# compile all libraries
-.PHONY: compile
-compile: $(ALLLIBS)
-	"$(REPL)" $(REPL_OPTS) :set path $(LIBDIR):$(LIBDIR)/meta :l $< :eval main :quit
 
 .PHONY: all
 all: fcy acy
@@ -70,11 +64,6 @@ cleanall:
 	rm -f $(CABAL_FILE)
 	$(CLEANCURRY)
 	cd meta && $(CLEANCURRY)
-
-$(ALLLIBS): $(LIB_CURRY) Makefile
-	rm -f $@
-	for i in $(LIB_NAMES) ; do echo "import $$i" >> $@ ; done
-	echo "main = 42" >> $@
 
 $(CABAL_FILE): ../Makefile Makefile
 	echo "Name:           $(PACKAGE)"                             > $@
