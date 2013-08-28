@@ -9,24 +9,25 @@ LIBDOCDIR := CDOC
 # directory for LaTeX documentation files
 TEXDOCDIR := $(DOCDIR)/src/lib
 
-KICS2C     = $(COMP) -v2 -i. -imeta
-
 # replacement stuff
 comma     := ,
 empty     :=
 space     := $(empty) $(empty)
-# dir/file.ext -> dir/.curry/file.ext
-add_subdir = $(dir $(file)).curry/$(notdir $(file))
-# a b c -> a, b, c
+# prefix "pre" "dir/file.ext" = "dir/prefile.ext"
+prefix     = $(dir $(2))$(1)$(notdir $(2))
+# comma_sep "a b c" = "a, b, c"
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
+# Curry library files
 LIB_CURRY     = $(filter-out Curry_Main_Goal.curry, $(wildcard *.curry meta/*.curry))
-LIB_FCY       = $(foreach file, $(LIB_CURRY:.curry=.fcy), $(add_subdir))
-LIB_ACY       = $(foreach file, $(LIB_CURRY:.curry=.acy), $(add_subdir))
 # lib names without directory prefix
 LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
-LIB_HTML      = $(foreach lib, $(LIB_NAMES), $(LIBDOCDIR)/$(lib).html)
-LIB_TEX       = $(foreach lib, $(LIB_NAMES), $(TEXDOCDIR)/$(lib).tex)
+# Generated files
+LIB_ACY       = $(foreach lib, $(LIB_CURRY:.curry=.acy), $(call prefix,.curry/,$(lib)))
+LIB_FCY       = $(foreach lib, $(LIB_CURRY:.curry=.fcy), $(call prefix,.curry/,$(lib)))
+LIB_HS        = $(foreach lib, $(LIB_CURRY:.curry=.hs) , $(call prefix,.curry/kics2/Curry_,$(lib)))
+LIB_HTML      = $(patsubst %, $(LIBDOCDIR)/%.html, $(LIB_NAMES))
+LIB_TEX       = $(patsubst %, $(TEXDOCDIR)/%.tex , $(LIB_NAMES))
 HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
 
 PACKAGE       = kics2-libraries
@@ -38,22 +39,18 @@ CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
 ########################################################################
 
 .PHONY: install
-install: $(CABAL_FILE)
-	for i in $(LIB_CURRY) ; do $(COMP) -i. -imeta $$i; done
+install: $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(CABAL_FILE)
 	$(CABAL_INSTALL)
-
-.PHONY: all
-all: fcy acy
-
-.PHONY: fcy
-fcy: $(LIB_FCY)
-
-.PHONY: acy
-acy: $(LIB_ACY)
 
 .PHONY: unregister
 unregister:
 	-$(GHC_UNREGISTER) $(PACKAGE)-$(VERSION)
+
+# clean Haskell intermediate files
+.PHONY:
+clean:
+	-cd .curry/kics2      && rm -f *.hi *.o
+	-cd meta/.curry/kics2 && rm -f *.hi *.o
 
 # clean all generated files
 .PHONY: cleanall
@@ -86,14 +83,21 @@ $(CABAL_FILE): ../Makefile Makefile
 	echo "  Exposed-modules: $(HS_LIB_NAMES)"                    >> $@
 	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2" >> $@
 
-# generate all FlatCurry files in subdirectory .curry
+# generate Haskell file in subdirectory .curry/kics2
+.curry/kics2/Curry_%.hs: %.curry
+	$(COMP) -v0 -i. -imeta $*
+
+meta/.curry/kics2/Curry_%.hs: meta/%.curry
+	$(COMP) -v0 -i. -imeta meta/$*
+
+# generate FlatCurry file in subdirectory .curry
 .curry/%.fcy: %.curry
 	"${CYMAKE}" --flat ${CYMAKEPARAMS} $*
 
 meta/.curry/%.fcy: meta/%.curry
 	"${CYMAKE}" --flat ${CYMAKEPARAMS} $*
 
-# generate all AbstractCurry files in subdirectory .curry
+# generate AbstractCurry file in subdirectory .curry
 .curry/%.acy: %.curry
 	"${CYMAKE}" --acy ${CYMAKEPARAMS} $*
 

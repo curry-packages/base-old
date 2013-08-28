@@ -1,11 +1,9 @@
 # intermediate files
 *~
 .curry
-AllLibraries.curry
 Curry_Main_Goal.curry
 dist
 kics2-libraries.cabal
 
 # documentation
 CDOC
-TEXDOC
