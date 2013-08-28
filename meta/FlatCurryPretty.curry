@@ -100,8 +100,11 @@ ppTypeExpr :: Int -> TypeExpr -> Doc
 ppTypeExpr _ (TVar           v) = ppTVarIndex v
 ppTypeExpr p (FuncType ty1 ty2) = parenIf (p > 0) $
   ppTypeExpr 1 ty1 </> text "->" <+> ppTypeExpr 0 ty2
-ppTypeExpr p (TCons     qn tys) = parenIf (p > 1 && not (null tys)) $ sep
-  (ppPrefixOp qn : map (ppTypeExpr 2) tys)
+ppTypeExpr p (TCons     qn tys)
+  | isListId qn && length tys == 1 = brackets (ppTypeExpr 0 (head tys))
+  | isTupleId qn                   = tupled   (map (ppTypeExpr 0) tys)
+  | otherwise                      = parenIf (p > 1 && not (null tys)) $ sep
+                                     (ppPrefixOp qn : map (ppTypeExpr 2) tys)
 
 --- pretty-print a type variable
 ppTVarIndex :: TVarIndex -> Doc
@@ -130,7 +133,7 @@ ppRule (External e) = text "external" <+> dquotes (text e)
 ppExpr :: Int -> Expr -> Doc
 ppExpr _ (Var        v) = ppVarIndex v
 ppExpr _ (Lit        l) = ppLiteral l
-ppExpr p (Comb _ qn es) = ppCall p qn es
+ppExpr p (Comb _ qn es) = ppComb p qn es
 ppExpr p (Free    vs e)
   | null vs             = ppExpr p e
   | otherwise           = parenIf (p > 0) $ sep
@@ -169,12 +172,18 @@ showEscape c
   where o = ord c
 
 --- Pretty print a constructor or function call
-ppCall :: Int -> QName -> [Expr] -> Doc
-ppCall p qn es = case es of
+ppComb :: Int -> QName -> [Expr] -> Doc
+ppComb p qn es | isListId  qn && null es = text "[]"
+               | isTupleId qn            = tupled (map (ppExpr 0) es)
+               | otherwise               = case es of
   []               -> ppPrefixOp qn
   [e1,e2]
-    | isInfixOp qn -> sep [ppExpr 1 e1, ppInfixOp qn, ppExpr 1 e2]
-  _                -> parenIf (p > 0) $ sep (ppPrefixOp qn : map (ppExpr 1) es)
+    | isConsId  qn -> parenIf (p > 0)
+                    $ sep [ppExpr 1 e1, text ":", ppExpr 1 e2]
+    | isInfixOp qn -> parenIf (p > 0)
+                    $ sep [ppExpr 1 e1, ppInfixOp qn, ppExpr 1 e2]
+  _                -> parenIf (p > 0)
+                    $ sep (ppPrefixOp qn : map (ppExpr 1) es)
 
 --- pretty-print a list of declarations
 ppDecls :: [(VarIndex, Expr)] -> Doc
@@ -195,8 +204,12 @@ ppBranch (Branch p e) = ppPattern p <+> text "->" <+> indent (ppExpr 0 e)
 
 --- Pretty print a pattern
 ppPattern :: Pattern -> Doc
-ppPattern (Pattern c vs) = case vs of
-  [v1,v2] | isInfixOp c -> ppVarIndex v1 <+> ppInfixOp c <+> ppVarIndex v2
+ppPattern (Pattern c vs)
+  | isListId c && null vs = text "[]"
+  | isTupleId c           = tupled (map ppVarIndex vs)
+  | otherwise             = case vs of
+  [v1,v2] | isConsId  c -> ppVarIndex v1 <+> text ":"    <+> ppVarIndex v2
+          | isInfixOp c -> ppVarIndex v1 <+> ppInfixOp c <+> ppVarIndex v2
   _                     -> hsep (ppPrefixOp c : map ppVarIndex vs)
 ppPattern (LPattern   l) = ppLiteral l
 
@@ -219,6 +232,19 @@ ppQName (m, i) = text $ m ++ '.' : i
 --- Check whether an operator is an infix operator
 isInfixOp :: QName -> Bool
 isInfixOp = all (`elem` "~!@#$%^&*+-=<>:?./|\\") . snd
+
+--- Check whether an identifier represents a list
+isListId :: QName -> Bool
+isListId (m, i) = m `elem` ["Prelude", ""] && i == "[]"
+
+--- Check whether an identifier represents the list constructor `:`
+isConsId :: QName -> Bool
+isConsId (m, i) = m `elem` ["Prelude", ""] && i == ":"
+
+--- Check whether an identifier represents a tuple
+isTupleId :: QName -> Bool
+isTupleId (m, i) = m `elem` ["Prelude", ""] && i == mkTuple (length i)
+  where mkTuple n = '(' : replicate (n - 2) ',' ++ ")"
 
 -- ---------------------------------------------------------------------------
 -- Helpers
