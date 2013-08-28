@@ -148,8 +148,6 @@ ppExpr p (Case ct e bs) = parenIf (p > 0) $ indent
                           <$> vsep (map ppBranch bs)
 ppExpr p (Typed   e ty) = parenIf (p > 0)
                         $ ppExpr 0 e <+> text "::" <+> ppTypeExpr 0 ty
-ppExpr _ (SQ         e) = hsep [text "[|", ppExpr 0 e, text "|]"]
-
 
 --- pretty-print a variable
 ppVarIndex :: VarIndex -> Doc
