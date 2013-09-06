@@ -5,14 +5,15 @@
 --- [this paper](http://www.informatik.uni-kiel.de/~mh/papers/JFLP04_findall.html)
 ---
 --- @author  Michael Hanus, Bjoern Peemoeller, Fabian Reck
---- @version April 2013
+--- @version September 2013
 ------------------------------------------------------------------------------
 
 module SearchTree
   ( SearchTree (..), someSearchTree, getSearchTree
   , isDefined, showSearchTree, searchTreeSize
-  , Strategy, dfsStrategy, bfsStrategy, idsStrategy, idsStrategyWith
-  , allValuesDFS, allValuesBFS, allValuesIDS, allValuesIDSwith
+  , Strategy
+  , dfsStrategy, bfsStrategy, idsStrategy, idsStrategyWith, diagStrategy
+  , allValuesDFS, allValuesBFS, allValuesIDS, allValuesIDSwith, allValuesDiag
   , ValueSequence, vsToList
   , getAllValuesWith, someValue, someValueWith
   ) where
@@ -91,14 +92,22 @@ searchTreeSize (Or t1 t2) = let (v1, f1, o1) = searchTreeSize t1
                                 (v2, f2, o2) = searchTreeSize t2
                              in (v1 + v2, f1 + f2, o1 + o2 + 1)
 
+------------------------------------------------------------------------------
+-- Various search strategies:
+------------------------------------------------------------------------------
+
 --- Return all values in a search tree via depth-first search
 allValuesDFS :: SearchTree a -> [a]
 allValuesDFS = vsToList . dfsStrategy 
 
+--- Depth-first search strategy.
 dfsStrategy :: Strategy a
 dfsStrategy (Fail d)  = failVS d
 dfsStrategy (Value x) = addVS x emptyVS
 dfsStrategy (Or x y)  = dfsStrategy x |++| dfsStrategy y
+
+
+------------------------------------------------------------------------------
 
 --- Return all values in a search tree via breadth-first search
 allValuesBFS :: SearchTree a -> [a]
@@ -120,10 +129,12 @@ allBFS :: [SearchTree a] -> ValueSequence a
 allBFS []     = emptyVS
 allBFS (t:ts) = values (t:ts) |++| allBFS (children (t:ts))
 
+--- Breadth-first search strategy.
 bfsStrategy :: Strategy a
 bfsStrategy t = allBFS [t]
 
 
+------------------------------------------------------------------------------
 
 --- The default initial search depth for IDS
 defIDSDepth :: Int
@@ -137,17 +148,19 @@ defIDSInc = (2*)
 allValuesIDS :: SearchTree a -> [a]
 allValuesIDS t = allValuesIDSwith defIDSDepth defIDSInc t
 
+--- Iterative-deepening search strategy.
 idsStrategy :: Strategy a
 idsStrategy t = idsStrategyWith defIDSDepth defIDSInc t
 
---- Return the list of all values in a search tree via iterative-deepening search.
+--- Return all values in a search tree via iterative-deepening search.
 --- The first argument is the initial depth bound and
 --- the second argument is a function to increase the depth in each
 --- iteration.
 allValuesIDSwith :: Int -> (Int -> Int) -> SearchTree a -> [a]
-allValuesIDSwith initdepth incrdepth = vsToList . idsStrategyWith initdepth incrdepth
+allValuesIDSwith initdepth incrdepth =
+  vsToList . idsStrategyWith initdepth incrdepth
 
---- Return all values in a search tree via iterative-deepening search.
+--- Parameterized iterative-deepening search strategy.
 --- The first argument is the initial depth bound and
 --- the second argument is a function to increase the depth in each
 --- iteration.
@@ -186,6 +199,37 @@ concA Nil         ys = ys
 concA (Cons x xs) ys = Cons x (concA xs ys)
 concA (FCons d xs) ys = FCons d (concA xs ys)
 
+
+------------------------------------------------------------------------------
+-- Diagonalization search according to
+-- J. Christiansen, S Fischer: EasyCheck - Test Data for Free (FLOPS 2008)
+
+--- Return all values in a search tree via diagonalization search strategy.
+allValuesDiag :: SearchTree a -> [a]
+allValuesDiag = vsToList . diagStrategy
+
+--- Diagonalization search strategy.
+diagStrategy :: Strategy a
+diagStrategy st = values (diagonal (levels [st]))
+
+-- Enumerate all nodes of a forest of search trees in a level manner.
+levels :: [SearchTree a] -> [[SearchTree a]]
+levels st | null st   = []
+          | otherwise = st : levels [ u | Or x y <- st, u <- [x,y] ]
+
+-- Diagonalization of a list of lists.
+diagonal :: [[a]] -> [a]
+diagonal = concat . foldr diags []
+ where
+  diags []     ys = ys
+  diags (x:xs) ys = [x] : merge xs ys
+
+  merge []        ys      = ys
+  merge xs@(_:_)  []      = map (:[]) xs
+  merge (x:xs)    (y:ys)  = (x:y) : merge xs ys
+
+
+------------------------------------------------------------------------------
 
 --- Gets all values of an expression w.r.t. a search strategy.
 --- A search strategy is an operation to traverse a search tree
