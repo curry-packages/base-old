@@ -13,18 +13,22 @@ module SearchTree
   , isDefined, showSearchTree, searchTreeSize
   , Strategy
   , dfsStrategy, bfsStrategy, idsStrategy, idsStrategyWith, diagStrategy
+  , allValuesWith
   , allValuesDFS, allValuesBFS, allValuesIDS, allValuesIDSwith, allValuesDiag
   , ValueSequence, vsToList
-  , getAllValuesWith, someValue, someValueWith
+  , getAllValuesWith, printAllValuesWith, printValuesWith
+  , someValue, someValueWith
   ) where
 
 import ValueSequence
+import IO(hFlush,stdout)
 
 --- A search tree is a value, a failure, or a choice between two search trees.
 data SearchTree a = Value a
                   | Fail Int
                   | Or (SearchTree a) (SearchTree a)
 
+--- A search strategy maps a search tree into some sequence of values.
 type Strategy a = SearchTree a -> ValueSequence a
 
 --- Returns the search tree for some expression.
@@ -38,7 +42,7 @@ getSearchTree x = return (someSearchTree x)
 someSearchTree :: a -> SearchTree a
 someSearchTree external
 
---- Returns True iff the argument is is defined, i.e., has a value.
+--- Returns True iff the argument is defined, i.e., has a value.
 isDefined :: a -> Bool
 isDefined x = hasValue (someSearchTree x)
  where hasValue y = case y of Value _  -> True
@@ -93,12 +97,8 @@ searchTreeSize (Or t1 t2) = let (v1, f1, o1) = searchTreeSize t1
                              in (v1 + v2, f1 + f2, o1 + o2 + 1)
 
 ------------------------------------------------------------------------------
--- Various search strategies:
+-- Definition of various search strategies:
 ------------------------------------------------------------------------------
-
---- Return all values in a search tree via depth-first search
-allValuesDFS :: SearchTree a -> [a]
-allValuesDFS = vsToList . dfsStrategy 
 
 --- Depth-first search strategy.
 dfsStrategy :: Strategy a
@@ -109,9 +109,13 @@ dfsStrategy (Or x y)  = dfsStrategy x |++| dfsStrategy y
 
 ------------------------------------------------------------------------------
 
---- Return all values in a search tree via breadth-first search
-allValuesBFS :: SearchTree a -> [a]
-allValuesBFS t = vsToList (bfsStrategy t)
+--- Breadth-first search strategy.
+bfsStrategy :: Strategy a
+bfsStrategy t = allBFS [t]
+
+allBFS :: [SearchTree a] -> ValueSequence a
+allBFS []     = emptyVS
+allBFS (t:ts) = values (t:ts) |++| allBFS (children (t:ts))
 
 children :: [SearchTree a] -> [SearchTree a]
 children []             = []
@@ -125,16 +129,12 @@ values (Fail d:ts)  = failVS d |++| values ts
 values (Value x:ts) = addVS x (values ts)
 values (Or _ _:ts)  = values ts
 
-allBFS :: [SearchTree a] -> ValueSequence a
-allBFS []     = emptyVS
-allBFS (t:ts) = values (t:ts) |++| allBFS (children (t:ts))
-
---- Breadth-first search strategy.
-bfsStrategy :: Strategy a
-bfsStrategy t = allBFS [t]
-
 
 ------------------------------------------------------------------------------
+
+--- Iterative-deepening search strategy.
+idsStrategy :: Strategy a
+idsStrategy t = idsStrategyWith defIDSDepth defIDSInc t
 
 --- The default initial search depth for IDS
 defIDSDepth :: Int
@@ -143,22 +143,6 @@ defIDSDepth = 100
 --- The default increasing function for IDS
 defIDSInc :: Int -> Int
 defIDSInc = (2*)
-
---- Return all values in a search tree via iterative-deepening search.
-allValuesIDS :: SearchTree a -> [a]
-allValuesIDS t = allValuesIDSwith defIDSDepth defIDSInc t
-
---- Iterative-deepening search strategy.
-idsStrategy :: Strategy a
-idsStrategy t = idsStrategyWith defIDSDepth defIDSInc t
-
---- Return all values in a search tree via iterative-deepening search.
---- The first argument is the initial depth bound and
---- the second argument is a function to increase the depth in each
---- iteration.
-allValuesIDSwith :: Int -> (Int -> Int) -> SearchTree a -> [a]
-allValuesIDSwith initdepth incrdepth =
-  vsToList . idsStrategyWith initdepth incrdepth
 
 --- Parameterized iterative-deepening search strategy.
 --- The first argument is the initial depth bound and
@@ -204,10 +188,6 @@ concA (FCons d xs) ys = FCons d (concA xs ys)
 -- Diagonalization search according to
 -- J. Christiansen, S Fischer: EasyCheck - Test Data for Free (FLOPS 2008)
 
---- Return all values in a search tree via diagonalization search strategy.
-allValuesDiag :: SearchTree a -> [a]
-allValuesDiag = vsToList . diagStrategy
-
 --- Diagonalization search strategy.
 diagStrategy :: Strategy a
 diagStrategy st = values (diagonal (levels [st]))
@@ -230,20 +210,78 @@ diagonal = concat . foldr diags []
 
 
 ------------------------------------------------------------------------------
+-- Operations to map search trees into list of values.
+------------------------------------------------------------------------------
+
+--- Return all values in a search tree via some given search strategy.
+allValuesWith :: Strategy a -> SearchTree a -> [a]
+allValuesWith strategy searchtree = vsToList (strategy searchtree)
+
+--- Return all values in a search tree via depth-first search.
+allValuesDFS :: SearchTree a -> [a]
+allValuesDFS = allValuesWith dfsStrategy 
+
+--- Return all values in a search tree via breadth-first search.
+allValuesBFS :: SearchTree a -> [a]
+allValuesBFS = allValuesWith bfsStrategy
+
+--- Return all values in a search tree via iterative-deepening search.
+allValuesIDS :: SearchTree a -> [a]
+allValuesIDS = allValuesIDSwith defIDSDepth defIDSInc
+
+--- Return all values in a search tree via iterative-deepening search.
+--- The first argument is the initial depth bound and
+--- the second argument is a function to increase the depth in each
+--- iteration.
+allValuesIDSwith :: Int -> (Int -> Int) -> SearchTree a -> [a]
+allValuesIDSwith initdepth incrdepth =
+  allValuesWith (idsStrategyWith initdepth incrdepth)
+
+--- Return all values in a search tree via diagonalization search strategy.
+allValuesDiag :: SearchTree a -> [a]
+allValuesDiag = allValuesWith diagStrategy
+
 
 --- Gets all values of an expression w.r.t. a search strategy.
 --- A search strategy is an operation to traverse a search tree
 --- and collect all values, e.g., 'dfsStrategy' or 'bfsStrategy'.
 --- Conceptually, all values are computed on a copy of the expression,
 --- i.e., the evaluation of the expression does not share any results.
---- Moreover, the evaluation suspends as long as the expression
---- contains unbound variables.
 getAllValuesWith :: Strategy a -> a -> IO [a]
 getAllValuesWith strategy exp = do
   t <- getSearchTree exp
   return (vsToList (strategy t))
 
 
+--- Prints all values of an expression w.r.t. a search strategy.
+--- A search strategy is an operation to traverse a search tree
+--- and collect all values, e.g., 'dfsStrategy' or 'bfsStrategy'.
+--- Conceptually, all printed values are computed on a copy of the expression,
+--- i.e., the evaluation of the expression does not share any results.
+printAllValuesWith :: Strategy a -> a -> IO ()
+printAllValuesWith strategy exp =
+  getAllValuesWith strategy exp >>= mapIO_ print
+
+
+--- Prints the values of an expression w.r.t. a search strategy
+--- on demand by the user. Thus, the user must type <ENTER> before
+--- another value is computed and printed.
+--- A search strategy is an operation to traverse a search tree
+--- and collect all values, e.g., 'dfsStrategy' or 'bfsStrategy'.
+--- Conceptually, all printed values are computed on a copy of the expression,
+--- i.e., the evaluation of the expression does not share any results.
+printValuesWith :: Strategy a -> a -> IO ()
+printValuesWith strategy exp =
+  getAllValuesWith strategy exp >>= printValues
+ where
+  printValues [] = done
+  printValues (x:xs) = do
+   putStr (show x)
+   hFlush stdout
+   _ <- getLine
+   printValues xs
+
+------------------------------------------------------------------------------
 --- Returns some value for an expression.
 ---
 --- Note that this operation is not purely declarative since
