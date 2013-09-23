@@ -29,6 +29,10 @@ data SearchTree a = Value a
                   | Or (SearchTree a) (SearchTree a)
 
 --- A search strategy maps a search tree into some sequence of values.
+--- Using the abtract type of sequence of values (rather than list of values)
+--- enables the use of search strategies for encapsulated search
+--- with search trees (strong encapsulation) as well as
+--- with set functions (weak encapsulation).
 type Strategy a = SearchTree a -> ValueSequence a
 
 --- Returns the search tree for some expression.
@@ -119,15 +123,17 @@ allBFS (t:ts) = values (t:ts) |++| allBFS (children (t:ts))
 
 children :: [SearchTree a] -> [SearchTree a]
 children []             = []
-children (Fail _:ts)    = children ts
-children (Value _:ts)   = children ts
-children (Or x y:ts)    = x:y:children ts
+children (Fail _  : ts) = children ts
+children (Value _ : ts) = children ts
+children (Or x y  : ts) = x:y:children ts
 
+-- Transforms a list of search trees into a value sequence where
+-- choices are ignored.
 values :: [SearchTree a] -> ValueSequence a
-values []           = emptyVS
-values (Fail d:ts)  = failVS d |++| values ts
-values (Value x:ts) = addVS x (values ts)
-values (Or _ _:ts)  = values ts
+values []             = emptyVS
+values (Fail d  : ts) = failVS d |++| values ts
+values (Value x : ts) = addVS x (values ts)
+values (Or _ _  : ts) = values ts
 
 
 ------------------------------------------------------------------------------

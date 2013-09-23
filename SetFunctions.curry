@@ -1,7 +1,6 @@
 ------------------------------------------------------------------------
 --- This module contains an implementation of set functions.
---- The general idea of set functions
---- is described in:
+--- The general idea of set functions is described in:
 ---
 --- > S. Antoy, M. Hanus: Set Functions for Functional Logic Programming
 --- > Proc. 11th International Conference on Principles and Practice
@@ -18,13 +17,24 @@
 --- but yields several results for `(setn...)`.
 --- Similarly, logical variables occuring in `a1`,...,`an` are not bound
 --- inside this capsule.
+---
 --- The set of values returned by a set function is represented
 --- by an abstract type 'Values' on which several operations are
 --- defined in this module. Actually, it is a multiset of values,
 --- i.e., duplicates are not removed.
 ---
---- @author Michael Hanus
---- @version January 2013
+--- The handling of failures and nested occurrences of set functions
+--- is not specified in the previous paper. Thus, a detailed description
+--- of the semantics of set functions as implemented in this library
+--- can be found in the paper
+---
+--- > J. Christiansen, M. Hanus, F. Reck, D. Seidel:
+--- > A Semantics for Weakly Encapsulated Search in Functional Logic Programs
+--- > Proc. 15th International Conference on Principles and Practice
+--- > of Declarative Programming (PPDP'13), pp. 49-60, ACM Press, 2013
+---
+--- @author Michael Hanus, Fabian Reck
+--- @version September 2013
 ------------------------------------------------------------------------
 
 module SetFunctions
@@ -44,6 +54,8 @@ import List(delete)
 set0 :: b -> Values b
 set0 f = set0With dfsStrategy f
 
+--- Combinator to transform a 0-ary function into a corresponding set function
+--- that uses a given strategy to compute its values.
 set0With :: Strategy b -> b -> Values b
 set0With s f = Values (vsToList (s (someSearchTree f)))
 
@@ -51,6 +63,8 @@ set0With s f = Values (vsToList (s (someSearchTree f)))
 set1 :: (a1 -> b) -> a1 -> Values b
 set1 f x = set1With dfsStrategy f x
 
+--- Combinator to transform a unary function into a corresponding set function
+--- that uses a given strategy to compute its values.
 set1With :: Strategy b -> (a1 -> b) -> a1 -> Values b
 set1With s f x = allVs s (\_ -> f x)
 
@@ -58,6 +72,8 @@ set1With s f x = allVs s (\_ -> f x)
 set2 :: (a1 -> a2 -> b) -> a1 -> a2 -> Values b
 set2 f x1 x2 = set2With dfsStrategy f x1 x2
 
+--- Combinator to transform a binary function into a corresponding set function
+--- that uses a given strategy to compute its values.
 set2With :: Strategy b -> (a1 -> a2 -> b) -> a1 -> a2 -> Values b
 set2With s f x1 x2 = allVs s (\_ -> f x1 x2)
 
@@ -66,6 +82,9 @@ set2With s f x1 x2 = allVs s (\_ -> f x1 x2)
 set3 :: (a1 -> a2 -> a3 -> b) -> a1 -> a2 -> a3 -> Values b
 set3 f x1 x2 x3 = set3With dfsStrategy f x1 x2 x3
 
+--- Combinator to transform a function of arity 3
+--- into a corresponding set function
+--- that uses a given strategy to compute its values.
 set3With :: Strategy b -> (a1 -> a2 -> a3 -> b) -> a1 -> a2 -> a3 -> Values b
 set3With s f x1 x2 x3 = allVs s (\_ -> f  x1 x2 x3)
 
@@ -74,7 +93,11 @@ set3With s f x1 x2 x3 = allVs s (\_ -> f  x1 x2 x3)
 set4 :: (a1 -> a2 -> a3 -> a4 -> b) -> a1 -> a2 -> a3 -> a4 -> Values b
 set4 f x1 x2 x3 x4 = set4With dfsStrategy f x1 x2 x3 x4
 
-set4With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> b) -> a1 -> a2 -> a3 -> a4 -> Values b
+--- Combinator to transform a function of arity 4
+--- into a corresponding set function
+--- that uses a given strategy to compute its values.
+set4With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> b) -> a1 -> a2 -> a3 -> a4
+         -> Values b
 set4With s f x1 x2 x3 x4 = allVs s (\_ -> f x1 x2 x3 x4)
 
 --- Combinator to transform a function of arity 5
@@ -83,8 +106,11 @@ set5 :: (a1 -> a2 -> a3 -> a4 -> a5 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> Values b
 set5 f x1 x2 x3 x4 x5 = set5With dfsStrategy f x1 x2 x3 x4 x5
 
+--- Combinator to transform a function of arity 5
+--- into a corresponding set function
+--- that uses a given strategy to compute its values.
 set5With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> a5 -> b)
-      -> a1 -> a2 -> a3 -> a4 -> a5 -> Values b
+         -> a1 -> a2 -> a3 -> a4 -> a5 -> Values b
 set5With s f x1 x2 x3 x4 x5 = allVs s (\_ -> f x1 x2 x3 x4 x5)
 
 --- Combinator to transform a function of arity 6
@@ -93,8 +119,11 @@ set6 :: (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> Values b
 set6 f x1 x2 x3 x4 x5 x6 = set6With dfsStrategy f x1 x2 x3 x4 x5 x6
 
+--- Combinator to transform a function of arity 6
+--- into a corresponding set function
+--- that uses a given strategy to compute its values.
 set6With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> b)
-      -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> Values b
+         -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> Values b
 set6With s f x1 x2 x3 x4 x5 x6 =
  allVs s (\_ -> f x1 x2 x3 x4 x5 x6)
 
@@ -104,17 +133,26 @@ set7 :: (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> Values b
 set7 f x1 x2 x3 x4 x5 x6 x7 = set7With dfsStrategy f x1 x2 x3 x4 x5 x6 x7
 
+--- Combinator to transform a function of arity 7
+--- into a corresponding set function
+--- that uses a given strategy to compute its values.
 set7With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> b)
-      -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> Values b
+         -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> Values b
 set7With s f x1 x2 x3 x4 x5 x6 x7 = 
  allVs s (\_ -> f x1 x2 x3 x4 x5 x6 x7)
 
 ------------------------------------------------------------------------
 -- Axuiliaries:
 
--- collect all values of an expression in a list:
-allVs s f = Values (vsToList ((incDepth $!! s) ((incDepth $!! someSearchTree) ((incDepth $!! f) ()))))
+-- Collect all values of an expression (represented as a constant function)
+-- in a list:
+allVs :: Strategy a -> (() -> a) -> Values a
+allVs s f =
+  Values (vsToList ((incDepth $!! s)
+                      ((incDepth $!! someSearchTree) ((incDepth $!! f) ()))))
 
+-- Apply a function to an argument where the encapsulation level of the
+-- argument is incremented.
 incDepth :: (a -> b) -> a -> b
 incDepth external 
 
