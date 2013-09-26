@@ -5,7 +5,7 @@
 --- <b>curryCompiler...</b>.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version October 2012
+--- @version September 2013
 --------------------------------------------------------------------------------
 
 module Distribution (
@@ -279,7 +279,9 @@ logfile :: FrontendParams -> Maybe String
 logfile  (FrontendParams _ _ _ _ _ x) = x
 
 --- In order to make sure that compiler generated files (like .fcy, .fint, .acy)
---- are up to date, one can call the front end of the Curry compiler with this action.
+--- are up to date, one can call the front end of the Curry compiler
+--- with this action.
+--- If the front end returns with an error, an exception is raised.
 --- @param target - the kind of target file to be generated
 --- @param progname - the name of the main module of the application to be compiled
 callFrontend :: FrontendTarget -> String -> IO ()
@@ -290,6 +292,7 @@ callFrontend target p = do
 --- In order to make sure that compiler generated files (like .fcy, .fint, .acy)
 --- are up to date, one can call the front end of the Curry compiler
 --- with this action where various parameters can be set.
+--- If the front end returns with an error, an exception is raised.
 --- @param target - the kind of target file to be generated
 --- @param params - parameters for the front end
 --- @param progname - the name of the main module of the application to be compiled
@@ -300,10 +303,12 @@ callFrontendWithParams target params progname = do
       syscall = parsecurry ++ " " ++ showFrontendTarget target
                            ++ showFrontendParams 
                            ++ " " ++ progname
-  if null lf
-    then system syscall
-    else system (syscall ++ " > " ++ lf ++ " 2>&1")
-  return ()
+  retcode <- if null lf
+             then system syscall
+             else system (syscall ++ " > " ++ lf ++ " 2>&1")
+  if retcode == 0
+   then done
+   else ioError (userError "Illegal source program")
  where
    callParseCurry = case curryCompiler of
      "pakcs" -> return ("\"" ++ installDir </> "bin" </> "parsecurry\"")
