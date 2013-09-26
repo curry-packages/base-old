@@ -253,7 +253,6 @@ readFlatCurry progfile =
 --- I/O action which reads a FlatCurry program from a file
 --- with respect to some parser options.
 --- This I/O action is used by the standard action `readFlatCurry`.
---- It is currently predefined only in Curry2Prolog.
 --- @param progfile - the program file name (without suffix ".curry")
 --- @param options - parameters passed to the front end
 
