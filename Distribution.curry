@@ -21,8 +21,9 @@ module Distribution (
   FrontendTarget(..), 
   
   FrontendParams, defaultParams, rcParams,
-  quiet, extended, overlapWarn, fullPath, outfile, logfile,
+  quiet, extended, overlapWarn, fullPath, outfile, logfile, specials,
   setQuiet, setExtended, setOverlapWarn, setFullPath, setOutfile, setLogfile,
+  setSpecials,
 
   callFrontend,callFrontendWithParams
   ) where
@@ -201,7 +202,7 @@ data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY
 --- Abstract data type for representing parameters supported by the front end
 --- of the Curry compiler.
 -- The parameters are of the form
--- FrontendParams Quiet Extended NoOverlapWarn FullPath OutFile LogFile
+-- FrontendParams Quiet Extended NoOverlapWarn FullPath OutFile LogFile Specials
 -- where
 --   Quiet         - work silently
 --   Extended      - support extended Curry syntax
@@ -209,12 +210,19 @@ data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY
 --   FullPath dirs - the complete list of directory names for loading modules
 --   OutFile file  - output file (currently, only relevant for HTML target)
 --   LogFile file  - store all output (including errors) of the front end in file
+--   Specials      - additional special parameters (use with care!)
 data FrontendParams =
-  FrontendParams Bool Bool Bool (Maybe [String]) (Maybe String) (Maybe String)
+  FrontendParams Bool
+                 Bool
+                 Bool
+                 (Maybe [String])
+                 (Maybe String)
+                 (Maybe String)
+                 String
 
 --- The default parameters of the front end.
 defaultParams :: FrontendParams
-defaultParams = FrontendParams False True True Nothing Nothing Nothing
+defaultParams = FrontendParams False True True Nothing Nothing Nothing ""
 
 --- The default parameters of the front end as configured by the compiler
 --- specific resource configuration file.
@@ -227,56 +235,70 @@ rcParams = do
 
 --- Set quiet mode of the front end.
 setQuiet :: Bool -> FrontendParams -> FrontendParams
-setQuiet s (FrontendParams _ v w x y z) = FrontendParams s v w x y z
+setQuiet s (FrontendParams _ v w x y z sp) = FrontendParams s v w x y z sp
 
 --- Set extended mode of the front end.
 setExtended :: Bool -> FrontendParams -> FrontendParams
-setExtended s (FrontendParams a _ w x y z) = FrontendParams a s w x y z
+setExtended s (FrontendParams a _ w x y z sp) = FrontendParams a s w x y z sp
 
 --- Set overlap warn mode of the front end.
 setOverlapWarn :: Bool -> FrontendParams -> FrontendParams
-setOverlapWarn s (FrontendParams a b _ x y z) = FrontendParams a b s x y z
+setOverlapWarn s (FrontendParams a b _ x y z sp) = FrontendParams a b s x y z sp
 
 --- Set the full path of the front end.
 --- If this parameter is set, the front end searches all modules
 --- in this path (instead of using the default path).
 setFullPath ::  [String] -> FrontendParams -> FrontendParams 
-setFullPath s (FrontendParams a b c _ y z) = FrontendParams a b c (Just s) y z
+setFullPath s (FrontendParams a b c _ y z sp) =
+  FrontendParams a b c (Just s) y z sp
 
 --- Set the outfile parameter of the front end.
 --- Relevant for HTML generation.
 setOutfile ::  String -> FrontendParams -> FrontendParams 
-setOutfile  s (FrontendParams a b c d _ z) = FrontendParams a b c d (Just s) z
+setOutfile  s (FrontendParams a b c d _ z sp) =
+  FrontendParams a b c d (Just s) z sp
 
 --- Set the logfile parameter of the front end.
 --- If this parameter is set, all messages produced by the front end
 --- are stored in this file.
 setLogfile ::  String -> FrontendParams -> FrontendParams 
-setLogfile  s (FrontendParams a b c d e _) = FrontendParams a b c d e (Just s)
+setLogfile  s (FrontendParams a b c d e _ sp) =
+  FrontendParams a b c d e (Just s) sp
+
+--- Set additional specials parameters of the front end.
+--- These parameters are specific for the current front end and
+--- should be used with care, since their form might change in the future.
+setSpecials :: String -> FrontendParams -> FrontendParams 
+setSpecials specials (FrontendParams a b c d e z _) =
+  FrontendParams a b c d e z specials
 
 --- Returns the value of the "quiet" parameter.
 quiet :: FrontendParams -> Bool
-quiet (FrontendParams x _ _ _ _ _) = x
+quiet (FrontendParams x _ _ _ _ _ _) = x
 
 --- Returns the value of the "extended" parameter.
 extended :: FrontendParams -> Bool
-extended (FrontendParams _ x _ _ _ _) = x
+extended (FrontendParams _ x _ _ _ _ _) = x
 
 --- Returns the value of the "overlapWarn" parameter.
 overlapWarn :: FrontendParams -> Bool
-overlapWarn (FrontendParams _ _ x _ _ _) = x
+overlapWarn (FrontendParams _ _ x _ _ _ _) = x
 
 --- Returns the full path parameter of the front end.
 fullPath :: FrontendParams -> Maybe [String]
-fullPath (FrontendParams _ _ _ x _ _) = x
+fullPath (FrontendParams _ _ _ x _ _ _) = x
 
 --- Returns the outfile parameter of the front end.
 outfile :: FrontendParams -> Maybe String
-outfile  (FrontendParams _ _ _ _ x _) = x
+outfile  (FrontendParams _ _ _ _ x _ _) = x
 
 --- Returns the logfile parameter of the front end.
 logfile :: FrontendParams -> Maybe String
-logfile  (FrontendParams _ _ _ _ _ x) = x
+logfile  (FrontendParams _ _ _ _ _ x _) = x
+
+--- Returns the special parameters of the front end.
+specials :: FrontendParams -> String
+specials (FrontendParams _ _ _ _ _ _ x) = x
 
 --- In order to make sure that compiler generated files (like .fcy, .fint, .acy)
 --- are up to date, one can call the front end of the Curry compiler
@@ -301,7 +323,7 @@ callFrontendWithParams target params progname = do
   parsecurry <- callParseCurry
   let lf      = maybe "" id (logfile params)
       syscall = parsecurry ++ " " ++ showFrontendTarget target
-                           ++ showFrontendParams 
+                           ++ " " ++ showFrontendParams 
                            ++ " " ++ progname
   retcode <- if null lf
              then system syscall
@@ -327,20 +349,21 @@ callFrontendWithParams target params progname = do
    showFrontendTarget HTML = "--html"
    showFrontendTarget CY   = "--parse-only"
 
-   showFrontendParams = concat
-    [ if quiet       params then runQuiet      else ""
-    , if extended    params then " --extended" else ""
-    , if overlapWarn params then ""            else " --no-overlap-warn"
-    , maybe "" (" -o "++) (outfile params)
+   showFrontendParams = unwords
+    [ if quiet       params then runQuiet     else ""
+    , if extended    params then "--extended" else ""
+    , if overlapWarn params then ""           else "--no-overlap-warn"
+    , maybe "" ("-o "++) (outfile params)
     , maybe "" (\p -> if curryCompiler=="pakcs"
-                      then " --fullpath " ++ concat (intersperse ":" p)
+                      then "--fullpath " ++ concat (intersperse ":" p)
                       else "")
               (fullPath params)
+    , specials params
     ]
 
    runQuiet = if curryCompiler=="pakcs"
-              then " --quiet "
-              else " --no-verb --no-warn --no-overlap-warn " -- kics(2)
+              then "--quiet"
+              else "--no-verb --no-warn --no-overlap-warn" -- kics(2)
 
 rcErr :: String -> a -> IO a
 rcErr s x = hPutStrLn stderr (s ++ " undefined in rc file") >> return x
