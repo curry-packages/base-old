@@ -5,7 +5,7 @@
 --- <b>curryCompiler...</b>.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version September 2013
+--- @version October 2013
 --------------------------------------------------------------------------------
 
 module Distribution (
@@ -269,8 +269,8 @@ setLogfile  s (FrontendParams a b c d e _ sp) =
 --- These parameters are specific for the current front end and
 --- should be used with care, since their form might change in the future.
 setSpecials :: String -> FrontendParams -> FrontendParams 
-setSpecials specials (FrontendParams a b c d e z _) =
-  FrontendParams a b c d e z specials
+setSpecials sp (FrontendParams a b c d e z _) =
+  FrontendParams a b c d e z sp
 
 --- Returns the value of the "quiet" parameter.
 quiet :: FrontendParams -> Bool
