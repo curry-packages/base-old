@@ -19,7 +19,7 @@ prefix     = $(dir $(2))$(1)$(notdir $(2))
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
 # Curry library files
-LIB_CURRY     = $(filter-out Curry_Main_Goal.curry, $(wildcard *.curry meta/*.curry))
+LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
 # Generated files
@@ -30,6 +30,10 @@ LIB_HTML      = $(patsubst %, $(LIBDOCDIR)/%.html, $(LIB_NAMES))
 LIB_TEX       = $(patsubst %, $(TEXDOCDIR)/%.tex , $(LIB_NAMES))
 HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
 
+ALLLIBS       = AllLibraries
+MAINGOAL      = Curry_Main_Goal.curry
+EXCLUDES      = $(ALLLIBS).curry $(MAINGOAL)
+
 PACKAGE       = kics2-libraries
 CABAL_FILE    = $(PACKAGE).cabal
 CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
@@ -39,8 +43,14 @@ CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
 ########################################################################
 
 .PHONY: install
-install: $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(CABAL_FILE)
+install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(CABAL_FILE)
 	$(CABAL_INSTALL)
+
+# create a program importing all libraries in order to re-compile them
+# so that all auxiliary files (.nda, .hs, ...) are up-to-date:
+$(ALLLIBS).curry: $(LIB_CURRY) Makefile
+	rm -f $@
+	for i in $(LIB_NAMES) ; do echo "import $$i" >> $@ ; done
 
 .PHONY: unregister
 unregister:
