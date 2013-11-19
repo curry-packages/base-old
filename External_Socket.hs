@@ -2,7 +2,7 @@
 import Control.Concurrent
 import Control.Monad (when)
 import Network
-import Network.Socket
+import Network.Socket hiding (sClose)
 
 import qualified Curry_Prelude as CP
 
