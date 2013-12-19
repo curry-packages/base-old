@@ -845,16 +845,7 @@ concatS xs@(_:_) = foldr1 (\ f g -> f . g) xs
 ------------------------------------------------------------------------------
 --- Transforms a list of HTML expressions into string representation.
 showHtmlExps :: [HtmlExp] -> String
-showHtmlExps hexps = showsHtmlExps hexps ""
-
-showsHtmlExps :: [HtmlExp] -> ShowS
-showsHtmlExps [] = id
-showsHtmlExps (he:hes) = showsWithLnPrefix he . showsHtmlExps hes
- where
-   showsWithLnPrefix hexp = let s = getText hexp
-                            in if s/="" && isSpace (head s)
-                               then nl . showString (tail s)
-                               else showsHtmlExp hexp
+showHtmlExps hexps = showsHtmlExps 0 hexps ""
 
 -- get the string contents of an HTML expression:
 getText :: HtmlExp -> String
@@ -880,22 +871,34 @@ tagWithLn t = t/="" &&
 
 --- Transforms a single HTML expression into string representation.
 showHtmlExp :: HtmlExp -> String
-showHtmlExp hexp = showsHtmlExp hexp ""
+showHtmlExp hexp = showsHtmlExp 0 hexp ""
 
-showsHtmlExp :: HtmlExp -> ShowS
-showsHtmlExp (HtmlText s) = showString s
-showsHtmlExp (HtmlStruct tag attrs hexps) =
-  let maybeLn = if tagWithLn tag then nl else id
-   in maybeLn .
-      (if null hexps && tag/="script" -- due to problems with older browsers
+showsHtmlExp :: Int -> HtmlExp -> ShowS
+showsHtmlExp _ (HtmlText s) = showString s
+showsHtmlExp i (HtmlStruct tag attrs hexps) =
+  let maybeLn j = if tagWithLn tag then nl . showTab j else id
+   in maybeLn i .
+      (if null hexps && null attrs
        then showsHtmlOpenTag tag attrs "/>"
-       else showsHtmlOpenTag tag attrs ">" . maybeLn . showExps hexps .
-            maybeLn . showString "</" . showString tag . showChar '>'
-      ) . maybeLn
+       else showsHtmlOpenTag tag attrs ">" . maybeLn (i+2) . showExps hexps .
+            maybeLn i . showString "</" . showString tag . showChar '>'
+      ) . maybeLn i
  where
-  showExps = if tag=="pre" then concatS . map showsHtmlExp else showsHtmlExps
-showsHtmlExp (HtmlEvent hexp _) = showsHtmlExp hexp
-showsHtmlExp (HtmlCRef  hexp _) = showsHtmlExp hexp
+  showExps = if tag=="pre"
+             then concatS . map (showsHtmlExp 0) else showsHtmlExps (i+2)
+showsHtmlExp i (HtmlEvent hexp _) = showsHtmlExp i hexp
+showsHtmlExp i (HtmlCRef  hexp _) = showsHtmlExp i hexp
+
+showsHtmlExps :: Int -> [HtmlExp] -> ShowS
+showsHtmlExps _ [] = id
+showsHtmlExps i (he:hes) = showsWithLnPrefix he . showsHtmlExps i hes
+ where
+   showsWithLnPrefix hexp = let s = getText hexp
+                            in if s/="" && isSpace (head s)
+                               then nl . showTab i . showString (tail s)
+                               else showsHtmlExp i hexp
+
+showTab n = showString (take n (repeat ' '))
 
 showsHtmlOpenTag :: String -> [(String,String)] -> String -> ShowS
 showsHtmlOpenTag tag attrs close =
