@@ -16,7 +16,7 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version July 2013
+--- @version December 2013
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
@@ -1610,7 +1610,7 @@ escapeLaTeXSpecials [] = []
 escapeLaTeXSpecials (c:cs)
   | c=='^'      = "{\\tt\\char94}" ++ escapeLaTeXSpecials cs
   | c=='~'      = "{\\tt\\char126}" ++ escapeLaTeXSpecials cs
-  | c=='\\'     = "{\\tt\\char92}" ++ escapeLaTeXSpecials cs
+  | c=='\\'     = "{\\textbackslash}" ++ escapeLaTeXSpecials cs
   | c=='<'      = "{\\tt\\char60}" ++ escapeLaTeXSpecials cs
   | c=='>'      = "{\\tt\\char62}" ++ escapeLaTeXSpecials cs
   | c=='_'      = "\\_" ++ escapeLaTeXSpecials cs
@@ -1626,13 +1626,13 @@ escapeLaTeXSpecials (c:cs)
 htmlSpecialChars2tex :: String -> String
 htmlSpecialChars2tex [] = []
 htmlSpecialChars2tex (c:cs)
-  | c==chr 228  = "\\\"a"  ++ htmlSpecialChars2tex cs
-  | c==chr 246  = "\\\"o"  ++ htmlSpecialChars2tex cs
-  | c==chr 252  = "\\\"u"  ++ htmlSpecialChars2tex cs
-  | c==chr 196  = "\\\"A"  ++ htmlSpecialChars2tex cs
-  | c==chr 214  = "\\\"O"  ++ htmlSpecialChars2tex cs
-  | c==chr 220  = "\\\"U"  ++ htmlSpecialChars2tex cs
-  | c==chr 223  = "\\ss{}" ++ htmlSpecialChars2tex cs
+  | c==chr 228  = "{\\\"a}"  ++ htmlSpecialChars2tex cs
+  | c==chr 246  = "{\\\"o}"  ++ htmlSpecialChars2tex cs
+  | c==chr 252  = "{\\\"u}"  ++ htmlSpecialChars2tex cs
+  | c==chr 196  = "{\\\"A}"  ++ htmlSpecialChars2tex cs
+  | c==chr 214  = "{\\\"O}"  ++ htmlSpecialChars2tex cs
+  | c==chr 220  = "{\\\"U}"  ++ htmlSpecialChars2tex cs
+  | c==chr 223  = "{\\ss}" ++ htmlSpecialChars2tex cs
   | c=='&'      = let (special,rest) = break (==';') cs
                   in  if null rest
                       then "\\&" ++ htmlSpecialChars2tex special -- wrong format
