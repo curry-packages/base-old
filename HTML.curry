@@ -16,7 +16,7 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version December 2013
+--- @version January 2014
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
@@ -61,6 +61,7 @@ import Unsafe(showAnyQExpression) -- to show status of cgi server
 import Distribution(installDir)
 import IO
 import Profile
+import Random(getRandomSeed,nextInt)
 
 infixl 0 `addAttr`
 infixl 0 `addAttrs`
@@ -1928,7 +1929,9 @@ storeEnvHandlers :: ServerState -> Bool -> String -> [(String,String)]
 storeEnvHandlers ostate multipleuse cgikey env handlerkeys = do
   time <- getClockTime
   cstate <- cleanOldEventHandlers ostate
+  rannums <- getRandomSeed >>= return . drop 3 . nextInt
   let nstate = generateEventServerMessages
+                 rannums
                  (if multipleuse then Nothing else Just (keyOfState cstate))
                  (eventHandlerExpiration time)
                  cstate
@@ -1936,10 +1939,13 @@ storeEnvHandlers ostate multipleuse cgikey env handlerkeys = do
   seq nstate done -- to ensure that handler keys are instantiated
   return nstate
  where
-   generateEventServerMessages _ _ state [] = state
-   generateEventServerMessages groupkey expiredate state ((handler,hkey):evhs)
-     | show (keyOfState state) ++ ' ':showQTerm (toUTCTime expiredate) =:= hkey
+   generateEventServerMessages _ _ _ state [] = state
+   generateEventServerMessages (rannum:rannums) groupkey expiredate state
+                               ((handler,hkey) : evhs)
+     | hkey =:= show (keyOfState state) ++ ' ':showQTerm (toUTCTime expiredate)
+                ++ '_' : show rannum -- add random element to handler key string
      = generateEventServerMessages
+            rannums
             groupkey
             expiredate
             (storeNewEnvEventWithCgiKey groupkey expiredate state env handler)
