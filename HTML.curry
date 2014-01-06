@@ -943,14 +943,10 @@ showHtmlPage (HtmlPage title params html) =
   bodyattrs = [attr | (PageBodyAttr attr) <- params]
 
 --- Standard header for generated HTML pages.
-htmlPrelude =
- "<?xml version=\"1.0\" encoding=\""++defaultEncoding++"\"?>\n"++
- "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"++
- "  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
+htmlPrelude = "<!DOCTYPE html>\n"
 
 --- Standard attributes for element "html".
-htmlTagAttrs = [("xmlns","http://www.w3.org/1999/xhtml"),
-                ("xml:lang","en"),("lang","en")]
+htmlTagAttrs = [("lang","en")]
 
 ------------------------------------------------------------------------------
 --- Gets the parameter attached to the URL of the script.
