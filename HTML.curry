@@ -27,7 +27,7 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             cookieForm,getCookies,
             page,standardPage,
             pageEnc,pageCSS,pageMetaInfo,pageLinkInfo,pageBodyAttr,addPageParam,
-            formEnc,formCSS,formBodyAttr,addFormParam,
+            formEnc,formCSS,formMetaInfo,formBodyAttr,addFormParam,
             htxt,htxts,hempty,nbsp,h1,h2,h3,h4,h5,
             par,emphasize,strong,bold,italic,code,
             center,blink,teletype,pre,verbatim,address,href,anchor,
@@ -144,6 +144,7 @@ data HtmlForm =
 ---                      script should be represented (should only be used
 ---                      for scripts running in a frame)
 --- @cons FormEnc - the encoding scheme of this form
+--- @cons FormMeta as - meta information (in form of attributes) for this form
 --- @cons HeadInclude he - HTML expression to be included in form header
 --- @cons MultipleHandlers - indicates that the event handlers of the form
 ---   can be multiply used (i.e., are not deleted if the form is submitted
@@ -161,6 +162,7 @@ data FormParam = FormCookie   String String [CookieParam]
                | FormOnSubmit String
                | FormTarget   String
                | FormEnc      String
+               | FormMeta     [(String,String)]
                | HeadInclude  HtmlExp
                | MultipleHandlers
                | BodyAttr     (String,String)
@@ -172,6 +174,11 @@ formEnc enc = FormEnc enc
 --- A URL for a CSS file for a HTML form.
 formCSS :: String -> FormParam
 formCSS css = FormCSS css
+
+--- Meta information for a HTML form. The argument is a list of
+--- attributes included in the `meta`-tag in the header for this form.
+formMetaInfo :: [(String,String)] -> FormParam
+formMetaInfo attrs = FormMeta attrs
 
 --- Optional attribute for the body element of the HTML form.
 --- More than one occurrence is allowed, i.e., all such attributes are
@@ -866,7 +873,7 @@ getTag (HtmlCRef   he _)    = getTag he
 tagWithLn t = t/="" &&
               t `elem` ["br","p","li","ul","ol","dl","dt","dd","hr",
                         "h1","h2","h3","h4","h5","h6","div",
-                        "html","title","head","body","link","script",
+                        "html","title","head","body","link","meta","script",
                         "form","table","tr","td"]
 
 
@@ -874,12 +881,15 @@ tagWithLn t = t/="" &&
 showHtmlExp :: HtmlExp -> String
 showHtmlExp hexp = showsHtmlExp 0 hexp ""
 
+--- HTML tags that have no end tag in HTML:
+noEndTags = ["link","img","meta"]
+
 showsHtmlExp :: Int -> HtmlExp -> ShowS
 showsHtmlExp _ (HtmlText s) = showString s
 showsHtmlExp i (HtmlStruct tag attrs hexps) =
   let maybeLn j = if tagWithLn tag then nl . showTab j else id
    in maybeLn i .
-      (if null hexps && null attrs
+      (if null hexps && (null attrs || tag `elem` noEndTags)
        then showsHtmlOpenTag tag attrs "/>"
        else showsHtmlOpenTag tag attrs ">" . maybeLn (i+2) . showExps hexps .
             maybeLn i . showString "</" . showString tag . showChar '>'
@@ -936,8 +946,8 @@ showHtmlPage (HtmlPage title params html) =
                  []]
   param2html (PageJScript js) =
      [HtmlStruct "script" [("type","text/javascript"),("src",js)] []]
-  param2html (PageMeta as) = [HtmlStruct "meta" as []]
-  param2html (PageLink as) = [HtmlStruct "link" as []]
+  param2html (PageMeta attrs) = [HtmlStruct "meta" attrs []]
+  param2html (PageLink attrs) = [HtmlStruct "link" attrs []]
   param2html (PageBodyAttr _) = [] -- these attributes are separately processed
 
   bodyattrs = [attr | (PageBodyAttr attr) <- params]
@@ -1404,7 +1414,7 @@ showForm cenv url (HtmlForm title params html) =
    (HtmlStruct "html" htmlTagAttrs
      [HtmlStruct "head" []
                  ([HtmlStruct "title" [] [HtmlText (htmlQuote title)]] ++
-                  concatMap param2html params),
+                  concatMap param2html paramsWithEncoding),
       HtmlStruct "body" bodyattrs
        ((if null url || null cenv then id
          else \he->[HtmlStruct "form"
@@ -1415,12 +1425,17 @@ showForm cenv url (HtmlForm title params html) =
            cenv2hidden cenv ++
            html))])
  where
+  paramsWithEncoding = if null [e | (FormEnc e) <- params]
+                       then FormEnc defaultEncoding : params
+                       else params
+
   param2html (FormEnc enc) =
      [HtmlStruct "meta" [("http-equiv","Content-Type"),
                          ("content","text/html; charset="++enc)] []]
   param2html (FormCSS css) =
      [HtmlStruct "link" [("rel","stylesheet"),("type","text/css"),("href",css)]
                  []]
+  param2html (FormMeta attrs) = [HtmlStruct "meta" attrs []]
   param2html (FormJScript js) =
      [HtmlStruct "script" [("type","text/javascript"),("src",js)] []]
   param2html (FormOnSubmit _) = []
