@@ -745,6 +745,34 @@ foldIO f a (x:xs)  =  f a x >>= \fax -> foldIO f fax xs
 liftIO :: (a -> b) -> IO a -> IO b
 liftIO f m = m >>= return . f
 
+--- Like `mapIO`, but with flipped arguments.
+---
+--- This can be useful if the definition of the function is longer
+--- than those of the list, like in
+---
+--- forIO [1..10] $ \n -> do
+---   ...
+forIO :: [a] -> (a -> IO b) -> IO [b]
+forIO xs f = mapIO f xs
+
+--- Like `mapIO_`, but with flipped arguments.
+---
+--- This can be useful if the definition of the function is longer
+--- than those of the list, like in
+---
+--- forIO_ [1..10] $ \n -> do
+---   ...
+forIO_ :: [a] -> (a -> IO b) -> IO ()
+forIO_ xs f = mapIO_ f xs
+
+--- Performs an `IO` action unless the condition is met.
+unless :: Bool -> IO () -> IO ()
+unless p act = if p then done else act
+
+--- Performs an `IO` action when the condition is met.
+when :: Bool -> IO () -> IO ()
+when p act = if p then act else done
+
 ----------------------------------------------------------------
 -- Non-determinism and free variables:
 
