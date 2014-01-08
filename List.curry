@@ -176,7 +176,7 @@ split p (x:xs) | p x       = [] : split p xs
 --- @return the list of initial segments of the argument list
 inits :: [a] -> [[a]]
 inits []     =  [[]]
-inits (x:xs) =  [[]] ++ map (x:) (inits xs)
+inits (x:xs) =  [] : map (x:) (inits xs)
 
 --- Returns all final segments of a list, starting with the longest.
 --- Example: `tails [1,2,3] == [[1,2,3],[2,3],[3],[]]`
