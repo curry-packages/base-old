@@ -2,16 +2,18 @@
 --- Library with some useful extensions to the IO monad.
 ---
 --- @author Michael Hanus
---- @version June 2007
+--- @version January 2014
 ------------------------------------------------------------------------------
 
-module IOExts(execCmd,connectToCommand,
+module IOExts(execCmd,evalCmd,connectToCommand,
               readCompleteFile,updateFile,
               exclusiveIO,setAssoc,getAssoc,
               IORef,newIORef,readIORef,writeIORef) where
 
 import System
-import IO(Handle)
+import IO
+import Directory(removeFile)
+import Read(readNat)
 
 --- Executes a command with a new default shell process.
 --- The standard I/O streams of the new process (stdin,stdout,stderr)
@@ -26,6 +28,37 @@ execCmd cmd = prim_execCmd $## cmd
 prim_execCmd :: String -> IO (Handle,Handle,Handle)
 prim_execCmd external
 
+
+--- Executes a command with the given arguments as a new default shell process
+--- and provides the input via the process' stdin input stream.
+--- The exit code of the process and the contents written to the standard
+--- I/O streams stdout and stderr are returned.
+--- @param cmd   - the shell command to be executed
+--- @param args  - the command's arguments
+--- @param input - the input to be written to the command's stdin
+--- @return the exit code and the contents written to stdout and stderr
+evalCmd :: String -> [String] -> String -> IO (Int, String, String)
+evalCmd cmd args input = do
+  pid <- getPID
+  let tmpfile = "/tmp/PAKCS_evalCMD"++show pid
+  (hi,ho,he) <- execCmd (unwords (cmd:args) ++ " ; (echo $? > "++tmpfile++")")
+  hPutStrLn hi input
+  hClose hi
+  outs <- hGetEOF ho
+  errs <- hGetEOF he
+  ecodes <- readCompleteFile tmpfile
+  removeFile tmpfile
+  return (readNat ecodes, outs, errs)
+ where
+  --- Reads from an input handle until EOF and returns the input.
+  hGetEOF  :: Handle -> IO String
+  hGetEOF h = do
+    eof <- hIsEOF h
+    if eof
+     then hClose h >> return ""
+     else do c <- hGetChar h
+             cs <- hGetEOF h
+             return (c:cs)
 
 --- Executes a command with a new default shell process.
 --- The input and output streams of the new process is returned
