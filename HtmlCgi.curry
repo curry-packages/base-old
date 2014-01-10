@@ -218,7 +218,9 @@ noHandlerPage cgiurl urlparam =
 --- that are transmitted to the application program.
 --- Currently, it contains only a selection of all reasonable variables
 --- but this list can be easily extended.
-cgiServerEnvVars = ["QUERY_STRING","HTTP_COOKIE","REMOTE_HOST","REMOTE_ADDR"]
+cgiServerEnvVars =
+  ["PATH_INFO","QUERY_STRING","HTTP_COOKIE","REMOTE_HOST","REMOTE_ADDR",
+   "REQUEST_METHOD","SCRIPT_NAME","SERVER_NAME","SERVER_PORT"]
 
 -- The timeout (in msec) of the script server.
 -- If the port of the application server is not available within the timeout
