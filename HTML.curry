@@ -490,9 +490,9 @@ address hexps = HtmlStruct "address" [] hexps
 href           :: String -> [HtmlExp] -> HtmlExp
 href ref hexps = HtmlStruct "a" [("href",ref)] hexps
 
---- An anchor for hypertext reference inside a document
+--- An anchored text with a hypertext reference inside a document.
 anchor           :: String -> [HtmlExp] -> HtmlExp
-anchor anc hexps = HtmlStruct "a" [("name",anc)] hexps
+anchor anc hexps = HtmlStruct "span" [("id",anc)] hexps
 
 --- Unordered list
 --- @param items - the list items where each item is a list of HTML expressions
