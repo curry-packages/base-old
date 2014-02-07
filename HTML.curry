@@ -760,8 +760,8 @@ selectionInitial cref sellist sel
    selOption [] _ = []
    selOption ((n,v):nvs) i =
       HtmlStruct "option"
-                 ([("value",v)] ++ if i==0 then [("selected","yes")] else [])
-                 [htxt n] : selOption nvs (i-1)
+        ([("value",v)] ++ if i==0 then [("selected","selected")] else [])
+        [htxt n] : selOption nvs (i-1)
 
 --- A selection button with a reference and a list of name/value/flag pairs.
 --- The names are shown in the selection and the value is returned
@@ -772,7 +772,7 @@ selectionInitial cref sellist sel
 multipleSelection :: CgiRef -> [(String,String,Bool)] -> HtmlExp
 multipleSelection cref sellist
   | cref =:= CgiRef ref -- instantiate cref argument
-  = HtmlCRef (HtmlStruct "select" [("name",ref),("multiple","yes")]
+  = HtmlCRef (HtmlStruct "select" [("name",ref),("multiple","multiple")]
                                   (map selOption sellist))
             cref
  where
@@ -780,8 +780,8 @@ multipleSelection cref sellist
 
    selOption (n,v,flag) =
       HtmlStruct "option"
-                 ([("value",v)] ++ if flag then [("selected","yes")] else [])
-                 [htxt n]
+        ([("value",v)] ++ if flag then [("selected","selected")] else [])
+        [htxt n]
 
 --- A hidden field to pass a value referenced by a fixed name.
 --- This function should be used with care since it may cause
@@ -882,7 +882,7 @@ showHtmlExp :: HtmlExp -> String
 showHtmlExp hexp = showsHtmlExp 0 hexp ""
 
 --- HTML tags that have no end tag in HTML:
-noEndTags = ["link","img","meta"]
+noEndTags = ["img","input","link","meta"]
 
 showsHtmlExp :: Int -> HtmlExp -> ShowS
 showsHtmlExp _ (HtmlText s) = showString s
