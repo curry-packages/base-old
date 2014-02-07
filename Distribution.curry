@@ -5,7 +5,7 @@
 --- <b>curryCompiler...</b>.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version October 2013
+--- @version February 2014
 --------------------------------------------------------------------------------
 
 module Distribution (
@@ -128,11 +128,7 @@ addCurrySubdir dir = dir </> currySubdir
 --- system libraries.
 getSysLibPath :: IO [String]
 getSysLibPath = case curryCompiler of
-  "pakcs" -> do pakcspath <- getEnviron "PAKCSLIBPATH"
-                return
-                 (if null pakcspath
-                  then [installDir </> "lib", installDir </> "lib" </> "meta"]
-                  else splitPath pakcspath)
+  "pakcs" -> return [installDir </> "lib", installDir </> "lib" </> "meta"]
   "kics"  -> return [installDir </> "src" </> "lib"]
   "kics2" -> return [installDir </> "lib", installDir </> "lib" </> "meta"]
   _ -> error "Distribution.getSysLibPath: unknown curryCompiler"
@@ -164,13 +160,12 @@ getLoadPath = getLoadPathForFile "xxx"
 --- used for loading modules w.r.t. a given main module file.
 --- The directory prefix of the module file (or "." if there is
 --- no such prefix) is the first element of the load path and the
---- remaining elements are determined by the environment variables
---- CURRYRPATH and PAKCSLIBPATH when using pakcs and
---- the entry of kicsrc when using kics, respectively.
+--- remaining elements are determined by the environment variable
+--- CURRYRPATH and the entry "libraries" of the system's rc file.
 getLoadPathForFile :: String -> IO [String]
 getLoadPathForFile file = do
   syslib <- getSysLibPath
-  mblib  <- getRcVar "Libraries"
+  mblib  <- getRcVar "libraries"
   let fileDir = dirName file
   if curryCompiler `elem` ["pakcs","kics","kics2"] then
     do currypath <- getEnviron "CURRYPATH"
