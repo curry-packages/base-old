@@ -1514,6 +1514,8 @@ showLatexExp (HtmlStruct tag attrs htmlexp)
  | tag=="font" = showLatexExps htmlexp  -- ignore font changes
  | tag=="address" = showLatexExps htmlexp
  | tag=="blink"   = showLatexExps htmlexp
+ | tag=="sub"  = "$_\\mbox{" ++ showLatexExps htmlexp ++ "}$"
+ | tag=="sup"  = "$^\\mbox{" ++ showLatexExps htmlexp ++ "}$"
  | tag=="a"    = showLatexExps htmlexp ++
                  -- add href attribute as footnote, if present:
                  maybe ""
