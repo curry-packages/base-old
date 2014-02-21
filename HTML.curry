@@ -57,7 +57,7 @@ import HtmlCgi
 import NamedSocket
 import ReadNumeric(readNat,readHex)
 import ReadShowTerm(showQTerm,readsQTerm)
-import Unsafe(showAnyQExpression) -- to show status of cgi server
+--import Unsafe(showAnyQExpression) -- to show status of cgi server
 import Distribution(installDir)
 import IO
 import Profile
@@ -1157,12 +1157,13 @@ serveCgiMessagesForForm servertimeout url cgikey portname
   serveCgiMessage state hdl ShowStatus =
     reportStatus state hdl showEventHandler
    where
-    showEventHandler (key,time,_,(_,handler),gkey) = do
+    showEventHandler (key,time,_,(_,_{-handler-}),gkey) = do
       ltime <- toCalendarTime time
       return $ "No. " ++ show key ++ " (" ++ showGroupKey gkey ++
                "), expires at " ++
                calendarTimeToString ltime ++ ": " ++
-               showAnyQExpression handler ++ "\n"
+               --showAnyQExpression handler ++ "\n"
+               "<sorry, can't show handler>\n"
 
   serveCgiMessage state hdl (CgiSubmit scriptenv formenv) = do
       let scriptkey = maybe "" id (lookup "SCRIPTKEY" scriptenv)
@@ -1367,21 +1368,20 @@ numberCgiRefs :: [HtmlExp] -> Int -> ([HtmlExp],Int)
 -- result: translated HTMLExps, new number for cgi-refs
 numberCgiRefs [] i = ([],i)
 numberCgiRefs (HtmlText s : hexps) i =
-   let (nhexps,j) = numberCgiRefs hexps i
-   in (HtmlText s : nhexps, j)
+  case numberCgiRefs hexps i of
+    (nhexps,j) -> (HtmlText s : nhexps, j)
 numberCgiRefs (HtmlStruct tag attrs hexps1 : hexps2) i =
-   let (nhexps1,j) = numberCgiRefs hexps1 i
-       (nhexps2,k) = numberCgiRefs hexps2 j
-   in (HtmlStruct tag attrs nhexps1 : nhexps2, k)
+  case numberCgiRefs hexps1 i of
+    (nhexps1,j) -> case numberCgiRefs hexps2 j of
+                     (nhexps2,k) -> (HtmlStruct tag attrs nhexps1 : nhexps2, k)
 numberCgiRefs (HtmlEvent (HtmlStruct tag attrs hes) handler : hexps) i =
-   let (nhexps,j) = numberCgiRefs hexps i
-   in (HtmlEvent (HtmlStruct tag attrs hes) handler : nhexps, j)
+  case numberCgiRefs hexps i of
+    (nhexps,j) -> (HtmlEvent (HtmlStruct tag attrs hes) handler : nhexps, j)
 numberCgiRefs (HtmlCRef hexp (CgiRef ref) : hexps) i
   | ref =:= ("FIELD_"++show i)
-  = let ([nhexp],j) = numberCgiRefs [hexp] (i+1)
-        (nhexps,k) = numberCgiRefs hexps j
-    in (nhexp : nhexps, k)
-
+  = case numberCgiRefs [hexp] (i+1) of
+      ([nhexp],j) -> case numberCgiRefs hexps j of
+                       (nhexps,k) -> (nhexp : nhexps, k)
 
 -- translate all event handlers into their internal form:
 -- (assumption: all CgiRefs have already been instantiated and eliminated)
