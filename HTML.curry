@@ -16,7 +16,7 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version January 2014
+--- @version February 2014
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
@@ -1514,8 +1514,8 @@ showLatexExp (HtmlStruct tag attrs htmlexp)
  | tag=="font" = showLatexExps htmlexp  -- ignore font changes
  | tag=="address" = showLatexExps htmlexp
  | tag=="blink"   = showLatexExps htmlexp
- | tag=="sub"  = "$_\\mbox{" ++ showLatexExps htmlexp ++ "}$"
- | tag=="sup"  = "$^\\mbox{" ++ showLatexExps htmlexp ++ "}$"
+ | tag=="sub"  = "$_{\\mbox{" ++ showLatexExps htmlexp ++ "}}$"
+ | tag=="sup"  = "$^{\\mbox{" ++ showLatexExps htmlexp ++ "}}$"
  | tag=="a"    = showLatexExps htmlexp ++
                  -- add href attribute as footnote, if present:
                  maybe ""
