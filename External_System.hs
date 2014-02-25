@@ -2,11 +2,11 @@
 import qualified Curry_Prelude as CP
 
 import Control.Exception as C (IOException, handle)
-import Network.BSD (getHostName)
-import System.Cmd
-import System.CPUTime (getCPUTime)
-import System.Environment
-import System.Exit
+import Network.BSD            (getHostName)
+import System.CPUTime         (getCPUTime)
+import System.Environment     (getArgs, getEnv, getProgName)
+import System.Exit            (ExitCode (..), exitWith)
+import System.Process         (system)
 
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
 import System.Win32.Process

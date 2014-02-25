@@ -1,14 +1,31 @@
+{-# LANGUAGE CPP #-}
 import GHC.Exts (Int (I#),(<#))
 
-external_d_OP_bar_plus_plus_bar ::  Curry_Prelude.Curry a =>
- C_ValueSequence a -> C_ValueSequence a -> Cover -> ConstStore -> C_ValueSequence a
+#if __GLASGOW_HASKELL__ > 706
+import GHC.Exts (isTrue#)
+#endif
+
+-- #endimport - do not remove this line!
+
+#if !(__GLASGOW_HASKELL__ > 706)
+isTrue# :: Bool -> Bool
+{-# INLINE isTrue# #-}
+isTrue# x = x
+#endif
+
+external_d_OP_bar_plus_plus_bar
+  :: Curry_Prelude.Curry a
+  => C_ValueSequence a -> C_ValueSequence a
+  -> Cover -> ConstStore -> C_ValueSequence a
 external_d_OP_bar_plus_plus_bar l1 l2 _ _ = l1 |++| l2
 
-data C_ValueSequence a = EmptyVS | Values (Curry_Prelude.OP_List a) 
-                       | FailVS (Curry_Prelude.C_Int)
-                       | Choice_VS Cover ID (C_ValueSequence a) (C_ValueSequence a)
-                       | Choices_VS Cover ID [C_ValueSequence a]
-                       | Guard_VS Cover Constraints (C_ValueSequence a)
+data C_ValueSequence a
+  = EmptyVS
+  | Values (Curry_Prelude.OP_List a)
+  | FailVS (Curry_Prelude.C_Int)
+  | Choice_VS  Cover ID (C_ValueSequence a) (C_ValueSequence a)
+  | Choices_VS Cover ID [C_ValueSequence a]
+  | Guard_VS Cover Constraints (C_ValueSequence a)
 
 instance Curry_Prelude.Curry (C_ValueSequence a) where
 
@@ -29,8 +46,8 @@ instance NonDet (C_ValueSequence a) where
   choicesCons = Choices_VS
   guardCons   = Guard_VS
   failCons    = error "SearchTree: ValueSequence: failCons"
-  try        = error "SearchTree: ValueSequence: try" 
-  match      = error "SearchTree: ValueSequence: match" 
+  try         = error "SearchTree: ValueSequence: try"
+  match       = error "SearchTree: ValueSequence: match"
 
 instance Generable (C_ValueSequence a) where
   generate = error "SearchTree: ValueSequence: generate"
@@ -43,13 +60,15 @@ instance NormalForm (C_ValueSequence a) where
 external_d_C_emptyVS :: Cover -> ConstStore -> C_ValueSequence a
 external_d_C_emptyVS _ _ = EmptyVS
 
-external_d_C_addVS :: a -> C_ValueSequence a -> Cover -> ConstStore -> C_ValueSequence a
+external_d_C_addVS :: a -> C_ValueSequence a
+                   -> Cover -> ConstStore -> C_ValueSequence a
 external_d_C_addVS x vs _ _ = Values (Curry_Prelude.OP_Cons x (getValues vs))
 
-external_d_C_failVS :: Curry_Prelude.C_Int -> Cover -> ConstStore -> C_ValueSequence a 
+external_d_C_failVS :: Curry_Prelude.C_Int
+                    -> Cover -> ConstStore -> C_ValueSequence a
 external_d_C_failVS d@(Curry_Prelude.C_Int d') (I# cd) _
-  | d' <# cd  = FailVS d 
-  | otherwise = Values (Curry_Prelude.OP_List)
+  | isTrue# (d' <# cd) = FailVS d
+  | otherwise          = Values (Curry_Prelude.OP_List)
 
 external_d_C_vsToList :: C_ValueSequence a -> Cover -> ConstStore -> Curry_Prelude.OP_List a
 external_d_C_vsToList (Values xs)   _ _ = xs
