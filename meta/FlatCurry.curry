@@ -23,13 +23,14 @@ import FileGoodies(stripSuffix)
 --- Data type for representing a Curry module in the intermediate form.
 --- A value of this data type has the form
 --- 
----     (Prog modname imports typedecls functions opdecls translation_table)
+---     (Prog modname imports typedecls functions opdecls)
 --- 
 --- where
 --- `modname` is the name of this module,
---- `imports` is the list of modules names that are imported,
---- `typedecls`, `opdecls`, `functions`, translation of type names
---- and constructor/function names are explained see below
+--- `imports` is the list of modules names that are imported, and
+--- `typedecls`, `functions`, and `opdecls` are the list of
+--- data type, function, and operator declarations
+--- contained in this module, respectively.
 
 data Prog = Prog String [String] [TypeDecl] [FuncDecl] [OpDecl]
 
@@ -49,7 +50,8 @@ data Visibility = Public    -- public (exported) entity
 --- They are represented by `(TVar i)` where `i` is a type variable index.
 type TVarIndex = Int
 
---- Data type for representing definitions of algebraic data types.
+--- Data type for representing definitions of algebraic data types
+--- and type synonyms.
 ---
 --- A data type definition of the form
 ---
@@ -196,10 +198,13 @@ data CombType = FuncCall | ConsCall | FuncPartCall Int | ConsPartCall Int
 --- @cons Lit - literal (Int/Float/Char constant)
 --- @cons Comb - application `(f e1 ... en)` of function/constructor `f`
 ---              with `n`&lt;=arity(`f`)
+--- @cons Let - introduction of local variables via (recursive) let declarations
 --- @cons Free - introduction of free local variables
 --- @cons Or - disjunction of two expressions (used to translate rules
 ---            with overlapping left-hand sides)
 --- @cons Case - case distinction (rigid or flex)
+--- @cons Typed - typed expression to represent an expression with a
+---               type declaration
 
 data Expr = Var VarIndex 
           | Lit Literal
