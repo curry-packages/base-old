@@ -246,23 +246,33 @@ updQNamesInConsDecl f = updCons f id id (map (updQNamesInTypeExpr f))
 
 --- get index from type variable
 tVarIndex :: TypeExpr -> TVarIndex
-tVarIndex (TVar n) = n
+tVarIndex texpr = case texpr of
+  (TVar n) -> n
+  _        -> error "FlatCurryGoodies.tVarIndex: no type variable"
 
 --- get domain from functional type
 domain :: TypeExpr -> TypeExpr
-domain (FuncType dom _) = dom
+domain texpr = case texpr of
+  (FuncType dom _) -> dom
+  _                -> error "FlatCurryGoodies.domain: no functional type"
 
 --- get range from functional type
 range :: TypeExpr -> TypeExpr
-range (FuncType _ ran) = ran
+range texpr = case texpr of
+  (FuncType _ ran) -> ran
+  _                -> error "FlatCurryGoodies.range: no functional type"
 
 --- get name from constructed type
 tConsName :: TypeExpr -> QName
-tConsName (TCons name _) = name
+tConsName texpr = case texpr of
+  (TCons name _) -> name
+  _              -> error "FlatCurryGoodies.tConsName: no constructed type"
 
 --- get arguments from constructed type
 tConsArgs :: TypeExpr -> [TypeExpr]
-tConsArgs (TCons _ args) = args
+tConsArgs texpr = case texpr of
+  (TCons _ args) -> args
+  _              -> error "FlatCurryGoodies.tConsArgs: no constructed type"
 
 --- transform type expression
 trTypeExpr :: (Int -> a) ->
@@ -573,59 +583,85 @@ missingArgs = trCombType 0 id 0 id
 
 --- get internal number of variable
 varNr :: Expr -> Int
-varNr (Var n) = n
+varNr expr = case expr of
+  (Var n) -> n
+  _       -> error "FlatCurryGoodies.varNr: no variable"
 
 --- get literal if expression is literal expression
 literal :: Expr -> Literal
-literal (Lit l) = l
+literal expr = case expr of
+  (Lit l) -> l
+  _       -> error "FlatCurryGoodies.literal: no literal"
 
 --- get combination type of a combined expression
 combType :: Expr -> CombType
-combType (Comb ct _ _) = ct
+combType expr = case expr of
+  (Comb ct _ _) -> ct
+  _             -> error "FlatCurryGoodies.combType: no combined expression"
 
 --- get name of a combined expression
 combName :: Expr -> QName
-combName (Comb _ name _) = name
+combName expr = case expr of
+  (Comb _ name _) -> name
+  _               -> error "FlatCurryGoodies.combName: no combined expression"
 
 --- get arguments of a combined expression
 combArgs :: Expr -> [Expr]
-combArgs (Comb _ _ args) = args
+combArgs expr = case expr of
+  (Comb _ _ args) -> args
+  _               -> error "FlatCurryGoodies.combArgs: no combined expression"
 
 --- get number of missing arguments if expression is combined
 missingCombArgs :: Expr -> Int
 missingCombArgs = missingArgs . combType
 
---- get indices of varoables in let declaration
+--- get indices of variables in let declaration
 letBinds :: Expr -> [(Int,Expr)]
-letBinds (Let vs _) = vs
+letBinds expr = case expr of
+  (Let vs _) -> vs
+  _          -> error "FlatCurryGoodies.letBinds: no let declaration"
 
 --- get body of let declaration
 letBody :: Expr -> Expr
-letBody (Let _ e) = e
+letBody expr = case expr of
+  (Let _ e) -> e
+  _         -> error "FlatCurryGoodies.letBody: no let declaration"
 
 --- get variable indices from declaration of free variables
 freeVars :: Expr -> [Int]
-freeVars (Free vs _) = vs
+freeVars expr = case expr of
+  (Free vs _) -> vs
+  _           ->  error "FlatCurryGoodies.freeVars: no free variable declaration"
 
 --- get expression from declaration of free variables
 freeExpr :: Expr -> Expr
-freeExpr (Free _ e) = e
+freeExpr expr = case expr of
+  (Free _ e) -> e
+  _          ->  error "FlatCurryGoodies.freeExpr: no free variable declaration"
 
 --- get expressions from or-expression
 orExps :: Expr -> [Expr]
-orExps (Or e1 e2) = [e1,e2]
+orExps expr = case expr of
+  (Or e1 e2) -> [e1,e2]
+  _          -> error "FlatCurryGoodies.orExps: no or-expression"
 
 --- get case-type of case expression
 caseType :: Expr -> CaseType
-caseType (Case ct _ _) = ct
+caseType expr = case expr of
+  (Case ct _ _) -> ct
+  _             -> error "FlatCurryGoodies.caseType: no case expression"
 
 --- get scrutinee of case expression
 caseExpr :: Expr -> Expr
-caseExpr (Case _ e _) = e
+caseExpr expr = case expr of
+  (Case _ e _) -> e
+  _            -> error "FlatCurryGoodies.caseExpr: no case expression"
 
 --- get branch expressions from case expression
 caseBranches :: Expr -> [BranchExpr]
-caseBranches (Case _ _ bs) = bs
+caseBranches expr = case expr of
+  (Case _ _ bs) -> bs
+  _             -> error "FlatCurryGoodies.caseBranches: no case expression"
 
 -- Test Operations
 
@@ -633,43 +669,43 @@ caseBranches (Case _ _ bs) = bs
 isVar :: Expr -> Bool
 isVar e = case e of 
   Var _ -> True
-  _ -> False
+  _     -> False
 
 --- is expression a literal expression?
 isLit :: Expr -> Bool
 isLit e = case e of
   Lit _ -> True
-  _ -> False
+  _     -> False
 
 --- is expression combined?
 isComb :: Expr -> Bool
 isComb e = case e of
   Comb _ _ _ -> True
-  _ -> False
+  _          -> False
 
 --- is expression a let expression?
 isLet :: Expr -> Bool
 isLet e = case e of
   Let _ _ -> True
-  _ -> False
+  _       -> False
 
 --- is expression a declaration of free variables?
 isFree :: Expr -> Bool
 isFree e = case e of
   Free _ _ -> True
-  _ -> False
+  _        -> False
 
 --- is expression an or-expression?
 isOr :: Expr -> Bool
 isOr e = case e of
   Or _ _ -> True
-  _ -> False
+  _      -> False
 
 --- is expression a case expression?
 isCase :: Expr -> Bool
 isCase e = case e of
   Case _ _ _ -> True
-  _ -> False
+  _          -> False
 
 --- transform expression
 trExpr :: (Int -> a) ->

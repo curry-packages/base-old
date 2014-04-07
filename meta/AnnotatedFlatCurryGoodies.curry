@@ -248,25 +248,35 @@ updQNamesInConsDecl f = updCons f id id (map (updQNamesInTypeExpr f))
 
 --- get index from type variable
 tVarIndex :: TypeExpr -> TVarIndex
-tVarIndex (TVar n) = n
+tVarIndex texpr = case texpr of
+  (TVar n) -> n
+  _        -> error "AnnotatedFlatCurryGoodies.tVarIndex: no type variable"
 
 --- get domain from functional type
 domain :: TypeExpr -> TypeExpr
-domain (FuncType dom _) = dom
+domain texpr = case texpr of
+  (FuncType dom _) -> dom
+  _                -> error "AnnotatedFlatCurryGoodies.domain: no functional type"
 
 --- get range from functional type
 range :: TypeExpr -> TypeExpr
-range (FuncType _ ran) = ran
+range texpr = case texpr of
+  (FuncType _ ran) -> ran
+  _                -> error "AnnotatedFlatCurryGoodies.range: no functional type"
 
 --- get name from constructed type
 tConsName :: TypeExpr -> QName
-tConsName (TCons name _) = name
+tConsName texpr = case texpr of
+  (TCons name _) -> name
+  _              -> error "AnnotatedFlatCurryGoodies.tConsName: no functional type"
 
 --- get arguments from constructed type
 tConsArgs :: TypeExpr -> [TypeExpr]
-tConsArgs (TCons _ args) = args
+tConsArgs texpr = case texpr of
+  (TCons _ args) -> args
+  _              -> error "AnnotatedFlatCurryGoodies.tConsArgs: no functional type"
 
---- transform type expression
+ --- transform type expression
 trTypeExpr :: (TVarIndex -> a) ->
               (QName -> [a] -> a) ->
               (a -> a -> a) -> TypeExpr -> a
@@ -580,23 +590,33 @@ missingArgs = trCombType 0 id 0 id
 
 --- get internal number of variable
 varNr :: AExpr _ -> VarIndex
-varNr (AVar _ n) = n
+varNr aexpr = case aexpr of
+  (AVar _ n) -> n
+  _          -> error "AnnotatedFlatCurryGoodies.varNr: no variable"
 
 --- get literal if expression is literal expression
 literal :: AExpr _ -> Literal
-literal (ALit _ l) = l
+literal aexpr = case aexpr of
+  (ALit _ l) -> l
+  _          -> error "AnnotatedFlatCurryGoodies.literal: no literal"
 
 --- get combination type of a combined expression
 combType :: AExpr _ -> CombType
-combType (AComb _ ct _ _) = ct
+combType aexpr = case aexpr of
+  (AComb _ ct _ _) -> ct
+  _                -> error "AnnotatedFlatCurryGoodies.combType: no combined expression"
 
 --- get name of a combined expression
 combName :: AExpr _ -> QName
-combName (AComb _ _ name _) = fst name
+combName aexpr = case aexpr of
+  (AComb _ _ name _) -> fst name
+  _                  -> error "AnnotatedFlatCurryGoodies.combName: no combined expression"
 
 --- get arguments of a combined expression
 combArgs :: AExpr a -> [AExpr a]
-combArgs (AComb _ _ _ args) = args
+combArgs aexpr = case aexpr of
+  (AComb _ _ _ args) -> args
+  _                  -> error "AnnotatedFlatCurryGoodies.combArgs: no combined expression"
 
 --- get number of missing arguments if expression is combined
 missingCombArgs :: AExpr _ -> Int
@@ -604,37 +624,53 @@ missingCombArgs = missingArgs . combType
 
 --- get indices of variables in let declaration
 letBinds :: AExpr a -> [(VarIndex, AExpr a)]
-letBinds (ALet _ vs _) = vs
+letBinds aexpr = case aexpr of
+  (ALet _ vs _) -> vs
+  _             -> error "AnnotatedFlatCurryGoodies.letBinds: no let declaration"
 
 --- get body of let declaration
 letBody :: AExpr a -> AExpr a
-letBody (ALet _ _ e) = e
+letBody aexpr = case aexpr of
+  (ALet _ _ e) -> e
+  _            -> error "AnnotatedFlatCurryGoodies.letBody: no let declaration"
 
 --- get variable indices from declaration of free variables
 freeVars :: AExpr _ -> [VarIndex]
-freeVars (AFree _ vs _) = map fst vs
+freeVars aexpr = case aexpr of
+  (AFree _ vs _) -> map fst vs
+  _              -> error "AnnotatedFlatCurryGoodies.freeVars: no free variable declaration"
 
 --- get expression from declaration of free variables
 freeExpr :: AExpr a -> AExpr a
-freeExpr (AFree _ _ e) = e
+freeExpr aexpr = case aexpr of
+  (AFree _ _ e) -> e
+  _             -> error "AnnotatedFlatCurryGoodies.freeExpr: no free variable declaration"
 
 --- get expressions from or-expression
 orExps :: AExpr a -> [AExpr a]
-orExps (AOr _ e1 e2) = [e1,e2]
+orExps aexpr = case aexpr of
+  (AOr _ e1 e2) -> [e1,e2]
+  _             -> error "AnnotatedFlatCurryGoodies.orExps: no or-expression"
 
 --- get case-type of case expression
 caseType :: AExpr _ -> CaseType
-caseType (ACase _ ct _ _) = ct
+caseType aexpr = case aexpr of
+  (ACase _ ct _ _) -> ct
+  _                -> error "AnnotatedFlatCurryGoodies.caseType: no case expression"
 
 --- get scrutinee of case expression
 caseExpr :: AExpr a -> AExpr a
-caseExpr (ACase _ _ e _) = e
+caseExpr aexpr = case aexpr of
+  (ACase _ _ e _) -> e
+  _               -> error "AnnotatedFlatCurryGoodies.caseExpr: no case expression"									       
 
---- get branch expressions from case expression
+ --- get branch expressions from case expression
 caseBranches :: AExpr a -> [ABranchExpr a]
-caseBranches (ACase _ _ _ bs) = bs
+caseBranches aexpr = case aexpr of
+  (ACase _ _ _ bs) -> bs
+  _                -> error "AnnotatedFlatCurryGoodies.caseBranches: no case expression"
 
--- Test Operations
+ -- Test Operations
 
 --- is expression a variable?
 isVar :: AExpr _ -> Bool
