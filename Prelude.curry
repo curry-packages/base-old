@@ -773,6 +773,43 @@ mapIO f            = sequenceIO . map f
 mapIO_            :: (a -> IO _) -> [a] -> IO ()
 mapIO_ f           = sequenceIO_ . map f
 
+--- Folds a list of elements using an binary I/O action and a value
+--- for the empty list.
+foldIO :: (a -> b -> IO a) -> a -> [b] -> IO a
+foldIO _ a []      =  return a
+foldIO f a (x:xs)  =  f a x >>= \fax -> foldIO f fax xs
+
+--- Apply a pure function to the result of an I/O action.
+liftIO :: (a -> b) -> IO a -> IO b
+liftIO f m = m >>= return . f
+
+--- Like `mapIO`, but with flipped arguments.
+---
+--- This can be useful if the definition of the function is longer
+--- than those of the list, like in
+---
+--- forIO [1..10] $ \n -> do
+---   ...
+forIO :: [a] -> (a -> IO b) -> IO [b]
+forIO xs f = mapIO f xs
+
+--- Like `mapIO_`, but with flipped arguments.
+---
+--- This can be useful if the definition of the function is longer
+--- than those of the list, like in
+---
+--- forIO_ [1..10] $ \n -> do
+---   ...
+forIO_ :: [a] -> (a -> IO b) -> IO ()
+forIO_ xs f = mapIO_ f xs
+
+--- Performs an `IO` action unless the condition is met.
+unless :: Bool -> IO () -> IO ()
+unless p act = if p then done else act
+
+--- Performs an `IO` action when the condition is met.
+when :: Bool -> IO () -> IO ()
+when p act = if p then act else done
 
 ----------------------------------------------------------------
 -- Non-determinism and free variables:
@@ -792,135 +829,15 @@ mapIO_ f           = sequenceIO_ . map f
 unknown :: _
 unknown = let x free in x
 
-----------------------------------------------------------------
+------------------------------------------------------------------------
 -- Encapsulated search:
-
---- Gets all values of an expression (currently, via an incomplete
---- depth-first strategy). Conceptually, all values are computed
---- on a copy of the expression, i.e., the evaluation of the expression
---- does not share any results. Moreover, the evaluation suspends
---- as long as the expression contains unbound variables.
---- Similar to Prolog's findall.
---getAllValues :: a -> IO [a]
---getAllValues e = return (findall (=:=e))
-
---- Gets a value of an expression (currently, via an incomplete
---- depth-first strategy). The expression must have a value, otherwise
---- the computation fails. Conceptually, the value is computed on a copy
---- of the expression, i.e., the evaluation of the expression does not share
---- any results. Moreover, the evaluation suspends as long as the expression
---- contains unbound variables.
-getSomeValue :: a -> IO a
-getSomeValue e = return (findfirst (=:=e))
-
---- Basic search control operator.
-try     :: (a->Success) -> [a->Success]
-try external
-
---- Inject operator which adds the application of the unary
---- procedure p to the search variable to the search goal
---- taken from Oz. p x comes before g x to enable a test+generate
---- form in a sequential implementation.
-inject  :: (a->Success) -> (a->Success) -> (a->Success)
-inject g p = \x -> p x & g x
-
---- Computes all solutions via a a depth-first strategy.
 --
--- Works as the following algorithm:
---
--- solveAll g = evalResult (try g)
---         where
---           evalResult []      = []
---           evalResult [s]     = [s]
---           evalResult (a:b:c) = concatMap solveAll (a:b:c)
---
--- The following solveAll algorithm is faster.
--- For comparison we have solveAll2, which implements the above algorithm.
-
-solveAll     :: (a->Success) -> [a->Success]
-solveAll g = evalall (try g)
-  where
-    evalall []      = []
-    evalall [a]     = [a]
-    evalall (a:b:c) = evalall3 (try a) (b:c)
-
-    evalall2 []    = []
-    evalall2 (a:b) = evalall3 (try a) b
-
-    evalall3 []      b  = evalall2 b
-    evalall3 [l]     b  = l : evalall2 b
-    evalall3 (c:d:e) b  = evalall3 (try c) (d:e ++b)
-
-
-solveAll2  :: (a->Success) -> [a->Success]
-solveAll2 g = evalResult (try g)
-        where
-          evalResult []      = []
-          evalResult [s]     = [s]
-          evalResult (a:b:c) = concatMap solveAll2 (a:b:c)
-
-
---- Gets the first solution via a depth-first strategy.
-once :: (a->Success) -> (a->Success)
-once g = head (solveAll g)
-
-
---- Gets the best solution via a depth-first strategy according to
---- a specified operator that can always take a decision which
---- of two solutions is better.
---- In general, the comparison operation should be rigid in its arguments!
-best           :: (a->Success) -> (a->a->Bool) -> [a->Success]
-best g cmp = bestHelp [] (try g) []
- where
-   bestHelp [] []     curbest = curbest
-   bestHelp [] (y:ys) curbest = evalY (try (constrain y curbest)) ys curbest
-   bestHelp (x:xs) ys curbest = evalX (try x) xs ys curbest
-
-   evalY []        ys curbest = bestHelp [] ys curbest
-   evalY [newbest] ys _       = bestHelp [] ys [newbest]
-   evalY (c:d:xs)  ys curbest = bestHelp (c:d:xs) ys curbest
-
-   evalX []        xs ys curbest = bestHelp xs ys curbest
-   evalX [newbest] xs ys _       = bestHelp [] (xs++ys) [newbest]
-   evalX (c:d:e)   xs ys curbest = bestHelp ((c:d:e)++xs) ys curbest
-
-   constrain y []        = y
-   constrain y [curbest] =
-       inject y (\v -> let w free in curbest w & cmp v w =:= True)
-
-
---- Gets all solutions via a depth-first strategy and unpack
---- the values from the lambda-abstractions.
---- Similar to Prolog's findall.
-findall :: (a->Success) -> [a]
-findall g = map unpack (solveAll g)
-
-
---- Gets the first solution via a depth-first strategy
---- and unpack the values from the search goals.
-findfirst :: (a->Success) -> a
-findfirst g = head (findall g)
-
---- Shows the solution of a solved constraint.
-browse  :: (_->Success) -> IO ()
-browse g = putStr (show (unpack g))
-
---- Unpacks solutions from a list of lambda abstractions and write
---- them to the screen.
-browseList :: [_ -> Success] -> IO ()
-browseList [] = done
-browseList (g:gs) = browse g >> putChar '\n' >> browseList gs
-
-
---- Unpacks a solution's value from a (solved) search goal.
-unpack  :: (a -> Success) -> a
-unpack g | g x  = x  where x free
-
-
--- --- Identity function used by the partial evaluator
--- --- to mark expressions to be partially evaluated.
--- PEVAL   :: a -> a
--- PEVAL x = x
+-- The operations for encapsulated search are not supported in KiCS2
+-- as defined in the Curry report.
+-- Instead, KiCS2 offers alternative features for encapsulated
+-- search, see libraries AllSolutions and SearchTree (for strong
+-- encapsulated search) and SetFunctions (for weak encapsulated search).
+------------------------------------------------------------------------
 
 --- Evaluates the argument to normal form and returns it.
 normalForm :: a -> a
@@ -935,7 +852,7 @@ groundNormalForm x = id $## x
 
 -- Only for internal use:
 -- Represenation of higher-order applications in FlatCurry.
-apply :: (a->b) -> a -> b
+apply :: (a -> b) -> a -> b
 apply external
 
 -- Only for internal use:
@@ -943,27 +860,8 @@ apply external
 cond :: Success -> a -> a
 cond external
 
--- -- Only for internal use:
--- -- letrec ones (1:ones) -> bind ones to (1:ones)
--- letrec :: a -> a -> Success
--- letrec external
-
---- Non-strict equational constraint. Experimental.
+--- Non-strict equational constraint. Used to implement functional patterns.
 (=:<=) :: a -> a -> Success
 (=:<=) external
 
--- --- Non-strict equational constraint for linear function patterns.
--- --- Thus, it must be ensured that the first argument is always (after evalutation
--- --- by narrowing) a linear pattern. Experimental.
--- (=:<<=) :: a -> a -> Success
--- (=:<<=) external
-
--- --- internal function to implement =:<=
--- ifVar :: _ -> a -> a -> a
--- ifVar external
---
--- --- internal operation to implement failure reporting
--- failure :: _ -> _ -> _
--- failure external
-
--- the end
+-- the end of the standard prelude

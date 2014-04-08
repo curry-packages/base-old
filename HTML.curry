@@ -16,17 +16,18 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version September 2012
+--- @version February 2014
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             HtmlForm(..),FormParam(..),CookieParam(..),
             CgiRef,idOfCgiRef,CgiEnv,HtmlHandler,
-            defaultEncoding, defaultBackground,
+            defaultEncoding,
             form,standardForm,answerText,answerEncText,
             cookieForm,getCookies,
-            page,standardPage,pageEnc,pageCSS,pageMetaInfo,addPageParam,
-            formEnc,formCSS,addFormParam,
+            page,standardPage,
+            pageEnc,pageCSS,pageMetaInfo,pageLinkInfo,pageBodyAttr,addPageParam,
+            formEnc,formCSS,formMetaInfo,formBodyAttr,addFormParam,
             htxt,htxts,hempty,nbsp,h1,h2,h3,h4,h5,
             par,emphasize,strong,bold,italic,code,
             center,blink,teletype,pre,verbatim,address,href,anchor,
@@ -60,6 +61,7 @@ import ReadShowTerm(showQTerm,readsQTerm)
 import Distribution(installDir)
 import IO
 import Profile
+import Random(getRandomSeed,nextInt)
 
 infixl 0 `addAttr`
 infixl 0 `addAttrs`
@@ -70,9 +72,6 @@ infixl 0 `addFormParam`
 ------------------------------------------------------------------------------
 --- The default encoding used in generated web pages.
 defaultEncoding = "utf-8" --"iso-8859-1"
-
---- The default background for generated web pages.
-defaultBackground = ("bgcolor","#ffffff")
 
 ------------------------------------------------------------------------------
 --- The (abstract) data type for representing references to input elements
@@ -145,6 +144,7 @@ data HtmlForm =
 ---                      script should be represented (should only be used
 ---                      for scripts running in a frame)
 --- @cons FormEnc - the encoding scheme of this form
+--- @cons FormMeta as - meta information (in form of attributes) for this form
 --- @cons HeadInclude he - HTML expression to be included in form header
 --- @cons MultipleHandlers - indicates that the event handlers of the form
 ---   can be multiply used (i.e., are not deleted if the form is submitted
@@ -162,6 +162,7 @@ data FormParam = FormCookie   String String [CookieParam]
                | FormOnSubmit String
                | FormTarget   String
                | FormEnc      String
+               | FormMeta     [(String,String)]
                | HeadInclude  HtmlExp
                | MultipleHandlers
                | BodyAttr     (String,String)
@@ -173,6 +174,17 @@ formEnc enc = FormEnc enc
 --- A URL for a CSS file for a HTML form.
 formCSS :: String -> FormParam
 formCSS css = FormCSS css
+
+--- Meta information for a HTML form. The argument is a list of
+--- attributes included in the `meta`-tag in the header for this form.
+formMetaInfo :: [(String,String)] -> FormParam
+formMetaInfo attrs = FormMeta attrs
+
+--- Optional attribute for the body element of the HTML form.
+--- More than one occurrence is allowed, i.e., all such attributes are
+--- collected.
+formBodyAttr :: (String,String) -> FormParam
+formBodyAttr attr = BodyAttr attr
 
 --- A cookie to be sent to the client's browser when a HTML form is
 --- requested.
@@ -191,7 +203,7 @@ data CookieParam = CookieExpire ClockTime
 --- @param hexps - the form's body (list of HTML expressions)
 --- @return an HTML form
 form :: String -> [HtmlExp] -> HtmlForm
-form title hexps = HtmlForm title [BodyAttr defaultBackground] hexps
+form title hexps = HtmlForm title [] hexps
 
 --- A standard HTML form for active web pages where the title is included
 --- in the body as the first header.
@@ -324,10 +336,15 @@ data HtmlPage = HtmlPage String [PageParam] [HtmlExp]
 --- @cons PageCSS s - a URL for a CSS file for this page
 --- @cons PageJScript s - a URL for a Javascript file for this page
 --- @cons PageMeta as - meta information (in form of attributes) for this page
-data PageParam = PageEnc     String
-               | PageCSS     String
-               | PageJScript String
-               | PageMeta    [(String,String)]
+--- @cons PageLink as - link information (in form of attributes) for this page
+--- @cons PageBodyAttr attr - optional attribute for the body element of the
+---                           page (more than one occurrence is allowed)
+data PageParam = PageEnc      String
+               | PageCSS      String
+               | PageJScript  String
+               | PageMeta     [(String,String)]
+               | PageLink     [(String,String)]
+               | PageBodyAttr (String,String)
 
 --- An encoding scheme for a HTML page.
 pageEnc :: String -> PageParam
@@ -338,9 +355,20 @@ pageCSS :: String -> PageParam
 pageCSS css = PageCSS css
 
 --- Meta information for a HTML page. The argument is a list of
---- attributes included in the meta-tag for this page.
+--- attributes included in the `meta`-tag in the header for this page.
 pageMetaInfo :: [(String,String)] -> PageParam
 pageMetaInfo attrs = PageMeta attrs
+
+--- Link information for a HTML page. The argument is a list of
+--- attributes included in the `link`-tag in the header for this page.
+pageLinkInfo :: [(String,String)] -> PageParam
+pageLinkInfo attrs = PageLink attrs
+
+--- Optional attribute for the body element of the web page.
+--- More than one occurrence is allowed, i.e., all such attributes are
+--- collected.
+pageBodyAttr :: (String,String) -> PageParam
+pageBodyAttr attr = PageBodyAttr attr
 
 --- A basic HTML web page with the default encoding.
 --- @param title - the title of the page
@@ -462,9 +490,9 @@ address hexps = HtmlStruct "address" [] hexps
 href           :: String -> [HtmlExp] -> HtmlExp
 href ref hexps = HtmlStruct "a" [("href",ref)] hexps
 
---- An anchor for hypertext reference inside a document
+--- An anchored text with a hypertext reference inside a document.
 anchor           :: String -> [HtmlExp] -> HtmlExp
-anchor anc hexps = HtmlStruct "a" [("name",anc)] hexps
+anchor anc hexps = HtmlStruct "span" [("id",anc)] hexps
 
 --- Unordered list
 --- @param items - the list items where each item is a list of HTML expressions
@@ -732,8 +760,8 @@ selectionInitial cref sellist sel
    selOption [] _ = []
    selOption ((n,v):nvs) i =
       HtmlStruct "option"
-                 ([("value",v)] ++ if i==0 then [("selected","yes")] else [])
-                 [htxt n] : selOption nvs (i-1)
+        ([("value",v)] ++ if i==0 then [("selected","selected")] else [])
+        [htxt n] : selOption nvs (i-1)
 
 --- A selection button with a reference and a list of name/value/flag pairs.
 --- The names are shown in the selection and the value is returned
@@ -744,7 +772,7 @@ selectionInitial cref sellist sel
 multipleSelection :: CgiRef -> [(String,String,Bool)] -> HtmlExp
 multipleSelection cref sellist
   | cref =:= CgiRef ref -- instantiate cref argument
-  = HtmlCRef (HtmlStruct "select" [("name",ref),("multiple","yes")]
+  = HtmlCRef (HtmlStruct "select" [("name",ref),("multiple","multiple")]
                                   (map selOption sellist))
             cref
  where
@@ -752,8 +780,8 @@ multipleSelection cref sellist
 
    selOption (n,v,flag) =
       HtmlStruct "option"
-                 ([("value",v)] ++ if flag then [("selected","yes")] else [])
-                 [htxt n]
+        ([("value",v)] ++ if flag then [("selected","selected")] else [])
+        [htxt n]
 
 --- A hidden field to pass a value referenced by a fixed name.
 --- This function should be used with care since it may cause
@@ -825,16 +853,7 @@ concatS xs@(_:_) = foldr1 (\ f g -> f . g) xs
 ------------------------------------------------------------------------------
 --- Transforms a list of HTML expressions into string representation.
 showHtmlExps :: [HtmlExp] -> String
-showHtmlExps hexps = showsHtmlExps hexps ""
-
-showsHtmlExps :: [HtmlExp] -> ShowS
-showsHtmlExps [] = id
-showsHtmlExps (he:hes) = showsWithLnPrefix he . showsHtmlExps hes
- where
-   showsWithLnPrefix hexp = let s = getText hexp
-                            in if s/="" && isSpace (head s)
-                               then nl . showString (tail s)
-                               else showsHtmlExp hexp
+showHtmlExps hexps = showsHtmlExps 0 hexps ""
 
 -- get the string contents of an HTML expression:
 getText :: HtmlExp -> String
@@ -854,28 +873,43 @@ getTag (HtmlCRef   he _)    = getTag he
 tagWithLn t = t/="" &&
               t `elem` ["br","p","li","ul","ol","dl","dt","dd","hr",
                         "h1","h2","h3","h4","h5","h6","div",
-                        "html","title","head","body","link","script",
+                        "html","title","head","body","link","meta","script",
                         "form","table","tr","td"]
 
 
 --- Transforms a single HTML expression into string representation.
 showHtmlExp :: HtmlExp -> String
-showHtmlExp hexp = showsHtmlExp hexp ""
+showHtmlExp hexp = showsHtmlExp 0 hexp ""
 
-showsHtmlExp :: HtmlExp -> ShowS
-showsHtmlExp (HtmlText s) = showString s
-showsHtmlExp (HtmlStruct tag attrs hexps) =
-  let maybeLn = if tagWithLn tag then nl else id
-   in maybeLn .
-      (if null hexps && tag/="script" -- due to problems with older browsers
+--- HTML tags that have no end tag in HTML:
+noEndTags = ["img","input","link","meta"]
+
+showsHtmlExp :: Int -> HtmlExp -> ShowS
+showsHtmlExp _ (HtmlText s) = showString s
+showsHtmlExp i (HtmlStruct tag attrs hexps) =
+  let maybeLn j = if tagWithLn tag then nl . showTab j else id
+   in maybeLn i .
+      (if null hexps && (null attrs || tag `elem` noEndTags)
        then showsHtmlOpenTag tag attrs "/>"
-       else showsHtmlOpenTag tag attrs ">" . maybeLn . showExps hexps .
-            maybeLn . showString "</" . showString tag . showChar '>'
-      ) . maybeLn
+       else showsHtmlOpenTag tag attrs ">" . maybeLn (i+2) . showExps hexps .
+            maybeLn i . showString "</" . showString tag . showChar '>'
+      ) . maybeLn i
  where
-  showExps = if tag=="pre" then concatS . map showsHtmlExp else showsHtmlExps
-showsHtmlExp (HtmlEvent hexp _) = showsHtmlExp hexp
-showsHtmlExp (HtmlCRef  hexp _) = showsHtmlExp hexp
+  showExps = if tag=="pre"
+             then concatS . map (showsHtmlExp 0) else showsHtmlExps (i+2)
+showsHtmlExp i (HtmlEvent hexp _) = showsHtmlExp i hexp
+showsHtmlExp i (HtmlCRef  hexp _) = showsHtmlExp i hexp
+
+showsHtmlExps :: Int -> [HtmlExp] -> ShowS
+showsHtmlExps _ [] = id
+showsHtmlExps i (he:hes) = showsWithLnPrefix he . showsHtmlExps i hes
+ where
+   showsWithLnPrefix hexp = let s = getText hexp
+                            in if s/="" && isSpace (head s)
+                               then nl . showTab i . showString (tail s)
+                               else showsHtmlExp i hexp
+
+showTab n = showString (take n (repeat ' '))
 
 showsHtmlOpenTag :: String -> [(String,String)] -> String -> ShowS
 showsHtmlOpenTag tag attrs close =
@@ -902,7 +936,7 @@ showHtmlPage (HtmlPage title params html) =
                   [HtmlStruct "head" []
                        ([HtmlStruct "title" [] [HtmlText (htmlQuote title)]] ++
                        concatMap param2html params),
-                   HtmlStruct "body" [defaultBackground] html])
+                   HtmlStruct "body" bodyattrs html])
  where
   param2html (PageEnc enc) =
      [HtmlStruct "meta" [("http-equiv","Content-Type"),
@@ -912,18 +946,17 @@ showHtmlPage (HtmlPage title params html) =
                  []]
   param2html (PageJScript js) =
      [HtmlStruct "script" [("type","text/javascript"),("src",js)] []]
-  param2html (PageMeta as) = [HtmlStruct "meta" as []]
+  param2html (PageMeta attrs) = [HtmlStruct "meta" attrs []]
+  param2html (PageLink attrs) = [HtmlStruct "link" attrs []]
+  param2html (PageBodyAttr _) = [] -- these attributes are separately processed
 
+  bodyattrs = [attr | (PageBodyAttr attr) <- params]
 
 --- Standard header for generated HTML pages.
-htmlPrelude =
- "<?xml version=\"1.0\" encoding=\""++defaultEncoding++"\"?>\n"++
- "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"++
- "  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
+htmlPrelude = "<!DOCTYPE html>\n"
 
 --- Standard attributes for element "html".
-htmlTagAttrs = [("xmlns","http://www.w3.org/1999/xhtml"),
-                ("xml:lang","en"),("lang","en")]
+htmlTagAttrs = [("lang","en")]
 
 ------------------------------------------------------------------------------
 --- Gets the parameter attached to the URL of the script.
@@ -1258,7 +1291,9 @@ showHtmlFormInEnv url key (HtmlForm ftitle fparams fhexp) crefnr = do
   --putStrLn (showHtmlExps [pre [par (env2html cenv),hrule]]) --debug
   (title,params,hexps,firsthandler,evhs) <-
     htmlForm2html (HtmlForm ftitle fparams fhexp) crefnr
-  return (showForm [("SCRIPTKEY",key),("DEFAULT","EVENT_"++firsthandler)]
+  return (showForm (if null evhs
+                    then []
+                    else [("SCRIPTKEY",key),("DEFAULT","EVENT_"++firsthandler)])
                    (if qstr=="" then url else url++"?"++qstr)
                    (HtmlForm title params hexps),
           evhs)
@@ -1379,9 +1414,9 @@ showForm cenv url (HtmlForm title params html) =
    (HtmlStruct "html" htmlTagAttrs
      [HtmlStruct "head" []
                  ([HtmlStruct "title" [] [HtmlText (htmlQuote title)]] ++
-                  concatMap param2html params),
+                  concatMap param2html paramsWithEncoding),
       HtmlStruct "body" bodyattrs
-       ((if null url then id
+       ((if null url || null cenv then id
          else \he->[HtmlStruct "form"
                                ([("method","post"),("action",url)]
                                 ++ onsubmitattr ++ targetattr)
@@ -1390,12 +1425,17 @@ showForm cenv url (HtmlForm title params html) =
            cenv2hidden cenv ++
            html))])
  where
+  paramsWithEncoding = if null [e | (FormEnc e) <- params]
+                       then FormEnc defaultEncoding : params
+                       else params
+
   param2html (FormEnc enc) =
      [HtmlStruct "meta" [("http-equiv","Content-Type"),
                          ("content","text/html; charset="++enc)] []]
   param2html (FormCSS css) =
      [HtmlStruct "link" [("rel","stylesheet"),("type","text/css"),("href",css)]
                  []]
+  param2html (FormMeta attrs) = [HtmlStruct "meta" attrs []]
   param2html (FormJScript js) =
      [HtmlStruct "script" [("type","text/javascript"),("src",js)] []]
   param2html (FormOnSubmit _) = []
@@ -1474,6 +1514,8 @@ showLatexExp (HtmlStruct tag attrs htmlexp)
  | tag=="font" = showLatexExps htmlexp  -- ignore font changes
  | tag=="address" = showLatexExps htmlexp
  | tag=="blink"   = showLatexExps htmlexp
+ | tag=="sub"  = "$_{\\mbox{" ++ showLatexExps htmlexp ++ "}}$"
+ | tag=="sup"  = "$^{\\mbox{" ++ showLatexExps htmlexp ++ "}}$"
  | tag=="a"    = showLatexExps htmlexp ++
                  -- add href attribute as footnote, if present:
                  maybe ""
@@ -1582,7 +1624,7 @@ escapeLaTeXSpecials [] = []
 escapeLaTeXSpecials (c:cs)
   | c=='^'      = "{\\tt\\char94}" ++ escapeLaTeXSpecials cs
   | c=='~'      = "{\\tt\\char126}" ++ escapeLaTeXSpecials cs
-  | c=='\\'     = "{\\tt\\char92}" ++ escapeLaTeXSpecials cs
+  | c=='\\'     = "{\\textbackslash}" ++ escapeLaTeXSpecials cs
   | c=='<'      = "{\\tt\\char60}" ++ escapeLaTeXSpecials cs
   | c=='>'      = "{\\tt\\char62}" ++ escapeLaTeXSpecials cs
   | c=='_'      = "\\_" ++ escapeLaTeXSpecials cs
@@ -1598,13 +1640,13 @@ escapeLaTeXSpecials (c:cs)
 htmlSpecialChars2tex :: String -> String
 htmlSpecialChars2tex [] = []
 htmlSpecialChars2tex (c:cs)
-  | c==chr 228  = "\\\"a"  ++ htmlSpecialChars2tex cs
-  | c==chr 246  = "\\\"o"  ++ htmlSpecialChars2tex cs
-  | c==chr 252  = "\\\"u"  ++ htmlSpecialChars2tex cs
-  | c==chr 196  = "\\\"A"  ++ htmlSpecialChars2tex cs
-  | c==chr 214  = "\\\"O"  ++ htmlSpecialChars2tex cs
-  | c==chr 220  = "\\\"U"  ++ htmlSpecialChars2tex cs
-  | c==chr 223  = "\\ss{}" ++ htmlSpecialChars2tex cs
+  | c==chr 228  = "{\\\"a}"  ++ htmlSpecialChars2tex cs
+  | c==chr 246  = "{\\\"o}"  ++ htmlSpecialChars2tex cs
+  | c==chr 252  = "{\\\"u}"  ++ htmlSpecialChars2tex cs
+  | c==chr 196  = "{\\\"A}"  ++ htmlSpecialChars2tex cs
+  | c==chr 214  = "{\\\"O}"  ++ htmlSpecialChars2tex cs
+  | c==chr 220  = "{\\\"U}"  ++ htmlSpecialChars2tex cs
+  | c==chr 223  = "{\\ss}" ++ htmlSpecialChars2tex cs
   | c=='&'      = let (special,rest) = break (==';') cs
                   in  if null rest
                       then "\\&" ++ htmlSpecialChars2tex special -- wrong format
@@ -1900,7 +1942,9 @@ storeEnvHandlers :: ServerState -> Bool -> String -> [(String,String)]
 storeEnvHandlers ostate multipleuse cgikey env handlerkeys = do
   time <- getClockTime
   cstate <- cleanOldEventHandlers ostate
+  rannums <- getRandomSeed >>= return . drop 3 . nextInt
   let nstate = generateEventServerMessages
+                 rannums
                  (if multipleuse then Nothing else Just (keyOfState cstate))
                  (eventHandlerExpiration time)
                  cstate
@@ -1908,10 +1952,13 @@ storeEnvHandlers ostate multipleuse cgikey env handlerkeys = do
   seq nstate done -- to ensure that handler keys are instantiated
   return nstate
  where
-   generateEventServerMessages _ _ state [] = state
-   generateEventServerMessages groupkey expiredate state ((handler,hkey):evhs)
-     | show (keyOfState state) ++ ' ':showQTerm (toUTCTime expiredate) =:= hkey
+   generateEventServerMessages _ _ _ state [] = state
+   generateEventServerMessages (rannum:rannums) groupkey expiredate state
+                               ((handler,hkey) : evhs)
+     | hkey =:= show (keyOfState state) ++ ' ':showQTerm (toUTCTime expiredate)
+                ++ '_' : show rannum -- add random element to handler key string
      = generateEventServerMessages
+            rannums
             groupkey
             expiredate
             (storeNewEnvEventWithCgiKey groupkey expiredate state env handler)

@@ -11,7 +11,7 @@
 ------------------------------------------------------------------------------
 
 module Markdown(MarkdownDoc,MarkdownElem(..),fromMarkdownText,
-                removeEscapes,
+                removeEscapes, markdownEscapeChars,
                 markdownText2HTML,markdownText2CompleteHTML,
                 markdownText2LaTeX,markdownText2LaTeXWithFormat,
                 markdownText2CompleteLaTeX,
@@ -250,6 +250,7 @@ removeEscapes s = case s of
   (c:cs)      -> c : removeEscapes cs
 
 --- Escape characters supported by markdown.
+markdownEscapeChars :: [Char]
 markdownEscapeChars =
   ['\\','`','*','_','{','}','[',']','(',')','#','+','-','.',' ','!']
 

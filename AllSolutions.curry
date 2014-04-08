@@ -63,13 +63,11 @@ getAllFailures generator test =
     return $ concat failures
 
 -- (naf c x) returns [x] if (c x) fails, and [] otherwise.
-naf :: (a->Success) -> a -> IO [a]
+naf :: (a -> Success) -> a -> IO [a]
 naf c x = getOneSolution (lambda c x) >>= returner x
 
-lambda :: (a->Success) -> a -> () -> Success
+lambda :: (a -> Success) -> a -> () -> Success
 lambda c x _ = c x
 
 returner :: a -> Maybe b -> IO [a]
 returner x mbl = return (maybe [x] (const []) mbl)
-
-

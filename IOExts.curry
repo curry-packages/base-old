@@ -2,7 +2,7 @@
 --- Library with some useful extensions to the IO monad.
 ---
 --- @author Michael Hanus
---- @version June 2007
+--- @version January 2014
 ------------------------------------------------------------------------------
 
 module IOExts
@@ -17,7 +17,7 @@ module IOExts
   ) where
 
 import System
-import IO(Handle)
+import IO (Handle)
 
 --- Executes a command with a new default shell process.
 --- The standard I/O streams of the new process (stdin,stdout,stderr)

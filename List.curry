@@ -9,7 +9,7 @@ module List
   ( elemIndex, elemIndices, find, findIndex, findIndices
   , nub, nubBy, delete, deleteBy, (\\), union, intersect
   , intersperse, intercalate, transpose, permutations, partition
-  , group, groupBy, inits, tails, replace
+  , group, groupBy, splitOn, split, inits, tails, replace
   , isPrefixOf, isSuffixOf, isInfixOf
   , sortBy, insertBy
   , last, init
@@ -105,7 +105,7 @@ intercalate xs xss = concat (intersperse xs xss)
 --- Example: `(transpose [[1,2,3],[4,5,6]]) = [[1,4],[2,5],[3,6]]`
 transpose               :: [[a]] -> [[a]]
 transpose []             = []
-transpose ([] : xss)     = transpose xss
+transpose ([]     : xss) = transpose xss
 transpose ((x:xs) : xss) = (x : map head xss) : transpose (xs : map tail xss)
 
 --- Returns the list of all permutations of the argument.
@@ -146,13 +146,37 @@ groupBy _  []     = []
 groupBy eq (x:xs) = (x:ys) : groupBy eq zs
                     where (ys,zs) = span (eq x) xs
 
+--- Breaks a the second lsit argument into pieces separated by the first
+--- list argument, consuming the delimiter. An empty delimiter is
+--- invalid, and will cause an error to be raised.
+splitOn :: [a] -> [a] -> [[a]]
+splitOn []          _  = error "splitOn called with an empty pattern"
+splitOn [x]         xs = split (x ==) xs
+splitOn sep@(_:_:_) xs = go xs
+  where go []                           = [[]]
+        go l@(y:ys) | sep `isPrefixOf` l = [] : go (drop len l)
+                    | otherwise         = let (zs:zss) = go ys in (y:zs):zss
+        len = length sep
+
+--- Splits a List into components delimited by separators,
+--- where the predicate returns True for a separator element.
+--- The resulting components do not contain the separators.
+--- Two adjacent separators result in an empty component in the output.
+---
+--- > split (=='a') "aabbaca" == ["","","bb","c",""]
+--- > split (=='a') ""        == [""]
+split :: (a -> Bool) -> [a] -> [[a]]
+split _ []                 = [[]]
+split p (x:xs) | p x       = [] : split p xs
+               | otherwise = let (ys:yss) = split p xs in (x:ys):yss
+
 --- Returns all initial segments of a list, starting with the shortest.
 --- Example: `inits [1,2,3] == [[],[1],[1,2],[1,2,3]]`
 --- @param xs - the list of elements
 --- @return the list of initial segments of the argument list
 inits :: [a] -> [[a]]
 inits []     =  [[]]
-inits (x:xs) =  [[]] ++ map (x:) (inits xs)
+inits (x:xs) =  [] : map (x:) (inits xs)
 
 --- Returns all final segments of a list, starting with the longest.
 --- Example: `tails [1,2,3] == [[1,2,3],[2,3],[3],[]]`

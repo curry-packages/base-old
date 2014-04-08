@@ -15,6 +15,8 @@
 module Combinatorial(permute, subset, splitSet,
                      sizedSubset, partition) where
 
+import SetFunctions
+
 ------------------------------------------------------------------
 --                       Public Operations
 ------------------------------------------------------------------
@@ -51,7 +53,7 @@ subset (_:xs) =   subset xs
 --- @return All the sublists of the argument.
 
 allSubsets      :: [a] -> [[a]]
-allSubsets list = findall ((subset list) =:=)
+allSubsets list = sortValues (set1 subset list)
 
 --- Split a list into any two sublists.
 --- For example, [1,2,3,4] may give ([1,3,4],[2]).

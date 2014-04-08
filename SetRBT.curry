@@ -5,7 +5,7 @@
 --- an explicit order predicate ("<CODE>cmp</CODE>" below) on elements.
 --- 
 --- @author Johannes Koj, Michael Hanus, Bernd Brassel
---- @version May 2003
+--- @version March 2013
 ----------------------------------------------------------------------------
 
 module SetRBT where
@@ -21,8 +21,11 @@ type SetRBT a = RBT.RedBlackTree a
 
 --- Returns an empty set, i.e., an empty red-black tree 
 --- augmented with an order predicate.
-
 emptySetRBT = RBT.empty (==) (==)
+
+--- Test for an empty set.
+isEmptySetRBT :: SetRBT _ -> Bool
+isEmptySetRBT = RBT.isEmpty
 
 --- Returns true if an element is contained in a (red-black tree) set.
 --- @param e - an element to be checked for containment

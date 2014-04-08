@@ -1,62 +1,78 @@
 # Makefile for various compilations of the system libraries,
 # in particular, to generate the documentation
 
-CYMAKE       = $(BINDIR)/cymake
 CYMAKEPARAMS = --extended --no-verb --no-warn --no-overlap-warn -i. -imeta
 
-# directory for HTML documentation files:
-DOCDIR=CDOC
-# directory for LaTeX documentation files:
-TEXDOCDIR=TEXDOC
-# the currydoc program:
-CURRYDOC = $(BINDIR)/currydoc
+# directory for HTML documentation files
+# LIBDOCDIR = $(DOCDIR)/html
+LIBDOCDIR := CDOC
+# directory for LaTeX documentation files
+TEXDOCDIR := $(DOCDIR)/src/lib
 
 # replacement stuff
 comma     := ,
 empty     :=
 space     := $(empty) $(empty)
-# dir/file.ext -> dir/.curry/file.ext
-add_subdir = $(dir $(file)).curry/$(notdir $(file))
-# a b c -> a, b, c
+# prefix "pre" "dir/file.ext" = "dir/prefile.ext"
+prefix     = $(dir $(2))$(1)$(notdir $(2))
+# comma_sep "a b c" = "a, b, c"
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
-ALL_CURRY     = $(wildcard *.curry) $(wildcard meta/*.curry)
-LIB_CURRY     = $(filter-out $(EXCLUDES), $(ALL_CURRY))
-LIB_FCY       = $(foreach file, $(LIB_CURRY:.curry=.fcy), $(add_subdir))
-LIB_ACY       = $(foreach file, $(LIB_CURRY:.curry=.acy), $(add_subdir))
-LIB_HTML      = $(LIB_CURRY:.curry=.html)
-LIB_TEX       = $(LIB_CURRY:.curry=.tex)
-# lib names without meta/ prefix
+# Curry library files
+LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry))
+# lib names without directory prefix
 LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
+# Generated files
+LIB_ACY       = $(foreach lib, $(LIB_CURRY:.curry=.acy), $(call prefix,.curry/,$(lib)))
+LIB_FCY       = $(foreach lib, $(LIB_CURRY:.curry=.fcy), $(call prefix,.curry/,$(lib)))
+LIB_HS        = $(foreach lib, $(LIB_CURRY:.curry=.hs) , $(call prefix,.curry/kics2/Curry_,$(lib)))
+LIB_HTML      = $(patsubst %, $(LIBDOCDIR)/%.html, $(LIB_NAMES))
+LIB_TEX       = $(patsubst %, $(TEXDOCDIR)/%.tex , $(LIB_NAMES))
 HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
 
-ALLLIBS=AllLibraries.curry
-MAINGOAL=Curry_Main_Goal.curry
-EXCLUDES= $(ALLLIBS) $(MAINGOAL)
+ALLLIBS       = AllLibraries
+MAINGOAL      = Curry_Main_Goal.curry
+EXCLUDES      = $(ALLLIBS).curry $(MAINGOAL)
 
-PACKAGE    = kics2-libraries
-CABAL_FILE = $(PACKAGE).cabal
+PACKAGE       = kics2-libraries
+CABAL_FILE    = $(PACKAGE).cabal
+CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
 
 ########################################################################
-# support for global installation
+# support for installation
 ########################################################################
 
-# compile all libraries:
-.PHONY: compilelibs
-compilelibs: $(ALLLIBS)
-	"${REPL}" ${REPL_OPTS} :set path ${LIBDIR}:${LIBDIR}/meta :l $< :eval main :quit
-#	$(BINDIR)/cleancurry $(basename $<)
+.PHONY: install
+install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(CABAL_FILE)
+	$(CABAL_INSTALL)
 
-$(ALLLIBS): $(LIB_CURRY) Makefile
+# create a program importing all libraries in order to re-compile them
+# so that all auxiliary files (.nda, .hs, ...) are up-to-date:
+$(ALLLIBS).curry: $(LIB_CURRY) Makefile
 	rm -f $@
 	for i in $(LIB_NAMES) ; do echo "import $$i" >> $@ ; done
-	echo "main = 42" >> $@
 
 .PHONY: unregister
 unregister:
-	-$(GHC-PKG) unregister $(PACKAGE)-$(VERSION)
+	-$(GHC_UNREGISTER) $(PACKAGE)-$(VERSION)
 
-${CABAL_FILE}:../Makefile Makefile
+# clean Haskell intermediate files
+.PHONY:
+clean:
+	-cd .curry/kics2      && rm -f *.hi *.o
+	-cd meta/.curry/kics2 && rm -f *.hi *.o
+
+# clean all generated files
+.PHONY: cleanall
+cleanall:
+	rm -rf "$(LIBDOCDIR)"
+	rm -rf "$(TEXDOCDIR)"
+	rm -rf dist
+	rm -f $(CABAL_FILE)
+	$(CLEANCURRY)
+	cd meta && $(CLEANCURRY)
+
+$(CABAL_FILE): ../Makefile Makefile
 	echo "Name:           $(PACKAGE)"                             > $@
 	echo "Version:        $(VERSION)"                            >> $@
 	echo "Description:    The standard libraries for KiCS2"      >> $@
@@ -69,9 +85,7 @@ ${CABAL_FILE}:../Makefile Makefile
 	echo "Library"                                               >> $@
 	echo "  Build-Depends:"                                      >> $@
 	echo "      kics2-runtime == $(VERSION)"                     >> $@
-	echo "    , base, old-time, directory, process"              >> $@
-	echo "    , parallel-tree-search, network, time"             >> $@
-	echo "    , unbounded-delays"                                >> $@
+	echo "    , $(CABAL_LIBDEPS)"                                >> $@
 	echo "  if os(windows)"                                      >> $@
 	echo "    Build-Depends: Win32"                              >> $@
 	echo "  else"                                                >> $@
@@ -79,29 +93,21 @@ ${CABAL_FILE}:../Makefile Makefile
 	echo "  Exposed-modules: $(HS_LIB_NAMES)"                    >> $@
 	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2" >> $@
 
-.PHONY: installlibs
-installlibs : ${CABAL_FILE} ${ALLLIBS}
-	cabal install -O2 --ghc-options="$(GHC_OPTIONS)"
+# generate Haskell file in subdirectory .curry/kics2
+.curry/kics2/Curry_%.hs: %.curry
+	$(COMP) -v0 -i. -imeta $*
 
-.PHONY: all
-all: fcy acy
+meta/.curry/kics2/Curry_%.hs: meta/%.curry
+	$(COMP) -v0 -i. -imeta meta/$*
 
-.PHONY: fcy
-fcy:
-	${MAKE} $(LIB_FCY)
-
-.PHONY: acy
-acy:
-	${MAKE} $(LIB_ACY)
-
-# generate all FlatCurry files in subdirectory .curry:
+# generate FlatCurry file in subdirectory .curry
 .curry/%.fcy: %.curry
 	"${CYMAKE}" --flat ${CYMAKEPARAMS} $*
 
 meta/.curry/%.fcy: meta/%.curry
 	"${CYMAKE}" --flat ${CYMAKEPARAMS} $*
 
-# generate all AbstractCurry files in subdirectory .curry:
+# generate AbstractCurry file in subdirectory .curry
 .curry/%.acy: %.curry
 	"${CYMAKE}" --acy ${CYMAKEPARAMS} $*
 
@@ -110,54 +116,35 @@ meta/.curry/%.acy: meta/%.curry
 
 ##############################################################################
 # create HTML documentation files for system libraries
+##############################################################################
+
 .PHONY: doc
 doc: $(LIB_CURRY)
-	@mkdir -p "${DOCDIR}"
-	@cd "${DOCDIR}" && rm -f meta DOINDEX && ln -s . meta
-	@cd "${DOCDIR}" && ${MAKE} -f ../Makefile $(LIB_HTML)
-	@if [ -f "${DOCDIR}/DOINDEX" ] ; then ${MAKE} htmlindex ; fi
-	@cd "${DOCDIR}" && rm -f meta DOINDEX
-
-.PHONY: htmlindex
-htmlindex:
+	mkdir -p "$(LIBDOCDIR)"
+	$(MAKE) $(LIB_HTML)
 	@echo "Generating index pages for Curry libraries:"
 	@echo $(LIB_NAMES)
-	@"${CURRYDOC}" --onlyindexhtml "${DOCDIR}" $(LIB_NAMES)
+	"$(CURRYDOC)" --onlyindexhtml "$(LIBDOCDIR)" $(LIB_NAMES)
 
-# generate individual documentations for libraries:
-%.html: ../%.curry
-	@touch DOINDEX
-	cd .. && "${CURRYDOC}" --noindexhtml "${DOCDIR}" $*
+# generate individual documentations for libraries
+$(LIBDOCDIR)/%.html: %.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
-meta/%.html: ../meta/%.curry
-	@touch DOINDEX
-	cd .. && "${CURRYDOC}" --noindexhtml "${DOCDIR}" $*
+$(LIBDOCDIR)/%.html: meta/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
+##############################################################################
+
 .PHONY: texdoc
 texdoc: $(LIB_CURRY)
-	@mkdir -p "${TEXDOCDIR}"
-	@if [ ! -f "${TEXDOCDIR}/LAST" ] ; then touch "${TEXDOCDIR}/LAST" ; fi
-	@cd "${TEXDOCDIR}" && rm -f meta && ln -s . meta
-	@cd "${TEXDOCDIR}" && ${MAKE} -f ../Makefile $(LIB_TEX)
-	@cd "${TEXDOCDIR}" && rm -f meta
+	mkdir -p "$(TEXDOCDIR)"
+	$(MAKE) $(LIB_TEX)
 
-# generate individual LaTeX documentations for libraries:
-%.tex: ../%.curry
-	cd .. && "${CURRYDOC}" --tex "${TEXDOCDIR}" $*
-	touch LAST
+# generate individual LaTeX documentations for libraries
+$(TEXDOCDIR)/%.tex: %.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
 
-meta/%.tex: ../meta/%.curry
-	cd .. && "${CURRYDOC}" --tex "${TEXDOCDIR}" $*
-	touch LAST
-
-# clean all generated files
-.PHONY: clean
-clean:
-	rm -f "${DOCDIR}"/*
-	rm -f "${TEXDOCDIR}"/*
-	rm -rf dist
-	rm -f ${CABAL_FILE}
-	${BINDIR}/cleancurry
-	cd meta && ${BINDIR}/cleancurry
+$(TEXDOCDIR)/%.tex: meta/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
