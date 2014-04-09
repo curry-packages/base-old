@@ -717,8 +717,8 @@ external_d_OP_eq_colon_eq = (=:=)
 external_d_C_success :: Cover -> ConstStore -> C_Success
 external_d_C_success _ _ = C_Success
 
-external_d_OP_ampersand :: C_Success -> C_Success -> Cover -> ConstStore -> C_Success
-external_d_OP_ampersand = (&)
+external_d_OP_amp :: C_Success -> C_Success -> Cover -> ConstStore -> C_Success
+external_d_OP_amp = (&)
 
 -- IO stuff
 
