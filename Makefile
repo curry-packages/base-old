@@ -26,9 +26,10 @@ LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
 LIB_ACY       = $(foreach lib, $(LIB_CURRY:.curry=.acy), $(call prefix,.curry/,$(lib)))
 LIB_FCY       = $(foreach lib, $(LIB_CURRY:.curry=.fcy), $(call prefix,.curry/,$(lib)))
 LIB_HS        = $(foreach lib, $(LIB_CURRY:.curry=.hs) , $(call prefix,.curry/kics2/Curry_,$(lib)))
+LIB_HS_TRACE  = $(foreach lib, $(LIB_CURRY:.curry=.hs) , $(call prefix,.curry/kics2/Curry_Trace_,$(lib)))
 LIB_HTML      = $(patsubst %, $(LIBDOCDIR)/%.html, $(LIB_NAMES))
 LIB_TEX       = $(patsubst %, $(TEXDOCDIR)/%.tex , $(LIB_NAMES))
-HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
+HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%) $(LIB_NAMES:%=Curry_Trace_%))
 
 ALLLIBS       = AllLibraries
 MAINGOAL      = Curry_Main_Goal.curry
@@ -43,11 +44,11 @@ CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
 ########################################################################
 
 .PHONY: install
-install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(CABAL_FILE)
+install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(LIB_HS_TRACE) $(CABAL_FILE)
 	$(CABAL_INSTALL)
 
 # create a program importing all libraries in order to re-compile them
-# so that all auxiliary files (.nda, .hs, ...) are up-to-date:
+# so that all auxiliary files (.nda, .hs, ...) are up-to-date
 $(ALLLIBS).curry: $(LIB_CURRY) Makefile
 	rm -f $@
 	for i in $(LIB_NAMES) ; do echo "import $$i" >> $@ ; done
@@ -94,8 +95,14 @@ $(CABAL_FILE): ../Makefile Makefile
 	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2" >> $@
 
 # generate Haskell file in subdirectory .curry/kics2
+.curry/kics2/Curry_Trace_%.hs: %.curry
+	$(COMP) -v0 -i. -imeta --trace-failure $*
+
 .curry/kics2/Curry_%.hs: %.curry
 	$(COMP) -v0 -i. -imeta $*
+
+meta/.curry/kics2/Curry_Trace_%.hs: meta/%.curry
+	$(COMP) -v0 -i. -imeta --trace-failure meta/$*
 
 meta/.curry/kics2/Curry_%.hs: meta/%.curry
 	$(COMP) -v0 -i. -imeta meta/$*
