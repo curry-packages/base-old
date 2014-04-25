@@ -14,7 +14,7 @@ module Prelude where
 
 infixl 9 !!
 infixr 9 .
-infixl 7 *, `div`, `mod`
+infixl 7 *, `div`, `mod`, `quot`, `rem`
 infixl 6 +, -
 -- infixr 5 :                          -- declared together with list
 infixr 5 ++
@@ -540,15 +540,29 @@ mod external
 -- prim_Int_mod :: Int -> Int -> Int
 -- prim_Int_mod external
 
+--- Returns an integer (quotient,remainder) pair.
+--- The value is the integer quotient of its arguments
+--- and always truncated towards negative infinity.
 divMod :: Int -> Int -> (Int, Int)
 divMod external
 
+--- Integer division. The value is the integer quotient of its arguments
+--- and always truncated towards zero.
+--- Thus, the value of <code>13 `quot` 5</code> is <code>2</code>,
+--- and the value of <code>-15 `quot` 4</code> is <code>-3</code>.
 quot :: Int -> Int -> Int
 quot external
 
+--- Integer remainder. The value is the remainder of the integer division and
+--- it obeys the rule <code>x `rem` y = x - y * (x `quot` y)</code>.
+--- Thus, the value of <code>13 `rem` 5</code> is <code>3</code>,
+--- and the value of <code>-15 `rem` 4</code> is <code>-3</code>.
 rem :: Int -> Int -> Int
 rem external
 
+--- Returns an integer (quotient,remainder) pair.
+--- The value is the integer quotient of its arguments
+--- and always truncated towards zero.
 quotRem :: Int -> Int -> (Int, Int)
 quotRem external
 
