@@ -12,7 +12,7 @@ module Prelude where
 
 infixl 9 !!
 infixr 9 .
-infixl 7 *, `div`, `mod`
+infixl 7 *, `div`, `mod`, `quot`, `rem`
 infixl 6 +, -
 -- infixr 5 :                          -- declared together with list
 infixr 5 ++
