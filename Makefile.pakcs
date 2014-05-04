@@ -1,0 +1,252 @@
+# precompile all modules of the library
+# to avoid recompilation when they are used:
+
+PARSECURRY=`pwd`/../bin/parsecurry
+PAKCS=`pwd`/../bin/pakcs
+
+# directory containing the repository library files:
+LIBTRUNKDIR=$(ROOT)/lib-trunk
+# directory for HTML documentation files:
+DOCDIR=CDOC
+# directory for LaTeX documentation files:
+TEXDOCDIR=TEXDOC
+# the currydoc program:
+CURRYDOC=`pwd`/../bin/currydoc
+
+LIB_CURRY = Prelude.curry \
+	    AllSolutions.curry Array.curry Assertion.curry CategorizedHtmlList.curry \
+            Char.curry CLPFD.curry CLPR.curry CLPB.curry Combinatorial.curry \
+	    Constraint.curry CPNS.curry CSV.curry  \
+            Database.curry Dequeue.curry Directory.curry \
+	    Distribution.curry Dynamic.curry \
+            FileGoodies.curry FilePath.curry FiniteMap.curry \
+	    Float.curry Function.curry \
+	    GetOpt.curry \
+	    Global.curry GlobalVariable.curry GraphInductive.curry GUI.curry \
+	    HTML.curry HtmlCgi.curry HtmlParser.curry \
+	    IO.curry IOExts.curry Integer.curry \
+	    JavaScript.curry \
+            KeyDatabase.curry KeyDatabaseSQLite.curry KeyDB.curry \
+	    List.curry Mail.curry Maybe.curry Markdown.curry \
+	    NamedSocket.curry \
+	    Parser.curry PlProfileData.curry Ports.curry Pretty.curry \
+	    Profile.curry PropertyFile.curry \
+            Random.curry Read.curry ReadNumeric.curry ReadShowTerm.curry \
+            RedBlackTree.curry SetRBT.curry \
+	    SetFunctions.curry \
+	    Socket.curry Sort.curry System.curry \
+            TableRBT.curry Time.curry Traversal.curry \
+            Unsafe.curry URL.curry WUI.curry WUIjs.curry \
+	    XML.curry XmlConv.curry \
+	    meta/AbstractCurry.curry meta/AbstractCurryPrinter.curry \
+	    meta/AnnotatedFlatCurry.curry meta/AnnotatedFlatCurryGoodies.curry \
+	    meta/CurryStringClassifier.curry \
+            meta/FlatCurry.curry meta/FlatCurryPretty.curry \
+	    meta/FlatCurryRead.curry meta/FlatCurryShow.curry \
+	    meta/FlatCurryGoodies.curry meta/FlatCurryTools.curry \
+	    meta/FlatCurryXML.curry \
+	    meta/FlexRigid.curry meta/CompactFlatCurry.curry \
+	    meta/PrettyAbstract.curry 
+
+LIB_FCY   = `echo $(LIB_CURRY:%.curry=.curry/%.fcy) | sed 's|\.curry/meta/|meta/.curry/|g'`
+LIB_ACY   = `echo $(LIB_CURRY:%.curry=.curry/%.acy) | sed 's|\.curry/meta/|meta/.curry/|g'`
+LIB_PL    = `echo $(LIB_CURRY:%.curry=.curry/pakcs/%.pl) | sed 's|\.curry/pakcs/meta/|meta/.curry/pakcs/|g'`
+LIB_HTML  = $(LIB_CURRY:.curry=.html)
+LIB_TEX   = $(LIB_CURRY:.curry=.tex)
+LIB_NAMES = `echo $(LIB_CURRY) | sed 's|meta/||g'` # lib names without meta/ prefix
+
+.PHONY: all
+all: fcy acy
+
+##########################################################################
+# Install the library sources into the Curry system library directory:
+.PHONY: install
+install:
+	mkdir -p $(LIBDIR)
+	mkdir -p $(LIBDIR)/meta
+	$(MAKE) -f Makefile.$(CURRYSYSTEM) $(LIBDIR)/Makefile
+	cd $(LIBDIR) && $(MAKE) sources
+
+$(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
+	cp $< $@
+
+.PHONY: sources
+sources:
+	$(MAKE) $(LIB_CURRY) index.html
+	cp $(LIBTRUNKDIR)/*.prim_c2p .
+
+Prelude.curry: $(LIBTRUNKDIR)/Prelude.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+AllSolutions.curry: $(LIBTRUNKDIR)/AllSolutions.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Assertion.curry: $(LIBTRUNKDIR)/Assertion.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+CLPB.curry: $(LIBTRUNKDIR)/CLPB.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+CLPFD.curry: $(LIBTRUNKDIR)/CLPFD.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+CLPR.curry: $(LIBTRUNKDIR)/CLPR.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Database.curry: $(LIBTRUNKDIR)/Database.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Dynamic.curry: $(LIBTRUNKDIR)/Dynamic.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Global.curry: $(LIBTRUNKDIR)/Global.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+GlobalVariable.curry: $(LIBTRUNKDIR)/GlobalVariable.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+GUI.curry: $(LIBTRUNKDIR)/GUI.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+IO.curry: $(LIBTRUNKDIR)/IO.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+IOExts.curry: $(LIBTRUNKDIR)/IOExts.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+KeyDB.curry: $(LIBTRUNKDIR)/KeyDB.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+KeyDatabase.curry: $(LIBTRUNKDIR)/KeyDatabase.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+KeyDatabaseSQLite.curry: $(LIBTRUNKDIR)/KeyDatabaseSQLite.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+PlProfileData.curry: $(LIBTRUNKDIR)/PlProfileData.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Ports.curry: $(LIBTRUNKDIR)/Ports.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Profile.curry: $(LIBTRUNKDIR)/Profile.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Random.curry: $(LIBTRUNKDIR)/Random.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+SetFunctions.curry: $(LIBTRUNKDIR)/SetFunctions.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+System.curry: $(LIBTRUNKDIR)/System.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Unsafe.curry: $(LIBTRUNKDIR)/Unsafe.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+WUI.curry: $(LIBTRUNKDIR)/WUI.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+%.curry: $(LIBTRUNKDIR)/%.curry
+	 cp $< $@
+
+meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
+	 cp $< $@
+
+index.html: $(LIBTRUNKDIR)/index.html.$(CURRYSYSTEM)
+	 cp $< $@
+
+##########################################################################
+# generate the FlatCurry files of all libraries:
+.PHONY: fcy
+fcy:
+	${MAKE} $(LIB_FCY)
+
+# generate the AbstractCurry files of all libraries:
+.PHONY: acy
+acy:
+	${MAKE} $(LIB_ACY)
+
+# generate the compile Prolog target files of all libraries:
+.PHONY: pl
+pl:
+	@${MAKE} $(LIB_PL)
+
+# generate all FlatCurry files in subdirectory .curry:
+.curry/%.fcy: %.curry
+	"${PARSECURRY}" --flat --quiet $*
+
+# generate all FlatCurry files in subdirectory meta/.curry:
+meta/.curry/%.fcy: meta/%.curry
+	"${PARSECURRY}" --flat --quiet $*
+
+# generate all AbstractCurry files in subdirectory .curry:
+.curry/%.acy: %.curry
+	"${PARSECURRY}" --acy --quiet $*
+
+meta/.curry/%.acy: meta/%.curry
+	"${PARSECURRY}" --acy --quiet $*
+
+# generate all Prolog translations:
+.curry/pakcs/%.pl: .curry/%.fcy
+	rm -f $@ && "${PAKCS}" --quiet -c $*
+
+meta/.curry/pakcs/%.pl: meta/.curry/%.fcy
+	rm -f $@ && "${PAKCS}" --quiet -c $*
+
+# create HTML documentation files for system libraries
+.PHONY: doc
+doc: $(LIB_CURRY)
+	@mkdir -p "${DOCDIR}"
+	@cd "${DOCDIR}" && rm -f meta DOINDEX && ln -s . meta
+	@cd "${DOCDIR}" && ${MAKE} -f ../Makefile $(LIB_HTML)
+	@if [ -f "${DOCDIR}/DOINDEX" ] ; then ${MAKE} htmlindex ; fi
+	@cd "${DOCDIR}" && rm -f meta DOINDEX
+
+.PHONY: htmlindex
+htmlindex:
+	@echo "Generating index pages for Curry libraries:"
+	@echo $(LIB_NAMES)
+	@"${CURRYDOC}" --onlyindexhtml "${DOCDIR}" $(LIB_NAMES)
+
+# generate individual documentations for libraries:
+%.html: ../%.curry
+	@touch DOINDEX
+	cd .. && "${CURRYDOC}" --noindexhtml "${DOCDIR}" $*
+
+meta/%.html: ../meta/%.curry
+	@touch DOINDEX
+	cd .. && "${CURRYDOC}" --noindexhtml "${DOCDIR}" $*
+
+# create LaTeX documentation files for system libraries
+.PHONY: texdoc
+texdoc: $(LIB_CURRY)
+	@mkdir -p "${TEXDOCDIR}"
+	@if [ ! -f "${TEXDOCDIR}/LAST" ] ; then touch "${TEXDOCDIR}/LAST" ; fi
+	@cd "${TEXDOCDIR}" && rm -f meta && ln -s . meta
+	@cd "${TEXDOCDIR}" && ${MAKE} -f ../Makefile $(LIB_TEX)
+	@cd "${TEXDOCDIR}" && rm -f meta
+
+# generate individual LaTeX documentations for libraries:
+%.tex: ../%.curry
+	cd .. && "${CURRYDOC}" --tex "${TEXDOCDIR}" $*
+	touch LAST
+
+meta/%.tex: ../meta/%.curry
+	cd .. && "${CURRYDOC}" --tex "${TEXDOCDIR}" $*
+	touch LAST
+
+
+# clean all generated files
+.PHONY: clean
+clean:
+	rm -f "${DOCDIR}"/*
+	rm -f "${TEXDOCDIR}"/*
+	../bin/cleancurry
+	cd meta && ../../bin/cleancurry
+
+# clean all generated Prolog files
+.PHONY: cleanpl
+cleanpl:
+	rm -f .curry/pakcs/*.pl .curry/pakcs/*.po meta/.curry/pakcs/*.pl meta/.curry/pakcs/*.po \
+	      *.pl *.po meta/*.pl meta/*.po
