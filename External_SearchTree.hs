@@ -17,8 +17,10 @@ instance Monad C_SearchTree where
   C_Value   x >>= f = f x
   C_Or    x y >>= f = C_Or (x >>= f) (y >>= f)
 
-  Choice_C_SearchTree  cd i x y >>= f = Choice_C_SearchTree  cd i  (x >>= f) (y >>= f)
-  Choices_C_SearchTree cd i xs  >>= f = Choices_C_SearchTree cd i  (map (>>= f) xs)
+  Choice_C_SearchTree  cd i x y >>= f
+    = Choice_C_SearchTree  cd i  (x >>= f) (y >>= f)
+  Choices_C_SearchTree cd i xs  >>= f
+    = Choices_C_SearchTree cd i  (map (>>= f) xs)
   Guard_C_SearchTree   cd cs x  >>= f = Guard_C_SearchTree   cd cs (x >>= f)
   Fail_C_SearchTree    cd info  >>= _ = Fail_C_SearchTree    cd info
 
@@ -36,5 +38,6 @@ instance MonadSearch C_SearchTree where
   szero (I# d) _   = C_Fail (Curry_Prelude.C_Int d)
   constrainMSearch = Guard_C_SearchTree
 
-external_d_C_someSearchTree :: NormalForm a => a -> Cover -> ConstStore -> C_SearchTree a
+external_d_C_someSearchTree :: NormalForm a
+                            => a -> Cover -> ConstStore -> C_SearchTree a
 external_d_C_someSearchTree = encapsulatedSearch

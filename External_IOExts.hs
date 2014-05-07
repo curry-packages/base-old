@@ -4,21 +4,20 @@ import System.IO.Unsafe   (unsafePerformIO) -- for global associations
 import System.Process     (readProcessWithExitCode, runInteractiveCommand)
 import Control.Concurrent (forkIO)
 import System.IO
-import qualified Curry_Prelude as CP
 
-external_d_C_prim_execCmd :: CP.C_String -> Cover -> ConstStore 
-  -> CP.C_IO (CP.OP_Tuple3 Curry_IO.C_Handle Curry_IO.C_Handle Curry_IO.C_Handle)
+external_d_C_prim_execCmd :: Curry_Prelude.C_String -> Cover -> ConstStore
+  -> Curry_Prelude.C_IO (Curry_Prelude.OP_Tuple3 Curry_IO.C_Handle Curry_IO.C_Handle Curry_IO.C_Handle)
 external_d_C_prim_execCmd str _ _ = toCurry
   (\s -> do (h1,h2,h3,_) <- runInteractiveCommand s
             return (OneHandle h1, OneHandle h2, OneHandle h3)) str
 
-external_d_C_prim_evalCmd :: CP.C_String -> CP.OP_List CP.C_String -> CP.C_String
-  -> Cover -> ConstStore -> CP.C_IO (CP.OP_Tuple3 CP.C_Int CP.C_String CP.C_String)
+external_d_C_prim_evalCmd :: Curry_Prelude.C_String -> Curry_Prelude.OP_List Curry_Prelude.C_String -> Curry_Prelude.C_String
+  -> Cover -> ConstStore -> Curry_Prelude.C_IO (Curry_Prelude.OP_Tuple3 Curry_Prelude.C_Int Curry_Prelude.C_String Curry_Prelude.C_String)
 external_d_C_prim_evalCmd cmd args input _ _
   = toCurry readProcessWithExitCode cmd args input
 
-external_d_C_prim_connectToCmd :: CP.C_String -> Cover -> ConstStore
-                               -> CP.C_IO Curry_IO.C_Handle
+external_d_C_prim_connectToCmd :: Curry_Prelude.C_String -> Cover -> ConstStore
+                               -> Curry_Prelude.C_IO Curry_IO.C_Handle
 external_d_C_prim_connectToCmd str _ _ = toCurry
   (\s -> do (hin,hout,herr,_) <- runInteractiveCommand s
             forkIO (forwardError herr)
@@ -40,14 +39,14 @@ type Assocs = [(String,String)]
 assocs :: IORef Assocs
 assocs = unsafePerformIO (newIORef [])
 
-external_d_C_prim_setAssoc :: CP.C_String -> CP.C_String -> Cover -> ConstStore
-                           -> CP.C_IO CP.OP_Unit
+external_d_C_prim_setAssoc :: Curry_Prelude.C_String -> Curry_Prelude.C_String -> Cover -> ConstStore
+                           -> Curry_Prelude.C_IO Curry_Prelude.OP_Unit
 external_d_C_prim_setAssoc str1 str2 _ _ = toCurry
   (\key val -> do as <- readIORef assocs
                   writeIORef assocs ((key,val):as)) str1 str2
 
-external_d_C_prim_getAssoc :: CP.C_String -> Cover -> ConstStore
-                           -> CP.C_IO (CP.C_Maybe (CP.C_String))
+external_d_C_prim_getAssoc :: Curry_Prelude.C_String -> Cover -> ConstStore
+                           -> Curry_Prelude.C_IO (Curry_Prelude.C_Maybe (Curry_Prelude.C_String))
 external_d_C_prim_getAssoc str _ _ = toCurry
   (\key -> do as <- readIORef assocs
               return (lookup key as)) str
@@ -119,7 +118,7 @@ instance Unifiable (C_IORef a) where
   lazyBind _  _ (Fail_C_IORef cd info) = [Unsolvable info]
   lazyBind cd i (Guard_C_IORef _ cs e) = (getConstrList cs) ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance CP.Curry a => CP.Curry (C_IORef a) where
+instance Curry_Prelude.Curry a => Curry_Prelude.Curry (C_IORef a) where
   (=?=) = error "(==) is undefined for IORefs"
   (<?=) = error "(<=) is undefined for IORefs"
 
@@ -128,14 +127,14 @@ instance ConvertCurryHaskell (C_IORef a) (IORef a) where
   fromCurry _           = error "IORef with no ground term occurred"
   toCurry r             = C_IORef r
 
-external_d_C_newIORef :: CP.Curry a => a -> Cover -> ConstStore 
-                      -> CP.C_IO (C_IORef a)
+external_d_C_newIORef :: Curry_Prelude.Curry a => a -> Cover -> ConstStore
+                      -> Curry_Prelude.C_IO (C_IORef a)
 external_d_C_newIORef cv _ _ = toCurry (newIORef cv)
 
-external_d_C_prim_readIORef :: CP.Curry a => C_IORef a -> Cover -> ConstStore
-                            -> CP.C_IO a
+external_d_C_prim_readIORef :: Curry_Prelude.Curry a => C_IORef a -> Cover -> ConstStore
+                            -> Curry_Prelude.C_IO a
 external_d_C_prim_readIORef ref _ _ = fromIO (readIORef (fromCurry ref))
 
-external_d_C_prim_writeIORef :: CP.Curry a => C_IORef a -> a
-                             -> Cover -> ConstStore -> CP.C_IO CP.OP_Unit
+external_d_C_prim_writeIORef :: Curry_Prelude.Curry a => C_IORef a -> a
+                             -> Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.OP_Unit
 external_d_C_prim_writeIORef ref cv _ _ = toCurry (writeIORef (fromCurry ref) cv)
