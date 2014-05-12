@@ -122,6 +122,7 @@ prim_error external
 failed :: _
 failed external
 
+
 -- Boolean values
 -- already defined as builtin, since it is required for if-then-else
 data Bool = False | True
@@ -195,6 +196,7 @@ max x y = if x >= y then x else y
 --- Minimum of ground data terms.
 min :: a -> a -> a
 min x y = if x <= y then x else y
+
 
 -- Pairs
 
@@ -462,7 +464,6 @@ enumFrom n             = n : enumFrom (n+1)
 enumFromThen           :: Int -> Int -> [Int]            -- [n1,n2..]
 enumFromThen n1 n2     = iterate ((n2-n1)+) n1
 
-
 --- Generates a sequence of ascending integers.
 enumFromTo             :: Int -> Int -> [Int]            -- [n..m]
 enumFromTo n m         = if n>m then [] else n : enumFromTo (n+1) m
@@ -533,7 +534,7 @@ div external
 --- Integer remainder. The value is the remainder of the integer division and
 --- it obeys the rule <code>x `mod` y = x - y * (x `div` y)</code>.
 --- Thus, the value of <code>13 `mod` 5</code> is <code>3</code>,
---- and the value of <code>-15 `mod` 4</code> is <code>1</code>.
+--- and the value of <code>-15 `mod` 4</code> is <code>-3</code>.
 mod   :: Int -> Int -> Int
 mod external
 
@@ -843,14 +844,6 @@ when p act = if p then act else done
 unknown :: _
 unknown = let x free in x
 
-------------------------------------------------------------------------
--- Encapsulated search:
---
--- The operations for encapsulated search are not supported in KiCS2
--- as defined in the Curry report.
--- Instead, KiCS2 offers alternative features for encapsulated
--- search, see libraries AllSolutions and SearchTree (for strong
--- encapsulated search) and SetFunctions (for weak encapsulated search).
 ------------------------------------------------------------------------
 
 --- Evaluates the argument to normal form and returns it.

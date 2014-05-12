@@ -13,10 +13,12 @@
 --- in the old concept.
 ------------------------------------------------------------------------------
 
-module AllSolutions(getAllSolutions,--getAllValues, -- already in the prelude
+module AllSolutions(getAllSolutions,getAllValues,
                     getOneSolution,getOneValue,
                     getAllFailures,
                     getSearchTree,SearchTree(..)) where
+
+import Findall
 
 --- Gets all solutions to a constraint (currently, via an incomplete
 --- depth-first left-to-right strategy). Conceptually, all solutions

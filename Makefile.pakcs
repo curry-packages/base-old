@@ -19,7 +19,7 @@ LIB_CURRY = Prelude.curry \
 	    Constraint.curry CPNS.curry CSV.curry  \
             Database.curry Dequeue.curry Directory.curry \
 	    Distribution.curry Dynamic.curry \
-            FileGoodies.curry FilePath.curry FiniteMap.curry \
+            FileGoodies.curry FilePath.curry Findall.curry FiniteMap.curry \
 	    Float.curry Function.curry \
 	    GetOpt.curry \
 	    Global.curry GlobalVariable.curry GraphInductive.curry GUI.curry \
@@ -43,7 +43,7 @@ LIB_CURRY = Prelude.curry \
 	    meta/CurryStringClassifier.curry \
             meta/FlatCurry.curry meta/FlatCurryPretty.curry \
 	    meta/FlatCurryRead.curry meta/FlatCurryShow.curry \
-	    meta/FlatCurryGoodies.curry meta/FlatCurryTools.curry \
+	    meta/FlatCurryGoodies.curry \
 	    meta/FlatCurryXML.curry \
 	    meta/FlexRigid.curry meta/CompactFlatCurry.curry \
 	    meta/PrettyAbstract.curry 
@@ -97,6 +97,9 @@ Database.curry: $(LIBTRUNKDIR)/Database.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 Dynamic.curry: $(LIBTRUNKDIR)/Dynamic.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Findall.curry: $(LIBTRUNKDIR)/Findall.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 Global.curry: $(LIBTRUNKDIR)/Global.curry.$(CURRYSYSTEM)

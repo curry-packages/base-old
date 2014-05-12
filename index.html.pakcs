@@ -577,23 +577,6 @@ FlatCurry programs and an I/O action to read Curry programs
 and transform them into this representation.
 </dd>
 
-<dt><code><a href="CDOC/FlatCurry.html">FlatCurry</a></code></dt>
-<dd>
-This library supports meta-programming, i.e., the manipulation of
-Curry programs in Curry. For this purpose, the library contains
-definitions of datatypes for the representation of so-called
-FlatCurry programs and an I/O action to read Curry programs
-and transform them into this representation.
-<br />
-<b>Remark:</b>
-<em>This library is a revised version of the library <code>Flat</code>,
-i.e., the representation of FlatCurry programs is improved
-to simplify the implementation of meta-programming tools
-(interpreter, compiler, analyzer etc.).
-In the near future, only this representation will be further
-supported.</em>
-</dd>
-
 <dt><code><a href="CDOC/FlatCurryGoodies.html">FlatCurryGoodies</a></code></dt>
 <dd>
 This library provides selector functions, test and update operations 
@@ -612,13 +595,6 @@ together with all its imported modules in the current load path.
 This library contains functions to transform FlatCurry programs
 into string representations, either in a FlatCurry format
 or in a Curry-like syntax.
-</dd>
-
-<dt><code><a href="CDOC/FlatCurryTools.html">FlatCurryTools</a></code></dt>
-<dd>
-This library is outdated and might be deleted in future releases.
-Use the library <a href="CDOC/FlatCurryShow.html">FlatCurryShow</code></a>
-instead of this library.
 </dd>
 
 <dt><code><a href="CDOC/FlatCurryXML.html">FlatCurryXML</a></code></dt>

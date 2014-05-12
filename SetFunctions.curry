@@ -38,13 +38,13 @@
 ------------------------------------------------------------------------
 
 module SetFunctions
-         (set0,set1,set2,set3,set4,set5,set6,set7,
-          set0With,set1With,set2With,set3With,set4With,set5With,set6With,set7With,
-          Values,isEmpty,valueOf,
-          choose,chooseValue,select,selectValue,
-          mapValues,foldValues,minValue,maxValue,
-          values2list,printValues,sortValues,sortValuesBy)
- where
+  (set0,set1,set2,set3,set4,set5,set6,set7
+  ,set0With,set1With,set2With,set3With,set4With,set5With,set6With,set7With
+  ,Values,isEmpty,valueOf
+  ,choose,chooseValue,select,selectValue
+  ,mapValues,foldValues,minValue,maxValue
+  ,values2list,printValues,sortValues,sortValuesBy
+  ) where
 
 import Sort(mergeSort)
 import SearchTree

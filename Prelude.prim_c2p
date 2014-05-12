@@ -117,21 +117,9 @@
   <library>prim_standard</library>
   <entry>prim_letrec[raw]</entry>
  </primitive>
- <primitive name="findall" arity="1">
-  <library>prim_standard</library>
-  <entry>prim_findall[raw]</entry>
- </primitive>
- <primitive name="findfirst" arity="1">
-  <library>prim_standard</library>
-  <entry>prim_findfirst[raw]</entry>
- </primitive>
  <primitive name="compare" arity="2">
   <library>prim_standard</library>
   <entry>prim_compare[raw]</entry>
- </primitive>
- <primitive name="try" arity="1">
-  <library>prim_standard</library>
-  <entry>prim_try[raw]</entry>
  </primitive>
  <primitive name="failure" arity="2">
   <library>prim_standard</library>

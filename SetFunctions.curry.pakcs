@@ -37,17 +37,18 @@
 --- the interface is not stable and might change.
 ---
 --- @author Michael Hanus
---- @version January 2013
+--- @version May 2014
 ------------------------------------------------------------------------
 
 module SetFunctions
-         (set0,set1,set2,set3,set4,set5,set6,set7,
-          Values,isEmpty,valueOf,contains,
-          choose,chooseValue,select,selectValue,
-          mapValues,foldValues,minValue,maxValue,
-          values2list,printValues,sortValues,sortValuesBy)
- where
+  (set0,set1,set2,set3,set4,set5,set6,set7
+  ,Values,isEmpty,valueOf
+  ,choose,chooseValue,select,selectValue
+  ,mapValues,foldValues,minValue,maxValue
+  ,values2list,printValues,sortValues,sortValuesBy
+  ) where
 
+import Findall
 import Sort(mergeSort)
 import List(delete)
 
@@ -129,10 +130,6 @@ isEmpty (Values empty _) = empty
 --- Is some value an element of a multiset of values?
 valueOf :: a -> Values a -> Bool
 valueOf e (Values _ s) = e `elem` s
-
---- Do not use. Use valueOf!
-contains :: a -> Values a -> Bool
-contains = valueOf
 
 --- Chooses (non-deterministically) some value in a multiset of values
 --- and returns the chosen value and the remaining multiset of values.

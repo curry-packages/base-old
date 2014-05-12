@@ -21,8 +21,8 @@ module WUI(--WuiState,cgiRef2state,state2cgiRef,value2state,state2value,
            wPair,wTriple,w4Tuple,w5Tuple,w6Tuple,w7Tuple,w8Tuple,
            w9Tuple,w10Tuple,w11Tuple,w12Tuple,
            wCons2,wCons3,wCons4,wCons5,wCons6,wCons7,wCons8,
-           wCons9,wCons10,wCons11,wCons12,wJoinTuple,
-           wMaybe,wCheckMaybe,wRadioMaybe,
+           wCons9,wCons10,wCons11,wCons12,
+           wJoinTuple,wMaybe,wCheckMaybe,wRadioMaybe,
            wList,wListWithHeadings,wHList,wMatrix,wEither,
            WTree(..),wTree,
            WuiHandler,wuiHandler2button,
@@ -631,11 +631,10 @@ wJoinTuple (WuiSpec rendera showa reada) (WuiSpec renderb showb readb) =
         h2s = unRenderTuple h2
      in render (h1s++h2s)
 
-  showc wparams vc | (va,vb) =:<= vc =
+  showc wparams (va,vb) =
     let (hea,rta) = showa rendera va
         (heb,rtb) = showb renderb vb
      in (render2joinrender (renderOf wparams) [hea,heb],states2state [rta,rtb])
-   where va,vb free
 
   readc (orgrender,errmsg,legal) env s =
     let [ra,rb] = state2states s
