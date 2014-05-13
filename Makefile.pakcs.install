@@ -11,7 +11,7 @@ CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/meta
-	$(MAKE) $(LIBDIR)/Makefile
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
 $(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
