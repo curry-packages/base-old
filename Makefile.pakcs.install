@@ -1,7 +1,7 @@
 # directory containing the repository library files:
 LIBTRUNKDIR=$(ROOT)/lib-trunk
 # get all library names from standard makefile:
-LIB_CURRY = `$(MAKE) --quiet -f $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM) allsources`
+LIB_CURRY = `$(MAKE) --no-print-directory --quiet -f $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM) allsources`
 # name of this makefile:
 CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 
@@ -12,14 +12,13 @@ install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/meta
 	$(MAKE) $(LIBDIR)/Makefile
-	cd $(LIBDIR) && $(MAKE) --quiet -f $(CURRENT_MAKEFILE) sources
+	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
 $(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
 	cp $< $@
 
 .PHONY: sources
 sources:
-	@echo $(LIB_CURRY)
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY) index.html
 	cp $(LIBTRUNKDIR)/*.prim_c2p .
 
