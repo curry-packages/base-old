@@ -47,9 +47,13 @@ CABAL_LIBDEPS    = $(call comma_sep,$(LIBDEPS))
 ########################################################################
 
 .PHONY: install
-install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(LIB_HS_TRACE) $(CABAL_FILE) $(CABAL_TRACE_FILE)
-	$(CABAL_INSTALL) $(PACKAGE)
-	$(CABAL_INSTALL) $(PACKAGE_TRACE)
+install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(LIB_HS_TRACE)
+	$(MAKE) $(CABAL_FILE)
+	$(CABAL_INSTALL)
+	rm -f $(CABAL_FILE)
+	$(MAKE) $(CABAL_TRACE_FILE)
+	$(CABAL_INSTALL)
+	rm -f $(CABAL_TRACE_FILE)
 
 # create a program importing all libraries in order to re-compile them
 # so that all auxiliary files (.nda, .hs, ...) are up-to-date
