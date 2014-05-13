@@ -29,23 +29,27 @@ LIB_HS        = $(foreach lib, $(LIB_CURRY:.curry=.hs) , $(call prefix,.curry/ki
 LIB_HS_TRACE  = $(foreach lib, $(LIB_CURRY:.curry=.hs) , $(call prefix,.curry/kics2/Curry_Trace_,$(lib)))
 LIB_HTML      = $(patsubst %, $(LIBDOCDIR)/%.html, $(LIB_NAMES))
 LIB_TEX       = $(patsubst %, $(TEXDOCDIR)/%.tex , $(LIB_NAMES))
-HS_LIB_NAMES  = $(call comma_sep,$(LIB_NAMES:%=Curry_%) $(LIB_NAMES:%=Curry_Trace_%))
+HS_LIB_NAMES       = $(call comma_sep,$(LIB_NAMES:%=Curry_%))
+HS_LIB_TRACE_NAMES = $(call comma_sep,$(LIB_NAMES:%=Curry_Trace_%))
 
 ALLLIBS       = AllLibraries
 MAINGOAL      = Curry_Main_Goal.curry
 EXCLUDES      = $(ALLLIBS).curry $(MAINGOAL)
 
-PACKAGE       = kics2-libraries
-CABAL_FILE    = $(PACKAGE).cabal
-CABAL_LIBDEPS = $(call comma_sep,$(LIBDEPS))
+PACKAGE          = kics2-libraries
+PACKAGE_TRACE    = kics2-libraries-trace
+CABAL_FILE       = $(PACKAGE).cabal
+CABAL_TRACE_FILE = $(PACKAGE_TRACE).cabal
+CABAL_LIBDEPS    = $(call comma_sep,$(LIBDEPS))
 
 ########################################################################
 # support for installation
 ########################################################################
 
 .PHONY: install
-install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(LIB_HS_TRACE) $(CABAL_FILE)
-	$(CABAL_INSTALL)
+install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(LIB_HS_TRACE) $(CABAL_FILE) $(CABAL_TRACE_FILE)
+	$(CABAL_INSTALL) $(PACKAGE)
+	$(CABAL_INSTALL) $(PACKAGE_TRACE)
 
 # create a program importing all libraries in order to re-compile them
 # so that all auxiliary files (.nda, .hs, ...) are up-to-date
@@ -56,6 +60,7 @@ $(ALLLIBS).curry: $(LIB_CURRY) Makefile
 .PHONY: unregister
 unregister:
 	-$(GHC_UNREGISTER) $(PACKAGE)-$(VERSION)
+	-$(GHC_UNREGISTER) $(PACKAGE_TRACE)-$(VERSION)
 
 # clean Haskell intermediate files
 .PHONY:
@@ -70,6 +75,7 @@ cleanall:
 	rm -rf "$(TEXDOCDIR)"
 	rm -rf dist
 	rm -f $(CABAL_FILE)
+	rm -f $(CABAL_TRACE_FILE)
 	$(CLEANCURRY)
 	cd meta && $(CLEANCURRY)
 
@@ -78,8 +84,8 @@ $(CABAL_FILE): ../Makefile Makefile
 	echo "Version:        $(VERSION)"                            >> $@
 	echo "Description:    The standard libraries for KiCS2"      >> $@
 	echo "License:        OtherLicense"                          >> $@
-	echo "Author:         Fabian Reck"                           >> $@
-	echo "Maintainer:     fre@informatik.uni-kiel.de"            >> $@
+	echo "Author:         The KiCS2 Team"                        >> $@
+	echo "Maintainer:     kics2@curry-language.org"              >> $@
 	echo "Build-Type:     Simple"                                >> $@
 	echo "Cabal-Version:  >= 1.9.2"                              >> $@
 	echo ""                                                      >> $@
@@ -93,6 +99,27 @@ $(CABAL_FILE): ../Makefile Makefile
 	echo "    Build-Depends: unix"                               >> $@
 	echo "  Exposed-modules: $(HS_LIB_NAMES)"                    >> $@
 	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2" >> $@
+
+$(CABAL_TRACE_FILE): ../Makefile Makefile
+	echo "Name:           $(PACKAGE_TRACE)"                          > $@
+	echo "Version:        $(VERSION)"                               >> $@
+	echo "Description:    The tracing standard libraries for KiCS2" >> $@
+	echo "License:        OtherLicense"                             >> $@
+	echo "Author:         The KiCS2 Team"                           >> $@
+	echo "Maintainer:     kics2@curry-language.org"                 >> $@
+	echo "Build-Type:     Simple"                                   >> $@
+	echo "Cabal-Version:  >= 1.9.2"                                 >> $@
+	echo ""                                                         >> $@
+	echo "Library"                                                  >> $@
+	echo "  Build-Depends:"                                         >> $@
+	echo "      kics2-runtime == $(VERSION)"                        >> $@
+	echo "    , $(CABAL_LIBDEPS)"                                   >> $@
+	echo "  if os(windows)"                                         >> $@
+	echo "    Build-Depends: Win32"                                 >> $@
+	echo "  else"                                                   >> $@
+	echo "    Build-Depends: unix"                                  >> $@
+	echo "  Exposed-modules: $(HS_LIB_TRACE_NAMES)"                 >> $@
+	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2"    >> $@
 
 # generate Haskell file in subdirectory .curry/kics2
 .curry/kics2/Curry_Trace_%.hs: %.curry
