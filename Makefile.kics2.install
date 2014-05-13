@@ -1,0 +1,34 @@
+# directory containing the repository library files:
+LIBTRUNKDIR=$(ROOT)/lib-trunk
+# get all library files from standard makefile:
+LIB_CURRY = `cd $(LIBTRUNKDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources`
+# name of this makefile:
+CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
+
+##########################################################################
+# Install the library sources into the Curry system library directory:
+.PHONY: install
+install:
+	mkdir -p $(LIBDIR)
+	mkdir -p $(LIBDIR)/meta
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
+	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
+
+$(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
+	cp $< $@
+
+.PHONY: sources
+sources:
+	@echo LIB_CURRY=$(LIB_CURRY)
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY) index.html
+	cp -p $(LIBTRUNKDIR)/*.hs .
+
+%.curry: $(LIBTRUNKDIR)/%.curry
+	 cp $< $@
+
+meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
+	 cp $< $@
+
+index.html: $(LIBTRUNKDIR)/index.html.$(CURRYSYSTEM)
+	 cp $< $@
+
