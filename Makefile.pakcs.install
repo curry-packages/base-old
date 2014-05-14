@@ -1,6 +1,6 @@
 # directory containing the repository library files:
 LIBTRUNKDIR=$(ROOT)/lib-trunk
-# get all library names from standard makefile:
+# get all library files from standard makefile:
 LIB_CURRY = `$(MAKE) --no-print-directory --quiet -f $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM) allsources`
 # name of this makefile:
 CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
