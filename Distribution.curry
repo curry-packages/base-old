@@ -327,15 +327,10 @@ callFrontendWithParams target params progname = do
    then done
    else ioError (userError "Illegal source program")
  where
-   callParseCurry = case curryCompiler of
-     "pakcs" -> return ("\"" ++ installDir </> "bin" </> "parsecurry\"")
-     "kics"  -> do path <- maybe getLoadPath return (fullPath params)
-                   return ("\"" ++ installDir </> "bin" </> "parsecurry\""++
-                           concatMap (" -i"++) path)
-     "kics2"  -> do path <- maybe getLoadPath return (fullPath params)
-                    return ("\"" ++ installDir </> "bin" </> "cymake\"" ++
-                            concatMap (\d->" -i\""++d++"\"") path)
-     _ -> error "Distribution.callFrontend: unknown curryCompiler"
+   callParseCurry = do
+     path <- maybe getLoadPath return (fullPath params)
+     return ("\"" ++ installDir </> "bin" </> "cymake\"" ++
+             concatMap (\d->" -i\""++d++"\"") path)
 
    showFrontendTarget FCY  = "--flat"
    showFrontendTarget FINT = "--flat"
@@ -349,16 +344,10 @@ callFrontendWithParams target params progname = do
     , if extended    params then "--extended" else ""
     , if overlapWarn params then ""           else "--no-overlap-warn"
     , maybe "" ("--htmldir="++) (htmldir params)
-    , maybe "" (\p -> if curryCompiler=="pakcs"
-                      then "--fullpath " ++ concat (intersperse ":" p)
-                      else "")
-              (fullPath params)
     , specials params
     ]
 
-   runQuiet = if curryCompiler=="pakcs"
-              then "--quiet"
-              else "--no-verb --no-warn --no-overlap-warn" -- kics(2)
+   runQuiet = "--no-verb --no-warn --no-overlap-warn"
 
 rcErr :: String -> a -> IO a
 rcErr s x = hPutStrLn stderr (s ++ " undefined in rc file") >> return x
