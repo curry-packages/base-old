@@ -5,7 +5,7 @@
 --- <b>curryCompiler...</b>.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version February 2014
+--- @version May 2014
 --------------------------------------------------------------------------------
 
 module Distribution (
@@ -21,8 +21,8 @@ module Distribution (
   FrontendTarget(..), 
   
   FrontendParams, defaultParams, rcParams,
-  quiet, extended, overlapWarn, fullPath, outfile, logfile, specials,
-  setQuiet, setExtended, setOverlapWarn, setFullPath, setOutfile, setLogfile,
+  quiet, extended, overlapWarn, fullPath, htmldir, logfile, specials,
+  setQuiet, setExtended, setOverlapWarn, setFullPath, setHtmlDir, setLogfile,
   setSpecials,
 
   callFrontend,callFrontendWithParams
@@ -197,13 +197,13 @@ data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY
 --- Abstract data type for representing parameters supported by the front end
 --- of the Curry compiler.
 -- The parameters are of the form
--- FrontendParams Quiet Extended NoOverlapWarn FullPath OutFile LogFile Specials
+-- FrontendParams Quiet Extended NoOverlapWarn FullPath HtmlDir LogFile Specials
 -- where
 --   Quiet         - work silently
 --   Extended      - support extended Curry syntax
 --   OverlapWarn   - warn for overlapping rules
 --   FullPath dirs - the complete list of directory names for loading modules
---   OutFile file  - output file (currently, only relevant for HTML target)
+--   HtmlDir file  - output directory (only relevant for HTML target)
 --   LogFile file  - store all output (including errors) of the front end in file
 --   Specials      - additional special parameters (use with care!)
 data FrontendParams =
@@ -247,10 +247,10 @@ setFullPath ::  [String] -> FrontendParams -> FrontendParams
 setFullPath s (FrontendParams a b c _ y z sp) =
   FrontendParams a b c (Just s) y z sp
 
---- Set the outfile parameter of the front end.
+--- Set the htmldir parameter of the front end.
 --- Relevant for HTML generation.
-setOutfile ::  String -> FrontendParams -> FrontendParams 
-setOutfile  s (FrontendParams a b c d _ z sp) =
+setHtmlDir ::  String -> FrontendParams -> FrontendParams 
+setHtmlDir  s (FrontendParams a b c d _ z sp) =
   FrontendParams a b c d (Just s) z sp
 
 --- Set the logfile parameter of the front end.
@@ -283,9 +283,9 @@ overlapWarn (FrontendParams _ _ x _ _ _ _) = x
 fullPath :: FrontendParams -> Maybe [String]
 fullPath (FrontendParams _ _ _ x _ _ _) = x
 
---- Returns the outfile parameter of the front end.
-outfile :: FrontendParams -> Maybe String
-outfile  (FrontendParams _ _ _ _ x _ _) = x
+--- Returns the htmldir parameter of the front end.
+htmldir :: FrontendParams -> Maybe String
+htmldir  (FrontendParams _ _ _ _ x _ _) = x
 
 --- Returns the logfile parameter of the front end.
 logfile :: FrontendParams -> Maybe String
@@ -348,7 +348,7 @@ callFrontendWithParams target params progname = do
     [ if quiet       params then runQuiet     else ""
     , if extended    params then "--extended" else ""
     , if overlapWarn params then ""           else "--no-overlap-warn"
-    , maybe "" ("-o "++) (outfile params)
+    , maybe "" ("--htmldir="++) (htmldir params)
     , maybe "" (\p -> if curryCompiler=="pakcs"
                       then "--fullpath " ++ concat (intersperse ":" p)
                       else "")
