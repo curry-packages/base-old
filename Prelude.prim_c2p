@@ -165,8 +165,4 @@
   <library>prim_standard</library>
   <entry>prim_catch[raw]</entry>
  </primitive>
- <primitive name="catchFail" arity="2">
-  <library>prim_standard</library>
-  <entry>prim_catchFail[raw]</entry>
- </primitive>
 </primitives>

@@ -166,10 +166,10 @@ isKnown (Cond d c) = do
 transaction :: IO a -> IO (Maybe a)
 transaction action = do
   tnr <- startTransaction
-  catchFail (performTrans tnr)
-            (catchFail abortTransaction -- we perform an explicit abort in
-                                        -- case of run time errors in action
-                       (return Nothing))
+  catch (performTrans tnr)
+        (\e -> catch abortTransaction -- we perform an explicit abort in
+                                      -- case of run time errors in action
+                     (\_ -> putStrLn (showError e) >> return Nothing))
  where
   performTrans tnr = do
     result <- action
