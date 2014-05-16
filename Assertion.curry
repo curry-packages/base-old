@@ -20,6 +20,7 @@ import AllSolutions
 import List((\\))
 import Socket -- for sending results to test GUI
 import IO(hPutStrLn,hClose)
+import Distribution(curryCompiler)
 
 infixl 1 `seqStrActions`
 
@@ -91,10 +92,7 @@ seqStrActions a1 a2 =
 --- @return a protocol string and a flag whether the test was successful
 checkAssertion :: String -> ((String,Bool) -> IO (String,Bool)) -> Assertion _
                -> IO (String,Bool)
-checkAssertion asrtop prot assrt =
-  catch
-    (execAsrt assrt)
-    (\e -> prot ("ERROR in operation "++asrtop++": "++showError e++"\n",False))
+checkAssertion asrtop prot assrt = catchNDIO asrtop prot (execAsrt assrt)
  where
   execAsrt (AssertTrue name cond) =
     catch (checkAssertTrue name cond) (returnError name) >>= prot
@@ -112,16 +110,35 @@ checkAssertion asrtop prot assrt =
   returnError name err =
     return ("FAILURE of "++name++": "++showError err++"\n",False)
   
+-- Execute I/O action for assertion checking and report any failure
+-- or non-determinism.
+catchNDIO :: String -> ((String,Bool) -> IO (String,Bool))
+          -> IO (String,Bool) -> IO (String,Bool)
+catchNDIO fname prot a =
+  if curryCompiler == "kics2"
+  then -- specific handling for KiCS2 since it might report non-det errors
+       -- even if there is only one result value, e.g., in functional patterns
+       getAllValues a >>= checkIOActions
+  else catch a (\e -> prot ("ERROR in "++fname++": "++showError e++"\n",False))
+ where
+  checkIOActions results
+    | null results
+     = prot ("ERROR in "++fname++": computation failed\n",False)
+    | not (null (tail results))
+     = prot ("ERROR in "++fname++
+             ": computation is non-deterministic\n",False)
+    | otherwise = head results
+
 -- Checks Boolean assertion.
 checkAssertTrue :: String -> Bool -> IO (String,Bool)
-checkAssertTrue name cond =
+checkAssertTrue name cond = catchNDIO name return $
   if cond
   then return ("OK: "++name++"\n",True)
   else return ("FAILURE of "++name++": assertion not satisfied:\n",False)
 
 -- Checks equality assertion.
 checkAssertEqual :: String -> a -> a -> IO (String,Bool)
-checkAssertEqual name call result =
+checkAssertEqual name call result = catchNDIO name return $
   if call==result
   then return ("OK: "++name++"\n",True)
   else return ("FAILURE of "++name++": equality assertion not satisfied:\n"++
