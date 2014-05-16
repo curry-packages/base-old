@@ -106,17 +106,18 @@ meta/.curry/kics2/Curry_%.hs: meta/%.curry
 
 # generate FlatCurry file in subdirectory .curry
 .curry/%.fcy: %.curry
-	"${CYMAKE}" --flat ${CYMAKEPARAMS} $*
+	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
+# generate all FlatCurry files in subdirectory meta/.curry:
 meta/.curry/%.fcy: meta/%.curry
-	"${CYMAKE}" --flat ${CYMAKEPARAMS} $*
+	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
-# generate AbstractCurry file in subdirectory .curry
+# generate all AbstractCurry files in subdirectory .curry:
 .curry/%.acy: %.curry
-	"${CYMAKE}" --acy ${CYMAKEPARAMS} $*
+	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
 
 meta/.curry/%.acy: meta/%.curry
-	"${CYMAKE}" --acy ${CYMAKEPARAMS} $*
+	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
 
 ##############################################################################
 # create HTML documentation files for system libraries

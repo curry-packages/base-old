@@ -28,9 +28,6 @@ Prelude.curry: $(LIBTRUNKDIR)/Prelude.curry.$(CURRYSYSTEM)
 AllSolutions.curry: $(LIBTRUNKDIR)/AllSolutions.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Assertion.curry: $(LIBTRUNKDIR)/Assertion.curry.$(CURRYSYSTEM)
-	cp $< $@
-
 CLPB.curry: $(LIBTRUNKDIR)/CLPB.curry.$(CURRYSYSTEM)
 	cp $< $@
 
@@ -86,9 +83,6 @@ Random.curry: $(LIBTRUNKDIR)/Random.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 SetFunctions.curry: $(LIBTRUNKDIR)/SetFunctions.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-System.curry: $(LIBTRUNKDIR)/System.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 Unsafe.curry: $(LIBTRUNKDIR)/Unsafe.curry.$(CURRYSYSTEM)

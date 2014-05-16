@@ -1,17 +1,18 @@
 # precompile all modules of the library
 # to avoid recompilation when they are used:
 
-PARSECURRY=`pwd`/../bin/parsecurry
-PAKCS=`pwd`/../bin/pakcs
+CYMAKEPARAMS = --extended --no-verb --no-warn --no-overlap-warn -i. -imeta
+
+PAKCS=$(ROOT)/bin/pakcs
 
 # directory containing the repository library files:
 LIBTRUNKDIR=$(ROOT)/lib-trunk
 # directory for HTML documentation files:
-DOCDIR=CDOC
+LIBDOCDIR=CDOC
 # directory for LaTeX documentation files:
-TEXDOCDIR=TEXDOC
+TEXDOCDIR := $(DOCDIR)/src/lib
 # the currydoc program:
-CURRYDOC=`pwd`/../bin/currydoc
+CURRYDOC=$(ROOT)/bin/currydoc
 
 LIB_CURRY = Prelude.curry \
 	    AllSolutions.curry Array.curry Assertion.curry CategorizedHtmlList.curry \
@@ -66,88 +67,94 @@ allsources:
 # generate the FlatCurry files of all libraries:
 .PHONY: fcy
 fcy:
-	${MAKE} $(LIB_FCY)
+	$(MAKE) $(LIB_FCY)
 
 # generate the AbstractCurry files of all libraries:
 .PHONY: acy
 acy:
-	${MAKE} $(LIB_ACY)
+	$(MAKE) $(LIB_ACY)
 
 # generate the compile Prolog target files of all libraries:
 .PHONY: pl
 pl:
-	@${MAKE} $(LIB_PL)
+	@$(MAKE) $(LIB_PL)
 
 # generate all FlatCurry files in subdirectory .curry:
 .curry/%.fcy: %.curry
-	"${PARSECURRY}" --flat --quiet $*
+	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
 # generate all FlatCurry files in subdirectory meta/.curry:
 meta/.curry/%.fcy: meta/%.curry
-	"${PARSECURRY}" --flat --quiet $*
+	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
 # generate all AbstractCurry files in subdirectory .curry:
 .curry/%.acy: %.curry
-	"${PARSECURRY}" --acy --quiet $*
+	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
 
 meta/.curry/%.acy: meta/%.curry
-	"${PARSECURRY}" --acy --quiet $*
+	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
 
 # generate all Prolog translations:
 .curry/pakcs/%.pl: .curry/%.fcy
-	rm -f $@ && "${PAKCS}" --quiet -c $*
+	rm -f $@ && "$(PAKCS)" --quiet -c $*
 
 meta/.curry/pakcs/%.pl: meta/.curry/%.fcy
-	rm -f $@ && "${PAKCS}" --quiet -c $*
+	rm -f $@ && "$(PAKCS)" --quiet -c $*
 
+##############################################################################
 # create HTML documentation files for system libraries
+##############################################################################
+
 .PHONY: doc
 doc: $(LIB_CURRY)
-	@mkdir -p "${DOCDIR}"
-	@cd "${DOCDIR}" && rm -f meta DOINDEX && ln -s . meta
-	@cd "${DOCDIR}" && ${MAKE} -f ../Makefile $(LIB_HTML)
-	@if [ -f "${DOCDIR}/DOINDEX" ] ; then ${MAKE} htmlindex ; fi
-	@cd "${DOCDIR}" && rm -f meta DOINDEX
+	@mkdir -p "$(LIBDOCDIR)"
+	@cd "$(LIBDOCDIR)" && rm -f meta DOINDEX && ln -s . meta
+	@cd "$(LIBDOCDIR)" && $(MAKE) -f ../Makefile $(LIB_HTML)
+	@if [ -f "$(LIBDOCDIR)/DOINDEX" ] ; then $(MAKE) htmlindex ; fi
+	@cd "$(LIBDOCDIR)" && rm -f meta DOINDEX
 
 .PHONY: htmlindex
 htmlindex:
 	@echo "Generating index pages for Curry libraries:"
 	@echo $(LIB_NAMES)
-	@"${CURRYDOC}" --onlyindexhtml "${DOCDIR}" $(LIB_NAMES)
+	@"$(CURRYDOC)" --onlyindexhtml "$(LIBDOCDIR)" $(LIB_NAMES)
 
 # generate individual documentations for libraries:
 %.html: ../%.curry
 	@touch DOINDEX
-	cd .. && "${CURRYDOC}" --noindexhtml "${DOCDIR}" $*
+	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
 meta/%.html: ../meta/%.curry
 	@touch DOINDEX
-	cd .. && "${CURRYDOC}" --noindexhtml "${DOCDIR}" $*
+	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
+##############################################################################
 # create LaTeX documentation files for system libraries
+##############################################################################
+
 .PHONY: texdoc
 texdoc: $(LIB_CURRY)
-	@mkdir -p "${TEXDOCDIR}"
-	@if [ ! -f "${TEXDOCDIR}/LAST" ] ; then touch "${TEXDOCDIR}/LAST" ; fi
-	@cd "${TEXDOCDIR}" && rm -f meta && ln -s . meta
-	@cd "${TEXDOCDIR}" && ${MAKE} -f ../Makefile $(LIB_TEX)
-	@cd "${TEXDOCDIR}" && rm -f meta
+	@mkdir -p "$(TEXDOCDIR)"
+	@if [ ! -f "$(TEXDOCDIR)/LAST" ] ; then touch "$(TEXDOCDIR)/LAST" ; fi
+	@cd "$(TEXDOCDIR)" && rm -f meta && ln -s . meta
+	@cd "$(TEXDOCDIR)" && $(MAKE) -f $(ROOT)/lib/Makefile $(LIB_TEX)
+	@cd "$(TEXDOCDIR)" && rm -f meta
 
 # generate individual LaTeX documentations for libraries:
-%.tex: ../%.curry
-	cd .. && "${CURRYDOC}" --tex "${TEXDOCDIR}" $*
+%.tex: $(LIBDIR)/%.curry
+	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
 	touch LAST
 
-meta/%.tex: ../meta/%.curry
-	cd .. && "${CURRYDOC}" --tex "${TEXDOCDIR}" $*
+meta/%.tex: $(LIBDIR)/meta/%.curry
+	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
 	touch LAST
 
 
 # clean all generated files
 .PHONY: clean
 clean:
-	rm -f "${DOCDIR}"/*
-	rm -f "${TEXDOCDIR}"/*
+	rm -f "$(LIBDOCDIR)"/*
+	rm -f "$(TEXDOCDIR)"/*
 	../bin/cleancurry
 	cd meta && ../../bin/cleancurry
 
