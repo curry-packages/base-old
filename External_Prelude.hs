@@ -11,9 +11,9 @@ import GHC.Exts (Float (F#), Float#, eqFloat#, leFloat#, negateFloat#)
 import GHC.Exts (Char (C#), Char#, eqChar#, leChar#, ord#, chr#)
 import System.IO
 
-import Debug
 import CurryException
-import FailInfo (customFail)
+import Debug          (internalError)
+import FailInfo       (customFail)
 import PrimTypes
 
 #if __GLASGOW_HASKELL__ > 706
@@ -834,25 +834,30 @@ external_d_OP_gt_gt_eq :: (Curry t0, Curry t1)
   => C_IO t0 -> (t0 -> Cover -> ConstStore -> C_IO t1)
   -> Cover -> ConstStore -> C_IO t1
 external_d_OP_gt_gt_eq m f cd cs = C_IO $ do
-  res <- searchIO cs m
+  res <- searchIO errSupply cd cs m
   case res of
     Left err -> return (Left (traceFail ("Prelude.>>=") [show m, show f] err))
     Right x  -> do
     cs1 <- lookupGlobalCs
     let cs2 = combineCs cs cs1
-    searchIO cs2 (f x cd cs2)
+    searchIO errSupply cd cs2 (f x cd cs2)
+  where errSupply = internalError "Prelude.(>>=): ID supply used"
 
+-- TODO: Investigate if `cs` and `cs'` are in a subset relation
+-- in either direction.
 external_nd_OP_gt_gt_eq :: (Curry t0, Curry t1)
   => C_IO t0 -> Func t0 (C_IO t1)
   -> IDSupply -> Cover -> ConstStore -> C_IO t1
-external_nd_OP_gt_gt_eq m f s cd cs = C_IO $ do
-  res <- searchIO cs m
+external_nd_OP_gt_gt_eq m f _ _ cs = HO_C_IO $ \s cd cs' -> do
+  let cs1 = combineCs cs' cs
+  res <- searchIO (leftSupply s) cd cs1 m
   case res of
     Left err -> return (Left (traceFail ("Prelude.>>=") [show m, show f] err))
     Right x  -> do
-    cs1 <- lookupGlobalCs
-    let cs2 = combineCs cs cs1
-    searchIO cs2 (nd_apply f x s cd cs2)
+    cs2 <- lookupGlobalCs
+    let cs3 = combineCs cs1 cs2
+        s'  = rightSupply s
+    searchIO (leftSupply s') cd cs3 (nd_apply f x (rightSupply s') cd cs3)
 
 -- -----------------------------------------------------------------------------
 -- Primitive operations: Exception handling
@@ -878,18 +883,25 @@ external_d_C_prim_ioError e _ _ = C.throw $ (fromCurry e :: CurryException)
 
 external_d_C_catch :: C_IO a -> (C_IOError -> Cover -> ConstStore -> C_IO a)
   -> Cover -> ConstStore -> C_IO a
-external_d_C_catch act hndl cd cs = fromIO $ C.catches (toIO cs act) handlers
-  where handlers = exceptionHandlers cs (\e -> hndl e cd cs)
+external_d_C_catch act hndl cd cs =
+  fromIO $ C.catches (toIO errSupply1 cd cs act)
+                     (exceptionHandlers errSupply2 cd cs (nd hndl))
+  where
+  errSupply1 = internalError "Prelude.catch: ID supply 1 used"
+  errSupply2 = internalError "Prelude.catch: ID supply 2 used"
 
 external_nd_C_catch :: C_IO a -> Func C_IOError (C_IO a)
   -> IDSupply -> Cover -> ConstStore -> C_IO a
-external_nd_C_catch act hndl s cd cs = fromIO $ C.catches (toIO cs act) handlers
-  where handlers = exceptionHandlers cs (\e -> nd_apply hndl e s cd cs)
+external_nd_C_catch act hndl _ _ cs = HO_C_IO $ \s cd cs' -> do
+  let cs1 = combineCs cs' cs
+  res <- C.catches (toIO (leftSupply s) cd cs1 act)
+                   (exceptionHandlers (rightSupply s) cd cs1 (nd_apply hndl))
+  return (Right res)
 
-exceptionHandlers :: ConstStore -> (C_IOError -> C_IO a) -> [C.Handler a]
-exceptionHandlers cs hndl =
-  [ C.Handler (\ (e :: CurryException) -> toIO cs (hndl $ toCurry         e))
-  , C.Handler (\ (e ::  C.IOException) -> toIO cs (hndl $ fromIOException e))
+exceptionHandlers :: IDSupply -> Cover -> ConstStore -> (C_IOError -> IDSupply -> Cover -> ConstStore -> C_IO a) -> [C.Handler a]
+exceptionHandlers s cd cs hndl =
+  [ C.Handler (\ (e :: CurryException) -> toIO (leftSupply s) cd cs (hndl (toCurry         e) (rightSupply s) cd cs))
+  , C.Handler (\ (e ::  C.IOException) -> toIO (leftSupply s) cd cs (hndl (fromIOException e) (rightSupply s) cd cs))
   ] where fromIOException = toCurry . IOException . show
 
 -- -----------------------------------------------------------------------------
