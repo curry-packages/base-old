@@ -45,7 +45,7 @@ sendMailWithOptions from subject options contents = do
   -- if mailx has the option -a:
   execMailCmd ("mailx -n -a \"From: "++from++"\" -s \""++subject++"\" "++
               (if null bccs then "" else "-b \""++bccs++"\" ") ++
-              (if null ccs  then "" else "-c \""++ccs++"\" ") ++  tos)
+              (if null ccs  then "" else "-c \""++ccs++"\" ") ++"\""++tos++"\"")
               contents
  where
    tos  = concat (intersperse " " [ s | TO s <- options ])

@@ -88,9 +88,6 @@ SetFunctions.curry: $(LIBTRUNKDIR)/SetFunctions.curry.$(CURRYSYSTEM)
 Unsafe.curry: $(LIBTRUNKDIR)/Unsafe.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-WUI.curry: $(LIBTRUNKDIR)/WUI.curry.$(CURRYSYSTEM)
-	cp $< $@
-
 %.curry: $(LIBTRUNKDIR)/%.curry
 	 cp $< $@
 
