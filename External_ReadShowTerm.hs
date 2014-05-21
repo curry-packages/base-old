@@ -1,22 +1,19 @@
-import GHC.Exts (Char (C#))
-import qualified Curry_Prelude as CP
-
-external_d_C_prim_showTerm :: Show a => a -> Cover -> ConstStore -> CP.C_String
+external_d_C_prim_showTerm :: Show a => a -> Cover -> ConstStore -> Curry_Prelude.C_String
 external_d_C_prim_showTerm t _ _ = toCurry (show t)
 
-external_d_C_prim_showQTerm :: Show a => a -> Cover -> ConstStore -> CP.C_String
+external_d_C_prim_showQTerm :: Show a => a -> Cover -> ConstStore -> Curry_Prelude.C_String
 external_d_C_prim_showQTerm t _ _ = toCurry (show t)
 
 external_d_C_prim_readsUnqualifiedTerm ::
-  Read a => CP.OP_List CP.C_String -> CP.C_String ->
-          Cover -> ConstStore -> CP.OP_List (CP.OP_Tuple2 a CP.C_String)
+  Read a => Curry_Prelude.OP_List Curry_Prelude.C_String -> Curry_Prelude.C_String ->
+          Cover -> ConstStore -> Curry_Prelude.OP_List (Curry_Prelude.OP_Tuple2 a Curry_Prelude.C_String)
 external_d_C_prim_readsUnqualifiedTerm _ = external_d_C_prim_readsQTerm
 
-external_d_C_prim_readsQTerm :: Read a => CP.C_String -> 
-                              Cover -> ConstStore -> 
-                              CP.OP_List (CP.OP_Tuple2 a CP.C_String)
+external_d_C_prim_readsQTerm
+  :: Read a => Curry_Prelude.C_String -> Cover -> ConstStore
+  -> Curry_Prelude.OP_List (Curry_Prelude.OP_Tuple2 a Curry_Prelude.C_String)
 external_d_C_prim_readsQTerm s _ _ = toCurryPairs (reads (fromCurry s))
-  where 
-   toCurryPairs [] = CP.OP_List
-   toCurryPairs ((v,s):xs) = CP.OP_Cons (CP.OP_Tuple2 v (toCurry s))
+  where
+   toCurryPairs [] = Curry_Prelude.OP_List
+   toCurryPairs ((v,s):xs) = Curry_Prelude.OP_Cons (Curry_Prelude.OP_Tuple2 v (toCurry s))
                                         (toCurryPairs xs)

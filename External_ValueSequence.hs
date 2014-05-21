@@ -71,35 +71,38 @@ external_d_C_failVS d@(Curry_Prelude.C_Int d') (I# cd) _
   | otherwise          = Values (Curry_Prelude.OP_List)
 
 external_d_C_vsToList :: C_ValueSequence a -> Cover -> ConstStore -> Curry_Prelude.OP_List a
-external_d_C_vsToList (Values xs)   _ _ = xs
-external_d_C_vsToList (FailVS (Curry_Prelude.C_Int d))    _ _ = failCons (I# d) defFailInfo
-external_d_C_vsToList (Choice_VS d i x y) cd cs = choiceCons d i (external_d_C_vsToList x cd cs)
-                                                                 (external_d_C_vsToList y cd cs)
-external_d_C_vsToList (Choices_VS d i xs) cd cs = 
-  choicesCons d i (map (\x -> external_d_C_vsToList x cd cs) xs )
-external_d_C_vsToList (Guard_VS d c x) cd cs =
-  guardCons d c (external_d_C_vsToList x cd cs)
+external_d_C_vsToList (Values                       xs) _  _  = xs
+external_d_C_vsToList (FailVS  (Curry_Prelude.C_Int d)) _  _  = failCons (I# d) defFailInfo
+external_d_C_vsToList (Choice_VS d i x y) cd cs
+  = choiceCons d i (external_d_C_vsToList x cd cs)
+                   (external_d_C_vsToList y cd cs)
+external_d_C_vsToList (Choices_VS d i xs) cd cs
+  = choicesCons d i (map (\x -> external_d_C_vsToList x cd cs) xs )
+external_d_C_vsToList (Guard_VS d c x) cd cs
+  = guardCons d c (external_d_C_vsToList x cd cs)
 
-(|++|) :: Curry_Prelude.Curry a => C_ValueSequence a -> C_ValueSequence a -> C_ValueSequence a 
-EmptyVS            |++| vs = vs
-Values xs          |++| vs = Values (Curry_Prelude.d_OP_plus_plus xs (getValues vs) 
-                               (error "ExternalSearchTree: |++| - nesting depth used") emptyCs)
-FailVS d           |++| vs = failGreatest d vs
-Choice_VS cd i x y |++| vs = choiceCons cd i (x |++| vs) (y |++| vs) 
-Choices_VS cd i xs |++| vs = choicesCons cd i (map (|++| vs) xs)
-Guard_VS cd cs xs  |++| vs = guardCons cd cs (xs |++| vs)
+(|++|) :: Curry_Prelude.Curry a => C_ValueSequence a -> C_ValueSequence a -> C_ValueSequence a
+EmptyVS             |++| vs = vs
+Values     xs       |++| vs = Values (Curry_Prelude.d_OP_plus_plus xs (getValues vs)
+  (error "ExternalSearchTree: |++| - nesting depth used") emptyCs)
+FailVS     d        |++| vs = failGreatest d vs
+Choice_VS  cd i x y |++| vs = choiceCons  cd i  (x |++| vs) (y |++| vs)
+Choices_VS cd i  xs |++| vs = choicesCons cd i  (map (|++| vs) xs)
+Guard_VS   cd cs xs |++| vs = guardCons   cd cs (xs |++| vs)
 
-getValues EmptyVS              = Curry_Prelude.OP_List
-getValues (FailVS _)           = Curry_Prelude.OP_List
-getValues (Values xs)          = xs
-getValues (Choice_VS cd i x y) = choiceCons cd i (getValues x) (getValues y)
-getValues (Choices_VS cd i xs) = choicesCons cd i (map getValues xs)
-getValues (Guard_VS cd cs x)   = guardCons cd cs (getValues x)
+getValues EmptyVS               = Curry_Prelude.OP_List
+getValues (FailVS            _) = Curry_Prelude.OP_List
+getValues (Values           xs) = xs
+getValues (Choice_VS  cd i x y) = choiceCons cd i (getValues x) (getValues y)
+getValues (Choices_VS cd i  xs) = choicesCons cd i (map getValues xs)
+getValues (Guard_VS   cd cs  x) = guardCons cd cs (getValues x)
 
-failGreatest d EmptyVS              = FailVS d
-failGreatest d (FailVS d2)          = FailVS (Curry_Prelude.d_C_max d d2 
-                                        (error "ExternalSearchTree: failGreatest - nesting depth used") emptyCs)
-failGreatest _ vs@(Values xs)       = vs
-failGreatest d (Choice_VS cd i x y) = choiceCons cd i (failGreatest d x) (failGreatest d y)
-failGreatest d (Choices_VS cd i xs) = choicesCons cd i (map (failGreatest d) xs)
-failGreatest d (Guard_VS cd cs x)   = guardCons cd cs (failGreatest d x)
+failGreatest d EmptyVS               = FailVS d
+failGreatest d (FailVS           d2) = FailVS (Curry_Prelude.d_C_max d d2
+  (error "ExternalSearchTree: failGreatest - nesting depth used") emptyCs)
+failGreatest _ vs@(Values         _) = vs
+failGreatest d (Choice_VS  cd i x y)
+  = choiceCons  cd i (failGreatest d x) (failGreatest d y)
+failGreatest d (Choices_VS cd i  xs)
+  = choicesCons cd i  (map (failGreatest d) xs)
+failGreatest d (Guard_VS   cd cs  x) = guardCons cd cs (failGreatest d x)

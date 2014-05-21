@@ -1,8 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-import qualified System.Time as T
-import qualified Data.Time.Clock as Clock
+import qualified System.Time        as T
+import qualified Data.Time.Clock    as Clock
 import qualified Data.Time.Calendar as Cal
-import qualified Curry_Prelude as CP
 
 instance ConvertCurryHaskell C_ClockTime T.ClockTime where
   fromCurry (C_CTime i) = T.TOD (fromCurry i) 0
@@ -30,27 +29,26 @@ instance ConvertCurryHaskell C_CalendarTime T.CalendarTime where
                     (toCurry tz)
 
 instance ConvertCurryHaskell C_ClockTime Clock.UTCTime where
-  fromCurry ct = let (T.CalendarTime y m d h min s _ _ _ _ tz _) 
+  fromCurry ct = let (T.CalendarTime y m d h min s _ _ _ _ tz _)
                         = T.toUTCTime (fromCurry ct)
                  in  fromIntegral tz
                      `Clock.addUTCTime`
                      Clock.UTCTime (Cal.fromGregorian (toInteger y) (fromEnum m + 1) d)
                                   (Clock.secondsToDiffTime (toInteger ((h * 60 + min) * 60 + s)))
-                    
+
   toCurry (Clock.UTCTime day diff) = 
    let (y,m,d) = Cal.toGregorian day in
       toCurry (T.addToClockTime  
                   (T.TimeDiff 0 0 0 0 0 (round (toRational diff)) 0)
-                  (T.toClockTime (T.CalendarTime (fromIntegral y) 
-                                                 (toEnum (m - 1)) 
-                                                 d 0 0 0 0 undefined 
+                  (T.toClockTime (T.CalendarTime (fromIntegral y)
+                                                 (toEnum (m - 1))
+                                                 d 0 0 0 0 undefined
                                                  undefined undefined 0 undefined)))
-     
 
-external_d_C_getClockTime :: Cover -> ConstStore -> CP.C_IO C_ClockTime
+external_d_C_getClockTime :: Cover -> ConstStore -> Curry_Prelude.C_IO C_ClockTime
 external_d_C_getClockTime _ _ = toCurry T.getClockTime
 
-external_d_C_prim_toCalendarTime :: C_ClockTime -> Cover -> ConstStore -> CP.C_IO C_CalendarTime
+external_d_C_prim_toCalendarTime :: C_ClockTime -> Cover -> ConstStore -> Curry_Prelude.C_IO C_CalendarTime
 external_d_C_prim_toCalendarTime ct _ _ = toCurry T.toCalendarTime ct
 
 external_d_C_prim_toUTCTime :: C_ClockTime -> Cover -> ConstStore -> C_CalendarTime

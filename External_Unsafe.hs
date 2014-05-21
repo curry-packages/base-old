@@ -1,5 +1,10 @@
-import           System.IO.Unsafe       (unsafePerformIO)
-import qualified Curry_Prelude    as CP
+import System.IO.Unsafe (unsafePerformIO)
 
-external_d_C_unsafePerformIO :: CP.C_IO a -> Cover -> ConstStore -> a
-external_d_C_unsafePerformIO io _ cs = unsafePerformIO (toIO io cs)
+import Debug (internalError)
+
+external_d_C_unsafePerformIO :: Curry_Prelude.C_IO a -> Cover -> ConstStore -> a
+external_d_C_unsafePerformIO io cd cs = unsafePerformIO (toIO errSupply cd cs io)
+  where errSupply = internalError "Unsafe.unsafePerformIO: ID supply used"
+
+external_nd_C_unsafePerformIO :: Curry_Prelude.C_IO a -> IDSupply -> Cover -> ConstStore -> a
+external_nd_C_unsafePerformIO io s cd cs = unsafePerformIO (toIO s cd cs io)
