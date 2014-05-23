@@ -811,9 +811,8 @@ when p act = if p then act else done
 --- @param y - The left argument.
 --- @return either `x` or `y` non-deterministically.
 (?)   :: a -> a -> a
-(?) external
--- x ? _ = x
--- _ ? y = y
+x ? _ = x
+_ ? y = y
 
 
 --- Evaluates to a fresh free variable.

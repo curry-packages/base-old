@@ -905,15 +905,6 @@ exceptionHandlers s cd cs hndl =
   ] where fromIOException = toCurry . IOException . show
 
 -- -----------------------------------------------------------------------------
--- Primitive operations: Non-Determinism
--- -----------------------------------------------------------------------------
-
-external_nd_OP_qmark :: NonDet a => a -> a
-  -> IDSupply -> Cover -> ConstStore -> a
-external_nd_OP_qmark x y ids cd _ = let i = thisID ids
-                                    in i `seq` choiceCons cd i x y
-
--- -----------------------------------------------------------------------------
 -- Functions on Integer and Nat added from PrimTypes
 -- -----------------------------------------------------------------------------
 
