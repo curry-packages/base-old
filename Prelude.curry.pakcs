@@ -85,7 +85,8 @@ ensureSpine l = ensureList (ensureNotFree l)
 ($)     :: (a -> b) -> a -> b
 f $ x   = f x
 
---- Right-associative application with strict evaluation of its argument.
+--- Right-associative application with strict evaluation of its argument
+--- to head normal form.
 ($!)    :: (a -> b) -> a -> b
 f $! x  = x `seq` f x
 
@@ -723,7 +724,7 @@ ioError err = error (showError err)
 
 --- Shows an error values as a string.
 showError :: IOError -> String
-showError (IOError     s) = "i/o error: "   ++ s
+showError (IOError     s) = "i/o error: "    ++ s
 showError (UserError   s) = "user error: "   ++ s
 showError (FailError   s) = "fail error: "   ++ s
 showError (NondetError s) = "nondet error: " ++ s
@@ -863,11 +864,11 @@ cond external
 letrec :: a -> a -> Success
 letrec external
 
---- Non-strict equational constraint. Experimental.
+--- Non-strict equational constraint. Used to implement functional patterns.
 (=:<=) :: a -> a -> Success
 (=:<=) external
 
---- Non-strict equational constraint for linear function patterns.
+--- Non-strict equational constraint for linear functional patterns.
 --- Thus, it must be ensured that the first argument is always (after evalutation
 --- by narrowing) a linear pattern. Experimental.
 (=:<<=) :: a -> a -> Success

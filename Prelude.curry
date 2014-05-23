@@ -67,7 +67,6 @@ until p f x     = if p x then x else until p f (f x)
 --- Evaluates the first argument to head normal form (which could also
 --- be a free variable) and returns the second argument.
 seq     :: _ -> a -> a
--- seq external
 x `seq` y = const y $! x
 
 --- Evaluates the argument to head normal form and returns it.
@@ -90,13 +89,11 @@ f $ x   = f x
 --- to head normal form.
 ($!)    :: (a -> b) -> a -> b
 ($!) external
--- f $! x  = x `seq` f x
 
 --- Right-associative application with strict evaluation of its argument
 --- to normal form.
 ($!!)   :: (a -> b) -> a -> b
 ($!!) external
--- f $!! x | x=:=y = f y  where y free
 
 --- Right-associative application with strict evaluation of its argument
 --- to a non-variable term.
@@ -107,7 +104,6 @@ f $# x  = f $! (ensureNotFree x)
 --- to ground normal form.
 ($##)   :: (a -> b) -> a -> b
 ($##) external
--- f $## x | x=:=y = y==y `seq` f y  where y free
 
 --- Aborts the execution with an error message.
 error :: String -> _
@@ -500,28 +496,13 @@ prim_chr external
 (+)   :: Int -> Int -> Int
 (+) external
 
--- x + y = (prim_Int_plus $# y) $# x
---
--- prim_Int_plus :: Int -> Int -> Int
--- prim_Int_plus external
-
 --- Subtracts two integers.
 (-)   :: Int -> Int -> Int
 (-) external
 
--- x - y = (prim_Int_minus $# y) $# x
---
--- prim_Int_minus :: Int -> Int -> Int
--- prim_Int_minus external
-
 --- Multiplies two integers.
 (*)   :: Int -> Int -> Int
 (*) external
-
--- x * y = (prim_Int_times $# y) $# x
---
--- prim_Int_times :: Int -> Int -> Int
--- prim_Int_times external
 
 --- Integer division. The value is the integer quotient of its arguments
 --- and always truncated towards negative infinity.
@@ -530,18 +511,12 @@ prim_chr external
 div   :: Int -> Int -> Int
 div external
 
--- prim_Int_div :: Int -> Int -> Int
--- prim_Int_div external
-
 --- Integer remainder. The value is the remainder of the integer division and
 --- it obeys the rule <code>x `mod` y = x - y * (x `div` y)</code>.
 --- Thus, the value of <code>13 `mod` 5</code> is <code>3</code>,
 --- and the value of <code>-15 `mod` 4</code> is <code>-3</code>.
 mod   :: Int -> Int -> Int
 mod external
-
--- prim_Int_mod :: Int -> Int -> Int
--- prim_Int_mod external
 
 --- Returns an integer (quotient,remainder) pair.
 --- The value is the integer quotient of its arguments
@@ -576,9 +551,6 @@ negate x = 0 - x
 --- Unary minus on Floats. Usually written as "-e".
 negateFloat :: Float -> Float
 negateFloat external
-
--- prim_negateFloat :: Float -> Float
--- prim_negateFloat external
 
 
 -- Constraints
@@ -671,11 +643,6 @@ readFile f = prim_readFile $## f
 prim_readFile          :: String -> IO String
 prim_readFile external
 
--- TODO ask Michael how this function was used
--- for internal implementation of readFile:
--- prim_readFileContents          :: String -> String
--- prim_readFileContents external
-
 --- An action that writes a file.
 --- @param filename - The name of the file to be written.
 --- @param contents - The contents to be written to the file.
@@ -742,7 +709,7 @@ prim_ioError external
 
 --- Shows an error values as a string.
 showError :: IOError -> String
-showError (IOError     s) = "i/o error: "   ++ s
+showError (IOError     s) = "i/o error: "    ++ s
 showError (UserError   s) = "user error: "   ++ s
 showError (FailError   s) = "fail error: "   ++ s
 showError (NondetError s) = "nondet error: " ++ s
@@ -862,16 +829,14 @@ PEVAL x = x
 --- Evaluates the argument to normal form and returns it.
 normalForm :: a -> a
 normalForm x = id $!! x
--- normalForm x | x=:=y = y where y free
 
 --- Evaluates the argument to ground normal form and returns it.
 --- Suspends as long as the normal form of the argument is not ground.
 groundNormalForm :: a -> a
 groundNormalForm x = id $## x
--- groundNormalForm x | y==y = y where y = normalForm x
 
 -- Only for internal use:
--- Represenation of higher-order applications in FlatCurry.
+-- Representation of higher-order applications in FlatCurry.
 apply :: (a -> b) -> a -> b
 apply external
 
