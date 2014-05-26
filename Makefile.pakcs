@@ -21,7 +21,7 @@ LIB_CURRY = Prelude.curry \
             Database.curry Dequeue.curry Directory.curry \
 	    Distribution.curry Dynamic.curry \
             FileGoodies.curry FilePath.curry Findall.curry FiniteMap.curry \
-	    Float.curry Function.curry \
+	    Float.curry Format.curry Function.curry \
 	    GetOpt.curry \
 	    Global.curry GlobalVariable.curry GraphInductive.curry GUI.curry \
 	    HTML.curry HtmlCgi.curry HtmlParser.curry \
@@ -33,8 +33,8 @@ LIB_CURRY = Prelude.curry \
 	    Parser.curry PlProfileData.curry Ports.curry Pretty.curry \
 	    Profile.curry PropertyFile.curry \
             Random.curry Read.curry ReadNumeric.curry ReadShowTerm.curry \
-            RedBlackTree.curry SetRBT.curry \
-	    SetFunctions.curry \
+            RedBlackTree.curry RegExp.curry \
+	    SetRBT.curry SetFunctions.curry \
 	    Socket.curry Sort.curry System.curry \
             TableRBT.curry Time.curry Traversal.curry \
             Unsafe.curry URL.curry WUI.curry WUIjs.curry \
