@@ -1,3 +1,10 @@
-.curry/
+# intermediate files
+*~
+.curry
+Curry_Main_Goal.curry
+dist
+*.cabal
+AllLibraries.curry
+
+# documentation
 CDOC
-TEXDOC

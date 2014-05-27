@@ -7,8 +7,8 @@
 
 module Profile(ProcessInfo(..), getProcessInfos, showMemInfo, printMemInfo,
                garbageCollectorOff, garbageCollectorOn, garbageCollect,
-               profileTime, profileTimeNF, profileSpace, profileSpaceNF,
-               evalTime, evalSpace) where
+               profileTime, profileTimeNF, profileSpace, profileSpaceNF)
+ where
 
 import List(intersperse)
 
@@ -116,17 +116,4 @@ profileSpaceNF exp = profileSpace (seq (id $!! exp) done)
 
 showInfoDiff infos1 infos2 item =
   show (maybe 0 id (lookup item infos2) - maybe 0 id (lookup item infos1))
-
---- Evaluates the argument to normal form (and return the normal form)
---- and print the time needed for this evaluation on standard error.
---- Included for backward compatibility only, use profileTime!
-evalTime :: a -> a
-evalTime external
-
---- Evaluates the argument to normal form (and return the normal form)
---- and print the time and space needed for this evaluation on standard error.
---- During the evaluation, the garbage collector is turned off.
---- Included for backward compatibility only, use profileSpace!
-evalSpace :: a -> a
-evalSpace external
 

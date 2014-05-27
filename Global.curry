@@ -27,13 +27,13 @@ module Global(Global,GlobalSpec(..),global,readGlobal,writeGlobal) where
 
 ----------------------------------------------------------------------
 
---- The type of a global entity.
-data Global a = GlobalDef a GlobalSpec
+--- The abstract type of a global entity.
+data Global _ -- a = GlobalDef a GlobalSpec
 
 --- <code>global</code> is only used for the declaration of a global value
 --- and should not be used elsewhere. In the future, it might become a keyword.
 global :: a -> GlobalSpec -> Global a
-global v s = GlobalDef v s
+global external --v s = GlobalDef v s
 
 --- The storage mechanism for the global entity.
 --- @cons Temporary - the global value exists only during a single execution

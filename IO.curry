@@ -87,9 +87,10 @@ prim_hSeek external
 --- @param handle - a handle for an input stream
 --- @param timeout - milliseconds to wait for input (< 0 : no time out)
 hWaitForInput :: Handle -> Int -> IO Bool
-hWaitForInput handle timeout = do
-  i <- hWaitForInputs [handle] timeout
-  return (i==0)
+hWaitForInput handle timeout = (prim_hWaitForInput $# handle)  $## timeout
+
+prim_hWaitForInput :: Handle -> Int -> IO Bool
+prim_hWaitForInput external
 
 --- Waits until input is available on some of the given handles.
 --- If no input is available within t milliseconds, it returns -1,
@@ -100,9 +101,7 @@ hWaitForInput handle timeout = do
 --- @return -1 if no input is available within the time out, otherwise i
 ---         if (handles!!i) has data available
 hWaitForInputs :: [Handle] -> Int -> IO Int
-hWaitForInputs handles timeout =
-  seq (normalForm (map ensureNotFree (ensureSpine handles)))
-      (prim_hWaitForInputs handles $# timeout)
+hWaitForInputs handles timeout = (prim_hWaitForInputs $## handles) $## timeout
 
 prim_hWaitForInputs :: [Handle] -> Int -> IO Int
 prim_hWaitForInputs external
@@ -196,7 +195,7 @@ getContents = hGetContents stdin
 
 --- Puts a character to an output handle.
 hPutChar    :: Handle -> Char -> IO ()
-hPutChar h c = (prim_hPutChar $# h)  $# c
+hPutChar h c = (prim_hPutChar $# h)  $## c
 
 prim_hPutChar :: Handle -> Char -> IO ()
 prim_hPutChar external

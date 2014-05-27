@@ -7,7 +7,7 @@
 --- [this web page](http://www.informatik.uni-kiel.de/~pakcs/WUI).
 ---
 --- @author Michael Hanus
---- @version February 2009
+--- @version May 2014
 ------------------------------------------------------------------------------
 
 module WUI(--WuiState,cgiRef2state,state2cgiRef,value2state,state2value,
@@ -20,9 +20,13 @@ module WUI(--WuiState,cgiRef2state,state2cgiRef,value2state,state2value,
            wMultiCheckSelect,
            wPair,wTriple,w4Tuple,w5Tuple,w6Tuple,w7Tuple,w8Tuple,
            w9Tuple,w10Tuple,w11Tuple,w12Tuple,
+
+           -- these parameterized constructor combinators cause
+           -- non-determinism in KiCS2:
            wCons2,wCons3,wCons4,wCons5,wCons6,wCons7,wCons8,
-           wCons9,wCons10,wCons11,wCons12,wJoinTuple,
-           wMaybe,wCheckMaybe,wRadioMaybe,
+           wCons9,wCons10,wCons11,wCons12,
+
+           wJoinTuple,wMaybe,wCheckMaybe,wRadioMaybe,
            wList,wListWithHeadings,wHList,wMatrix,wEither,
            WTree(..),wTree,
            WuiHandler,wuiHandler2button,
@@ -404,7 +408,29 @@ wRadioBool truehexps falsehexps =
 
 --- WUI combinator for pairs.
 wPair :: WuiSpec a -> WuiSpec b -> WuiSpec (a,b)
-wPair = wCons2 (\a b -> (a,b))
+-- This simple implementation does not work in KiCS2 due to non-determinism
+-- cause by functional patterns:
+-- wPair = wCons2 (\a b -> (a,b))
+wPair (WuiSpec rendera showa reada) (WuiSpec renderb showb readb) =
+  WuiSpec (renderTuple, tupleError, const True) showc readc
+ where
+  showc wparams (va,vb) =
+    let (hea,rta) = showa rendera va
+        (heb,rtb) = showb renderb vb
+     in ((renderOf wparams) [hea,heb], states2state [rta,rtb])
+
+  readc (render,errmsg,legal) env s =
+    let [ra,rb] = state2states s
+        (rav,(hea,rta)) = reada rendera env ra
+        (rbv,(heb,rtb)) = readb renderb env rb
+        errhexps = [hea,heb]
+        errstate = states2state [rta,rtb]
+     in if rav==Nothing || rbv==Nothing
+        then (Nothing, (render errhexps, errstate))
+        else let value = (fromJust rav, fromJust rbv) in
+             if legal value
+             then (Just value, (render errhexps, errstate))
+             else (Nothing,    (renderError render errmsg errhexps, errstate))
 
 --- WUI combinator for constructors of arity 2.
 --- The first argument is the binary constructor.
@@ -436,7 +462,32 @@ wCons2 cons (WuiSpec rendera showa reada) (WuiSpec renderb showb readb) =
 
 --- WUI combinator for triples.
 wTriple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec (a,b,c)
-wTriple = wCons3 (\a b c -> (a,b,c))
+-- This simple implementation does not work in KiCS2 due to non-determinism
+-- cause by functional patterns:
+--wTriple = wCons3 (\a b c -> (a,b,c))
+wTriple (WuiSpec rendera showa reada) (WuiSpec renderb showb readb)
+        (WuiSpec renderc showc readc) =
+  WuiSpec (renderTuple, tupleError, const True) showd readd
+ where
+  showd wparams (va,vb,vc) =
+    let (hea,rta) = showa rendera va
+        (heb,rtb) = showb renderb vb
+        (hec,rtc) = showc renderc vc
+     in ((renderOf wparams) [hea,heb,hec], states2state [rta,rtb,rtc])
+
+  readd (render,errmsg,legal) env s =
+    let [ra,rb,rc] = state2states s
+        (rav,(hea,rta)) = reada rendera env ra
+        (rbv,(heb,rtb)) = readb renderb env rb
+        (rcv,(hec,rtc)) = readc renderc env rc
+        errhexps = [hea,heb,hec]
+        errstate = states2state [rta,rtb,rtc]
+     in if rav==Nothing || rbv==Nothing || rcv==Nothing
+        then (Nothing, (render errhexps, errstate))
+        else let value = (fromJust rav, fromJust rbv, fromJust rcv) in
+             if legal value
+             then (Just value, (render errhexps, errstate))
+             else (Nothing,    (renderError render errmsg errhexps, errstate))
 
 --- WUI combinator for constructors of arity 3.
 --- The first argument is the ternary constructor.
@@ -470,7 +521,11 @@ wCons3 cons (WuiSpec rendera showa reada) (WuiSpec renderb showb readb)
 
 --- WUI combinator for tuples of arity 4.
 w4Tuple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec (a,b,c,d)
-w4Tuple = wCons4 (\a b c d -> (a,b,c,d))
+--w4Tuple = wCons4 (\a b c d -> (a,b,c,d)) -- does not work for KiCS2
+w4Tuple wa wb wc wd =
+  transformWSpec (\ ((a,b),(c,d)) -> (a,b,c,d),
+                  \ (a,b,c,d) -> ((a,b),(c,d)))
+             (wJoinTuple (wPair wa wb) (wPair wc wd))
 
 --- WUI combinator for constructors of arity 4.
 --- The first argument is the ternary constructor.
@@ -485,7 +540,11 @@ wCons4 cons wa wb wc wd =
 --- WUI combinator for tuples of arity 5.
 w5Tuple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec (a,b,c,d,e)
-w5Tuple = wCons5 (\a b c d e -> (a,b,c,d,e))
+--w5Tuple = wCons5 (\a b c d e -> (a,b,c,d,e)) -- does not work for KiCS2
+w5Tuple wa wb wc wd we =
+  transformWSpec (\ ((a,b,c),(d,e)) -> (a,b,c,d,e),
+                  \ (a,b,c,d,e) -> ((a,b,c),(d,e)))
+             (wJoinTuple (wTriple wa wb wc) (wPair wd we))
 
 --- WUI combinator for constructors of arity 5.
 --- The first argument is the ternary constructor.
@@ -501,7 +560,11 @@ wCons5 cons wa wb wc wd we =
 --- WUI combinator for tuples of arity 6.
 w6Tuple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec (a,b,c,d,e,f)
-w6Tuple = wCons6 (\a b c d e f -> (a,b,c,d,e,f))
+--w6Tuple = wCons6 (\a b c d e f -> (a,b,c,d,e,f))
+w6Tuple wa wb wc wd we wf =
+  transformWSpec (\ ((a,b,c),(d,e,f)) -> (a,b,c,d,e,f),
+                  \ (a,b,c,d,e,f) -> ((a,b,c),(d,e,f)))
+             (wJoinTuple (wTriple wa wb wc) (wTriple wd we wf))
 
 --- WUI combinator for constructors of arity 6.
 --- The first argument is the ternary constructor.
@@ -517,7 +580,11 @@ wCons6 cons wa wb wc wd we wf =
 --- WUI combinator for tuples of arity 7.
 w7Tuple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec (a,b,c,d,e,f,g)
-w7Tuple = wCons7 (\a b c d e f g -> (a,b,c,d,e,f,g))
+--w7Tuple = wCons7 (\a b c d e f g -> (a,b,c,d,e,f,g))
+w7Tuple wa wb wc wd we wf wg =
+  transformWSpec (\ ((a,b,c,d),(e,f,g)) -> (a,b,c,d,e,f,g),
+                  \ (a,b,c,d,e,f,g) -> ((a,b,c,d),(e,f,g)))
+             (wJoinTuple (w4Tuple wa wb wc wd) (wTriple we wf wg))
 
 --- WUI combinator for constructors of arity 7.
 --- The first argument is the ternary constructor.
@@ -533,7 +600,11 @@ wCons7 cons wa wb wc wd we wf wg =
 --- WUI combinator for tuples of arity 8.
 w8Tuple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec (a,b,c,d,e,f,g,h)
-w8Tuple = wCons8 (\a b c d e f g h -> (a,b,c,d,e,f,g,h))
+--w8Tuple = wCons8 (\a b c d e f g h -> (a,b,c,d,e,f,g,h))
+w8Tuple wa wb wc wd we wf wg wh =
+  transformWSpec (\ ((a,b,c,d),(e,f,g,h)) -> (a,b,c,d,e,f,g,h),
+                  \ (a,b,c,d,e,f,g,h) -> ((a,b,c,d),(e,f,g,h)))
+             (wJoinTuple (w4Tuple wa wb wc wd) (w4Tuple we wf wg wh))
 
 --- WUI combinator for constructors of arity 8.
 --- The first argument is the ternary constructor.
@@ -550,7 +621,11 @@ wCons8 cons wa wb wc wd we wf wg wh =
 w9Tuple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i ->
            WuiSpec (a,b,c,d,e,f,g,h,i)
-w9Tuple = wCons9 (\a b c d e f g h i -> (a,b,c,d,e,f,g,h,i))
+--w9Tuple = wCons9 (\a b c d e f g h i -> (a,b,c,d,e,f,g,h,i))
+w9Tuple wa wb wc wd we wf wg wh wi =
+  transformWSpec (\ ((a,b,c,d,e),(f,g,h,i)) -> (a,b,c,d,e,f,g,h,i),
+                  \ (a,b,c,d,e,f,g,h,i) -> ((a,b,c,d,e),(f,g,h,i)))
+             (wJoinTuple (w5Tuple wa wb wc wd we) (w4Tuple wf wg wh wi))
 
 --- WUI combinator for constructors of arity 9.
 --- The first argument is the ternary constructor.
@@ -567,7 +642,11 @@ wCons9 cons wa wb wc wd we wf wg wh wi =
 w10Tuple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec (a,b,c,d,e,f,g,h,i,j)
-w10Tuple = wCons10 (\a b c d e f g h i j -> (a,b,c,d,e,f,g,h,i,j))
+--w10Tuple = wCons10 (\a b c d e f g h i j -> (a,b,c,d,e,f,g,h,i,j))
+w10Tuple wa wb wc wd we wf wg wh wi wj =
+  transformWSpec (\ ((a,b,c,d,e),(f,g,h,i,j)) -> (a,b,c,d,e,f,g,h,i,j),
+                  \ (a,b,c,d,e,f,g,h,i,j) -> ((a,b,c,d,e),(f,g,h,i,j)))
+             (wJoinTuple (w5Tuple wa wb wc wd we) (w5Tuple wf wg wh wi wj))
 
 --- WUI combinator for constructors of arity 10.
 --- The first argument is the ternary constructor.
@@ -585,7 +664,11 @@ wCons10 cons wa wb wc wd we wf wg wh wi wj =
 w11Tuple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec k -> WuiSpec (a,b,c,d,e,f,g,h,i,j,k)
-w11Tuple = wCons11 (\a b c d e f g h i j k -> (a,b,c,d,e,f,g,h,i,j,k))
+--w11Tuple = wCons11 (\a b c d e f g h i j k -> (a,b,c,d,e,f,g,h,i,j,k))
+w11Tuple wa wb wc wd we wf wg wh wi wj wk =
+  transformWSpec (\ ((a,b,c,d,e),(f,g,h,i,j,k)) -> (a,b,c,d,e,f,g,h,i,j,k),
+                  \ (a,b,c,d,e,f,g,h,i,j,k) -> ((a,b,c,d,e),(f,g,h,i,j,k)))
+             (wJoinTuple (w5Tuple wa wb wc wd we) (w6Tuple wf wg wh wi wj wk))
 
 --- WUI combinator for constructors of arity 11.
 --- The first argument is the ternary constructor.
@@ -603,7 +686,11 @@ wCons11 cons wa wb wc wd we wf wg wh wi wj wk =
 w12Tuple :: WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec k -> WuiSpec l -> WuiSpec (a,b,c,d,e,f,g,h,i,j,k,l)
-w12Tuple = wCons12 (\a b c d e f g h i j k l -> (a,b,c,d,e,f,g,h,i,j,k,l))
+--w12Tuple = wCons12 (\a b c d e f g h i j k l -> (a,b,c,d,e,f,g,h,i,j,k,l))
+w12Tuple wa wb wc wd we wf wg wh wi wj wk wl =
+  transformWSpec (\ ((a,b,c,d,e,f),(g,h,i,j,k,l)) -> (a,b,c,d,e,f,g,h,i,j,k,l),
+                  \ (a,b,c,d,e,f,g,h,i,j,k,l) -> ((a,b,c,d,e,f),(g,h,i,j,k,l)))
+       (wJoinTuple (w6Tuple wa wb wc wd we wf) (w6Tuple wg wh wi wj wk wl))
 
 --- WUI combinator for constructors of arity 12.
 --- The first argument is the ternary constructor.
@@ -631,11 +718,10 @@ wJoinTuple (WuiSpec rendera showa reada) (WuiSpec renderb showb readb) =
         h2s = unRenderTuple h2
      in render (h1s++h2s)
 
-  showc wparams vc | (va,vb) =:<= vc =
+  showc wparams (va,vb) =
     let (hea,rta) = showa rendera va
         (heb,rtb) = showb renderb vb
      in (render2joinrender (renderOf wparams) [hea,heb],states2state [rta,rtb])
-   where va,vb free
 
   readc (orgrender,errmsg,legal) env s =
     let [ra,rb] = state2states s

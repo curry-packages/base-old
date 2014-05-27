@@ -1,0 +1,139 @@
+------------------------------------------------------------------------------
+--- Library with some operations for encapsulating search.
+--- In previous versions of PAKCS, these operations were part of
+--- the standard prelude. Since there are alternative and better approaches
+--- the encpasulate search, e.g., set functions,
+--- these operations are now in a separate module
+--- in order to keep the standard prelude more portable.
+---
+--- @author Michael Hanus
+--- @version May 2014
+------------------------------------------------------------------------------
+
+module Findall
+  ( getAllValues, getSomeValue
+  , try, inject, solveAll, once, best
+  , findall, findfirst, browse, browseList, unpack
+  ) where
+
+--- Gets all values of an expression (currently, via an incomplete
+--- depth-first strategy). Conceptually, all values are computed
+--- on a copy of the expression, i.e., the evaluation of the expression
+--- does not share any results. Moreover, the evaluation suspends
+--- as long as the expression contains unbound variables.
+--- Similar to Prolog's findall.
+getAllValues :: a -> IO [a]
+getAllValues e = return (findall (=:=e))
+
+--- Gets a value of an expression (currently, via an incomplete
+--- depth-first strategy). The expression must have a value, otherwise
+--- the computation fails. Conceptually, the value is computed on a copy
+--- of the expression, i.e., the evaluation of the expression does not share
+--- any results. Moreover, the evaluation suspends as long as the expression
+--- contains unbound variables.
+getSomeValue :: a -> IO a
+getSomeValue e = return (findfirst (=:=e))
+
+--- Basic search control operator.
+try     :: (a -> Success) -> [a -> Success]
+try external
+
+--- Inject operator which adds the application of the unary
+--- procedure p to the search variable to the search goal
+--- taken from Oz. p x comes before g x to enable a test+generate
+--- form in a sequential implementation.
+inject  :: (a -> Success) -> (a -> Success) -> (a -> Success)
+inject g p = \x -> p x & g x
+
+--- Computes all solutions via a a depth-first strategy.
+--
+-- Works as the following algorithm:
+--
+-- solveAll g = evalResult (try g)
+--         where
+--           evalResult []      = []
+--           evalResult [s]     = [s]
+--           evalResult (a:b:c) = concatMap solveAll (a:b:c)
+--
+-- The following solveAll algorithm is faster.
+-- For comparison we have solveAll2, which implements the above algorithm.
+
+solveAll     :: (a -> Success) -> [a -> Success]
+solveAll g = evalall (try g)
+  where
+    evalall []      = []
+    evalall [a]     = [a]
+    evalall (a:b:c) = evalall3 (try a) (b:c)
+
+    evalall2 []    = []
+    evalall2 (a:b) = evalall3 (try a) b
+
+    evalall3 []      b  = evalall2 b
+    evalall3 [l]     b  = l : evalall2 b
+    evalall3 (c:d:e) b  = evalall3 (try c) (d:e ++b)
+
+
+solveAll2  :: (a -> Success) -> [a -> Success]
+solveAll2 g = evalResult (try g)
+        where
+          evalResult []      = []
+          evalResult [s]     = [s]
+          evalResult (a:b:c) = concatMap solveAll2 (a:b:c)
+
+
+--- Gets the first solution via a depth-first strategy.
+once :: (a -> Success) -> (a -> Success)
+once g = head (solveAll g)
+
+
+--- Gets the best solution via a depth-first strategy according to
+--- a specified operator that can always take a decision which
+--- of two solutions is better.
+--- In general, the comparison operation should be rigid in its arguments!
+best           :: (a -> Success) -> (a -> a -> Bool) -> [a -> Success]
+best g cmp = bestHelp [] (try g) []
+ where
+   bestHelp [] []     curbest = curbest
+   bestHelp [] (y:ys) curbest = evalY (try (constrain y curbest)) ys curbest
+   bestHelp (x:xs) ys curbest = evalX (try x) xs ys curbest
+
+   evalY []        ys curbest = bestHelp [] ys curbest
+   evalY [newbest] ys _       = bestHelp [] ys [newbest]
+   evalY (c:d:xs)  ys curbest = bestHelp (c:d:xs) ys curbest
+
+   evalX []        xs ys curbest = bestHelp xs ys curbest
+   evalX [newbest] xs ys _       = bestHelp [] (xs++ys) [newbest]
+   evalX (c:d:e)   xs ys curbest = bestHelp ((c:d:e)++xs) ys curbest
+
+   constrain y []        = y
+   constrain y [curbest] =
+      inject y (\v -> let w free in curbest w & cmp v w  =:= True)
+
+
+--- Gets all solutions via a depth-first strategy and unpack
+--- the values from the lambda-abstractions.
+--- Similar to Prolog's findall.
+findall :: (a -> Success) -> [a]
+findall g = map unpack (solveAll g)
+
+
+--- Gets the first solution via a depth-first strategy
+--- and unpack the values from the search goals.
+findfirst :: (a -> Success) -> a
+findfirst g = head (findall g)
+
+--- Shows the solution of a solved constraint.
+browse  :: (_ -> Success) -> IO ()
+browse g = putStr (show (unpack g))
+
+--- Unpacks solutions from a list of lambda abstractions and write
+--- them to the screen.
+browseList :: [_ -> Success] -> IO ()
+browseList []     = done
+browseList (g:gs) = browse g >> putChar '\n' >> browseList gs
+
+
+--- Unpacks a solution's value from a (solved) search goal.
+unpack  :: (a -> Success) -> a
+unpack g | g x = x where x free
+

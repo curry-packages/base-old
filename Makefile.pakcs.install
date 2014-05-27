@@ -1,0 +1,99 @@
+# directory containing the repository library files:
+LIBTRUNKDIR=$(ROOT)/lib-trunk
+# get all library files from standard makefile:
+LIB_CURRY = `$(MAKE) --no-print-directory --quiet -f $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM) allsources`
+# name of this makefile:
+CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
+
+##########################################################################
+# Install the library sources into the Curry system library directory:
+.PHONY: install
+install:
+	mkdir -p $(LIBDIR)
+	mkdir -p $(LIBDIR)/meta
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
+	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
+
+$(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
+	cp $< $@
+
+.PHONY: sources
+sources:
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY) index.html
+	cp $(LIBTRUNKDIR)/*.prim_c2p .
+
+Prelude.curry: $(LIBTRUNKDIR)/Prelude.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+AllSolutions.curry: $(LIBTRUNKDIR)/AllSolutions.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+CLPB.curry: $(LIBTRUNKDIR)/CLPB.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+CLPFD.curry: $(LIBTRUNKDIR)/CLPFD.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+CLPR.curry: $(LIBTRUNKDIR)/CLPR.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Database.curry: $(LIBTRUNKDIR)/Database.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Dynamic.curry: $(LIBTRUNKDIR)/Dynamic.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Findall.curry: $(LIBTRUNKDIR)/Findall.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Global.curry: $(LIBTRUNKDIR)/Global.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+GlobalVariable.curry: $(LIBTRUNKDIR)/GlobalVariable.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+GUI.curry: $(LIBTRUNKDIR)/GUI.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+IO.curry: $(LIBTRUNKDIR)/IO.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+IOExts.curry: $(LIBTRUNKDIR)/IOExts.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+KeyDB.curry: $(LIBTRUNKDIR)/KeyDB.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+KeyDatabase.curry: $(LIBTRUNKDIR)/KeyDatabase.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+KeyDatabaseSQLite.curry: $(LIBTRUNKDIR)/KeyDatabaseSQLite.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+PlProfileData.curry: $(LIBTRUNKDIR)/PlProfileData.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Ports.curry: $(LIBTRUNKDIR)/Ports.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Profile.curry: $(LIBTRUNKDIR)/Profile.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Random.curry: $(LIBTRUNKDIR)/Random.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+SetFunctions.curry: $(LIBTRUNKDIR)/SetFunctions.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+Unsafe.curry: $(LIBTRUNKDIR)/Unsafe.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+%.curry: $(LIBTRUNKDIR)/%.curry
+	 cp $< $@
+
+meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
+	 cp $< $@
+
+index.html: $(LIBTRUNKDIR)/index.html.$(CURRYSYSTEM)
+	 cp $< $@
+
