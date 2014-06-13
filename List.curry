@@ -146,7 +146,7 @@ groupBy _  []     = []
 groupBy eq (x:xs) = (x:ys) : groupBy eq zs
                     where (ys,zs) = span (eq x) xs
 
---- Breaks a the second lsit argument into pieces separated by the first
+--- Breaks the second list argument into pieces separated by the first
 --- list argument, consuming the delimiter. An empty delimiter is
 --- invalid, and will cause an error to be raised.
 splitOn :: [a] -> [a] -> [[a]]
@@ -158,7 +158,7 @@ splitOn sep@(_:_:_) xs = go xs
                     | otherwise         = let (zs:zss) = go ys in (y:zs):zss
         len = length sep
 
---- Splits a List into components delimited by separators,
+--- Splits a list into components delimited by separators,
 --- where the predicate returns True for a separator element.
 --- The resulting components do not contain the separators.
 --- Two adjacent separators result in an empty component in the output.
