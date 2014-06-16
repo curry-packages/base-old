@@ -37,12 +37,12 @@
 --- the interface is not stable and might change.
 ---
 --- @author Michael Hanus
---- @version May 2014
+--- @version June 2014
 ------------------------------------------------------------------------
 
 module SetFunctions
   (set0,set1,set2,set3,set4,set5,set6,set7
-  ,Values,isEmpty,valueOf
+  ,Values,isEmpty,notEmpty,valueOf
   ,choose,chooseValue,select,selectValue
   ,mapValues,foldValues,minValue,maxValue
   ,values2list,printValues,sortValues,sortValuesBy
@@ -126,6 +126,10 @@ hasNoValue e = null (findall (=:= (findfirst (=:=e))))
 --- Is a multiset of values empty?
 isEmpty :: Values _ -> Bool
 isEmpty (Values empty _) = empty
+
+--- Is a multiset of values not empty?
+notEmpty :: Values _ -> Bool
+notEmpty vs = not (isEmpty vs)
 
 --- Is some value an element of a multiset of values?
 valueOf :: a -> Values a -> Bool

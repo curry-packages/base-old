@@ -34,13 +34,13 @@
 --- > of Declarative Programming (PPDP'13), pp. 49-60, ACM Press, 2013
 ---
 --- @author Michael Hanus, Fabian Reck
---- @version September 2013
+--- @version June 2014
 ------------------------------------------------------------------------
 
 module SetFunctions
   (set0,set1,set2,set3,set4,set5,set6,set7
   ,set0With,set1With,set2With,set3With,set4With,set5With,set6With,set7With
-  ,Values,isEmpty,valueOf
+  ,Values,isEmpty,notEmpty,valueOf
   ,choose,chooseValue,select,selectValue
   ,mapValues,foldValues,minValue,maxValue
   ,values2list,printValues,sortValues,sortValuesBy
@@ -164,6 +164,10 @@ data Values a = Values [a]
 --- Is a multiset of values empty?
 isEmpty :: Values _ -> Bool
 isEmpty (Values vs) = null vs
+
+--- Is a multiset of values not empty?
+notEmpty :: Values _ -> Bool
+notEmpty vs = not (isEmpty vs)
 
 --- Is some value an element of a multiset of values?
 valueOf :: a -> Values a -> Bool
