@@ -2,11 +2,12 @@
 --- A collection of operations on floating point numbers.
 ------------------------------------------------------------------------------
 
-module Float((+.),(-.),(*.),(/.),i2f,truncate,round,
+module Float((+.),(-.),(*.),(/.),(^.),i2f,truncate,round,
              sqrt,log,exp,sin,cos,tan,atan) where
 
 -- The operator declarations are similar to the standard arithmetic operators.
 
+infixr 8 ^.
 infixl 7 *., /.
 infixl 6 +., -.
 
@@ -38,6 +39,22 @@ x /. y = (prim_Float_div $# y) $# x
 
 prim_Float_div :: Float -> Float -> Float
 prim_Float_div external
+
+--- The value of `a ^. b` is `a` raised to the power of `b`.
+--- Fails if `b &lt; 0`.
+--- Executes in `O(log b)` steps.
+---
+--- @param a - The base.
+--- @param b - The exponent.
+--- @return `a` raised to the power of `b`.
+
+(^.) :: Float -> Int -> Float
+a ^. b | b>= 0 = powaux 1.0 a b
+  where
+    powaux n x y = if y == 0 then n
+                   else powaux (n *. if (y `mod` 2 == 1) then x else 1.0)
+                               (x *. x)
+                               (y `div` 2)
 
 --- Conversion function from integers to floats.
 i2f    :: Int -> Float
