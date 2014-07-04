@@ -37,7 +37,7 @@
 --- the interface is not stable and might change.
 ---
 --- @author Michael Hanus
---- @version June 2014
+--- @version July 2014
 ------------------------------------------------------------------------
 
 module SetFunctions
@@ -54,31 +54,31 @@ import List(delete)
 
 --- Combinator to transform a 0-ary function into a corresponding set function.
 set0 :: b -> Values b
-set0 f = Values (hasNoValue f) (findall (=:=f))
+set0 f = Values (someValue f) (findall (=:=f))
 
 --- Combinator to transform a unary function into a corresponding set function.
 set1 :: (a1 -> b) -> a1 -> Values b
-set1 f x | x=:=x = Values (hasNoValue (f x)) (findall (=:=(f x)))
+set1 f x | x=:=x = Values (someValue (f x)) (findall (=:=(f x)))
 
 --- Combinator to transform a binary function into a corresponding set function.
 set2 :: (a1 -> a2 -> b) -> a1 -> a2 -> Values b
 set2 f x1 x2
   | x1=:=x1 & x2=:=x2
-  = Values (hasNoValue (f x1 x2)) (findall (=:=(f x1 x2)))
+  = Values (someValue (f x1 x2)) (findall (=:=(f x1 x2)))
 
 --- Combinator to transform a function of arity 3
 --- into a corresponding set function.
 set3 :: (a1 -> a2 -> a3 -> b) -> a1 -> a2 -> a3 -> Values b
 set3 f x1 x2 x3
   | x1=:=x1 & x2=:=x2 & x3=:=x3
-  = Values (hasNoValue (f x1 x2 x3)) (findall (=:=(f x1 x2 x3)))
+  = Values (someValue (f x1 x2 x3)) (findall (=:=(f x1 x2 x3)))
 
 --- Combinator to transform a function of arity 4
 --- into a corresponding set function.
 set4 :: (a1 -> a2 -> a3 -> a4 -> b) -> a1 -> a2 -> a3 -> a4 -> Values b
 set4 f x1 x2 x3 x4
   | x1=:=x1 & x2=:=x2 & x3=:=x3 & x4=:=x4
-  = Values (hasNoValue (f x1 x2 x3 x4)) (findall (=:=(f x1 x2 x3 x4)))
+  = Values (someValue (f x1 x2 x3 x4)) (findall (=:=(f x1 x2 x3 x4)))
 
 --- Combinator to transform a function of arity 5
 --- into a corresponding set function.
@@ -86,7 +86,7 @@ set5 :: (a1 -> a2 -> a3 -> a4 -> a5 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> Values b
 set5 f x1 x2 x3 x4 x5
   | x1=:=x1 & x2=:=x2 & x3=:=x3 & x4=:=x4 & x5=:=x5
-  = Values (hasNoValue (f x1 x2 x3 x4 x5)) (findall (=:=(f x1 x2 x3 x4 x5)))
+  = Values (someValue (f x1 x2 x3 x4 x5)) (findall (=:=(f x1 x2 x3 x4 x5)))
 
 --- Combinator to transform a function of arity 6
 --- into a corresponding set function.
@@ -94,7 +94,7 @@ set6 :: (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> Values b
 set6 f x1 x2 x3 x4 x5 x6
   | x1=:=x1 & x2=:=x2 & x3=:=x3 & x4=:=x4 & x5=:=x5 & x6=:=x6
-  = Values (hasNoValue (f x1 x2 x3 x4 x5 x6))
+  = Values (someValue (f x1 x2 x3 x4 x5 x6))
            (findall (=:=(f x1 x2 x3 x4 x5 x6)))
 
 --- Combinator to transform a function of arity 7
@@ -103,29 +103,34 @@ set7 :: (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> Values b
 set7 f x1 x2 x3 x4 x5 x6 x7
   | x1=:=x1 & x2=:=x2 & x3=:=x3 & x4=:=x4 & x5=:=x5 & x6=:=x6 & x7=:=x7
-  = Values (hasNoValue (f x1 x2 x3 x4 x5 x6 x7))
+  = Values (someValue (f x1 x2 x3 x4 x5 x6 x7))
            (findall (=:=(f x1 x2 x3 x4 x5 x6 x7)))
 
 
 ------------------------------------------------------------------------
 --- Abstract type representing multisets of values.
 
-data Values a = Values Bool [a]
+data Values a = Values (Maybe a) [a]
 
--- The first component is true iff the multiset is empty (this enables
--- also an emptiness check for infinite sets of values).
+-- The first component is `Nothing` iff the multiset is empty,
+-- otherwise it is the first value (this enables
+-- also an emptiness check or selection of a single value
+-- even for infinite sets of values).
 -- The second component contains the set of all values (it will be
 -- completely evaluated if its value is demanded).
 
---- Test whether some expression has a value.
+--- Computes some value of a given expression.
 --- This implementation is specific to PAKCS in order to
---- work also for infinite result sets.
-hasNoValue :: _ -> Bool
-hasNoValue e = null (findall (=:= (findfirst (=:=e))))
+--- to implement `notEmpty` and `selectValue` efficiently and
+--- also for possibly infinite result sets.
+someValue :: a -> Maybe a
+someValue e =
+  let xs = findall (=:= (findfirst (=:=e)))
+   in if null xs then Nothing else Just (head xs)
 
 --- Is a multiset of values empty?
 isEmpty :: Values _ -> Bool
-isEmpty (Values empty _) = empty
+isEmpty (Values firstval _) = firstval == Nothing
 
 --- Is a multiset of values not empty?
 notEmpty :: Values _ -> Bool
@@ -145,9 +150,10 @@ valueOf e (Values _ s) = e `elem` s
 --- `(set1 chooseValue s)` contains the same elements as the
 --- value set `s`.
 choose :: Values a -> (a,Values a)
-choose (Values _ vs) = (x, Values (null xs) xs)
-  where x = foldr1 (?) vs
-        xs = delete x vs
+choose (Values _ vs) =
+  (x, Values (if null xs then Nothing else Just (head xs)) xs)
+ where x = foldr1 (?) vs
+       xs = delete x vs
 
 --- Chooses (non-deterministically) some value in a multiset of values
 --- and returns the chosen value.
@@ -166,7 +172,8 @@ chooseValue s = fst (choose s)
 --- The usage of this operation is only safe (i.e., does not destroy
 --- completeness) if all values in the argument set are identical.
 select :: Values a -> (a,Values a)
-select (Values _ (x:xs)) = (x, Values (null xs) xs)
+select (Values _ (x:xs)) =
+  (x, Values (if null xs then Nothing else Just (head xs)) xs)
 
 --- Selects (indeterministically) some value in a multiset of values
 --- and returns the selected value.
@@ -176,15 +183,17 @@ select (Values _ (x:xs)) = (x, Values (null xs) xs)
 --- **NOTE:**
 --- The usage of this operation is only safe (i.e., does not destroy
 --- completeness) if all values in the argument set are identical.
+--- It returns a single value even for infinite value sets
+--- (in contrast to `select` or `choose`).
 selectValue :: Values a -> a
-selectValue s = fst (select s)
+selectValue (Values (Just val) _) = val
 
 --- Accumulates all elements of a multiset of values by applying a binary
 --- operation. This is similarly to fold on lists, but the binary operation
 --- must be <b>commutative</b> so that the result is independent of the order
 --- of applying this operation to all elements in the multiset.
 mapValues :: (a -> b) -> Values a -> Values b
-mapValues f (Values empty s) = Values empty (map f s)
+mapValues f (Values mbval s) = Values (maybe Nothing (Just . f) mbval) (map f s)
 
 --- Accumulates all elements of a multiset of values by applying a binary
 --- operation. This is similarly to fold on lists, but the binary operation
