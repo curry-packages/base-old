@@ -41,7 +41,6 @@ prim_Float_div :: Float -> Float -> Float
 prim_Float_div external
 
 --- The value of `a ^. b` is `a` raised to the power of `b`.
---- Fails if `b &lt; 0`.
 --- Executes in `O(log b)` steps.
 ---
 --- @param a - The base.
@@ -49,6 +48,7 @@ prim_Float_div external
 --- @return `a` raised to the power of `b`.
 
 (^.) :: Float -> Int -> Float
+a ^. b | b < 0 = 1 /. a ^. (b * (-1))
 a ^. b | b>= 0 = powaux 1.0 a b
   where
     powaux n x y = if y == 0 then n
