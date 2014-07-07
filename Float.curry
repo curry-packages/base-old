@@ -2,8 +2,9 @@
 --- A collection of operations on floating point numbers.
 ------------------------------------------------------------------------------
 
-module Float((+.),(-.),(*.),(/.),(^.),i2f,truncate,round,
-             sqrt,log,exp,sin,cos,tan,atan) where
+module Float(pi,(+.),(-.),(*.),(/.),(^.),i2f,truncate,round,recip,sqrt,log
+             ,logBase, exp,sin,cos,tan,asin,acos,atan,sinh,cosh,tanh
+            ,asinh,acosh,atanh) where
 
 -- The operator declarations are similar to the standard arithmetic operators.
 
@@ -11,6 +12,10 @@ infixr 8 ^.
 infixl 7 *., /.
 infixl 6 +., -.
 
+
+--- The number pi. 
+pi :: Float
+pi = 3.141592653589793238
 
 --- Addition on floats.
 (+.)   :: Float -> Float -> Float
@@ -82,6 +87,11 @@ round x = prim_round $# x
 prim_round :: Float -> Int
 prim_round external
 
+--- Reciprocal
+
+recip :: Float -> Float
+recip x = 1.0 /. x
+
 --- Square root.
 
 sqrt :: Float -> Float
@@ -97,6 +107,11 @@ log x = prim_log $# x
 
 prim_log :: Float -> Float
 prim_log external
+
+--- Logarithm to arbitrary Base.
+
+logBase :: Float -> Float -> Float
+logBase x y = log y /. log x
 
 --- Natural exponent.
 exp :: Float -> Float
@@ -126,9 +141,65 @@ tan x = prim_tan $# x
 prim_tan :: Float -> Float
 prim_tan external
 
+--- Arc sine.
+asin :: Float -> Float
+asin x = prim_asin $# x
+
+prim_asin :: Float -> Float
+prim_asin external
+
+-- Arc cosine.
+acos :: Float -> Float
+acos x = prim_acos $# x
+
+prim_acos :: Float -> Float
+prim_acos external
+
 --- Arc tangent.
 atan :: Float -> Float
 atan x = prim_atan $# x
 
 prim_atan :: Float -> Float
 prim_atan external
+
+--- Hyperbolic sine.
+sinh :: Float -> Float
+sinh x = prim_sinh $# x
+
+prim_sinh :: Float -> Float
+prim_sinh external
+
+-- Hyperbolic cosine.
+cosh :: Float -> Float
+cosh x = prim_cosh $# x
+
+prim_cosh :: Float -> Float
+prim_cosh external
+
+--- Hyperbolic tangent.
+tanh :: Float -> Float
+tanh x = prim_tanh $# x
+
+prim_tanh :: Float -> Float
+prim_tanh external
+
+--- Hyperbolic Arc sine.
+asinh :: Float -> Float
+asinh x = prim_asinh $# x
+
+prim_asinh :: Float -> Float
+prim_asinh external
+
+-- Hyperbolic Arc cosine.
+acosh :: Float -> Float
+acosh x = prim_acosh $# x
+
+prim_acosh :: Float -> Float
+prim_acosh external
+
+--- Hyperbolic Arc tangent.
+atanh :: Float -> Float
+atanh x = prim_atanh $# x
+
+prim_atanh :: Float -> Float
+prim_atanh external
