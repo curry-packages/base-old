@@ -13,4 +13,12 @@
   <library>prim_standard</library>
   <entry>prim_try[raw]</entry>
  </primitive>
+ <primitive name="rewriteAll" arity="1">
+  <library>prim_standard</library>
+  <entry>prim_rewriteAll[raw]</entry>
+ </primitive>
+ <primitive name="rewriteSome" arity="1">
+  <library>prim_standard</library>
+  <entry>prim_rewriteSome[raw]</entry>
+ </primitive>
 </primitives>

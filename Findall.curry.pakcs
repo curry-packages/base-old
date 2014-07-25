@@ -14,6 +14,7 @@ module Findall
   ( getAllValues, getSomeValue
   , try, inject, solveAll, once, best
   , findall, findfirst, browse, browseList, unpack
+  , rewriteAll, rewriteSome
   ) where
 
 --- Gets all values of an expression (currently, via an incomplete
@@ -137,3 +138,15 @@ browseList (g:gs) = browse g >> putChar '\n' >> browseList gs
 unpack  :: (a -> Success) -> a
 unpack g | g x = x where x free
 
+--- Gets all values computable by term rewriting.
+--- In contrast to `findall`, this operation does not wait
+--- until all "outside" variables are bound to values,
+--- but it returns all values computable by term rewriting
+--- and ignores all computations that requires bindings for outside variables.
+rewriteAll :: a -> [a]
+rewriteAll external
+
+--- Similarly to 'rewriteAll' but returns only some value computable
+--- by term rewriting. Returns `Nothing` if there is no such value.
+rewriteSome :: a -> Maybe a
+rewriteSome external
