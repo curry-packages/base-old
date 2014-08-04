@@ -2,12 +2,12 @@
 --- This Module is a modified version of the Module
 --- System.Console.GetOpt by Sven Panne from the ghc-base package
 --- it has been adapted for Curry by Bjoern Peemoeller
---- 
+---
 --- (c) Sven Panne 2002-2005
 
 --- The Glasgow Haskell Compiler License
 ---
---- Copyright 2004, The University Court of the University of Glasgow. 
+--- Copyright 2004, The University Court of the University of Glasgow.
 --- All rights reserved.
 ---
 --- Redistribution and use in source and binary forms, with or without
@@ -15,14 +15,14 @@
 ---
 --- - Redistributions of source code must retain the above copyright notice,
 --- this list of conditions and the following disclaimer.
---- 
+---
 --- - Redistributions in binary form must reproduce the above copyright notice,
 --- this list of conditions and the following disclaimer in the documentation
 --- and/or other materials provided with the distribution.
----  
+---
 --- - Neither name of the University nor the names of its contributors may be
 --- used to endorse or promote products derived from this software without
---- specific prior written permission. 
+--- specific prior written permission.
 ---
 --- THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY COURT OF THE UNIVERSITY OF
 --- GLASGOW AND THE CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -203,11 +203,10 @@ getOpt' ordering optDescr (arg:args) = procNextOpt opt ordering where
 -- take a look at the next cmd line arg and decide what to do with it
 getNext :: String -> [String] -> [OptDescr a] -> (OptKind a,[String])
 getNext s rest optDescr = case s of
-  ('-':s') -> case s' of
-    ['-']    -> (EndOfOpts, rest)
-    ('-':xs) -> longOpt xs rest optDescr
-    (x:xs)   -> shortOpt x xs rest optDescr
-  _        -> (NonOpt s,rest)
+  '-':'-':[] -> (EndOfOpts, rest)
+  '-':'-':xs -> longOpt xs rest optDescr
+  '-': x :xs -> shortOpt x xs rest optDescr
+  _          -> (NonOpt s,rest)
 
 -- handle long option
 longOpt :: String -> [String] -> [OptDescr a] -> (OptKind a,[String])
@@ -220,15 +219,16 @@ longOpt ls rs optDescr = long ads arg rs where
   ads       = [ ad | Option _ _ ad _ <- options ]
   optStr    = ("--"++opt)
 
-  long []           _        rest     = (UnreqOpt ("--"++ls),rest)
-  long [NoArg  a  ] []       rest     = (Opt a,rest)
-  long [NoArg  _  ] ('=':_)  rest     = (errNoArg optStr,rest)
-  long [ReqArg _ d] []       []       = (errReq d optStr,[])
-  long [ReqArg f _] []       (r:rest) = (Opt (f r),rest)
-  long [ReqArg f _] ('=':xs) rest     = (Opt (f xs),rest)
-  long [OptArg f _] []       rest     = (Opt (f Nothing),rest)
-  long [OptArg f _] ('=':xs) rest     = (Opt (f (Just xs)),rest)
-  long (_:_:_)      _        rest     = (errAmbig options optStr,rest)
+  long ads0 arg0 rs0 = case (ads0, arg0, rs0) of
+    ((_:_:_)     , _       , rest    ) -> (errAmbig options optStr,rest)
+    ([NoArg  a  ], []      , rest    ) -> (Opt a                  ,rest)
+    ([NoArg  _  ], ('=':_) , rest    ) -> (errNoArg optStr        ,rest)
+    ([ReqArg _ d], []      , []      ) -> (errReq d optStr        ,[]  )
+    ([ReqArg f _], []      , (r:rest)) -> (Opt (f r)              ,rest)
+    ([ReqArg f _], ('=':xs), rest    ) -> (Opt (f xs)             ,rest)
+    ([OptArg f _], []      , rest    ) -> (Opt (f Nothing)        ,rest)
+    ([OptArg f _], ('=':xs), rest    ) -> (Opt (f (Just xs))      ,rest)
+    (_           , _       , rest    ) -> (UnreqOpt ("--" ++ ls)  ,rest)
 
 -- handle short option
 shortOpt :: Char -> String -> [String] -> [OptDescr a] -> (OptKind a,[String])
