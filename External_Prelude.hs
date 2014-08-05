@@ -218,13 +218,13 @@ curryint2primint :: BinInt -> Int#
 curryint2primint Zero    = 0#
 curryint2primint (Pos n) = currynat2primint n
 curryint2primint (Neg n) = negateInt# (currynat2primint n)
-curryint2primint int     = error $ "KiCS2 error: Prelude.curryint2primint: no ground term, but " ++ show int
+curryint2primint int     = error ("KiCS2 error: Prelude.curryint2primint: no ground term, but " ++ show int)
 
 currynat2primint :: Nat -> Int#
 currynat2primint IHi   = 1#
 currynat2primint (O n) = 2# *# currynat2primint n
 currynat2primint (I n) = 2# *# currynat2primint n +# 1#
-currynat2primint nat   = error $ "KiCS2 error: Prelude.currynat2primint: no ground term, but " ++ show nat
+currynat2primint nat   = error ("KiCS2 error: Prelude.currynat2primint: no ground term, but " ++ show nat)
 
 -- -----------------------------------------------------------------------------
 -- Float representation
