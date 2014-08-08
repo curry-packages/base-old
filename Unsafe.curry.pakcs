@@ -9,7 +9,7 @@
 
 module Unsafe
   ( unsafePerformIO, trace
-  , spawnConstraint, isVar, identicalVar
+  , spawnConstraint, isVar, identicalVar, compareAnyTerm
   , showAnyTerm, showAnyQTerm, showAnyExpression, showAnyQExpression
   , readsAnyUnqualifiedTerm, readAnyUnqualifiedTerm
   , readsAnyQTerm, readAnyQTerm
@@ -61,6 +61,13 @@ identicalVar x y = (prim_identicalVar $! y) $! x
 --- <code>let x=1 in identicalVar x x</code> evaluate to <code>False</code>
 prim_identicalVar :: a -> a -> Bool
 prim_identicalVar external
+
+--- Comparison of any data terms, possibly containing variables.
+--- Data constructors are compared in the order of their definition
+--- in the datatype declarations and recursively in the arguments.
+--- Variables are compared in some internal order.
+compareAnyTerm :: a -> a -> Ordering
+compareAnyTerm external
 
 
 --- Transforms the normal form of a term into a string representation
