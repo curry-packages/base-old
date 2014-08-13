@@ -17,6 +17,10 @@
   <library>prim_unsafe</library>
   <entry>prim_identicalVar</entry>
  </primitive>
+ <primitive name="prim_isGround" arity="1">
+  <library>prim_unsafe</library>
+  <entry>prim_isGround</entry>
+ </primitive>
  <primitive name="compareAnyTerm" arity="2">
   <library>prim_unsafe</library>
   <entry>prim_compareAnyTerm[raw]</entry>

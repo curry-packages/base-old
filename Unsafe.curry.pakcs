@@ -9,7 +9,7 @@
 
 module Unsafe
   ( unsafePerformIO, trace
-  , spawnConstraint, isVar, identicalVar, compareAnyTerm
+  , spawnConstraint, isVar, identicalVar, isGround, compareAnyTerm
   , showAnyTerm, showAnyQTerm, showAnyExpression, showAnyQExpression
   , readsAnyUnqualifiedTerm, readAnyUnqualifiedTerm
   , readsAnyQTerm, readAnyQTerm
@@ -61,6 +61,14 @@ identicalVar x y = (prim_identicalVar $! y) $! x
 --- <code>let x=1 in identicalVar x x</code> evaluate to <code>False</code>
 prim_identicalVar :: a -> a -> Bool
 prim_identicalVar external
+
+--- Tests whether the argument evaluates to a ground value
+--- (use with care!).
+isGround :: _ -> Bool
+isGround v = prim_isGround $!! v
+
+prim_isGround :: _ -> Bool
+prim_isGround external
 
 --- Comparison of any data terms, possibly containing variables.
 --- Data constructors are compared in the order of their definition
