@@ -23,7 +23,7 @@ infix  4  `elem`, `notElem`
 infixr 3 &&
 infixr 2 ||
 infixl 1 >>, >>=
-infixr 0 $, $!, $!!, $#, $##, `seq`, &, &>, ?
+infixr 0 $, $!, $!!, $#, $##, `seq`, &&>, &, &>, ?
 
 
 -- externally defined types for numbers and characters
@@ -67,7 +67,7 @@ until p f x     = if p x then x else until p f (f x)
 --- Evaluates the first argument to head normal form (which could also
 --- be a free variable) and returns the second argument.
 seq     :: _ -> a -> a
-seq external
+x `seq` y = const y $! x
 
 --- Evaluates the argument to head normal form and returns it.
 --- Suspends until the result is bound to a non-variable term.
@@ -88,12 +88,12 @@ f $ x   = f x
 --- Right-associative application with strict evaluation of its argument
 --- to head normal form.
 ($!)    :: (a -> b) -> a -> b
-f $! x  = x `seq` f x
+($!) external
 
 --- Right-associative application with strict evaluation of its argument
 --- to normal form.
 ($!!)   :: (a -> b) -> a -> b
-f $!! x | x=:=y = f y  where y free
+($!!) external
 
 --- Right-associative application with strict evaluation of its argument
 --- to a non-variable term.
@@ -103,7 +103,7 @@ f $# x  = f $! (ensureNotFree x)
 --- Right-associative application with strict evaluation of its argument
 --- to ground normal form.
 ($##)   :: (a -> b) -> a -> b
-f $## x | x=:=y = y==y `seq` f y  where y free
+($##) external
 
 --- Aborts the execution with an error message.
 error :: String -> _
@@ -149,6 +149,18 @@ otherwise       = True
 if_then_else           :: Bool -> a -> a -> a
 if_then_else b t f = case b of True  -> t
                                False -> f
+
+--- Enforce a Boolean condition to be true.
+--- The computation fails if the argument evaluates to `False`.
+solve :: Bool -> Bool
+solve True = True
+
+--- Conditional expression.
+--- An expression like `(c &&> e)` is evaluated by evaluating the first
+--- argument to `True` and then evaluating `e`.
+--- The expression has no value if the condition does not evaluate to `True`.
+(&&>) :: Bool -> a -> a
+True &&> x = x
 
 --- Equality on finite ground data terms.
 (==)            :: a -> a -> Bool
@@ -842,15 +854,15 @@ PEVAL x = x
 
 --- Evaluates the argument to normal form and returns it.
 normalForm :: a -> a
-normalForm x | x =:= y = y where y free
+normalForm x = id $!! x
 
 --- Evaluates the argument to ground normal form and returns it.
 --- Suspends as long as the normal form of the argument is not ground.
 groundNormalForm :: a -> a
-groundNormalForm x | y == y = y where y = normalForm x
+groundNormalForm x = id $## x
 
 -- Only for internal use:
--- Represenation of higher-order applications in FlatCurry.
+-- Representation of higher-order applications in FlatCurry.
 apply :: (a -> b) -> a -> b
 apply external
 

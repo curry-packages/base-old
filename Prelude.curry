@@ -23,7 +23,7 @@ infix  4  `elem`, `notElem`
 infixr 3 &&
 infixr 2 ||
 infixl 1 >>, >>=
-infixr 0 $, $!, $!!, $#, $##, `seq`, &, &>, ?
+infixr 0 $, $!, $!!, $#, $##, `seq`, &&>, &, &>, ?
 
 
 -- externally defined types for numbers and characters
@@ -149,6 +149,18 @@ otherwise       = True
 if_then_else           :: Bool -> a -> a -> a
 if_then_else b t f = case b of True  -> t
                                False -> f
+
+--- Enforce a Boolean condition to be true.
+--- The computation fails if the argument evaluates to `False`.
+solve :: Bool -> Bool
+solve True = True
+
+--- Conditional expression.
+--- An expression like `(c &&> e)` is evaluated by evaluating the first
+--- argument to `True` and then evaluating `e`.
+--- The expression has no value if the condition does not evaluate to `True`.
+(&&>) :: Bool -> a -> a
+True &&> x = x
 
 --- Equality on finite ground data terms.
 (==)            :: a -> a -> Bool
