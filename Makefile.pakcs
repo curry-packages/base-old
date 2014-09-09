@@ -14,47 +14,16 @@ TEXDOCDIR := $(DOCDIR)/src/lib
 # the currydoc program:
 CURRYDOC=$(ROOT)/bin/currydoc
 
-LIB_CURRY = Prelude.curry \
-	    AllSolutions.curry Array.curry Assertion.curry CategorizedHtmlList.curry \
-            Char.curry CLPFD.curry CLPR.curry CLPB.curry Combinatorial.curry \
-	    Constraint.curry CPNS.curry CSV.curry  \
-            Database.curry Dequeue.curry Directory.curry \
-	    Distribution.curry Dynamic.curry \
-            FileGoodies.curry FilePath.curry Findall.curry FiniteMap.curry \
-	    Float.curry Format.curry Function.curry \
-	    GetOpt.curry \
-	    Global.curry GlobalVariable.curry GraphInductive.curry GUI.curry \
-	    HTML.curry HtmlCgi.curry HtmlParser.curry \
-	    IO.curry IOExts.curry Integer.curry \
-	    JavaScript.curry \
-            KeyDatabase.curry KeyDatabaseSQLite.curry KeyDB.curry \
-	    List.curry Mail.curry Maybe.curry Markdown.curry \
-	    NamedSocket.curry \
-	    Parser.curry PlProfileData.curry Ports.curry Pretty.curry \
-	    Profile.curry PropertyFile.curry \
-            Random.curry Read.curry ReadNumeric.curry ReadShowTerm.curry \
-            RedBlackTree.curry RegExp.curry \
-	    SetRBT.curry SetFunctions.curry \
-	    Socket.curry Sort.curry System.curry \
-            TableRBT.curry Time.curry Traversal.curry \
-            Unsafe.curry URL.curry WUI.curry WUIjs.curry \
-	    XML.curry XmlConv.curry \
-	    meta/AbstractCurry.curry meta/AbstractCurryPrinter.curry \
-	    meta/AnnotatedFlatCurry.curry meta/AnnotatedFlatCurryGoodies.curry \
-	    meta/CurryStringClassifier.curry \
-            meta/FlatCurry.curry meta/FlatCurryPretty.curry \
-	    meta/FlatCurryRead.curry meta/FlatCurryShow.curry \
-	    meta/FlatCurryGoodies.curry \
-	    meta/FlatCurryXML.curry \
-	    meta/FlexRigid.curry meta/CompactFlatCurry.curry \
-	    meta/PrettyAbstract.curry 
-
+# Curry library files
+LIB_CURRY = $(wildcard *.curry meta/*.curry)
+# lib names without meta/ prefix
+LIB_NAMES = `echo $(LIB_CURRY) | sed 's|meta/||g'`
+# generated files:
 LIB_FCY   = `echo $(LIB_CURRY:%.curry=.curry/%.fcy) | sed 's|\.curry/meta/|meta/.curry/|g'`
 LIB_ACY   = `echo $(LIB_CURRY:%.curry=.curry/%.acy) | sed 's|\.curry/meta/|meta/.curry/|g'`
 LIB_PL    = `echo $(LIB_CURRY:%.curry=.curry/pakcs/%.pl) | sed 's|\.curry/pakcs/meta/|meta/.curry/pakcs/|g'`
 LIB_HTML  = $(LIB_CURRY:.curry=.html)
 LIB_TEX   = $(LIB_CURRY:.curry=.tex)
-LIB_NAMES = `echo $(LIB_CURRY) | sed 's|meta/||g'` # lib names without meta/ prefix
 
 .PHONY: all
 all: fcy acy
