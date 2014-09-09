@@ -57,8 +57,8 @@ readOct l = readNumPrefix (dropWhile (\c->c==' ') l) Nothing 8 isOctDigit digitT
 --- valid digits into integer values.
 readNumPrefix :: String -> Maybe Int -> Int -> (Char->Bool) -> (Char->Int)
                  -> Maybe (Int,String)
-readNumPrefix "" Nothing _ _ _ = Nothing
-readNumPrefix "" (Just n) _ _ _ = Just (n,"")
+readNumPrefix []     Nothing  _    _       _       = Nothing
+readNumPrefix []     (Just n) _    _       _       = Just (n,"")
 readNumPrefix (c:cs) (Just n) base isdigit valueof
    | isdigit c = readNumPrefix cs (Just (base*n+valueof c)) base isdigit valueof
    | otherwise = Just (n,c:cs)

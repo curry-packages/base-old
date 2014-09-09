@@ -214,17 +214,17 @@ primint2currynat n
   | isTrue# ((n `remInt#` 2#) ==# 0#) = O (primint2currynat (n `quotInt#` 2#))
   | otherwise                         = I (primint2currynat (n `quotInt#` 2#))
 
-currynat2primint :: Nat -> Int#
-currynat2primint IHi   = 1#
-currynat2primint (O n) = 2# *# currynat2primint n
-currynat2primint (I n) = 2# *# currynat2primint n +# 1#
-currynat2primint _ = error "KiCS2 error: Prelude.currynat2primint: no ground term"
-
 curryint2primint :: BinInt -> Int#
 curryint2primint Zero    = 0#
 curryint2primint (Pos n) = currynat2primint n
 curryint2primint (Neg n) = negateInt# (currynat2primint n)
-curryint2primint _ = error "KiCS2 error: Prelude.curryint2primint: no ground term"
+curryint2primint int     = error ("KiCS2 error: Prelude.curryint2primint: no ground term, but " ++ show int)
+
+currynat2primint :: Nat -> Int#
+currynat2primint IHi   = 1#
+currynat2primint (O n) = 2# *# currynat2primint n
+currynat2primint (I n) = 2# *# currynat2primint n +# 1#
+currynat2primint nat   = error ("KiCS2 error: Prelude.currynat2primint: no ground term, but " ++ show nat)
 
 -- -----------------------------------------------------------------------------
 -- Float representation
@@ -343,10 +343,30 @@ instance Show C_Char where
     Guard_BinInt _ _ _    -> shows x1
     gnfBinInt             -> shows (C# (curryChar2primChar gnfBinInt))
 
-  showList cs = showList (map convert cs)
+  showList cs | all isPrimChar cs' = showList     (map convert cs')
+              | otherwise          = showCharList cs'
    where
+    cs' = map gnfCurryChar cs
+
+    gnfCurryChar :: C_Char -> C_Char
+    gnfCurryChar (CurryChar x1) = case ((\x _ _ -> x) $## x1) (error "gnfCurryChar: nesting depth used") emptyCs of
+      Choice_BinInt _ _ _ _ -> CurryChar x1
+      Choices_BinInt _ _ _  -> CurryChar x1
+      Fail_BinInt _ _       -> CurryChar x1
+      Guard_BinInt _ _ _    -> CurryChar x1
+      gnfBinInt             -> C_Char (curryChar2primChar gnfBinInt)
+    gnfCurryChar c              = c
+
+    isPrimChar (C_Char _) = True
+    isPrimChar _          = False
+
     convert (C_Char c) = C# c
-    convert (CurryChar c) = C# (curryChar2primChar c)
+
+    showCharList []     = showString "[]"
+    showCharList (x:xs) = showChar '[' . shows x . showRest xs
+      where
+        showRest []     = showChar ']'
+        showRest (y:ys) = showChar ',' . shows y . showRest ys
 
 instance Read C_Char where
   readsPrec d s = map readChar (readsPrec d s) where readChar (C# c, s) = (C_Char c, s)
@@ -978,7 +998,7 @@ d_C_cmpNat x1 x2 x3250 x3500 = case x1 of
      (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
      _ -> failCons x3250 defFailInfo
 
-d_C_succ :: Nat  -> Cover -> ConstStore -> Nat 
+d_C_succ :: Nat  -> Cover -> ConstStore -> Nat
 d_C_succ x1 x3250 x3500 = case x1 of
      IHi -> O IHi
      (O x2) -> I x2
@@ -989,7 +1009,7 @@ d_C_succ x1 x3250 x3500 = case x1 of
      (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
      _ -> failCons x3250 defFailInfo
 
-d_C_pred :: Nat  -> Cover -> ConstStore -> Nat 
+d_C_pred :: Nat  -> Cover -> ConstStore -> Nat
 d_C_pred x1 x3250 x3500 = case x1 of
      IHi -> d_C_failed x3250 x3500
      (O x2) -> d_OP__casePT_28 x2 x3250 x3500
@@ -1000,7 +1020,7 @@ d_C_pred x1 x3250 x3500 = case x1 of
      (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
      _ -> failCons x3250 defFailInfo
 
-d_OP_plus_caret :: Nat  -> Nat  -> Cover -> ConstStore -> Nat 
+d_OP_plus_caret :: Nat  -> Nat  -> Cover -> ConstStore -> Nat
 d_OP_plus_caret x1 x2 x3250 x3500 = case x1 of
      IHi -> d_C_succ x2 x3250 x3500
      (O x3) -> d_OP__casePT_27 x3 x2 x3250 x3500
@@ -1033,7 +1053,7 @@ d_C_mult2 x1 x3250 x3500 = case x1 of
      (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
      _ -> failCons x3250 defFailInfo
 
-d_OP_star_caret :: Nat  -> Nat  -> Cover -> ConstStore -> Nat 
+d_OP_star_caret :: Nat  -> Nat  -> Cover -> ConstStore -> Nat
 d_OP_star_caret x1 x2 x3250 x3500 = case x1 of
      IHi -> x2
      (O x3) -> O (d_OP_star_caret x3 x2 x3250 x3500)
@@ -1044,7 +1064,7 @@ d_OP_star_caret x1 x2 x3250 x3500 = case x1 of
      (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
      _ -> failCons x3250 defFailInfo
 
-d_C_div2 :: Nat  -> Cover -> ConstStore -> Nat 
+d_C_div2 :: Nat  -> Cover -> ConstStore -> Nat
 d_C_div2 x1 x3250 x3500 = case x1 of
      IHi -> d_C_failed x3250 x3500
      (O x2) -> x2
@@ -1069,7 +1089,7 @@ d_C_mod2 x1 x3250 x3500 = case x1 of
 d_C_quotRemNat :: Nat  -> Nat  -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
 d_C_quotRemNat x1 x2 x3250 x3500 = d_OP__casePT_23 x1 x2 (d_OP_eq_eq x2 IHi x3250 x3500) x3250 x3500
 
-d_OP_quotRemNat_dot_shift_dot_104 :: Nat  -> Nat  -> Cover -> ConstStore -> Nat 
+d_OP_quotRemNat_dot_shift_dot_104 :: Nat  -> Nat  -> Cover -> ConstStore -> Nat
 d_OP_quotRemNat_dot_shift_dot_104 x1 x2 x3250 x3500 = case x1 of
      (O x3) -> O x2
      (I x4) -> I x2

@@ -160,7 +160,7 @@ splitSearchPath = f
            (pre, []    ) -> g pre
            (pre, _:post) -> g pre ++ f post
 
-    g ""      = ["." | isPosix]
+    g []      = ["." | isPosix]
     g x@(_:_) = [x]
 
 
@@ -185,11 +185,11 @@ getSearchPath = getEnviron "PATH" >>= return . splitSearchPath
 -- > splitExtension "file/path.txt/" == ("file/path.txt/","")
 splitExtension :: FilePath -> (String, String)
 splitExtension x = case d of
-                       "" -> (x,"")
-                       (y:ys) -> (a ++ reverse ys, y : reverse c)
-    where
-        (a,b) = splitFileName_ x
-        (c,d) = break isExtSeparator $ reverse b
+    []     -> (x,"")
+    (y:ys) -> (a ++ reverse ys, y : reverse c)
+  where
+    (a,b) = splitFileName_ x
+    (c,d) = break isExtSeparator $ reverse b
 
 
 -- | Get the extension of a file, returns @\"\"@ for no extension, @.ext@ otherwise.
@@ -234,7 +234,7 @@ dropExtension = fst . splitExtension
 -- > Valid x => takeFileName (addExtension (addTrailingPathSeparator x) "ext") == ".ext"
 -- > Windows: addExtension "\\\\share" ".txt" == "\\\\share\\.txt"
 addExtension :: FilePath -> String -> FilePath
-addExtension file "" = file
+addExtension file []       = file
 addExtension file xs@(x:_) = joinDrive a res
     where
         res = if isExtSeparator x then b ++ xs
@@ -378,7 +378,7 @@ joinDrive a b | isPosix = a ++ b
               | null b = a
               | isPathSeparator (last a) = a ++ b
               | otherwise = case a of
-                             [a1,':'] -> if isLetter a1 
+                             [a1,':'] -> if isLetter a1
                                           then a ++ b
                                           else a ++ [pathSeparator] ++ b
                              _ -> a ++ [pathSeparator] ++ b
@@ -497,7 +497,7 @@ replaceBaseName pth nam = combineAlways a (nam <.> ext)
 -- > hasTrailingPathSeparator "test" == False
 -- > hasTrailingPathSeparator "test/" == True
 hasTrailingPathSeparator :: FilePath -> Bool
-hasTrailingPathSeparator "" = False
+hasTrailingPathSeparator []      = False
 hasTrailingPathSeparator x@(_:_) = isPathSeparator (last x)
 
 
@@ -589,8 +589,8 @@ splitPath :: FilePath -> [FilePath]
 splitPath x = [drive | drive /= ""] ++ f path
     where
         (drive,path) = splitDrive x
-        f ""      = []
-        f y@(_:_) = (a++c) : f d
+        f []      = []
+        f y@(_:_) = (a ++ c) : f d
             where
                 (a,b) = break isPathSeparator y
                 (c,d) = break (not . isPathSeparator) b
@@ -672,7 +672,7 @@ makeRelative root path
  | takeAbs root /= takeAbs path = path
  | otherwise = f (dropAbs root) (dropAbs path)
     where
-        f "" y = dropWhile isPathSeparator y
+        f []      y = dropWhile isPathSeparator y
         f x@(_:_) y = let (x1,x2) = g x
                           (y1,y2) = g y
                       in if equalFilePath x1 y1 then f x2 y2 else path
@@ -769,7 +769,7 @@ badElements = ["CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5
 -- > Windows: isValid "c:\\nul\\file" == False
 -- > Windows: isValid "\\\\" == False
 isValid :: FilePath -> Bool
-isValid "" = False
+isValid []    = False
 isValid path@(_:_)
   | isPosix   = True
   | otherwise =    not (any (`elem` badCharacters) x2)
@@ -792,7 +792,7 @@ isValid path@(_:_)
 -- > Windows: makeValid "c:\\test/prn.txt" == "c:\\test/prn_.txt"
 -- > Windows: makeValid "c:\\nul\\file" == "c:\\nul_\\file"
 makeValid :: FilePath -> FilePath
-makeValid "" = "_"
+makeValid []                                     = "_"
 makeValid path@(_:_)
   | isPosix                                      = path
   | length path >= 2 && all isPathSeparator path = take 2 path ++ "drive"

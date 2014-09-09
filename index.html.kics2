@@ -248,6 +248,11 @@ for profiling. Currently, it supports the possibility
 to show the time and space needed to evaluate a term to its normal form.
 </dd>
 
+<dt><code><a href="CDOC/Prolog.html">Prolog</a></code></dt>
+<dd>
+A library to represent Prolog programs.
+</dd>
+
 <dt><code><a href="CDOC/PropertyFile.html">PropertyFile</a></code></dt>
 <dd>
 This library defines some functions to read and update files
