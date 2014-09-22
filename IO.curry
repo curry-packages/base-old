@@ -3,7 +3,7 @@
 --- that are not already contained in the prelude.
 ---
 --- @author Michael Hanus, Bernd Brassel
---- @version July 2013
+--- @version September 2014
 -----------------------------------------------------------------------------
 
 module IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,

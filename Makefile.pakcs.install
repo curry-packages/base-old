@@ -1,7 +1,12 @@
 # directory containing the repository library files:
 LIBTRUNKDIR=$(ROOT)/lib-trunk
-# get all library files from standard makefile:
-LIB_CURRY = `$(MAKE) --no-print-directory --quiet -f $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM) allsources`
+# specific PAKCS libraries:
+PAKCSONLYLIBS = CLPB.curry CLPFD.curry CLPR.curry \
+	        Database.curry Dynamic.curry Findall.curry \
+		GlobalVariable.curry KeyDB.curry KeyDatabase.curry \
+		PlProfileData.curry Ports.curry 
+# get all library files from standard makefile and add PAKCS specific libs:
+LIB_CURRY = `cd $(LIBTRUNKDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
 # name of this makefile:
 CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 
@@ -19,6 +24,7 @@ $(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
 
 .PHONY: sources
 sources:
+	@echo LIB_CURRY=$(LIB_CURRY)
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY) index.html
 	cp $(LIBTRUNKDIR)/*.prim_c2p .
 
@@ -50,12 +56,6 @@ Global.curry: $(LIBTRUNKDIR)/Global.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 GlobalVariable.curry: $(LIBTRUNKDIR)/GlobalVariable.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-GUI.curry: $(LIBTRUNKDIR)/GUI.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-IO.curry: $(LIBTRUNKDIR)/IO.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 IOExts.curry: $(LIBTRUNKDIR)/IOExts.curry.$(CURRYSYSTEM)

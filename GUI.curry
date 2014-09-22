@@ -4,7 +4,7 @@
 --- contains a description of the basic ideas behind this library.
 ---
 --- @authors Michael Hanus, Bernd Brassel
---- @version August 2007
+--- @version September 2014
 ------------------------------------------------------------------------------
 
 module GUI(GuiPort,Widget(..),Button,ConfigButton,
@@ -22,7 +22,7 @@ module GUI(GuiPort,Widget(..),Button,ConfigButton,
            getCursorPosition,seeText,
            focusInput,addCanvas,setConfig,
            getOpenFile,getOpenFileWithTypes,getSaveFile,getSaveFileWithTypes,
-           chooseColor,popup_message,debugTcl)  where
+           chooseColor,popupMessage,debugTcl)  where
 
 import Read
 import Unsafe(trace)
@@ -894,14 +894,6 @@ receiveFromTk (GuiPort tclhdl) = do
   reportTclTk ("GUI RECEIVED: "++s)
   return s
 
-{-
--- Choice over the output of the wish process and a stream of external messages
-choiceOverHandlesMsgs :: [Handle] -> [msg] -> IO (Either (Int,Handle) [msg])
-choiceOverHandlesMsgs hdls msgs = do
-  iormsgs <- hWaitForInputsOrMsg hdls msgs
-  return (either (\i -> Left (i,hdls!!i)) Right iormsgs)
--}
-
 -- Choice over the output of the wish process and handles to input streams:
 choiceOverHandles :: [Handle] -> IO (Int,Handle)
 choiceOverHandles hdls = do
@@ -946,7 +938,7 @@ runPassiveGUI title widget = do
 --- @param title - the title of the main window containing the widget
 --- @param widget - the widget shown in the new window
 runGUI :: String -> Widget -> IO ()
-runGUI title widget = runInitGUIwithParams title "" widget (\_->return [])
+runGUI title widget = runInitGUIwithParams title "" widget (const (return []))
 
 --- IO action to run a Widget in a new window.
 --- @param title - the title of the main window containing the widget
@@ -954,7 +946,7 @@ runGUI title widget = runInitGUIwithParams title "" widget (\_->return [])
 --- @param widget - the widget shown in the new window
 runGUIwithParams :: String -> String -> Widget -> IO ()
 runGUIwithParams title params widget =
-  runInitGUIwithParams title params widget (\_->return [])
+  runInitGUIwithParams title params widget (const (return []))
 
 --- IO action to run a Widget in a new window. The GUI events
 --- are processed after executing an initial action on the GUI.
@@ -981,14 +973,14 @@ runInitGUIwithParams title params widget initcmd = do
 
 --- Runs a Widget in a new GUI window and process GUI events.
 --- In addition, an event handler is provided that process
---- messages received from an external message stream.
+--- messages received from an external stream identified by a handle
+--- (third argument).
 --- This operation is useful to run a GUI that should react on
---- user events as well as messages sent to an external port.
+--- user events as well as messages written to the given handle.
 --- @param title - the title of the main window containing the widget
 --- @param th - a pair (widget,exth) where widget is the widget shown in the
 ---             new window and exth is the event handler for external messages
---- @param msgs - the stream of external messages (usually coming from
----               an external port)
+--- @param hdl - the handle of the stream of external messages
 runControlledGUI :: String -> (Widget, String -> GuiPort -> IO ()) -> Handle -> IO ()
 runControlledGUI title (widget,exth) hdl =
   runInitControlledGUI title (widget,exth) (\_->return []) hdl
@@ -996,17 +988,17 @@ runControlledGUI title (widget,exth) hdl =
 
 --- Runs a Widget in a new GUI window and process GUI events.
 --- In addition, an event handler is provided that process
---- messages received from an external message stream.
+--- messages received from an external stream identified by a handle
+--- (third argument).
 --- This operation is useful to run a GUI that should react on
---- user events as well as messages sent to an external port.
+--- user events as well as messages written to the given handle.
 --- @param title - the title of the main window containing the widget
 --- @param th - a pair (widget,exth) where widget is the widget shown in the
 ---             new window and exth is the event handler for external messages
 ---             that returns a list of widget reference/configuration pairs
 ---             which is applied after the handler in order to configure
 ---             some GUI widgets
---- @param msgs - the stream of external messages (usually coming from
----               an external port)
+--- @param hdl - the handle of the stream of external messages
 runConfigControlledGUI :: String ->
        (Widget, String -> GuiPort -> IO [ReconfigureItem]) -> Handle -> IO ()
 runConfigControlledGUI title (widget,exth) hdl = do
@@ -1018,13 +1010,12 @@ runConfigControlledGUI title (widget,exth) hdl = do
 --- In addition, an event handler is provided that process
 --- messages received from an external message stream.
 --- This operation is useful to run a GUI that should react on
---- user events as well as messages sent to an external port.
+--- user events as well as messages written to the given handle.
 --- @param title - the title of the main window containing the widget
 --- @param th - a pair (widget,exth) where widget is the widget shown in the
 ---             new window and exth is the event handler for external messages
 --- @param initcmd - the initial command executed before starting the GUI
---- @param msgs - the stream of external messages (usually coming from
----               an external port)
+--- @param hdl - the handle of the stream of external messages
 runInitControlledGUI :: String -> (Widget, String -> GuiPort -> IO ()) ->
                         (GuiPort -> IO [ReconfigureItem]) -> Handle -> IO ()
 runInitControlledGUI title (widget,exth) initcmd hdl = do
@@ -1052,8 +1043,9 @@ msgToIOHandler hdler hdl = IOHandler (hdl,\ _ hd gp -> do
 ---             new window and handlers is a list of event handler for external inputs
 --- @param handles - a list of handles to the external input streams for the
 ---                  corresponding event handlers
-runHandlesControlledGUI :: String -> (Widget,[Handle -> GuiPort -> IO [ReconfigureItem]])
-                           -> [Handle] -> IO ()
+runHandlesControlledGUI :: String
+                        -> (Widget,[Handle -> GuiPort -> IO [ReconfigureItem]])
+                        -> [Handle] -> IO ()
 runHandlesControlledGUI title widgethandlers handles =
   runInitHandlesControlledGUI title widgethandlers (\_->return []) handles
 
@@ -1072,8 +1064,9 @@ runHandlesControlledGUI title widgethandlers handles =
 --- @param initcmd - the initial command executed before starting the GUI
 --- @param handles - a list of handles to the external input streams for the
 ---                  corresponding event handlers
-runInitHandlesControlledGUI :: String -> (Widget,[Handle -> GuiPort -> IO [ReconfigureItem]])
-                               -> (GuiPort -> IO [ReconfigureItem]) -> [Handle] -> IO ()
+runInitHandlesControlledGUI :: String
+                     -> (Widget,[Handle -> GuiPort -> IO [ReconfigureItem]])
+                     -> (GuiPort -> IO [ReconfigureItem]) -> [Handle] -> IO ()
 runInitHandlesControlledGUI title (widget,handlers) initcmd handles =
  do gport <- openWish (escapeTcl title) ""
     initSchedule widget gport
@@ -1084,8 +1077,8 @@ runInitHandlesControlledGUI title (widget,handlers) initcmd handles =
 -- It is either a handler processing messages from an external port
 -- or a handler processing input from various IO streams
 data ExternalHandler =
-  IOHandler (Handle,
-       [EventHandler] -> Handle -> GuiPort -> IO (Maybe [ReconfigureItem]))
+ IOHandler (Handle,
+            [EventHandler] -> Handle -> GuiPort -> IO (Maybe [ReconfigureItem]))
 
 -- start the scheduler (see below) with a given Widget on a wish port
 -- and an initial command:
@@ -1112,11 +1105,11 @@ scheduleTkEvents :: [EventHandler] -> GuiPort -> [ExternalHandler] -> IO ()
 -- schedule GUI with handler for external port:
 scheduleTkEvents evs gport exthds = do
   (i,hdl) <- choiceOverHandles (map fst iohandlers)
-  if i <0 then done
-          else snd (iohandlers!!i) evs hdl gport >>=
-               configAndProceedScheduler evs gport exthds 
-    where
-      iohandlers = map (\ (IOHandler x) -> x) exthds
+  if i<0 then done
+         else snd (iohandlers!!i) evs hdl gport >>=
+              configAndProceedScheduler evs gport exthds 
+ where
+  iohandlers = map (\ (IOHandler x) -> x) exthds
 
 -- process an event from the wish and return the new configuration items:
 processTkEvent :: [EventHandler] -> Handle -> GuiPort
@@ -1139,6 +1132,8 @@ processTkEvent evs str gport =
 -- Reconfigure scheduler with new configurations and proceed.
 -- If the configs are Nothing, then terminate the scheduler
 -- (this case occurs of the connection is closed by wish)
+configAndProceedScheduler :: [(String,Event,GuiPort -> IO [ReconfigureItem])]
+  -> GuiPort -> [ExternalHandler] -> Maybe [ReconfigureItem] -> IO ()
 configAndProceedScheduler _ gport _ Nothing = closeGuiPort gport
 configAndProceedScheduler evs gport exths (Just configs) = do
   mapIO_ reconfigureGUI configs
@@ -1369,9 +1364,9 @@ addCanvas (WRefLabel var wtype) items gport = do
 ----------------------------------------------------------------------------
 
 --- A simple popup message.
-popup_message :: String -> IO ()
-popup_message s = runGUI "" (Col [] [Label [Text s],
-                                     Button exitGUI [Text "Dismiss"]])
+popupMessage :: String -> IO ()
+popupMessage s = runGUI "" (Col [] [Label [Text s],
+                                    Button exitGUI [Text "Dismiss"]])
 
 --- A simple event handler that can be associated to a widget.
 --- The event handler takes a GUI port as parameter in order to
