@@ -44,7 +44,7 @@ data AExpr a
   = AVar   a VarIndex
   | ALit   a Literal
   | AComb  a CombType (QName, a) [AExpr a]
-  | ALet   a [(VarIndex, AExpr a)] (AExpr a)
+  | ALet   a [((VarIndex, a), AExpr a)] (AExpr a)
   | AFree  a [(VarIndex, a)] (AExpr a)
   | AOr    a (AExpr a) (AExpr a)
   | ACase  a CaseType (AExpr a) [ABranchExpr a]

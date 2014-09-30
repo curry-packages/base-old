@@ -623,7 +623,7 @@ missingCombArgs :: AExpr _ -> Int
 missingCombArgs = missingArgs . combType
 
 --- get indices of variables in let declaration
-letBinds :: AExpr a -> [(VarIndex, AExpr a)]
+letBinds :: AExpr a -> [((VarIndex, a), AExpr a)]
 letBinds aexpr = case aexpr of
   (ALet _ vs _) -> vs
   _             -> error "AnnotatedFlatCurryGoodies.letBinds: no let declaration"
@@ -662,7 +662,7 @@ caseType aexpr = case aexpr of
 caseExpr :: AExpr a -> AExpr a
 caseExpr aexpr = case aexpr of
   (ACase _ _ e _) -> e
-  _               -> error "AnnotatedFlatCurryGoodies.caseExpr: no case expression"									       
+  _               -> error "AnnotatedFlatCurryGoodies.caseExpr: no case expression"
 
  --- get branch expressions from case expression
 caseBranches :: AExpr a -> [ABranchExpr a]
@@ -718,7 +718,7 @@ isCase e = case e of
 trExpr :: (a -> VarIndex -> b)
        -> (a -> Literal -> b)
        -> (a -> CombType -> (QName, a) -> [b] -> b)
-       -> (a -> [(VarIndex, b)] -> b -> b)
+       -> (a -> [((VarIndex, a), b)] -> b -> b)
        -> (a -> [(VarIndex, a)] -> b -> b)
        -> (a -> b -> b -> b)
        -> (a -> CaseType -> b -> [c] -> b)
@@ -767,7 +767,7 @@ updCombs :: (a -> CombType -> (QName, a) -> [AExpr a] -> AExpr a)
 updCombs comb = trExpr AVar ALit comb ALet AFree AOr ACase ABranch ATyped
 
 --- update all let expressions in given expression
-updLets :: (a -> [(VarIndex, AExpr a)] -> AExpr a -> AExpr a) -> AExpr a -> AExpr a
+updLets :: (a -> [((VarIndex, a), AExpr a)] -> AExpr a -> AExpr a) -> AExpr a -> AExpr a
 updLets lt = trExpr AVar ALit AComb lt AFree AOr ACase ABranch ATyped
 
 --- update all free declarations in given expression
@@ -822,7 +822,7 @@ allVars e = trExpr var lit comb lt fr or cas branch typed e []
   var _ = (:)
   lit _ = const id
   comb _ _ _ = foldr (.) id
-  lt _ bs exp = exp . foldr (.) id (map (\ (n,ns) -> (n:) . ns) bs)
+  lt _ bs exp = exp . foldr (.) id (map (\ ((n, _), ns) -> (n:) . ns) bs)
   fr _ vs exp = (map fst vs ++) . exp
   or _ = (.)
   cas _ _ exp bs = exp . foldr (.) id bs
@@ -837,7 +837,7 @@ rnmAllVars f = trExpr var ALit AComb lt fre AOr ACase branch ATyped
  where
    var a = AVar a . f
    fre a vs b = AFree a (map (\(v, x) -> (f v, x)) vs) b
-   lt a = ALet a . map (\ (n,exp) -> (f n,exp))
+   lt a = ALet a . map (\ ((n, x), exp) -> ((f n, x),exp))
    branch = ABranch . updPatArgs (map (\(v, a) -> (f v, a)))
 
 --- update all qualified names in expression
@@ -982,7 +982,7 @@ unAnnExpr = trExpr var lit comb lett fre or cse branch typed
   var   _       v = FC.Var v
   lit   _       l = FC.Lit l
   comb  _ ct n es = FC.Comb ct (fst n) es
-  lett  _    bs e = FC.Let bs e
+  lett  _    bs e = FC.Let (map (\((v, _), b) -> (v, b)) bs) e
   fre   _    vs e = FC.Free (map fst vs) e
   or    _     a b = FC.Or a b
   cse   _ ct e bs = FC.Case ct e bs
