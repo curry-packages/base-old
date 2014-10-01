@@ -165,6 +165,11 @@ The ideas of this library are described in
 <a href="http://www.informatik.uni-kiel.de/~mh/papers/PADL08.html">this paper</a>.
 </dd>
 
+<dt><code><a href="CDOC/Debug.html">Debug</a></code></dt>
+<dd>
+This library contains some useful operation for debugging programs.
+</dd>
+
 <dt><code><a href="CDOC/Directory.html">Directory</a></code></dt>
 <dd>
 This library supports the access to the directory structure of the
@@ -188,6 +193,12 @@ The ideas of this library are described in
 <b>Remark:</b>
 <em>This library has been revised to the library <code>Database</code>.
 Thus, it might not be further supported in the future.</em>
+</dd>
+
+<dt><code><a href="CDOC/Either.html">Either</a></code></dt>
+<dd>
+This library contains some useful operation for
+the <code>Either<code> data type.
 </dd>
 
 <dt><code><a href="CDOC/FileGoodies.html">FileGoodies</a></code></dt>

@@ -133,6 +133,11 @@ This library supports reading/writing files in CSV
 by most spreadsheed and database applications.
 </dd>
 
+<dt><code><a href="CDOC/Debug.html">Debug</a></code></dt>
+<dd>
+This library contains some useful operation for debugging programs.
+</dd>
+
 <dt><code><a href="CDOC/Directory.html">Directory</a></code></dt>
 <dd>
 This library supports the access to the directory structure of the
@@ -144,6 +149,12 @@ underlying operating system.
 This library contains functions to obtain information concerning the current
 distribution of the Curry implementation, e.g., compiler version,
 load paths, front end.
+</dd>
+
+<dt><code><a href="CDOC/Either.html">Either</a></code></dt>
+<dd>
+This library contains some useful operation for
+the <code>Either<code> data type.
 </dd>
 
 <dt><code><a href="CDOC/FileGoodies.html">FileGoodies</a></code></dt>
