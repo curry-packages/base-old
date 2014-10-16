@@ -5,6 +5,8 @@
 --- @version April 2007
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Time(ClockTime,
             CalendarTime(..),ctYear,ctMonth,ctDay,ctHour,ctMin,ctSec,ctTZ,
             getClockTime,getLocalTime,toUTCTime,toClockTime,toCalendarTime,
@@ -16,6 +18,7 @@ module Time(ClockTime,
 
 --- ClockTime represents a clock time in some internal representation.
 data ClockTime = CTime Int
+  deriving (Eq,Ord)
 
 --- A calendar time is presented in the following form:
 --- (CalendarTime year month day hour minute second timezone)

@@ -72,7 +72,9 @@ readUnqualifiedTerm prefixes s = case result of
   [(term,tail)]
      -> if all isSpace tail then term
         else error ("ReadShowTerm.readUnqualifiedTerm: no parse, unmatched string after term: "++tail)
-  [] ->  error "ReadShowTerm.readUnqualifiedTerm: no parse"
+  [] ->  error ("ReadShowTerm.readUnqualifiedTerm: no parse"
+                ++ "\nprefixes: " ++ show prefixes
+                ++ "\nstring: " ++ show s)
   _  ->  error "ReadShowTerm.readUnqualifiedTerm: ambiguous parse"
  where result = readsUnqualifiedTerm prefixes s
 

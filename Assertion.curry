@@ -6,6 +6,8 @@
 --- @version May 2014
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Assertion(-- for writing test cases:
                  Assertion,assertTrue,assertEqual,
                  assertValues,assertSolutions,assertIO,assertEqualIO,
@@ -90,7 +92,7 @@ seqStrActions a1 a2 =
 --- @param protocol - an action to be applied after test execution
 --- @param assertion - an assertion to be tested
 --- @return a protocol string and a flag whether the test was successful
-checkAssertion :: String -> ((String,Bool) -> IO (String,Bool)) -> Assertion _
+checkAssertion :: (Show a,Eq a) => String -> ((String,Bool) -> IO (String,Bool)) -> Assertion a
                -> IO (String,Bool)
 checkAssertion asrtop prot assrt = catchNDIO asrtop prot (execAsrt assrt)
  where
@@ -137,7 +139,7 @@ checkAssertTrue name cond = catchNDIO name return $
   else return ("FAILURE of "++name++": assertion not satisfied:\n",False)
 
 -- Checks equality assertion.
-checkAssertEqual :: String -> a -> a -> IO (String,Bool)
+checkAssertEqual :: (Show a,Eq a) => String -> a -> a -> IO (String,Bool)
 checkAssertEqual name call result = catchNDIO name return $
   if call==result
   then return ("OK: "++name++"\n",True)
@@ -146,7 +148,7 @@ checkAssertEqual name call result = catchNDIO name return $
                "Expected answer: "++show result++"\n",False)
 
 -- Checks all values assertion.
-checkAssertValues :: String -> a -> [a] -> IO (String,Bool)
+checkAssertValues :: (Show a, Eq a) => String -> a -> [a] -> IO (String,Bool)
 checkAssertValues name call results = do
   rs <- getAllValues call
   if null (rs \\ results) && null (results \\ rs)
@@ -156,7 +158,7 @@ checkAssertValues name call results = do
                 "Expected values: "++show results++"\n",False)
 
 -- Checks all solutions of a constraint abstraction.
-checkAssertSolutions :: String -> (a->Success) -> [a] -> IO (String,Bool)
+checkAssertSolutions :: (Show a, Eq a) => String -> (a->Success) -> [a] -> IO (String,Bool)
 checkAssertSolutions name constr results = do
   rs <- getAllSolutions constr
   if null (rs \\ results) && null (results \\ rs)
@@ -166,7 +168,7 @@ checkAssertSolutions name constr results = do
                 "Expected values: "++show results++"\n",False)
 
 -- Checks an IO assertion.
-checkAssertIO :: String -> IO a -> a -> IO (String,Bool)
+checkAssertIO :: (Show a, Eq a) => String -> IO a -> a -> IO (String,Bool)
 checkAssertIO name action result = do
   r <- action
   if r==result
@@ -176,7 +178,7 @@ checkAssertIO name action result = do
                  "Expected answer: "++show result++"\n\n",False)
 
 -- Checks equality of results of two IO assertions.
-checkAssertEqualIO :: String -> IO a -> IO a -> IO (String,Bool)
+checkAssertEqualIO :: (Show a, Eq a) => String -> IO a -> IO a -> IO (String,Bool)
 checkAssertEqualIO name action1 action2 = do
   r1 <- action1
   r2 <- action2
@@ -203,6 +205,7 @@ writeAssertResult (result,flag) =
 --- Used by the currytest tool.
 data ProtocolMsg = TestModule String | TestCase String Bool | TestFinished
                  | TestCompileError
+  deriving Show
 
 --- Sends message to GUI for showing test of a module.
 --- Used by the currytest tool.

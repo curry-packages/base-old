@@ -6,6 +6,8 @@
 --- @version February 2004
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Sort(quickSort,mergeSort,
             cmpChar, cmpList, cmpString,
             leqChar, leqCharIgnoreCase,leqList,
@@ -58,7 +60,7 @@ merge leq (x:xs) (y:ys) | leq x y   = x : merge leq xs (y:ys)
 -- Comparing lists, characters and strings
 
 --- Less-or-equal on lists.
-leqList :: (a -> a -> Bool) -> [a] -> [a] -> Bool
+leqList :: Eq a => (a -> a -> Bool) -> [a] -> [a] -> Bool
 leqList _   []     _      = True
 leqList _   (_:_)  []     = False
 leqList leq (x:xs) (y:ys) | x == y    = leqList leq xs ys
