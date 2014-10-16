@@ -12,6 +12,8 @@
 --  Fri Aug 20 11:04:22 MEST 2004
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Combinatorial(permute, subset, splitSet,
                      sizedSubset, partition) where
 
@@ -52,7 +54,7 @@ subset (_:xs) =   subset xs
 --- @param l - The list.
 --- @return All the sublists of the argument.
 
-allSubsets      :: [a] -> [[a]]
+allSubsets :: Ord a => [a] -> [[a]]
 allSubsets list = sortValues (set1 subset list)
 
 --- Split a list into any two sublists.

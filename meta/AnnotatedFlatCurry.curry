@@ -14,6 +14,8 @@
 --- @version July 2013
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module AnnotatedFlatCurry
   ( module AnnotatedFlatCurry
   , module FlatCurry
@@ -27,17 +29,20 @@ import FlatCurry ( QName, VarIndex, Visibility (..), TVarIndex
 
 --- Annotated FlatCurry program (corresponds to a module)
 data AProg a = AProg String [String] [TypeDecl] [AFuncDecl a] [OpDecl]
+  deriving Show
 
 --- Arity of a function declaration
 type Arity = Int
 
 --- Annotated function declaration
 data AFuncDecl a = AFunc QName Arity Visibility TypeExpr (ARule a)
+  deriving Show
 
 --- Annotated function rule
 data ARule a
   = ARule     a [(VarIndex, a)] (AExpr a)
   | AExternal a String
+  deriving Show
 
 --- Annotated expression
 data AExpr a
@@ -49,11 +54,14 @@ data AExpr a
   | AOr    a (AExpr a) (AExpr a)
   | ACase  a CaseType (AExpr a) [ABranchExpr a]
   | ATyped a (AExpr a) TypeExpr
+  deriving Show
 
 --- Annotated case branch
 data ABranchExpr a = ABranch (APattern a) (AExpr a)
+  deriving Show
 
 --- Annotated pattern
 data APattern a
   = APattern  a (QName, a) [(VarIndex, a)] --- constructor pattern
   | ALPattern a Literal                    --- literal pattern
+  deriving Show

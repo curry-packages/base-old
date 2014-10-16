@@ -10,6 +10,8 @@
 --- @version June 2011
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Pretty (
 
   -- pretty printer and document type
@@ -665,6 +667,44 @@ data Tokens = Text String Tokens
             | Empty
             | OpenNest (Margins -> Remaining -> Width -> Margins) Tokens
             | CloseNest Tokens
+
+instance Eq Tokens where
+  Text str1 ts1 == Text str2 ts2 = str1 == str2 && ts1 == ts2
+  Text _ _ == Line _ _ = False
+  Text _ _ == Open _ = False
+  Text _ _ == Close _ = False
+  Text _ _ == Empty = False
+  Text _ _ == OpenNest _ _ = False
+  Text _ _ == CloseNest _ = False
+  Line str1 ts1 == Line str2 ts2 = str1 == str2 && ts1 == ts2
+  Line _ _ == Text _ _ = False
+  Line _ _ == Open _ = False
+  Line _ _ == Close _ = False
+  Line _ _ == Empty = False
+  Line _ _ == OpenNest _ _ = False
+  Line _ _ == CloseNest _ = False
+  Open ts1 == Open ts2 = ts1 == ts2
+  Open _ == Text _ _ = False
+  Open _ == Line _ _ = False
+  Open _ == Close _ = False
+  Open _ == Empty = False
+  Open _ == OpenNest _ _ = False
+  Open _ == CloseNest _ = False
+  Close ts1 == Close ts2 = ts1 == ts2
+  Close _ == Text _ _ = False
+  Close _ == Line _ _ = False
+  Close _ == Open _ = False
+  Close _ == Empty = False
+  Close _ == OpenNest _ _ = False
+  Close _ == CloseNest _ = False
+  OpenNest _ _ == _ = False
+  CloseNest ts1 == CloseNest ts2 = ts1 == ts2
+  CloseNest _ == Text _ _ = False
+  CloseNest _ == Line _ _ = False
+  CloseNest _ == Open _ = False
+  CloseNest _ == Close _ = False
+  CloseNest _ == Empty = False
+  CloseNest _ == OpenNest _ _ = False
 
 normalise :: Tokens -> Tokens
 normalise = go id

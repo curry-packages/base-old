@@ -6,6 +6,8 @@
 --- @version September 2014
 -----------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,
           openFile,hClose,hFlush,hIsEOF,isEOF,
           hSeek,hWaitForInput,hWaitForInputs,
@@ -210,7 +212,7 @@ hPutStrLn :: Handle -> String -> IO ()
 hPutStrLn h s = hPutStr h s >> hPutChar h '\n'
 
 --- Converts a term into a string and puts it to an output handle.
-hPrint :: Handle -> _ -> IO ()
+hPrint :: Show a => Handle -> a -> IO ()
 hPrint h = hPutStrLn h . show
 
 

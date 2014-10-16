@@ -14,6 +14,8 @@
 --- @version February 2008
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module NamedSocket(Socket,
                    listenOn, socketAccept, waitForSocketAccept,
                    connectToSocketRepeat, connectToSocketWait,

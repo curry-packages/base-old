@@ -38,7 +38,7 @@
 --- DAMAGE.
 --- ---------------------------------------------------------------------------
 
-
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 {-
 Two rather obscure features are missing: The Bash 2.0 non-option hack
@@ -130,7 +130,7 @@ usageInfo header optDescr = unlines (header:table) where
   sameLen xs     = flushLeft ((maximum . map length) xs) xs
   flushLeft n xs = [ take n (x ++ repeat ' ') | x <- xs ]
 
-maximum :: [a] -> a
+maximum :: Ord a => [a] -> a
 maximum [] = error "maximum with empty list"
 maximum xs@(_:_) = foldl1 max xs
 

@@ -5,25 +5,27 @@
 --- @version September 2010
 ----------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Constraint((<:),(>:),(<=:),(>=:),andC,orC,allC,anyC)
  where
 
 infix  4 <:, >:, <=:, >=:
 
 --- Less-than on ground data terms as a constraint.
-(<:)   :: a -> a -> Success
+(<:) :: Ord a => a -> a -> Success
 x <: y = (x<y) =:= True
 
 --- Greater-than on ground data terms as a constraint.
-(>:)   :: a -> a -> Success
+(>:) :: Ord a => a -> a -> Success
 x >: y = (x>y) =:= True
 
 --- Less-or-equal on ground data terms as a constraint.
-(<=:)  :: a -> a -> Success
+(<=:) :: Ord a => a -> a -> Success
 x <=: y = (x<=y) =:= True
 
 --- Greater-or-equal on ground data terms as a constraint.
-(>=:)  :: a -> a -> Success
+(>=:) :: Ord a => a -> a -> Success
 x >=: y = (x>=y) =:= True
 
 --- Evaluates the conjunction of a list of constraints.

@@ -7,6 +7,8 @@
 --- @version July 2014
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Integer((^), pow, ilog, isqrt, factorial, binomial,
                abs, max3, min3, maxlist, minlist,
                bitTrunc, bitAnd, bitOr, bitNot, bitXor,
@@ -112,7 +114,7 @@ abs n = if n<0 then -n else n
 --- @param p - Argument.
 --- @return the maximum among `n`, `m` and `p`.
 
-max3 :: a -> a -> a -> a
+max3 ::Ord a => a -> a -> a -> a
 max3 n m p = max n (max m p)
 
 --- Returns the minimum of the three arguments.
@@ -122,7 +124,7 @@ max3 n m p = max n (max m p)
 --- @param p - Argument.
 --- @return the minimum among `n`, `m` and `p`.
 
-min3 :: a -> a -> a -> a
+min3 :: Ord a => a -> a -> a -> a
 min3 n m p = min n (min m p)
 
 --- Returns the maximum of a list of integer values.
@@ -131,7 +133,7 @@ min3 n m p = min n (min m p)
 --- @param l - The list of values.
 --- @return the maximum element of `l`.
 
-maxlist :: [a] -> a
+maxlist :: Ord a => [a] -> a
 maxlist [n] = n
 maxlist (n:m:ns) = max n (maxlist (m:ns))
 
@@ -141,7 +143,7 @@ maxlist (n:m:ns) = max n (maxlist (m:ns))
 --- @param l - The list of values.
 --- @return the minimum element of `l`.
 
-minlist :: [a] -> a
+minlist :: Ord a=> [a] -> a
 minlist [n] = n
 minlist (n:m:ns) = min n  (minlist (m:ns))
 
@@ -188,9 +190,9 @@ bitOr n m = if m == 0 then n
 
 bitNot :: Int -> Int
 bitNot n = aux 32 n
-  where aux c m = if c==0 then 0
-                  else let p = 2 * aux (c-1) (m `div` 2)
-                           q = 1 - m `mod` 2
+  where aux c m = if c==(0 :: Int) then 0
+                  else let p = 2 * aux (c-1) (m `div` (2 :: Int))
+                           q = 1 - m `mod` (2 :: Int)
                         in p + q
 
 --- Returns the bitwise exclusive OR of the two arguments.

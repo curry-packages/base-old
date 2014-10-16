@@ -19,6 +19,8 @@
 --- @version February 2014
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             HtmlForm(..),FormParam(..),CookieParam(..),
             CgiRef,idOfCgiRef,CgiEnv,HtmlHandler,
@@ -77,6 +79,7 @@ defaultEncoding = "utf-8" --"iso-8859-1"
 --- The (abstract) data type for representing references to input elements
 --- in HTML forms.
 data CgiRef = CgiRef String
+  deriving Eq
 
 --- Internal identifier of a CgiRef (intended only for internal use in other
 --- libraries!).
@@ -104,6 +107,24 @@ data HtmlExp =
  | HtmlStruct String [(String,String)] [HtmlExp]
  | HtmlCRef   HtmlExp CgiRef
  | HtmlEvent  HtmlExp HtmlHandler
+
+instance Eq HtmlExp where
+  HtmlText str1 == HtmlText str2 = str1 == str2
+  HtmlText str1 == HtmlStruct str2 [] [] = str1 == str2
+  HtmlText _ == HtmlStruct _ (_:_) (_:_) = False
+  HtmlText _ == HtmlCRef _ _ = False
+  HtmlText _ == HtmlEvent _ _ = False
+  HtmlStruct str1 strs1 exprs1 == HtmlStruct str2 strs2 exprs2 =
+    str1 == str2 && strs1 == strs2 && exprs1 == exprs2
+  HtmlStruct str1 [] [] == HtmlText str2 = str1 == str2
+  HtmlStruct _ (_:_) (_:_) == HtmlText _ = False
+  HtmlStruct _ _ _ == HtmlCRef _ _ = False
+  HtmlStruct _ _ _ == HtmlEvent _ _ = False
+  HtmlCRef expr1 ref1 == HtmlCRef expr2 ref2 = expr1 == expr2 && ref1 == ref2
+  HtmlCRef _ _ == HtmlText _ = False
+  HtmlCRef _ _ == HtmlStruct _ _ _ = False
+  HtmlCRef _ _ == HtmlEvent _ _ = False
+  HtmlEvent _ _ == _ = False
 
 --- Extracts the textual contents of a list of HTML expressions.
 ---
@@ -166,6 +187,7 @@ data FormParam = FormCookie   String String [CookieParam]
                | HeadInclude  HtmlExp
                | MultipleHandlers
                | BodyAttr     (String,String)
+  deriving Eq
 
 --- An encoding scheme for a HTML form.
 formEnc :: String -> FormParam
@@ -196,6 +218,7 @@ data CookieParam = CookieExpire ClockTime
                  | CookieDomain String
                  | CookiePath   String
                  | CookieSecure
+  deriving Eq
 
 --- A basic HTML form for active web pages with the default encoding
 --- and a default background.
@@ -1083,6 +1106,7 @@ runFormServerWithKeyAndFormParams url cgikey formparams hformact = do
                                  hformact socket state
 
 -- The default timeout period for the cgi server in milliseconds:
+defaultCgiServerTimeout :: Int
 defaultCgiServerTimeout = 7200000 -- two hours
 
 
@@ -1274,13 +1298,13 @@ showAnswerFormInEnv url key hform@(HtmlForm _ _ _) crefnr = do
   (htmlstring,evhs) <- showHtmlFormInEnv url key hform crefnr
   return (addHtmlContentType htmlstring, evhs)
 showAnswerFormInEnv _ _ (HtmlAnswer ctype cont) _ = do
-  return ("Content-Length: " ++ show (length cont) ++
+  return ("Content-Length: " ++ show (length cont :: Int) ++
           "\nContent-Type: "++ctype++"\n\n"++cont, [])
 
 
 -- Adds the initial content lines (including content length) to an HTML string.
 addHtmlContentType htmlstring =
-    "Content-Length: " ++ show (length htmlstring) ++ "\n" ++
+    "Content-Length: " ++ show (length htmlstring :: Int) ++ "\n" ++
     "Content-Type: text/html\n\n" ++ htmlstring
 
 -- return the HTML string corresponding to an HtmlForm:
@@ -1477,7 +1501,7 @@ cenv2hidden env = concat (map pair2hidden env)
 -- association lists (list of tag/value pairs):
 
 -- change an associated value (or add association, if not there):
-changeAssoc :: [(tt,tv)] -> tt -> tv -> [(tt,tv)]
+changeAssoc ::  Eq tt => [(tt,tv)] -> tt -> tv -> [(tt,tv)]
 changeAssoc [] tag val = [(tag,val)]
 changeAssoc ((tag1,val1):tvs) tag val =
    if tag1 == tag then (tag,val) : tvs
@@ -1560,7 +1584,7 @@ attrLatexEnv env attr content
 -- to avoid having to rerun latex for inaccurat tables.
 latexTabFormat :: [HtmlExp] -> String
 latexTabFormat rows = "{" ++ replicate breadth 'l' ++ "}"
-  ++ "\\setcounter{LTchunksize}{"++show (length rows+5)++"}%"
+  ++ "\\setcounter{LTchunksize}{"++show ((length rows+5) :: Int)++"}%"
   where
     breadth = foldl max 0 (map getBreadth rows)
 
@@ -1925,7 +1949,7 @@ getServerStatus state@(stime,maxkey,_,evs) = do
   lstime <- toCalendarTime stime
   pinfos <- getProcessInfos
   return $ "Status: " ++ busy ++ ", Maxkey: "++show maxkey ++ ", #Handlers: " ++
-           show (length evs) ++ ", Start time: " ++
+           show (length evs :: Int) ++ ", Start time: " ++
            calendarTimeToString lstime ++ "\n" ++
            showMemInfo pinfos
 
@@ -1982,7 +2006,7 @@ cleanOldEventHandlers state@(stime,maxkey,cleandate,ehs@(_:_)) = do
    then return state
    else do
      let currentehs = filter (isNotExpired ctime) ehs
-         noehs = length ehs
+         noehs = length ehs :: Int
          nocurrentehs = length currentehs
      if nocurrentehs < noehs
       then do -- report cleanup numbers:

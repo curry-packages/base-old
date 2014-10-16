@@ -154,6 +154,7 @@ data Event = DefaultEvent
            | MouseButton3
            | KeyPress
            | Return
+  deriving Eq
 
 -- translate event into corresponding Tcl string (except for DefaultEvent)
 -- with a leading blank:

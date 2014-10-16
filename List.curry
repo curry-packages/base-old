@@ -1,9 +1,11 @@
 ------------------------------------------------------------------------------
---- Library with some useful operations on lists.
+--- Library with some useful operations on lists, using type classes
 ---
---- @author Michael Hanus, Bjoern Peemoeller
---- @version September 2012
+--- @author Michael Hanus, Bjoern Peemoeller, Matthias Boehm
+--- @version August 2013
 ------------------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module List
   ( elemIndex, elemIndices, find, findIndex, findIndices
@@ -11,7 +13,7 @@ module List
   , intersperse, intercalate, transpose, permutations, partition
   , group, groupBy, splitOn, split, inits, tails, replace
   , isPrefixOf, isSuffixOf, isInfixOf
-  , sortBy, insertBy
+  , sortBy, insertBy, sort, insert
   , last, init
   , sum, product, maximum, minimum
   , scanl, scanl1, scanr, scanr1
@@ -25,11 +27,11 @@ infix 5 \\
 
 --- Returns the index `i` of the first occurrence of an element in a list
 --- as `(Just i)`, otherwise `Nothing` is returned.
-elemIndex               :: a -> [a] -> Maybe Int
+elemIndex               :: Eq a => a -> [a] -> Maybe Int
 elemIndex x              = findIndex (x ==)
 
 --- Returns the list of indices of occurrences of an element in a list.
-elemIndices             :: a -> [a] -> [Int]
+elemIndices             :: Eq a => a -> [a] -> [Int]
 elemIndices x            = findIndices (x ==)
 
 --- Returns the first element `e` of a list satisfying a predicate as `(Just e)`,
@@ -47,7 +49,7 @@ findIndices             :: (a -> Bool) -> [a] -> [Int]
 findIndices p xs         = [ i | (x,i) <- zip xs [0..], p x ]
 
 --- Removes all duplicates in the argument list.
-nub                   :: [a] -> [a]
+nub                   :: Eq a => [a] -> [a]
 nub xs                 = nubBy (==) xs
 
 --- Removes all duplicates in the argument list according to an
@@ -57,7 +59,7 @@ nubBy _  []            = []
 nubBy eq (x:xs)        = x : nubBy eq (filter (\y -> not (eq x y)) xs)
 
 --- Deletes the first occurrence of an element in a list.
-delete                :: a -> [a] -> [a]
+delete                :: Eq a => a -> [a] -> [a]
 delete                 = deleteBy (==)
 
 --- Deletes the first occurrence of an element in a list
@@ -71,17 +73,17 @@ deleteBy eq x (y:ys)   = if eq x y then ys else y : deleteBy eq x ys
 --- @param ys - a list
 --- @return the list where the first occurrence of each element of
 ---         `ys` has been removed from `xs`
-(\\) :: [a] -> [a] -> [a]
+(\\) :: Eq a => [a] -> [a] -> [a]
 xs \\ ys = foldl (flip delete) xs ys
 
 --- Computes the union of two lists.
-union                 :: [a] -> [a] -> [a]
+union                 :: Eq a => [a] -> [a] -> [a]
 union []     ys        = ys
 union (x:xs) ys        = if x `elem` ys then union xs ys
                                         else x : union xs ys
 
 --- Computes the intersection of two lists.
-intersect             :: [a] -> [a] -> [a]
+intersect             :: Eq a => [a] -> [a] -> [a]
 intersect []     _     = []
 intersect (x:xs) ys    = if x `elem` ys then x : intersect xs ys
                                         else intersect xs ys
@@ -133,7 +135,7 @@ partition p xs  = foldr select ([],[]) xs
 --- elements.
 ---
 --- Example: `(group [1,2,2,3,3,3,4]) = [[1],[2,2],[3,3,3],[4]]`
-group :: [a] -> [[a]]
+group :: Eq a => [a] -> [[a]]
 group = groupBy (==)
 
 --- Splits the list argument into a list of lists of related adjacent
@@ -149,7 +151,7 @@ groupBy eq (x:xs) = (x:ys) : groupBy eq zs
 --- Breaks the second list argument into pieces separated by the first
 --- list argument, consuming the delimiter. An empty delimiter is
 --- invalid, and will cause an error to be raised.
-splitOn :: [a] -> [a] -> [[a]]
+splitOn :: Eq a => [a] -> [a] -> [[a]]
 splitOn []          _  = error "splitOn called with an empty pattern"
 splitOn [x]         xs = split (x ==) xs
 splitOn sep@(_:_:_) xs = go xs
@@ -198,7 +200,7 @@ replace x p (y:ys) | p==0      = x:ys
 --- @param xs - a list
 --- @param ys - a list
 --- @return `True` if `xs` is a prefix of `ys`
-isPrefixOf :: [a] -> [a] -> Bool
+isPrefixOf :: Eq a => [a] -> [a] -> Bool
 isPrefixOf [] _ = True
 isPrefixOf (_:_) [] = False
 isPrefixOf (x:xs) (y:ys) = x==y && (isPrefixOf xs ys)
@@ -207,19 +209,31 @@ isPrefixOf (x:xs) (y:ys) = x==y && (isPrefixOf xs ys)
 --- @param xs - a list
 --- @param ys - a list
 --- @return `True` if `xs` is a suffix of `ys`
-isSuffixOf :: [a] -> [a] -> Bool
+isSuffixOf :: Eq a => [a] -> [a] -> Bool
 isSuffixOf xs ys = isPrefixOf (reverse xs) (reverse ys)
 
 --- Checks whether a list is contained in another.
 --- @param xs - a list
 --- @param ys - a list
 --- @return True if xs is contained in ys
-isInfixOf :: [a] -> [a] -> Bool
+isInfixOf :: Eq a => [a] -> [a] -> Bool
 isInfixOf xs ys = any (isPrefixOf xs) (tails ys)
+
+--- Sorts the given list
+sort :: Ord a => [a] -> [a]
+sort = foldr insert []
 
 --- Sorts a list w.r.t. an ordering relation by the insertion method.
 sortBy :: (a -> a -> Bool) -> [a] -> [a]
 sortBy le = foldr (insertBy le) []
+
+--- Inserts an element in the list according to the ordering
+insert :: Ord a => a -> [a] -> [a]
+insert x [] = [x]
+
+insert x (y:ys) = if x <= y
+                    then x : y : ys
+                    else y : insert x ys
 
 --- Inserts an object into a list according to an ordering relation.
 --- @param le - an ordering relation (e.g., less-or-equal)
@@ -243,19 +257,19 @@ init [_]      = []
 init (x:y:xs) = x : init (y:xs)
 
 --- Returns the sum of a list of integers.
-sum :: [Int] -> Int
+sum :: Num a => [a] -> a
 sum ns = foldl (+) 0 ns
 
 --- Returns the product of a list of integers.
-product :: [Int] -> Int
+product :: Num a => [a] -> a
 product ns = foldl (*) 1 ns
 
 --- Returns the maximum of a non-empty list.
-maximum :: [a] -> a
+maximum :: Ord a => [a] -> a
 maximum xs@(_:_) =  foldl1 max xs
 
 --- Returns the minimum of a non-empty list.
-minimum :: [a] -> a
+minimum :: Ord a => [a] -> a
 minimum xs@(_:_) =  foldl1 max xs
 
 --- `scanl` is similar to `foldl`, but returns a list of successive

@@ -9,6 +9,8 @@
 --- @version June 2012
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module AbstractCurryPrinter
   ( showProg, showTypeDecls, showTypeDecl, showTypeExpr
   , showFuncDecl, showExpr, showPattern
@@ -76,7 +78,7 @@ showExports types funcs =
     getTypeName (CTypeSyn (_,name) _ _ _) = name
 
     allPublicCons :: CTypeDecl -> Bool
-    allPublicCons (CType _ _ _ c) = length (filter isPublicCons c) == length c 
+    allPublicCons (CType _ _ _ c) = length (filter isPublicCons c) == (length c :: Int) 
       where isPublicCons (CCons _ _ visibility _) = visibility==Public
     allPublicCons (CTypeSyn _ _ _ _) = False
 

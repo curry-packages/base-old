@@ -9,6 +9,8 @@
 --- @version June 2009
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module FlatCurry where
 
 import Directory(doesFileExist)
@@ -33,7 +35,7 @@ import FileGoodies(stripSuffix)
 --- contained in this module, respectively.
 
 data Prog = Prog String [String] [TypeDecl] [FuncDecl] [OpDecl]
-
+  deriving (Eq,Show)
 
 --- The data type for representing qualified names.
 --- In FlatCurry all names are qualified to avoid name clashes.
@@ -45,6 +47,7 @@ type QName = (String,String)
 
 data Visibility = Public    -- public (exported) entity
                 | Private   -- private entity
+  deriving (Eq,Show)
 
 --- The data type for representing type variables.
 --- They are represented by `(TVar i)` where `i` is a type variable index.
@@ -71,12 +74,13 @@ type TVarIndex = Int
 
 data TypeDecl = Type    QName Visibility [TVarIndex] [ConsDecl]
               | TypeSyn QName Visibility [TVarIndex] TypeExpr
+  deriving (Eq,Show)
 
 --- A constructor declaration consists of the name and arity of the
 --- constructor and a list of the argument types of the constructor.
 
 data ConsDecl = Cons QName Int Visibility [TypeExpr]
-
+  deriving (Eq,Show)
 
 --- Data type for type expressions.
 --- A type expression is either a type variable, a function type,
@@ -91,17 +95,21 @@ data TypeExpr =
    | FuncType TypeExpr TypeExpr     -- function type t1->t2
    | TCons QName [TypeExpr]         -- type constructor application
                                     -- TCons module name typeargs
+  deriving (Eq,Ord)
 
+instance Show TypeExpr where
+  show = showTerm
 
 --- Data type for operator declarations.
 --- An operator declaration `fix p n` in Curry corresponds to the
 --- FlatCurry term `(Op n fix p)`.
 
 data OpDecl = Op QName Fixity Int
+  deriving (Eq,Show)
 
 --- Data types for the different choices for the fixity of an operator.
 data Fixity = InfixOp | InfixlOp | InfixrOp
-
+  deriving (Eq,Show)
 
 --- Data type for representing object variables.
 --- Object variables occurring in expressions are represented by `(Var i)`
@@ -134,6 +142,7 @@ type VarIndex = Int
 --- Thus, a function declaration consists of the name, arity, type, and rule.
 
 data FuncDecl = Func QName Int Visibility TypeExpr Rule
+  deriving (Eq,Show)
 
 
 --- A rule is either a list of formal parameters together with an expression
@@ -141,11 +150,13 @@ data FuncDecl = Func QName Int Visibility TypeExpr Rule
 
 data Rule = Rule [VarIndex] Expr
           | External String
+  deriving (Eq,Show)
 
 --- Data type for classifying case expressions.
 --- Case expressions can be either flexible or rigid in Curry.
 
 data CaseType = Rigid | Flex       -- type of a case expression
+  deriving (Eq,Ord,Show)
 
 --- Data type for classifying combinations
 --- (i.e., a function/constructor applied to some arguments).
@@ -159,6 +170,7 @@ data CaseType = Rigid | Flex       -- type of a case expression
 ---                      missing arguments
 
 data CombType = FuncCall | ConsCall | FuncPartCall Int | ConsPartCall Int
+  deriving (Eq,Ord,Show)
 
 --- Data type for representing expressions.
 ---
@@ -214,6 +226,8 @@ data Expr = Var VarIndex
           | Or Expr Expr
           | Case CaseType Expr [BranchExpr]
           | Typed Expr TypeExpr
+  deriving (Eq,Ord,Show)
+
 
 
 --- Data type for representing branches in a case expression.
@@ -230,11 +244,13 @@ data Expr = Var VarIndex
 --- like float or character constants).
 
 data BranchExpr = Branch Pattern Expr
+  deriving (Eq,Ord,Show)
 
 --- Data type for representing patterns in case expressions.
 
 data Pattern = Pattern QName [VarIndex]
              | LPattern Literal
+  deriving (Eq,Ord,Show)
 
 --- Data type for representing literals occurring in an expression
 --- or case branch. It is either an integer, a float, or a character constant.
@@ -242,7 +258,7 @@ data Pattern = Pattern QName [VarIndex]
 data Literal = Intc   Int
              | Floatc Float
              | Charc  Char
-
+  deriving (Eq,Ord,Show)
 
 ------------------------------------------------------------------------------
 --- I/O action which parses a Curry program and returns the corresponding

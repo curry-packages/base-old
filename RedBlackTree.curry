@@ -10,6 +10,8 @@
 --- @version March 2005
 ----------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module RedBlackTree 
   (RedBlackTree, empty, isEmpty, lookup, update, 
    tree2list, sort, newTreeLike, setInsertEquivalence, delete
@@ -76,7 +78,7 @@ updateTree eq lt e t = let (Tree _     e2 l r) = upd t
                         | otherwise = balanceR (Tree c e2 l (upd r))
 
 --- Deletes entry from red black tree.
-delete :: a -> RedBlackTree a -> RedBlackTree a
+delete :: Eq a => a -> RedBlackTree a -> RedBlackTree a
 delete e (RedBlackTree eqIns eqLk lt t) =
           RedBlackTree eqIns eqLk lt (blackenRoot (deleteTree eqLk lt e t))
   where
@@ -112,7 +114,7 @@ tree2listTree tree = t2l tree []
 --- Generic sort based on insertion into red-black trees.
 --- The first argument is the order for the elements.
 
-sort  :: (a->a->Bool) -> [a] -> [a]
+sort  :: Eq a => (a->a->Bool) -> [a] -> [a]
 sort cmp xs = tree2list (foldr update (empty (\_ _->False) (==) cmp) xs)
 
 --- For compatibility with old version only
@@ -126,10 +128,12 @@ rbt (RedBlackTree _ _ _ t) = t
 
 --- The colors of a node in a red-black tree.
 data Color = Red | Black | DoublyBlack
+  deriving Eq
 
 --- The structure of red-black trees.
 data Tree a = Tree Color a (Tree a) (Tree a)
             | Empty
+  deriving Eq
 
 isBlack :: Tree _ -> Bool
 isBlack Empty = True
@@ -190,7 +194,7 @@ balanceR tree
 
 --- balancing after deletion
 
-delBalanceL :: Tree a  ->  Tree a
+delBalanceL :: Eq a => Tree a  ->  Tree a
 delBalanceL tree = if isDoublyBlack (left tree) then reviseLeft tree else tree
 
 reviseLeft tree
@@ -211,7 +215,7 @@ reviseLeft tree
     r = right tree
     blackr = isBlack r
 
-delBalanceR :: Tree a  ->  Tree a
+delBalanceR :: Eq a => Tree a  ->  Tree a
 delBalanceR tree = if isDoublyBlack (right tree) then reviseRight tree else tree
 
 reviseRight tree
