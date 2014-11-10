@@ -25,6 +25,7 @@ data ClockTime = CTime Int
 --- where timezone is an integer representing the timezone as a difference
 --- to UTC time in seconds.
 data CalendarTime = CalendarTime Int Int Int Int Int Int Int
+  deriving (Eq,Show)
 
 --- The year of a calendar time.
 ctYear :: CalendarTime -> Int

@@ -10,6 +10,8 @@
 --- @version March 2005
 ----------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module TableRBT where
 
 import qualified RedBlackTree as RBT
@@ -21,7 +23,7 @@ import qualified RedBlackTree as RBT
 type TableRBT key a = RBT.RedBlackTree (key,a) 
 
 --- Returns an empty table, i.e., an empty red-black tree.
-emptyTableRBT :: (a -> a -> Bool) -> TableRBT a _ 
+emptyTableRBT :: Eq a => (a -> a -> Bool) -> TableRBT a _ 
 emptyTableRBT lt = RBT.empty (\ x y -> fst x==fst y) 
                              (\ x y -> fst x==fst y)
                              (\ x y -> lt (fst x) (fst y))
@@ -46,7 +48,7 @@ updateRBT k e = RBT.update (k,e)
 tableRBT2list :: TableRBT key a -> [(key,a)]
 tableRBT2list = RBT.tree2list
 
-deleteRBT :: key -> TableRBT key a -> TableRBT key a
+deleteRBT :: (Eq a,Eq key) => key -> TableRBT key a -> TableRBT key a
 deleteRBT key = RBT.delete (key,failed)
 
 -- end of TableRBT

@@ -12,6 +12,9 @@
 --- @author Jasper Sikorra - jsi@informatik.uni-kiel.de
 --- @version March 2014
 ------------------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Format(showChar,showInt,showFloat,showString) where
 
 import Char
@@ -274,9 +277,9 @@ onePrePoint (Floater s m1 m2 e) | m1 == "0" && m2 == ""       =
   Floater s m1 m2 e
                                 | m1 == "0" && m2 /= ""       =
   onePrePoint (Floater s [head m2] (tail m2) (e-1))
-                                | m1 /= "0" && length m1 == 1 =
+                                | m1 /= "0" && length m1 == (1 :: Int) =
   Floater s m1 m2 e
-                                | m1 /= "0" && length m1 >= 1 =
+                                | m1 /= "0" && length m1 >= (1 :: Int) =
   onePrePoint (Floater s (init m1) ((last m1):m2) (e+1))
 
 roundFloater :: Int -> Floater -> Floater
@@ -342,6 +345,7 @@ convertPrecision = maybe 1 id
 
 --- FILLING A STRING WITH APPROPRIATE ALIGNMENT
 data Alignment = LeftAlign | RightAlign
+  deriving Eq
 
 fillWithCharsLeftAlign :: Int -> Char -> String -> String
 fillWithCharsLeftAlign  = fillWithChars LeftAlign

@@ -8,6 +8,8 @@
 --- @version June 2009
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module CompactFlatCurry(generateCompactFlatCurryFile,computeCompactFlatCurry,
                         Option(..),RequiredSpec,requires,alwaysRequired,
                         defaultRequired) where
@@ -43,6 +45,7 @@ data Option =
   | InitFuncs [QName]
   | Required [RequiredSpec]
   | Import String
+  deriving Eq
 
 isMainOption o = case o of
                    Main _ -> True
@@ -69,6 +72,7 @@ addImport2Options options =
 ------------------------------------------------------------------------------
 --- Data type to specify requirements of functions.
 data RequiredSpec = AlwaysReq QName | Requires QName QName
+  deriving Eq
 
 --- (fun `requires` reqfun) specifies that the use of the function "fun"
 --- implies the application of function "reqfun".
@@ -161,7 +165,7 @@ computeCompactFlatCurry orgoptions progname =
     prog <- readCurrentFlatCurry progname
     resultprog <- makeCompactFlatCurry prog options
     putStrLn ("CompactFlat: Number of functions after optimization: " ++
-              show (length (moduleFuns resultprog)))
+              show (length (moduleFuns resultprog) :: Int))
     return resultprog
 
 --- Create the optimized program.
@@ -181,7 +185,7 @@ makeCompactFlatCurry mainmod options = do
                     (emptySetRBT leqQName) (emptySetRBT leqQName)
                     initreqfuncs
   putStrLn ("\nCompactFlat: Total number of functions (without unused imports): "
-            ++ show (foldr (+) 0 (map (length . moduleFuns) finalmods)))
+            ++ show (foldr (+) (0 :: Int) (map (length . moduleFuns) finalmods)))
   let finalfnames  = map functionName finalfuncs
   return (Prog (moduleName mainmod)
                []

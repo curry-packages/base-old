@@ -28,6 +28,8 @@
 --- @version Fri Jun 10 12:49:36 PDT 2011
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Random(nextInt, nextIntRange, nextBoolean, getRandomSeed) where
 
 import Time

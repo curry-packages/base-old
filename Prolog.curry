@@ -8,6 +8,8 @@
 --- @version August 14, 2014
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Prolog(PlClause(..), PlGoal(..), PlTerm(..), plList,
               showPlProg, showPlClause, showPlGoals, showPlGoal, showPlTerm)
   where
@@ -76,9 +78,9 @@ showPlTerm (PlInt i)       = show i
 showPlTerm (PlFloat f)     = show f
 showPlTerm (PlStruct f []) = showPlAtom f
 showPlTerm (PlStruct f args@(h:t))
-  | f=="." && length args == 2 -- a Prolog list
+  | f=="." && length args == (2 :: Int) -- a Prolog list
     = "[" ++ showPlTerm h ++ showPlListElems (head t) ++ "]"
-  | (f=="," || all (`elem` specialChars) f) && length args == 2 -- infix op
+  | (f=="," || all (`elem` specialChars) f) && length args == (2 :: Int) -- infix op
     = "("++ showPlTerm (args!!0) ++ f ++ showPlTerm (args!!1) ++")"
   | otherwise = showPlAtom f ++"("++ intercalate "," (map showPlTerm args) ++")"
 

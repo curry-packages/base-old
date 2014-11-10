@@ -24,6 +24,7 @@
 --- @version April 2005
 ----------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module CurryStringClassifier
          (Tokens,Token(..), scan, plainCode, unscan,
@@ -209,9 +210,10 @@ lineBeginsWith :: [Char] -> [Char] -> Bool
 lineBeginsWith line s | length line < lens = False
                       | otherwise 
                       = line==s || 
-                        let (s',rest) = splitAt (length s) line 
+                        let (s',rest) = splitAt (length s :: Int) line 
                          in s==s' && (null rest || isSep (head rest))
   where
+    lens :: Int
     lens = length s
 
 

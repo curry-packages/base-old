@@ -5,6 +5,8 @@
 --- @version January 2014
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Char
   ( isAscii, isLatin1, isAsciiUpper, isAsciiLower, isControl
   , isUpper, isLower, isAlpha, isDigit, isAlphaNum

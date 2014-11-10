@@ -822,23 +822,23 @@ external_d_C_negateFloat (C_Float x) _  _  = C_Float (negateFloat# x)
 external_d_C_negateFloat x           cd cs
   = (external_d_C_negateFloat `d_OP_dollar_hash` x) cd cs
 
-external_d_C_prim_Float_plus :: Curry_Prelude.C_Float -> Curry_Prelude.C_Float -> Cover -> ConstStore -> Curry_Prelude.C_Float
+external_d_C_prim_Float_plus :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
 external_d_C_prim_Float_plus y x _ _ =
   toCurry ((fromCurry x + fromCurry y) :: Float)
 
-external_d_C_prim_Float_minus :: Curry_Prelude.C_Float -> Curry_Prelude.C_Float -> Cover -> ConstStore -> Curry_Prelude.C_Float
+external_d_C_prim_Float_minus :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
 external_d_C_prim_Float_minus y x _ _ =
   toCurry ((fromCurry x - fromCurry y) :: Float)
 
-external_d_C_prim_Float_times :: Curry_Prelude.C_Float -> Curry_Prelude.C_Float -> Cover -> ConstStore -> Curry_Prelude.C_Float
+external_d_C_prim_Float_times :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
 external_d_C_prim_Float_times y x _ _ =
   toCurry ((fromCurry x * fromCurry y) :: Float)
 
-external_d_C_prim_Float_div :: Curry_Prelude.C_Float -> Curry_Prelude.C_Float -> Cover -> ConstStore -> Curry_Prelude.C_Float
+external_d_C_prim_Float_div :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
 external_d_C_prim_Float_div y x _ _ =
   toCurry ((fromCurry x / fromCurry y) :: Float)
 
-external_d_C_prim_i2f :: Curry_Prelude.C_Int -> Cover -> ConstStore -> Curry_Prelude.C_Float
+external_d_C_prim_i2f :: C_Int -> Cover -> ConstStore -> C_Float
 external_d_C_prim_i2f x _ _ = toCurry (fromInteger (fromCurry x) :: Float)
 
 -- -----------------------------------------------------------------------------

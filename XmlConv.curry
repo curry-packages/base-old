@@ -5,6 +5,9 @@
 ---
 --- @author Sebastian Fischer
 --- @version March 2006
+
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module XmlConv (
 
   -- converter types

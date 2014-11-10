@@ -2,6 +2,8 @@
 --- are always infinite. Consequently, there is no test on emptiness.
 --- @authors {bbr, fhu}@informatik.uni-kiel.de
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Array 
   (Array,
 

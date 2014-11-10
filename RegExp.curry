@@ -10,6 +10,8 @@
 -- - Stard and End are not implemented
 -- - No function to match only a part of a lists
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module RegExp(match, RegExp, ORegExp(..)) where
 
 import List
@@ -32,7 +34,7 @@ data ORegExp a = Nil
 --- @param s - The input list
 --- @param r - The regular expression
 --- @result True if matched else False
-match :: [a] -> RegExp a -> Bool
+match :: Ord a => [a] -> RegExp a -> Bool
 match s re = case re of
   []                  -> s == []
   (Nil:ors)           -> match s ors
@@ -56,12 +58,12 @@ match s re = case re of
   (Times (n,m) r:ors) -> matchtimes s n m r ors
 
 -- Matching with a star
-matchstar :: [a] -> RegExp a -> RegExp a -> Bool
+matchstar :: Ord a => [a] -> RegExp a -> RegExp a -> Bool
 matchstar st r rgx = (||)
   (match st rgx)
   (tryeach (map (\x -> match x r) (inits st)) (tails st) r rgx)
 
-tryeach :: [Bool] -> [[a]] -> RegExp a -> RegExp a -> Bool
+tryeach :: Ord a => [Bool] -> [[a]] -> RegExp a -> RegExp a -> Bool
 tryeach [] []         _  _   = False
 tryeach (b:bs) (t:ts) r  rgx = 
   (||)
@@ -72,14 +74,14 @@ tryeach (b:bs) (t:ts) r  rgx =
     (tryeach bs ts r rgx)
 
 -- Matching with a plus
-matchplus :: [a] -> RegExp a -> RegExp a -> Bool
+matchplus :: Ord a => [a] -> RegExp a -> RegExp a -> Bool
 matchplus st r rgx = tryeach (map (\x -> match x r) ini) tls r rgx
   where
     ini = tail (inits st)
     tls = tail (tails st)
 
 -- Matching with a bracket
-matchbracket :: [Either a (a,a)] -> a -> Bool
+matchbracket :: Ord a => [Either a (a,a)] -> a -> Bool
 matchbracket [] _                          = False
 matchbracket (Left c:es)        d | c == d = True
                                   | c /= d = matchbracket es d
@@ -89,14 +91,14 @@ matchbracket (Right (c1,c2):es) d          =
     (matchbracket es d)
 
 -- Matching an amount of times between a range
-matchtimes :: [a] -> Int -> Int -> RegExp a -> RegExp a -> Bool
+matchtimes :: Ord a => [a] -> Int -> Int -> RegExp a -> RegExp a -> Bool
 matchtimes s n m r rgx | m == 0 = match s rgx
                        | m >  0 =
   tryeachRestricted (m-n) (map (\x -> match x mr) (inits s)) (tails s) r rgx
   where
     mr = concat (replicate n r)
 
-tryeachRestricted :: Int -> [Bool] -> [[a]] -> RegExp a -> RegExp a -> Bool
+tryeachRestricted :: Ord a => Int -> [Bool] -> [[a]] -> RegExp a -> RegExp a -> Bool
 tryeachRestricted _      []     []     _   _   = False
 tryeachRestricted m      (b:bs) (t:ts) r  rgx  =
   (||)

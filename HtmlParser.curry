@@ -5,6 +5,8 @@
 --- @version November 2011
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module HtmlParser(readHtmlFile,parseHtmlString) where
 
 import HTML

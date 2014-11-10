@@ -32,6 +32,8 @@
 --- @version August 2011
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module KeyDatabaseSQLite (
 
   Query, runQ, transformQ, getDB,
@@ -700,6 +702,7 @@ data TErrorKind = KeyNotExistsError
                 | MaxError
                 | UserDefinedError
                 | ExecutionError
+  deriving Show
 
 --- Transforms a transaction error into a string.
 showTError :: TError -> String

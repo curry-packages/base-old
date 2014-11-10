@@ -7,6 +7,9 @@
 --- @author Stefan Junge
 --- @version June 2011
 -------------------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module PrettyAbstract (showCProg, printCProg, cprogDoc,
                        prettyCProg, cprogDocWithPrecedences,
                        printUCProg, preludePrecs, precs, prettyCTypeExpr,
@@ -441,7 +444,7 @@ ruleDoc pr mod name (CRule patterns choices localDecls) -- (CRule args body)
     | otherwise = hang 2 (hang 2 (nameAndParam <$> align (vsep (map choiceDoc choices))) <> whereDoc)
   where
     nameAndParam =
-        if isInfixName name && length patterns == 2
+        if isInfixName name && length patterns == (2 :: Int)
             then patternDoc mod (patterns!!0) <+> text (snd name) <+> patternDoc mod (patterns!!1)
             else qname mod name <> paramDoc
   
@@ -503,22 +506,22 @@ expDoc2 _ pr mPrec mod (CLambda ps e)
 
 expDoc2 amILeft pr mPrec mod (CApply e1 e2)
     | maybe False isTupleName mfname = tupled (map (expDoc unknown pr Nothing mod) fargs)
-    | maybe False isInfixName mfname && length fargs == 2
+    | maybe False isInfixName mfname && length fargs == (2 :: Int)
        = showPrecs (snd fname) (amILeft,pOp, mPrec) <> 
          (align $ precFillEncloseSep amILeft pOp mPrec lbr rbr empty
                  [expDoc True pr (Just pOp) mod (fargs!!0) 
                  ,space <> text (snd fname)
                  ,space <> expDoc False pr (Just pOp) mod (fargs!!1)])
-    | maybe False isInfixName mfname && length fargs > 2
+    | maybe False isInfixName mfname && length fargs > (2 :: Int)
        = appPar True mPrec $
          app (fillEncloseSep lparen rparen empty
                  [expDoc  True pr (Just pOp) mod (fargs!!0) 
                  ,space <> text (snd fname)
                  ,space <> expDoc False pr (Just pOp) mod (fargs!!1)])
              (map (expDoc False pr (Just (unknown,11)) mod) (drop 2 fargs))
-    | maybe False (== ("Prelude","if_then_else")) mfname && length fargs == 3 =
+    | maybe False (== ("Prelude","if_then_else")) mfname && length fargs == (3 :: Int) =
         par mPrec $ hang 1 $ ifThenElse
-    | maybe False (== ("Prelude","if_then_else")) mfname && length fargs > 3 =
+    | maybe False (== ("Prelude","if_then_else")) mfname && length fargs > (3 :: Int) =
         appPar True mPrec $ hang 1 $
         app (parens ifThenElse)
             (map (expDoc False pr (Just (unknown,11)) mod) (drop 3 fargs))
@@ -612,7 +615,7 @@ patternDoc mod cpc@(CPComb qn pns)
    | isJust mListPatt = listDoc (map (patternDoc mod) listPatt)
    | null pns = qname mod qn
    | isTupleName qn = tupleDoc (map (patternDoc mod) pns)
-   | isInfixName qn && length pns == 2 = 
+   | isInfixName qn && length pns == (2 :: Int) = 
         parens $ patternDoc mod (pns!!0)  <+> 
                  text (snd qn) <+>
                  patternDoc mod (pns!!1)
@@ -630,7 +633,7 @@ patternDoc mod cpc@(CPComb qn pns)
 patternDoc mod (CPAs vn p) = tvarDoc vn <> text "@" <> patternDoc mod p
 patternDoc mod (CPFuncComb qn pns)
    | null pns = qname mod qn
-   | isInfixName qn && length pns == 2
+   | isInfixName qn && length pns == (2 :: Int)
        = parens $ patternDoc mod (pns!!0) <> text (snd qn) <> patternDoc mod (pns!!1)
    | otherwise = parens (qname mod qn <+> hsep (map (patternDoc mod) pns))
 --patternDoc mod (CPLazy pn) = text "~" <> patternDoc mod pn

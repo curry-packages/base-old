@@ -19,6 +19,12 @@ module IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,
 --- The abstract type of a handle for a stream.
 data Handle -- internally defined
 
+instance Eq Handle where
+  (==) = handle_eq
+
+handle_eq :: Handle -> Handle -> Bool
+handle_eq external
+
 --- The modes for opening a file.
 data IOMode = ReadMode | WriteMode | AppendMode
 

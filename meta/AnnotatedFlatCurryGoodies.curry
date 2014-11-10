@@ -15,6 +15,8 @@
 --- @version June 2013
 --------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module AnnotatedFlatCurryGoodies where
 
 import AnnotatedFlatCurry

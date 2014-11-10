@@ -15,6 +15,8 @@
 --- @version January 2006
 ----------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module FlatCurryGoodies where
 
 import FlatCurry

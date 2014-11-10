@@ -5,6 +5,8 @@
 --- @version July 2012
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module System
   ( getCPUTime,getElapsedTime
   , getArgs, getEnviron, setEnviron, unsetEnviron, getProgName

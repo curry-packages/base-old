@@ -9,6 +9,8 @@
 --- @version August 2006
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module PropertyFile(readPropertyFile,updatePropertyFile) where
 
 import Directory

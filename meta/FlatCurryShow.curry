@@ -12,6 +12,8 @@
 --- @version December 2005
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module FlatCurryShow(showFlatProg,showFlatType,showFlatFunc,
                      showCurryType,showCurryExpr,showCurryId,showCurryVar)
    where
@@ -238,7 +240,7 @@ showCurryExpr tf nested b (Case ctype e cs) =
 showCurryExpr tf nested b (Typed e ty) =
   showBracketsIf nested (showCurryExpr tf True b e ++ " :: " ++ showCurryType tf False ty)
 
-showCurryVar i = "v" ++ show i
+showCurryVar i = "v" ++ show (i :: Int)
 
 --- Shows an identifier in Curry form. Thus, operators are enclosed in brackets.
 showCurryId name | isAlpha (head name) = name
@@ -303,7 +305,7 @@ isFiniteList (Var _) = False
 isFiniteList (Lit _) = False
 isFiniteList (Comb _ name args)
   | name==("Prelude","[]") && args==[] = True
-  | name==("Prelude",":") && length args == 2 = isFiniteList (args!!1)
+  | name==("Prelude",":") && length args == (2 :: Int) = isFiniteList (args!!1)
   | otherwise = False
 isFiniteList (Let _ _) = False
 isFiniteList (Free _ _) = False
@@ -314,7 +316,7 @@ isFiniteList (Case _ _ _) = False
 isStringConstant :: Expr -> Bool
 isStringConstant e = case e of
   Comb _ name args -> (name==("Prelude","[]") && null args) ||
-                      (name==("Prelude",":") && length args == 2 &&
+                      (name==("Prelude",":") && length args == (2 :: Int) &&
                        isCharConstant (head args) && isStringConstant (args!!1))
   _                -> False
 

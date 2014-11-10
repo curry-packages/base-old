@@ -28,6 +28,9 @@ instance ConvertCurryHaskell C_SeekMode SeekMode where
   fromCurry _            = error "SeekMode data with no ground term occurred"
 
 
+external_d_C_handle_eq :: C_Handle -> C_Handle -> Cover -> ConstStore -> Curry_Prelude.C_Bool
+external_d_C_handle_eq (PrimData h1) (PrimData h2) _ _ = toCurry (h1 == h2)
+
 external_d_C_stdin :: Cover -> ConstStore -> C_Handle
 external_d_C_stdin _ _ = PrimData (OneHandle stdin)
 

@@ -5,6 +5,8 @@
 --- @version June 2009
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module FileGoodies(separatorChar,pathSeparatorChar,suffixSeparatorChar,
                    isAbsolute,dirName,baseName,splitDirectoryBaseName,
                    stripSuffix,fileSuffix,splitBaseName,splitPath,

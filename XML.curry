@@ -8,6 +8,8 @@
 --- @version January 2011
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module XML(XmlExp(..),Encoding(..),XmlDocParams(..),
        tagOf,elemsOf,textOf,textOfXml,xtxt,xml,
        showXmlDoc,showXmlDocWithParams,
@@ -25,6 +27,7 @@ import List(intersperse)
 ---               of XML elements as contents
 data XmlExp = XText String                             -- text string (PCDATA)
             | XElem String [(String,String)] [XmlExp]  -- (tag attrs contents)
+  deriving Eq
 
 ------------------------------------------------------------------------------
 --- The data type for encodings used in the XML document.
@@ -178,7 +181,7 @@ showXmlExp i encFun (XElem tag attrs xexps) =
   xtab i ++ showXmlOpenTag tag attrs encFun ++
   if xexps == []
   then " />\n"
-  else if length xexps == 1 && isXText (head xexps)
+  else if length xexps == (1 :: Int) && isXText (head xexps)
        then let [XText s] = xexps
             in  ">" ++ (encFun s) ++ "</" ++ tag ++ ">\n"
        else ">\n" ++ showXmlExps (i+2) xexps encFun ++

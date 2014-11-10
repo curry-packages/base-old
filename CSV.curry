@@ -7,6 +7,8 @@
 --- @version September 2004
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module CSV(showCSV,readCSV,readCSVWithDelims,
            writeCSVFile,readCSVFile,readCSVFileWithDelims) where
 

@@ -7,6 +7,8 @@
 --- @version September 2014
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module GUI(GuiPort,Widget(..),Button,ConfigButton,
            TextEditScroll,ListBoxScroll,CanvasScroll,EntryScroll,
            ConfItem(..),ReconfigureItem(..),
@@ -124,6 +126,7 @@ data ConfItem =
  | Width Int       
  | Fill | FillX | FillY           
  | TclOption String
+  deriving Eq
 
 --- Data type for describing configurations that are applied
 --- to a widget or GUI by some event handler.
@@ -138,6 +141,7 @@ data ReconfigureItem =
    WidgetConf WidgetRef ConfItem
  | StreamHandler Handle (Handle -> GuiPort -> IO [ReconfigureItem])
  | RemoveStreamHandler Handle
+  deriving Eq
 
 --- The data type of possible events on which handlers can react.
 --- This list is still incomplete and might be extended or restructured
@@ -154,6 +158,7 @@ data Event = DefaultEvent
            | MouseButton3
            | KeyPress
            | Return
+  deriving Eq
 
 -- translate event into corresponding Tcl string (except for DefaultEvent)
 -- with a leading blank:
@@ -174,6 +179,7 @@ event2tcl Return       = " <Return>"
 --- @cons BottomAlign  - bottom alignment
 data ConfCollection =
    CenterAlign | LeftAlign | RightAlign | TopAlign | BottomAlign
+  deriving Eq
 
 --- The data type for specifying items in a menu.
 --- @cons MButton - a button with an associated command
@@ -184,6 +190,7 @@ data MenuItem =
    MButton (GuiPort -> IO [ReconfigureItem]) String
  | MSeparator
  | MMenuButton String [MenuItem]
+  deriving Eq
 
 --- The data type of items in a canvas.
 --- The last argument are further options in Tcl/Tk (for testing).
@@ -192,7 +199,7 @@ data CanvasItem = CLine [(Int,Int)] String
                 | CRectangle (Int,Int) (Int,Int) String
                 | COval (Int,Int) (Int,Int) String
                 | CText (Int,Int) String String
-
+  deriving Eq
 
 --- The (hidden) data type of references to a widget in a GUI window.
 --- Note that the constructor WRefLabel will not be exported so that values
@@ -203,6 +210,7 @@ data CanvasItem = CLine [(Int,Int)] String
 ---       button / canvas / checkbutton / entry / label / listbox /
 ---       message / scale / scrollbar / textedit
 data WidgetRef = WRefLabel String String
+  deriving Eq
 
 wRef2Label (WRefLabel var _)   = wRefname2Label var
 wRef2Wtype (WRefLabel _ wtype) = wtype

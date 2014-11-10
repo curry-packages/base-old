@@ -6,6 +6,8 @@
 --- @version June 2009
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module FlatCurryRead(readFlatCurryWithImports,readFlatCurryWithImportsInPath,
                      readFlatCurryIntWithImports,
                      readFlatCurryIntWithImportsInPath)

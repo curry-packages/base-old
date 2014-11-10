@@ -6,6 +6,8 @@
 --- @version October 2006
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Dequeue(Queue,empty,isEmpty,deqHead,deqLast,cons,deqTail,snoc,deqInit,
                listToDeq,deqToList,deqReverse,deqLength,rotate,
                matchHead,matchLast)

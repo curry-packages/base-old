@@ -6,6 +6,7 @@
 --- @version April 2005
 ------------------------------------------------------------------------------
 
+
 module FlexRigid(FlexRigidResult(..),getFlexRigid) where
 
 import FlatCurry

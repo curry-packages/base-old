@@ -7,6 +7,9 @@
 --- @author Sebastian Fischer
 --- @version March 2006
 ------------------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module FlatCurryXML (
 
   flatCurry2XmlFile, flatCurry2Xml, xmlFile2FlatCurry, xml2FlatCurry

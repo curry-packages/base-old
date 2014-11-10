@@ -10,6 +10,8 @@
 --- @version December 2011
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Markdown(MarkdownDoc,MarkdownElem(..),fromMarkdownText,
                 removeEscapes, markdownEscapeChars,
                 markdownText2HTML,markdownText2CompleteHTML,
@@ -150,32 +152,32 @@ dropFirst s = if null s then [] else tail s
 -- translate a header line
 tryMDHeader s rtxt =
   let (sharps,htxt) = break (==' ') s
-      level = length sharps
+      level = length sharps :: Int
    in if null htxt || level>6
       then markdownPar s rtxt
       else SMDHeader level (dropFirst htxt) : markdownText rtxt
 
 -- is a line a horizontal rule:
 isHRule l =
-  (all (\c -> isSpace c || c=='-') l && length (filter (=='-') l) > 3) ||
-  (all (\c -> isSpace c || c=='*') l && length (filter (=='*') l) > 3)
+  (all (\c -> isSpace c || c=='-') l && length (filter (=='-') l) > (3 :: Int)) ||
+  (all (\c -> isSpace c || c=='*') l && length (filter (=='*') l) > (3 :: Int))
 
 -- check whether a line starts with an unordered item indicator ("* ")
 -- and return indent:
 isUnorderedItemLine s =
   let (blanks,nonblanks) = span (==' ') s
-   in if take 2 nonblanks `elem` ["* ","- ","+ "] then length blanks+2 else 0
+   in if take 2 nonblanks `elem` ["* ","- ","+ "] then length blanks+2 :: Int else 0
 
 -- check whether a line starts with an indented number and return indent value:
 isNumberedItemLine s =
   let (blanks,nonblanks) = span (==' ') s
-      numblanks = length blanks
+      numblanks = length blanks :: Int
    in checkNumber numblanks nonblanks
  where
   checkNumber indt numtxt =
     let (ns,brt) = break (==' ') numtxt
         (blanks,rtxt) = break (/=' ') brt
-        nsl = length ns
+        nsl = length ns :: Int
      in if nsl>0 && all isDigit (take (nsl-1) ns) && ns!!(nsl-1)=='.' &&
            not (null blanks) && not (null rtxt)
         then indt+nsl+length blanks
@@ -184,7 +186,7 @@ isNumberedItemLine s =
 -- check whether a line starts with at least four blanks and return indent value:
 isCodeLine s =
   let (blanks,nonblanks) = span (==' ') s
-      numblanks = length blanks
+      numblanks = length blanks :: Int
    in if not (null nonblanks) && numblanks >= 4 then numblanks else 0
 
 -- parse a paragraph (where the initial part of the paragraph is given
@@ -291,7 +293,7 @@ markdownHRef txt = let (url,rtxt) = break (=='>') txt in
 insideMarkdownElem marker etext s =
   if marker `isPrefixOf` s
   then text2MDElem marker (reverse etext)
-        : outsideMarkdownElem "" (drop (length marker) s)
+        : outsideMarkdownElem "" (drop (length marker :: Int) s)
   else case s of
         []     -> [SMDText (marker ++ reverse etext)] -- end marker missing
         ('\\':c:cs) -> if c `elem` markdownEscapeChars
