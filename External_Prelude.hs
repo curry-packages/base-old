@@ -34,51 +34,19 @@ isTrue# x = x
 
 -- Class for Curry types
 class (Show a, Read a, NonDet a, Generable a, NormalForm a, Unifiable a)
-      => Curry a where
-  -- implementation of strict equalit (==) for a data type
-  (=?=) :: a -> a -> Cover -> ConstStore -> C_Bool
-  (=?=) = error "(==) is undefined"
-  -- implementation of less-or-equal (<=) for a data type
-  (<?=) :: a -> a -> Cover -> ConstStore -> C_Bool
-  (<?=) = error "(<=) is undefined"
+      => Curry a
 
-instance Curry (PrimData a) where
-  (=?=) = error "(==) is undefined for primitive data"
-  -- (<?=) = error "(<=) is undefined for primitive data"
+instance Curry (PrimData a)
 
 -- BEGIN GENERATED FROM PrimTypes.curry
-instance Curry C_Success where
-  (=?=) (Choice_C_Success cd i x y) z d cs = narrow cd i (((x =?= z) d) cs) (((y =?= z) d) cs)
-  (=?=) (Choices_C_Success cd i xs) y d cs = narrows cs cd i (\x -> ((x =?= y) d) cs) xs
-  (=?=) (Guard_C_Success cd c e) y d cs = guardCons cd c (((e =?= y) d) (addCs c cs))
-  (=?=) (Fail_C_Success cd info) _ _ _ = failCons cd info
-  (=?=) z (Choice_C_Success cd i x y) d cs = narrow cd i (((z =?= x) d) cs) (((z =?= y) d) cs)
-  (=?=) y (Choices_C_Success cd i xs) d cs = narrows cs cd i (\x -> ((y =?= x) d) cs) xs
-  (=?=) y (Guard_C_Success cd c e) d cs = guardCons cd c (((y =?= e) d) (addCs c cs))
-  (=?=) _ (Fail_C_Success cd info) _ _ = failCons cd info
-  (=?=) C_Success C_Success d cs = C_True
-  -- (<?=) (Choice_C_Success cd i x y) z d cs = narrow cd i (((x <?= z) d) cs) (((y <?= z) d) cs)
-  -- (<?=) (Choices_C_Success cd i xs) y d cs = narrows cs cd i (\x -> ((x <?= y) d) cs) xs
-  -- (<?=) (Guard_C_Success cd c e) y d cs = guardCons cd c (((e <?= y) d) (addCs c cs))
-  -- (<?=) (Fail_C_Success cd info) _ _ _ = failCons cd info
-  -- (<?=) z (Choice_C_Success cd i x y) d cs = narrow cd i (((z <?= x) d) cs) (((z <?= y) d) cs)
-  -- (<?=) y (Choices_C_Success cd i xs) d cs = narrows cs cd i (\x -> ((y <?= x) d) cs) xs
-  -- (<?=) y (Guard_C_Success cd c e) d cs = guardCons cd c (((y <?= e) d) (addCs c cs))
-  -- (<?=) _ (Fail_C_Success cd info) _ _ = failCons cd info
-  -- (<?=) C_Success C_Success d cs = C_True
+instance Curry C_Success
 -- END GENERATED FROM PrimTypes.curry
 
-instance (Curry t0, Curry t1) => Curry (Func t0 t1) where
-  (=?=) = error "(==) is undefined for functions"
-  -- (<?=) = error "(<=) is undefined for functions"
+instance (Curry t0, Curry t1)
+    
+instance Curry t0 => Curry (C_IO t0)
 
-instance Curry t0 => Curry (C_IO t0) where
-  (=?=) = error "(==) is undefined for IO actions"
-  -- (<?=) = error "(<=) is undefined for IO actions"
-
-instance NonDet b => Curry (a -> b) where
-  (=?=) = error "(==) is undefined for functions"
-  -- (<?=) = error "(<=) is undefined for functions"
+instance NonDet b => Curry (a -> b)
 
 -- -----------------------------------------------------------------------------
 -- Int representation
@@ -175,31 +143,35 @@ instance Unifiable C_Int where
   lazyBind _  _ (Fail_C_Int _ info) = [Unsolvable info]
   lazyBind cd i (Guard_C_Int _ cs e) = getConstrList cs ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry C_Int where
-  (=?=) (Choice_C_Int d i x y) z cd cs = narrow d i ((x =?= z) cd cs) ((y =?= z) cd cs)
-  (=?=) (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x =?= y) cd cs) xs
-  (=?=) (Guard_C_Int d c x) y cd cs = guardCons d c ((x =?= y) cd $! (addCs c cs))
-  (=?=) (Fail_C_Int d info) _ _ _ = failCons d info
-  (=?=) z (Choice_C_Int d i x y) cd cs = narrow d i ((z =?= x) cd cs) ((z =?= y) cd cs)
-  (=?=) y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y =?= x) cd cs) xs
-  (=?=) y (Guard_C_Int d c x) cd cs = guardCons d c ((y =?= x) cd $! (addCs c cs))
-  (=?=) _ (Fail_C_Int d info) _ _ = failCons d info
-  (=?=) (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 ==# y1))
-  (=?=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =?= y1) cd cs
-  (=?=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =?= (primint2curryint y1)) cd cs
-  (=?=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =?= y1) cd cs
-  -- (<?=) (Choice_C_Int d i x y) z cd cs = narrow d i ((x <?= z) cd cs) ((y <?= z) cd cs)
-  -- (<?=) (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x<?= y) cd cs) xs
-  -- (<?=) (Guard_C_Int d c x) y cd cs = guardCons d c ((x <?= y) cd $! (addCs c cs))
-  -- (<?=) (Fail_C_Int d info) _ _ _ = failCons d info
-  -- (<?=) z (Choice_C_Int d i x y) cd cs = narrow d i ((z <?= x) cd cs) ((z <?= y) cd cs)
-  -- (<?=) y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y <?= x) cd cs) xs
-  -- (<?=) y (Guard_C_Int d c x) cd cs = guardCons d c ((y <?= x) cd $! (addCs c cs))
-  -- (<?=) _ (Fail_C_Int d info) _ _ = failCons d info
-  -- (<?=) (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 <=# y1))
-  -- (<?=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) `d_C_lteqInteger` y1) cd cs
-  -- (<?=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 `d_C_lteqInteger` (primint2curryint y1)) cd cs
-  -- (<?=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
+instance Curry C_Int
+
+external_d_C_eqInt :: C_Int -> C_Int -> Cover -> ConstStore -> C_Bool
+external_d_C_eqInt (Choice_C_Int d i x y) z cd cs = narrow d i ((x `external_d_C_eqInt` z) cd cs) ((y `external_d_C_eqInt` z) cd cs)
+external_d_C_eqInt (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_eqInt` y) cd cs) xs
+external_d_C_eqInt (Guard_C_Int d c x) y cd cs = guardCons d c ((x `external_d_C_eqInt` y) cd $! (addCs c cs))
+external_d_C_eqInt (Fail_C_Int d info) _ _ _ = failCons d info
+external_d_C_eqInt z (Choice_C_Int d i x y) cd cs = narrow d i ((z `external_d_C_eqInt` x) cd cs) ((z `external_d_C_eqInt` y) cd cs)
+external_d_C_eqInt y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_eqInt` x) cd cs) xs
+external_d_C_eqInt y (Guard_C_Int d c x) cd cs = guardCons d c ((y `external_d_C_eqInt` x) cd $! (addCs c cs))
+external_d_C_eqInt _ (Fail_C_Int d info) _ _ = failCons d info
+external_d_C_eqInt (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 ==# y1))
+external_d_C_eqInt (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) `d_C_eqBinInt` y1) cd cs
+external_d_C_eqInt (C_CurryInt x1) (C_Int      y1) cd cs = (x1 `d_C_eqBinInt` (primint2curryint y1)) cd cs
+external_d_C_eqInt (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 `d_C_eqBinInt` y1) cd cs
+
+external_d_C_ltEqInt :: C_Int -> C_Int -> Cover -> ConstStore -> C_Bool
+external_d_C_ltEqInt (Choice_C_Int d i x y) z cd cs = narrow d i ((x `external_d_C_ltEqInt` z) cd cs) ((y `external_d_C_ltEqInt` z) cd cs)
+external_d_C_ltEqInt (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x`external_d_C_ltEqInt` y) cd cs) xs
+external_d_C_ltEqInt (Guard_C_Int d c x) y cd cs = guardCons d c ((x `external_d_C_ltEqInt` y) cd $! (addCs c cs))
+external_d_C_ltEqInt (Fail_C_Int d info) _ _ _ = failCons d info
+external_d_C_ltEqInt z (Choice_C_Int d i x y) cd cs = narrow d i ((z `external_d_C_ltEqInt` x) cd cs) ((z `external_d_C_ltEqInt` y) cd cs)
+external_d_C_ltEqInt y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_ltEqInt` x) cd cs) xs
+external_d_C_ltEqInt y (Guard_C_Int d c x) cd cs = guardCons d c ((y `external_d_C_ltEqInt` x) cd $! (addCs c cs))
+external_d_C_ltEqInt _ (Fail_C_Int d info) _ _ = failCons d info
+external_d_C_ltEqInt (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 <=# y1))
+external_d_C_ltEqInt (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) `d_C_lteqInteger` y1) cd cs
+external_d_C_ltEqInt (C_CurryInt x1) (C_Int      y1) cd cs = (x1 `d_C_lteqInteger` (primint2curryint y1)) cd cs
+external_d_C_ltEqInt (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
 --END GENERATED FROM PrimTypes.curry
 
 primint2curryint :: Int# -> BinInt
@@ -298,25 +270,29 @@ instance Unifiable C_Float where
   lazyBind _  _ (Fail_C_Float _ info) = [Unsolvable info]
   lazyBind cd  i (Guard_C_Float _ cs e) = getConstrList cs ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry C_Float where
-  (=?=) (Choice_C_Float d i x y) z cd cs = narrow d i ((x =?= z) cd cs) ((y =?= z) cd cs)
-  (=?=) (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x =?= y) cd cs) xs
-  (=?=) (Guard_C_Float d c x) y cd cs = guardCons d c ((x =?= y) cd  $! (addCs c cs))
-  (=?=) (Fail_C_Float d info) _ _ _= failCons d info
-  (=?=) z (Choice_C_Float d i x y) cd cs = narrow d i ((z =?= x) cd cs) ((z =?= y) cd cs)
-  (=?=) y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y =?= x) cd cs) xs
-  (=?=) y (Guard_C_Float d c x) cd cs = guardCons d c ((y =?= x) cd  $! (addCs c cs))
-  (=?=) _ (Fail_C_Float d info) _ _ = failCons d info
-  (=?=) (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `eqFloat#` y1))
-  -- (<?=) (Choice_C_Float d i x y) z cd cs = narrow d i ((x <?= z) cd cs) ((y <?= z) cd cs)
-  -- (<?=) (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x <?= y) cd cs) xs
-  -- (<?=) (Guard_C_Float d c x) y cd cs = guardCons d c ((x <?= y) cd $! (addCs c cs))
-  -- (<?=) (Fail_C_Float d info) _ _ _ = failCons d info
-  -- (<?=) z (Choice_C_Float d i x y) cd cs = narrow d i ((z <?= x) cd cs) ((z <?= y) cd cs)
-  -- (<?=) y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y <?= x) cd cs) xs
-  -- (<?=) y (Guard_C_Float d c x) cd cs = guardCons d c ((y <?= x) cd $! (addCs c cs))
-  -- (<?=) _ (Fail_C_Float d info) _ _ = failCons d info
-  -- (<?=) (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `leFloat#` y1))
+instance Curry C_Float
+
+external_d_C_eqFloat :: C_Float -> C_Float -> Cover -> ConstStore -> C_Bool
+external_d_C_eqFloat (Choice_C_Float d i x y) z cd cs = narrow d i ((x `external_d_C_eqFloat` z) cd cs) ((y `external_d_C_eqFloat` z) cd cs)
+external_d_C_eqFloat (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_eqFloat` y) cd cs) xs
+external_d_C_eqFloat (Guard_C_Float d c x) y cd cs = guardCons d c ((x `external_d_C_eqFloat` y) cd  $! (addCs c cs))
+external_d_C_eqFloat (Fail_C_Float d info) _ _ _= failCons d info
+external_d_C_eqFloat z (Choice_C_Float d i x y) cd cs = narrow d i ((z `external_d_C_eqFloat` x) cd cs) ((z `external_d_C_eqFloat` y) cd cs)
+external_d_C_eqFloat y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_eqFloat` x) cd cs) xs
+external_d_C_eqFloat y (Guard_C_Float d c x) cd cs = guardCons d c ((y `external_d_C_eqFloat` x) cd  $! (addCs c cs))
+external_d_C_eqFloat _ (Fail_C_Float d info) _ _ = failCons d info
+external_d_C_eqFloat (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `eqFloat#` y1))
+
+external_d_C_ltEqFloat :: C_Float -> C_Float -> Cover -> ConstStore -> C_Bool
+external_d_C_ltEqFloat (Choice_C_Float d i x y) z cd cs = narrow d i ((x `external_d_C_ltEqFloat` z) cd cs) ((y `external_d_C_ltEqFloat` z) cd cs)
+external_d_C_ltEqFloat (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_ltEqFloat` y) cd cs) xs
+external_d_C_ltEqFloat (Guard_C_Float d c x) y cd cs = guardCons d c ((x `external_d_C_ltEqFloat` y) cd $! (addCs c cs))
+external_d_C_ltEqFloat (Fail_C_Float d info) _ _ _ = failCons d info
+external_d_C_ltEqFloat z (Choice_C_Float d i x y) cd cs = narrow d i ((z `external_d_C_ltEqFloat` x) cd cs) ((z `external_d_C_ltEqFloat` y) cd cs)
+external_d_C_ltEqFloat y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_ltEqFloat` x) cd cs) xs
+external_d_C_ltEqFloat y (Guard_C_Float d c x) cd cs = guardCons d c ((y `external_d_C_ltEqFloat` x) cd $! (addCs c cs))
+external_d_C_ltEqFloat _ (Fail_C_Float d info) _ _ = failCons d info
+external_d_C_ltEqFloat (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `leFloat#` y1))
 
 -- ---------------------------------------------------------------------------
 -- Char
@@ -441,31 +417,35 @@ instance Unifiable C_Char where
   lazyBind _  _ (Fail_C_Char _ info) = [Unsolvable info]
   lazyBind cd i (Guard_C_Char _ cs e) = getConstrList cs ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry C_Char where
-  (=?=) (Choice_C_Char d i x y) z cd cs = narrow d i ((x =?= z) cd cs) ((y =?= z) cd cs)
-  (=?=) (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x =?= y) cd cs) xs
-  (=?=) (Guard_C_Char d c x) y cd cs = guardCons d c ((x =?= y) cd $! (addCs c cs))
-  (=?=) (Fail_C_Char d info) _ _ _ = failCons d info
-  (=?=) z (Choice_C_Char d i x y) cd cs = narrow d i ((z =?= x) cd cs) ((z =?= y) cd cs)
-  (=?=) y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y =?= x) cd cs) xs
-  (=?=) y (Guard_C_Char d c x) cd cs = guardCons d c ((y =?= x) cd $! (addCs c cs))
-  (=?=) _ (Fail_C_Char d info) _ _ = failCons d info
-  (=?=) (C_Char x1) (C_Char y1) _ _ = toCurry (isTrue# (x1 `eqChar#` y1))
-  (=?=) (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) =?= y1) cd cs
-  (=?=) (CurryChar x1) (C_Char      y1) cd cs = (x1 =?= (primChar2CurryChar y1)) cd cs
-  (=?=) (CurryChar x1) (CurryChar y1) cd cs = (x1 =?= y1) cd cs
-  -- (<?=) (Choice_C_Char d i x y) z cd cs = narrow d i ((x <?= z) cd cs) ((y <?= z) cd cs)
-  -- (<?=) (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x <?= y) cd cs) xs
-  -- (<?=) (Guard_C_Char d c x) y cd cs = guardCons d c ((x <?= y) cd $! (addCs c cs))
-  -- (<?=) (Fail_C_Char d info) _ _ _ = failCons d info
-  -- (<?=) z (Choice_C_Char d i x y) cd cs = narrow d i ((z <?= x) cd cs) ((z <?= y) cd cs)
-  -- (<?=) y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y <?= x) cd cs) xs
-  -- (<?=) y (Guard_C_Char d c x) cd cs = guardCons d c ((y <?= x) cd $! (addCs c cs))
-  -- (<?=) _ (Fail_C_Char d info) _ _ = failCons d info
-  -- (<?=) (C_Char x1) (C_Char y1) _ _ = toCurry (isTrue# (x1 `leChar#` y1))
-  -- (<?=) (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) `d_C_lteqInteger` y1) cd cs
-  -- (<?=) (CurryChar x1) (C_Char      y1) cd cs = (x1 `d_C_lteqInteger` (primChar2CurryChar y1)) cd cs
-  -- (<?=) (CurryChar x1) (CurryChar y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
+instance Curry C_Char
+
+external_d_C_eqChar :: C_Char -> C_Char -> Cover -> ConstStore -> C_Bool
+external_d_C_eqChar (Choice_C_Char d i x y) z cd cs = narrow d i ((x `external_d_C_eqChar` z) cd cs) ((y `external_d_C_eqChar` z) cd cs)
+external_d_C_eqChar (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_eqChar` y) cd cs) xs
+external_d_C_eqChar (Guard_C_Char d c x) y cd cs = guardCons d c ((x `external_d_C_eqChar` y) cd $! (addCs c cs))
+external_d_C_eqChar (Fail_C_Char d info) _ _ _ = failCons d info
+external_d_C_eqChar z (Choice_C_Char d i x y) cd cs = narrow d i ((z `external_d_C_eqChar` x) cd cs) ((z `external_d_C_eqChar` y) cd cs)
+external_d_C_eqChar y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_eqChar` x) cd cs) xs
+external_d_C_eqChar y (Guard_C_Char d c x) cd cs = guardCons d c ((y `external_d_C_eqChar` x) cd $! (addCs c cs))
+external_d_C_eqChar _ (Fail_C_Char d info) _ _ = failCons d info
+external_d_C_eqChar (C_Char x1) (C_Char y1) _ _ = toCurry (isTrue# (x1 `eqChar#` y1))
+external_d_C_eqChar (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) `d_C_eqBinInt` y1) cd cs
+external_d_C_eqChar (CurryChar x1) (C_Char      y1) cd cs = (x1 `d_C_eqBinInt` (primChar2CurryChar y1)) cd cs
+external_d_C_eqChar (CurryChar x1) (CurryChar y1) cd cs = (x1 `d_C_eqBinInt` y1) cd cs
+
+external_d_C_ltEqChar :: C_Char -> C_Char -> Cover -> ConstStore -> C_Bool
+external_d_C_ltEqChar (Choice_C_Char d i x y) z cd cs = narrow d i ((x `external_d_C_ltEqChar` z) cd cs) ((y `external_d_C_ltEqChar` z) cd cs)
+external_d_C_ltEqChar (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_ltEqChar` y) cd cs) xs
+external_d_C_ltEqChar (Guard_C_Char d c x) y cd cs = guardCons d c ((x `external_d_C_ltEqChar` y) cd $! (addCs c cs))
+external_d_C_ltEqChar (Fail_C_Char d info) _ _ _ = failCons d info
+external_d_C_ltEqChar z (Choice_C_Char d i x y) cd cs = narrow d i ((z `external_d_C_ltEqChar` x) cd cs) ((z `external_d_C_ltEqChar` y) cd cs)
+external_d_C_ltEqChar y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_ltEqChar` x) cd cs) xs
+external_d_C_ltEqChar y (Guard_C_Char d c x) cd cs = guardCons d c ((y `external_d_C_ltEqChar` x) cd $! (addCs c cs))
+external_d_C_ltEqChar _ (Fail_C_Char d info) _ _ = failCons d info
+external_d_C_ltEqChar (C_Char x1) (C_Char y1) _ _ = toCurry (isTrue# (x1 `leChar#` y1))
+external_d_C_ltEqChar (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) `d_C_lteqInteger` y1) cd cs
+external_d_C_ltEqChar (CurryChar x1) (C_Char      y1) cd cs = (x1 `d_C_lteqInteger` (primChar2CurryChar y1)) cd cs
+external_d_C_ltEqChar (CurryChar x1) (CurryChar y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
 
 primChar2CurryChar :: Char# -> BinInt
 primChar2CurryChar c = primint2curryint (ord# c)
@@ -584,12 +564,6 @@ showsPrec4CurryList d cl =
 
 external_d_C_prim_show :: Show a => a -> Cover -> ConstStore -> C_String
 external_d_C_prim_show a _ _ = toCurry (show a)
-
-external_d_OP_eq_eq_dollar :: Curry a => a -> a -> Cover -> ConstStore -> C_Bool
-external_d_OP_eq_eq_dollar  = (=?=)
-
-external_d_OP_lt_eq_dollar :: Curry a => a -> a -> Cover -> ConstStore -> C_Bool
-external_d_OP_lt_eq_dollar = (<?=)
 
 external_d_OP_eq_colon_eq :: Unifiable a => a -> a -> Cover -> ConstStore -> C_Success
 external_d_OP_eq_colon_eq = (=:=)
@@ -947,64 +921,38 @@ exceptionHandlers s cd cs hndl =
 -- Functions on Integer and Nat added from PrimTypes
 -- -----------------------------------------------------------------------------
 
-instance Curry Nat where
-  (=?=) (Choice_Nat cd i x y) z d cs = narrow cd i (((x =?= z) d) cs) (((y =?= z) d) cs)
-  (=?=) (Choices_Nat  cd i xs) y d cs = narrows cs cd i (\x -> ((x =?= y) d) cs) xs
-  (=?=) (Guard_Nat  cd c e) y d cs = guardCons cd c (((e =?= y) d) (addCs c cs))
-  (=?=) (Fail_Nat  cd info) _ _ _ = failCons cd info
-  (=?=) z (Choice_Nat  cd i x y) d cs = narrow cd i (((z =?= x) d) cs) (((z =?= y) d) cs)
-  (=?=) y (Choices_Nat  cd i xs) d cs = narrows cs cd i (\x -> ((y =?= x) d) cs) xs
-  (=?=) y (Guard_Nat  cd c e) d cs = guardCons cd c (((y =?= e) d) (addCs c cs))
-  (=?=) _ (Fail_Nat  cd info) _ _ = failCons cd info
-  (=?=) IHi IHi d cs = C_True
-  (=?=) (O x1) (O y1) d cs = ((x1 =?= y1) d) cs
-  (=?=) (I x1) (I y1) d cs = ((x1 =?= y1) d) cs
-  (=?=) _ _ d _ = C_False
-  -- (<?=) (Choice_Nat  cd i x y) z d cs = narrow cd i (((x <?= z) d) cs) (((y <?= z) d) cs)
-  -- (<?=) (Choices_Nat  cd i xs) y d cs = narrows cs cd i (\x -> ((x <?= y) d) cs) xs
-  -- (<?=) (Guard_Nat  cd c e) y d cs = guardCons cd c (((e <?= y) d) (addCs c cs))
-  -- (<?=) (Fail_Nat  cd info) _ _ _ = failCons cd info
-  -- (<?=) z (Choice_Nat  cd i x y) d cs = narrow cd i (((z <?= x) d) cs) (((z <?= y) d) cs)
-  -- (<?=) y (Choices_Nat  cd i xs) d cs = narrows cs cd i (\x -> ((y <?= x) d) cs) xs
-  -- (<?=) y (Guard_Nat  cd c e) d cs = guardCons cd c (((y <?= e) d) (addCs c cs))
-  -- (<?=) _ (Fail_Nat  cd info) _ _ = failCons cd info
-  -- (<?=) IHi IHi d cs = C_True
-  -- (<?=) IHi (O _) _ _ = C_True
-  -- (<?=) IHi (I _) _ _ = C_True
-  -- (<?=) (O x1) (O y1) d cs = ((x1 <?= y1) d) cs
-  -- (<?=) (O _) (I _) _ _ = C_True
-  -- (<?=) (I x1) (I y1) d cs = ((x1 <?= y1) d) cs
-  -- (<?=) _ _ d _ = C_False
+instance Curry Nat
 
+d_C_eqNat :: Nat -> Nat -> Cover -> ConstStore -> C_Bool
+d_C_eqNat (Choice_Nat cd i x y) z d cs = narrow cd i (((x `d_C_eqNat` z) d) cs) (((y `d_C_eqNat` z) d) cs)
+d_C_eqNat (Choices_Nat  cd i xs) y d cs = narrows cs cd i (\x -> ((x `d_C_eqNat` y) d) cs) xs
+d_C_eqNat (Guard_Nat  cd c e) y d cs = guardCons cd c (((e `d_C_eqNat` y) d) (addCs c cs))
+d_C_eqNat (Fail_Nat  cd info) _ _ _ = failCons cd info
+d_C_eqNat z (Choice_Nat  cd i x y) d cs = narrow cd i (((z `d_C_eqNat` x) d) cs) (((z `d_C_eqNat` y) d) cs)
+d_C_eqNat y (Choices_Nat  cd i xs) d cs = narrows cs cd i (\x -> ((y `d_C_eqNat` x) d) cs) xs
+d_C_eqNat y (Guard_Nat  cd c e) d cs = guardCons cd c (((y `d_C_eqNat` e) d) (addCs c cs))
+d_C_eqNat _ (Fail_Nat  cd info) _ _ = failCons cd info
+d_C_eqNat IHi IHi d cs = C_True
+d_C_eqNat (O x1) (O y1) d cs = ((x1 `d_C_eqNat` y1) d) cs
+d_C_eqNat (I x1) (I y1) d cs = ((x1 `d_C_eqNat` y1) d) cs
+d_C_eqNat _ _ d _ = C_False
+ 
+instance Curry BinInt
 
-instance Curry BinInt where
-  (=?=) (Choice_BinInt cd i x y) z d cs = narrow cd i (((x =?= z) d) cs) (((y =?= z) d) cs)
-  (=?=) (Choices_BinInt cd i xs) y d cs = narrows cs cd i (\x -> ((x =?= y) d) cs) xs
-  (=?=) (Guard_BinInt cd c e) y d cs = guardCons cd c (((e =?= y) d) (addCs c cs))
-  (=?=) (Fail_BinInt cd info) _ _ _ = failCons cd info
-  (=?=) z (Choice_BinInt cd i x y) d cs = narrow cd i (((z =?= x) d) cs) (((z =?= y) d) cs)
-  (=?=) y (Choices_BinInt cd i xs) d cs = narrows cs cd i (\x -> ((y =?= x) d) cs) xs
-  (=?=) y (Guard_BinInt cd c e) d cs = guardCons cd c (((y =?= e) d) (addCs c cs))
-  (=?=) _ (Fail_BinInt cd info) _ _ = failCons cd info
-  (=?=) (Neg x1) (Neg y1) d cs = ((x1 =?= y1) d) cs
-  (=?=) Zero Zero d cs = C_True
-  (=?=) (Pos x1) (Pos y1) d cs = ((x1 =?= y1) d) cs
-  (=?=) _ _ d _ = C_False
-  -- (<?=) (Choice_BinInt cd i x y) z d cs = narrow cd i (((x <?= z) d) cs) (((y <?= z) d) cs)
-  -- (<?=) (Choices_BinInt cd i xs) y d cs = narrows cs cd i (\x -> ((x <?= y) d) cs) xs
-  -- (<?=) (Guard_BinInt cd c e) y d cs = guardCons cd c (((e <?= y) d) (addCs c cs))
-  -- (<?=) (Fail_BinInt cd info) _ _ _ = failCons cd info
-  -- (<?=) z (Choice_BinInt cd i x y) d cs = narrow cd i (((z <?= x) d) cs) (((z <?= y) d) cs)
-  -- (<?=) y (Choices_BinInt cd i xs) d cs = narrows cs cd i (\x -> ((y <?= x) d) cs) xs
-  -- (<?=) y (Guard_BinInt cd c e) d cs = guardCons cd c (((y <?= e) d) (addCs c cs))
-  -- (<?=) _ (Fail_BinInt cd info) _ _ = failCons cd info
-  -- (<?=) (Neg x1) (Neg y1) d cs = ((x1 <?= y1) d) cs
-  -- (<?=) (Neg _) Zero _ _ = C_True
-  -- (<?=) (Neg _) (Pos _) _ _ = C_True
-  -- (<?=) Zero Zero d cs = C_True
-  -- (<?=) Zero (Pos _) _ _ = C_True
-  -- (<?=) (Pos x1) (Pos y1) d cs = ((x1 <?= y1) d) cs
-  -- (<?=) _ _ d _ = C_False
+d_C_eqBinInt :: BinInt -> BinInt -> Cover -> ConstStore -> C_Bool
+d_C_eqBinInt (Choice_BinInt cd i x y) z d cs = narrow cd i (((x `d_C_eqBinInt` z) d) cs) (((y `d_C_eqBinInt` z) d) cs)
+d_C_eqBinInt (Choices_BinInt cd i xs) y d cs = narrows cs cd i (\x -> ((x `d_C_eqBinInt` y) d) cs) xs
+d_C_eqBinInt (Guard_BinInt cd c e) y d cs = guardCons cd c (((e `d_C_eqBinInt` y) d) (addCs c cs))
+d_C_eqBinInt (Fail_BinInt cd info) _ _ _ = failCons cd info
+d_C_eqBinInt z (Choice_BinInt cd i x y) d cs = narrow cd i (((z `d_C_eqBinInt` x) d) cs) (((z `d_C_eqBinInt` y) d) cs)
+d_C_eqBinInt y (Choices_BinInt cd i xs) d cs = narrows cs cd i (\x -> ((y `d_C_eqBinInt` x) d) cs) xs
+d_C_eqBinInt y (Guard_BinInt cd c e) d cs = guardCons cd c (((y `d_C_eqBinInt` e) d) (addCs c cs))
+d_C_eqBinInt _ (Fail_BinInt cd info) _ _ = failCons cd info
+d_C_eqBinInt (Neg x1) (Neg y1) d cs = ((x1 `d_C_eqNat` y1) d) cs
+d_C_eqBinInt Zero Zero d cs = C_True
+d_C_eqBinInt (Pos x1) (Pos y1) d cs = ((x1 `d_C_eqNat` y1) d) cs
+d_C_eqBinInt _ _ d _ = C_False
+
 
 d_C_cmpNat :: Nat  -> Nat  -> Cover -> ConstStore -> C_Ordering
 d_C_cmpNat x1 x2 x3250 x3500 = case x1 of
@@ -1106,7 +1054,7 @@ d_C_mod2 x1 x3250 x3500 = case x1 of
      _ -> failCons x3250 defFailInfo
 
 d_C_quotRemNat :: Nat  -> Nat  -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
-d_C_quotRemNat x1 x2 x3250 x3500 = d_OP__casePT_23 x1 x2 (d_OP_eq_eq_dollar x2 IHi x3250 x3500) x3250 x3500
+d_C_quotRemNat x1 x2 x3250 x3500 = d_OP__casePT_23 x1 x2 (d_c_eqNat x2 IHi x3250 x3500) x3250 x3500
 
 d_OP_quotRemNat_dot_shift_dot_104 :: Nat  -> Nat  -> Cover -> ConstStore -> Nat
 d_OP_quotRemNat_dot_shift_dot_104 x1 x2 x3250 x3500 = case x1 of
@@ -1119,7 +1067,17 @@ d_OP_quotRemNat_dot_shift_dot_104 x1 x2 x3250 x3500 = case x1 of
      _ -> failCons x3250 defFailInfo
 
 d_C_lteqInteger :: BinInt -> BinInt -> Cover -> ConstStore -> C_Bool
-d_C_lteqInteger x1 x2 x3250 x3500 = d_OP_slash_eq_dollar (d_C_cmpInteger x1 x2 x3250 x3500) C_GT x3250 x3500
+d_C_lteqInteger x1 x2 x3250 x3500 = d_C_not
+   (d_OP_sel_colon_uscore_Prelude_dot_Eq_colon_uscore_eq_eq
+     (d_OP_dict_colon_uscore_Prelude_dot_Eq_colon_uscore_Prelude_dot_Ordering x3250 x3500)
+     x3250
+     x3500
+     (d_C_cmpInteger x1 x2 x3250 x3500)
+     x3250
+     x3500
+     C_GT
+     x3250
+     x3500) x3250 x3500
 
 d_C_cmpInteger :: BinInt -> BinInt -> Cover -> ConstStore -> C_Ordering
 d_C_cmpInteger x1 x2 x3250 x3500 = case x1 of
@@ -1694,7 +1652,7 @@ nd_OP__casePT_14 x2 x3000 x3250 x3500 = case x2 of
 
 d_OP__casePT_23 x1 x2 x3 x3250 x3500 = case x3 of
      C_True -> OP_Tuple2 (Pos x1) Zero
-     C_False -> d_OP__casePT_22 x1 x2 (d_OP_eq_eq_dollar x1 IHi x3250 x3500) x3250 x3500
+     C_False -> d_OP__casePT_22 x1 x2 (d_c_eqNat x1 IHi x3250 x3500) x3250 x3500
      (Choice_C_Bool x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_23 x1 x2 x1002 x3250 x3500) (d_OP__casePT_23 x1 x2 x1003 x3250 x3500)
      (Choices_C_Bool x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_23 x1 x2 z x3250 x3500) x1002
      (Guard_C_Bool x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_23 x1 x2 x1002 x3250) $! (addCs x1001 x3500))
@@ -1705,7 +1663,7 @@ nd_OP__casePT_23 x1 x2 x3 x3000 x3250 x3500 = case x3 of
      C_True -> OP_Tuple2 (Pos x1) Zero
      C_False -> let
           x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_22 x1 x2 (d_OP_eq_eq_dollar x1 IHi x3250 x3500) x2000 x3250 x3500))
+           in (seq x2000 (nd_OP__casePT_22 x1 x2 (d_c_eqNat x1 IHi x3250 x3500) x2000 x3250 x3500))
      (Choice_C_Bool x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_23 x1 x2 x1002 x3000 x3250 x3500) (nd_OP__casePT_23 x1 x2 x1003 x3000 x3250 x3500)
      (Choices_C_Bool x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_23 x1 x2 z x3000 x3250 x3500) x1002
      (Guard_C_Bool x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_23 x1 x2 x1002 x3000 x3250) $! (addCs x1001 x3500))

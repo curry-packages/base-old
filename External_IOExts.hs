@@ -118,9 +118,7 @@ instance Unifiable (C_IORef a) where
   lazyBind _  _ (Fail_C_IORef cd info) = [Unsolvable info]
   lazyBind cd i (Guard_C_IORef _ cs e) = (getConstrList cs) ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry_Prelude.Curry a => Curry_Prelude.Curry (C_IORef a) where
-  (=?=) = error "(==) is undefined for IORefs"
-  (<?=) = error "(<=) is undefined for IORefs"
+instance Curry_Prelude.Curry a => Curry_Prelude.Curry (C_IORef a)
 
 instance ConvertCurryHaskell (C_IORef a) (IORef a) where
   fromCurry (C_IORef r) = r

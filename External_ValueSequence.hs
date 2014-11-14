@@ -27,7 +27,7 @@ data C_ValueSequence a
   | Choices_VS Cover ID [C_ValueSequence a]
   | Guard_VS Cover Constraints (C_ValueSequence a)
 
-instance Curry_Prelude.Curry (C_ValueSequence a) where
+instance Curry_Prelude.Curry (C_ValueSequence a)
 
 instance Show (C_ValueSequence a) where
   showsPrec = error "SearchTree: ValueSequence: showsPrec"
