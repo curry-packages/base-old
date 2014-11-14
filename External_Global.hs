@@ -82,9 +82,7 @@ instance Unifiable (C_Global a) where
   lazyBind cd i (Guard_C_Global _ cs e) 
     = (getConstrList cs) ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry_Prelude.Curry a => Curry_Prelude.Curry (C_Global a) where
-  (=?=) = error "(==) is undefined for Globals"
-  (<?=) = error "(<=) is undefined for Globals"
+instance Curry_Prelude.Curry a => Curry_Prelude.Curry (C_Global a)
 
 
 external_d_C_global :: Curry_Prelude.Curry a => a -> C_GlobalSpec -> Cover -> ConstStore

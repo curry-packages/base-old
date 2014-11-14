@@ -36,7 +36,7 @@ module Prelude
   , mapIO_, (?), unknown
   , when, unless, forIO, forIO_, liftIO, foldIO
   , normalForm, groundNormalForm, apply, cond, (=:<=)
-  , enumFrom_, enumFromTo_, enumFromThen_, enumFromThenTo_, (==$), negate_, negateFloat
+  , enumFrom_, enumFromTo_, enumFromThen_, enumFromThenTo_, negate_, negateFloat
   ) where
 
 -- Lines beginning with "--++" are part of the prelude
@@ -200,22 +200,28 @@ solve True = True
 True &&> x = x
 
 -- used for comparison of standard types like Int, Float and Char
-(==$)            :: a -> a -> Bool
-(==$) external
+eqChar :: Char -> Char -> Bool
+eqChar external
 
-(/=$) :: a -> a -> Bool
-x /=$ y = not (x ==$ y)
+eqInt :: Int -> Int -> Bool
+eqInt external
+
+eqFloat :: Float -> Float -> Bool
+eqFloat external
 
 --- Ordering type. Useful as a result of comparison functions.
 data Ordering = LT | EQ | GT
   deriving (Eq, Ord)
 
 -- used for comparison of standard types like Int, Float and Char
-(<=$) :: a -> a -> Bool
-(<=$) external
+ltEqChar :: Char -> Char -> Bool
+ltEqChar external
 
-(<$) :: a -> a -> Bool
-x <$ y = not (y <=$ x)
+ltEqInt :: Int -> Int -> Bool
+ltEqInt external
+
+ltEqFloat :: Float -> Float -> Bool
+ltEqFloat external
 
 -- Pairs
 
@@ -910,7 +916,6 @@ cond external
 (=:<=) :: a -> a -> Success
 (=:<=) external
 
-
 -- -------------------------------------------------------------------------
 -- Eq class and related instances and functions
 -- -------------------------------------------------------------------------
@@ -928,13 +933,13 @@ instance Eq Bool where
   True  == True   = True
 
 instance Eq Char where
-  c == c' = c ==$ c'
+  c == c' = c `eqChar` c'
 
 instance Eq Int where
-  i == i' = i ==$ i'
+  i == i' = i `eqInt` i'
 
 instance Eq Float where
-  f == f' = f ==$ f'
+  f == f' = f `eqFloat` f'
 
 instance Eq a => Eq [a] where
   []    == []    = True
@@ -1015,13 +1020,13 @@ instance Ord Bool where
   True  <= True  = True
 
 instance Ord Char where
-  c1 <= c2 = c1 <=$ c2
+  c1 <= c2 = c1 `ltEqChar` c2
 
 instance Ord Int where
-  i1 <= i2 = i1 <=$ i2
+  i1 <= i2 = i1 `ltEqInt` i2
 
 instance Ord Float where
-  f1 <= f2 = f1 <=$ f2
+  f1 <= f2 = f1 `ltEqFloat` f2
 
 instance Ord Success where
   _ <= _ = True
