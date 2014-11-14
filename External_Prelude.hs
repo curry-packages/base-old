@@ -42,7 +42,7 @@ instance Curry (PrimData a)
 instance Curry C_Success
 -- END GENERATED FROM PrimTypes.curry
 
-instance (Curry t0, Curry t1)
+instance (Curry t0, Curry t1) => Curry (Func t0 t1)
     
 instance Curry t0 => Curry (C_IO t0)
 
@@ -1055,6 +1055,7 @@ d_C_mod2 x1 x3250 x3500 = case x1 of
 
 d_C_quotRemNat :: Nat  -> Nat  -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
 d_C_quotRemNat x1 x2 x3250 x3500 = d_OP__casePT_23 x1 x2 (d_C_eqNat x2 IHi x3250 x3500) x3250 x3500
+
 
 d_OP_quotRemNat_dot_shift_dot_104 :: Nat  -> Nat  -> Cover -> ConstStore -> Nat
 d_OP_quotRemNat_dot_shift_dot_104 x1 x2 x3250 x3500 = case x1 of
