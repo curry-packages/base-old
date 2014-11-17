@@ -32,7 +32,7 @@ module Distribution (
   ) where
 
 import Char         (toLower)
-import Files        (lookupFileInPath, getFileInPath)
+import FileGoodies  (lookupFileInPath, getFileInPath)
 import FilePath     ( FilePath, (</>), (<.>), addTrailingPathSeparator
                     , dropFileName, joinPath, normalise, splitDirectories
                     , splitExtension, splitFileName, splitSearchPath
@@ -125,11 +125,11 @@ type ModuleIdent = String
 splitModuleFileName :: ModuleIdent -> FilePath -> (FilePath, FilePath)
 splitModuleFileName mid fn = case splitModuleIdentifiers mid of
   [_] -> splitFileName fn
-  ms  -> let (base, ext)      = splitExtension fn
-             dirs             = splitDirectories base
-             (pre , suf)      = splitAt (length dirs - length ms) dirs
-             path | null pre  = ""
-                  | otherwise = addTrailingPathSeparator (joinPath pre)
+  ms  -> let (base, ext) = splitExtension fn
+             dirs        = splitDirectories base
+             (pre , suf) = splitAt (length dirs - length ms) dirs
+             path        = if null pre then ""
+                                       else addTrailingPathSeparator (joinPath pre)
          in  (path, joinPath suf <.> ext)
 
 --- Split up the components of a module identifier. For instance,
