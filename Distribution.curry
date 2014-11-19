@@ -33,7 +33,7 @@ module Distribution (
 
 import List         (split)
 import Char         (toLower)
-import FileGoodies  (lookupFileInPath, getFileInPath)
+import FileGoodies  (lookupFileInPath, getFileInPath, fileSuffix, stripSuffix)
 import FilePath     ( FilePath, (</>), (<.>), addTrailingPathSeparator
                     , dropFileName, joinPath, normalise, splitDirectories
                     , splitExtension, splitFileName, splitSearchPath
