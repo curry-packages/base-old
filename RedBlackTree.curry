@@ -101,12 +101,15 @@ deleteTree eq lt e (Tree c e2 l r)
       | lt e e2 = delBalanceL (Tree c e2 (deleteTree eq lt e l) r)
       | otherwise = delBalanceR (Tree c e2 l (deleteTree eq lt e r))
   where
+    addColor DoublyBlack tree = tree -- should not occur
     addColor Red tree = tree
     addColor Black Empty = Empty
     addColor Black (Tree Red x lx rx)   = Tree Black x lx rx
     addColor Black (Tree Black x lx rx) = Tree DoublyBlack x lx rx
+    addColor Black (Tree DoublyBlack x lx rx) = Tree DoublyBlack x lx rx
 
-    rightMost (Tree _ x _ rx) = if rx==Empty then x else rightMost rx
+    rightMost Empty           = error "RedBlackTree.rightMost"
+    rightMost (Tree _ x _ rx) = if rx == Empty then x else rightMost rx
 
 
 --- Transforms a red-black tree into an ordered list of its elements.
@@ -144,27 +147,28 @@ data Tree a = Tree Color a (Tree a) (Tree a)
 
 isBlack :: Tree _ -> Bool
 isBlack Empty = True
-isBlack (Tree c _ _ _) = c==Black
+isBlack (Tree c _ _ _) = c == Black
 
 isRed :: Tree _ -> Bool
 isRed Empty = False
-isRed (Tree c _ _ _) = c==Red
+isRed (Tree c _ _ _) = c == Red
 
 isDoublyBlack :: Tree _ -> Bool
 isDoublyBlack Empty = True
-isDoublyBlack (Tree c _ _ _) = c==DoublyBlack
-
-element :: Tree a -> a
-element (Tree _ e _ _) = e
+isDoublyBlack (Tree c _ _ _) = c == DoublyBlack
 
 left :: Tree a -> Tree a
+left Empty          = error "RedBlackTree.left"
 left (Tree _ _ l _) = l
 
 right :: Tree a -> Tree a
+right Empty          = error "RedBlackTree.right"
 right (Tree _ _ _ r) = r
 
 singleBlack :: Tree a -> Tree a
-singleBlack Empty = Empty
+singleBlack Empty                    = Empty
+singleBlack (Tree Red         x l r) = Tree Red   x l r
+singleBlack (Tree Black       x l r) = Tree Black x l r
 singleBlack (Tree DoublyBlack x l r) = Tree Black x l r
 
 --- for the implementation of balanceL and balanceR refer to picture 3.5, page 27,

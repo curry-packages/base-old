@@ -546,6 +546,7 @@ mkBalBranch key elt fm_L fm_R
                 then single_L fm_L fm_R
                 else double_L fm_L fm_R
         -- Other case impossible
+        EmptyFM -> error "FiniteMap.mkBalBranch"
 
   | size_l > sIZE_RATIO * size_r        -- Left tree too big
   = case fm_L of
@@ -554,6 +555,7 @@ mkBalBranch key elt fm_L fm_R
                 then single_R fm_L fm_R
                 else double_R fm_L fm_R
         -- Other case impossible
+        EmptyFM -> error "FiniteMap.mkBalBranch"
 
   | otherwise                                -- No imbalance
   = mkBranch 2{-which-} key elt fm_L fm_R
@@ -564,17 +566,23 @@ mkBalBranch key elt fm_L fm_R
 
     single_L fm_l (BranchFM key_r elt_r _ fm_rl fm_rr)
         = mkBranch 3{-which-} key_r elt_r (mkBranch 4{-which-} key elt fm_l fm_rl) fm_rr
+    single_L _ EmptyFM = error "FiniteMap.single_L"
 
     double_L fm_l (BranchFM key_r elt_r _ (BranchFM key_rl elt_rl _ fm_rll fm_rlr) fm_rr)
         = mkBranch 5{-which-} key_rl elt_rl (mkBranch 6{-which-} key   elt   fm_l   fm_rll)
                                  (mkBranch 7{-which-} key_r elt_r fm_rlr fm_rr)
+    double_L _ EmptyFM = error "FiniteMap.double_L"
+    double_L _ (BranchFM _ _ _ EmptyFM _) = error "FiniteMap.double_L"
 
     single_R (BranchFM key_l elt_l _ fm_ll fm_lr) fm_r
         = mkBranch 8{-which-} key_l elt_l fm_ll (mkBranch 9{-which-} key elt fm_lr fm_r)
+    single_R EmptyFM _ = error "FiniteMap.single_R"
 
     double_R (BranchFM key_l elt_l _ fm_ll (BranchFM key_lr elt_lr _ fm_lrl fm_lrr)) fm_r
         = mkBranch 10{-which-} key_lr elt_lr (mkBranch 11{-which-} key_l elt_l fm_ll  fm_lrl)
                                  (mkBranch 12{-which-} key   elt   fm_lrr fm_r)
+    double_R EmptyFM _ = error "FiniteMap.double_R"
+    double_R (BranchFM _ _ _ _ EmptyFM) _ = error "FiniteMap.double_R"
 
 
 mkVBalBranch :: (LeKey key)
@@ -689,22 +697,26 @@ splitGT le (BranchFM key elt _ fm_l fm_r) split_key
          else splitGT le fm_r split_key
 
 findMin :: FiniteMap key elt -> (key,elt)
+findMin EmptyFM = error "FiniteMap.findMin: empty map"
 findMin (BranchFM key elt _ EmptyFM _) = (key,elt)
 findMin (BranchFM _   _   _ (BranchFM key_l elt_l s_l fm_ll fm_lr)_) =
       findMin (BranchFM key_l elt_l s_l fm_ll fm_lr)
 
 deleteMin :: (LeKey key) -> FiniteMap key elt -> FiniteMap key elt
+deleteMin _  EmptyFM                           = error "FiniteMap.deleteMin: empty map"
 deleteMin _  (BranchFM _   _   _ EmptyFM fm_r) = fm_r
 deleteMin le (BranchFM key elt _ (BranchFM key_l elt_l s_l fm_ll fm_lr) fm_r) =
   mkBalBranch key elt (deleteMin le (BranchFM key_l elt_l s_l fm_ll fm_lr))
                          fm_r
 
 findMax :: FiniteMap key elt -> (key,elt)
+findMax EmptyFM = error "FiniteMap.findMax: empty map"
 findMax (BranchFM key elt _ _ EmptyFM) = (key,elt)
 findMax (BranchFM _   _   _ _  (BranchFM key_r elt_r s_r fm_rl fm_rr)) =
   findMax (BranchFM key_r elt_r s_r fm_rl fm_rr)
 
 deleteMax :: (LeKey key) -> FiniteMap key elt -> FiniteMap key elt
+deleteMax _  EmptyFM                           = error "FiniteMap.deleteMax: empty map"
 deleteMax _  (BranchFM _   _   _ fm_l EmptyFM) = fm_l
 deleteMax le (BranchFM key elt _ fm_l (BranchFM key_r elt_r s_r fm_rl fm_rr)) =
   mkBalBranch key elt fm_l
