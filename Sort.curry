@@ -28,7 +28,7 @@ quickSort leq (x:xs) = let (l,r) = split x xs
 
 
 --- Bottom-up mergesort.
-mergeSort :: Ord a => (a -> a -> Bool) -> [a] -> [a]
+mergeSort :: (a -> a -> Bool) -> [a] -> [a]
 mergeSort leq zs =  mergeLists (genRuns zs)
  where
   -- generate runs of length 2:
