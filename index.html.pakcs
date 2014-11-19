@@ -198,7 +198,7 @@ Thus, it might not be further supported in the future.</em>
 <dt><code><a href="CDOC/Either.html">Either</a></code></dt>
 <dd>
 This library contains some useful operation for
-the <code>Either<code> data type.
+the <code>Either</code> data type.
 </dd>
 
 <dt><code><a href="CDOC/FileGoodies.html">FileGoodies</a></code></dt>

@@ -248,16 +248,13 @@ null (_:_)      = False
 (x:xs) ++ ys    = x : xs++ys
 
 --- Computes the length of a list.
---length          :: [_] -> Int
---length []       = 0
---length (_:xs)   = 1 + length xs
-
+length          :: [_] -> Int
 length xs = len xs 0
   where
-    len [] n = n
-    len (_:ys) n
-        = let np1 = n + 1
-          in len ys $!! np1
+    len []     n = n
+    len (_:ys) n = let np1 = n + 1 in len ys $!! np1
+--length []       = 0
+--length (_:xs)   = 1 + length xs
 
 --- List index (subscript) operator, head has index 0.
 (!!)            :: [a] -> Int -> a

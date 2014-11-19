@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 --- This module contains functions to obtain information concerning the current
 --- distribution of the Curry implementation.
---- Most of the information is based on the external constants 
+--- Most of the information is based on the external constants
 --- <b>curryCompiler...</b>.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
@@ -13,14 +13,16 @@ module Distribution (
   curryRuntime,curryRuntimeMajorVersion,curryRuntimeMinorVersion,
   installDir,stripCurrySuffix,modNameToPath,
   currySubdir,inCurrySubdir,addCurrySubdir,
-  
   rcFileName,rcFileContents,getRcVar,getRcVars,
+
+  joinModuleIdentifiers, splitModuleIdentifiers, splitModuleFileName,
+  inCurrySubdirModule,
 
   findFileInLoadPath,lookupFileInLoadPath,
   readFirstFileInLoadPath,getLoadPath,getLoadPathForFile,
 
-  FrontendTarget(..), 
-  
+  FrontendTarget(..),
+
   FrontendParams, defaultParams, rcParams,
   quiet, extended, overlapWarn, fullPath, htmldir, logfile, specials,
   setQuiet, setExtended, setOverlapWarn, setFullPath, setHtmlDir, setLogfile,
@@ -29,22 +31,26 @@ module Distribution (
   callFrontend,callFrontendWithParams
   ) where
 
-import List(intersperse,split)
-import Char(toLower)
-import System
+import List         (split)
+import Char         (toLower)
+import FileGoodies  (lookupFileInPath, getFileInPath)
+import FilePath     ( FilePath, (</>), (<.>), addTrailingPathSeparator
+                    , dropFileName, joinPath, normalise, splitDirectories
+                    , splitExtension, splitFileName, splitSearchPath
+                    , takeFileName
+                    )
 import IO
-import FileGoodies
-import FilePath ((</>))
 import PropertyFile
+import System
 
 -----------------------------------------------------------------
 -- Compiler and run-time environment name and version
 -----------------------------------------------------------------
 
--- if you do not use other functions but 
+-- if you do not use other functions but
 -- if-then-else, and the _Prelude_ functions
 -- (<), (>), (<=), (>=), (==)
--- directly on the following constants, 
+-- directly on the following constants,
 -- the compiler might be able to eliminate
 -- them at compile time.
 
@@ -72,6 +78,10 @@ curryRuntimeMajorVersion external
 curryRuntimeMinorVersion :: Int
 curryRuntimeMinorVersion external
 
+--- Path of the main installation directory of the Curry compiler.
+installDir :: FilePath
+installDir external
+
 ---------------------------------------------------
 -- retrieving user specified options from rc file
 ---------------------------------------------------
@@ -98,16 +108,44 @@ getRcVar var = getRcVars [var] >>= return . head
 getRcVars :: [String] -> IO [Maybe String]
 getRcVars vars = do
   rcs <- rcFileContents
-  return (map (flip lookup (map (\ (a,b)->(map toLower a,b)) rcs))
+  return (map (flip lookup (map (\ (a, b) -> (map toLower a, b)) rcs))
               (map (map toLower) vars))
 
 -----------------------------------------------------------
---- finding files in correspondence to compiler load path
+--- Functions for handling file names of Curry modules
 -----------------------------------------------------------
 
---- Name of the main installation directory of the Curry compiler.
-installDir :: String
-installDir external
+type ModuleIdent = String
+
+--- Split the `FilePath` of a module into the directory prefix and the
+--- `FilePath` corresponding to the module name.
+--- For instance, the call `splitModuleFileName "Data.Set" "lib/Data/Set.curry"`
+--- evaluates to `("lib", "Data/Set.curry")`.
+--- This can be useful to compute output directories while retaining the
+--- hierarchical module structure.
+splitModuleFileName :: ModuleIdent -> FilePath -> (FilePath, FilePath)
+splitModuleFileName mid fn = case splitModuleIdentifiers mid of
+  [_] -> splitFileName fn
+  ms  -> let (base, ext) = splitExtension fn
+             dirs        = splitDirectories base
+             (pre , suf) = splitAt (length dirs - length ms) dirs
+             path        = if null pre then ""
+                                       else addTrailingPathSeparator (joinPath pre)
+         in  (path, joinPath suf <.> ext)
+
+--- Split up the components of a module identifier. For instance,
+--- `splitModuleIdentifiers "Data.Set"` evaluates to `["Data", "Set"]`.
+splitModuleIdentifiers :: ModuleIdent -> [String]
+splitModuleIdentifiers s = let (pref, rest) = break (== '.') s in
+  pref : case rest of
+    []     -> []
+    _ : s' -> splitModuleIdentifiers s'
+
+--- Join the components of a module identifier. For instance,
+--- `joinModuleIdentifiers ["Data", "Set"]` evaluates to `"Data.Set"`.
+joinModuleIdentifiers :: [String] -> ModuleIdent
+joinModuleIdentifiers = foldr1 combine
+  where combine xs ys = xs ++ '.' : ys
 
 --- Strips the suffix ".curry" or ".lcurry" from a file name.
 stripCurrySuffix :: String -> String
@@ -123,19 +161,31 @@ modNameToPath = foldr1 (</>) . split (=='.')
 
 --- Name of the sub directory where auxiliary files (.fint, .fcy, etc)
 --- are stored.
-currySubdir :: String
+currySubdir :: FilePath
 currySubdir = ".curry"
 
 --- Transforms a file name by adding the currySubDir to the file name.
-inCurrySubdir :: String -> String
+--- Be careful with this function as it does not respect hierarchical
+--- module names!
+inCurrySubdir :: FilePath -> FilePath
 inCurrySubdir filename =
-  let (base,file) = splitDirectoryBaseName filename
+  let (base,file) = splitFileName filename
    in base </> currySubdir </> file
+
+--- Transforms a file name by adding the currySubDir to the file name.
+--- This version respects hierarchical module names.
+inCurrySubdirModule :: ModuleIdent -> FilePath -> FilePath
+inCurrySubdirModule m fn = let (dirP, modP) = splitModuleFileName m fn
+                           in  dirP </> currySubdir </> modP
 
 --- Transforms a directory name into the name of the corresponding
 --- sub directory containing auxiliary files.
-addCurrySubdir :: String -> String
+addCurrySubdir :: FilePath -> FilePath
 addCurrySubdir dir = dir </> currySubdir
+
+-----------------------------------------------------------
+--- finding files in correspondence to compiler load path
+-----------------------------------------------------------
 
 --- Returns the current path (list of directory names) of the
 --- system libraries.
@@ -144,25 +194,24 @@ getSysLibPath = case curryCompiler of
   "pakcs" -> return [installDir </> "lib", installDir </> "lib" </> "meta"]
   "kics"  -> return [installDir </> "src" </> "lib"]
   "kics2" -> return [installDir </> "lib", installDir </> "lib" </> "meta"]
-  _ -> error "Distribution.getSysLibPath: unknown curryCompiler"
-
+  _       -> error "Distribution.getSysLibPath: unknown curryCompiler"
 
 --- Adds a directory name to a file by looking up the current load path.
 --- An error message is delivered if there is no such file.
 lookupFileInLoadPath :: String -> IO (Maybe String)
 lookupFileInLoadPath fn =
-  getLoadPathForFile fn >>= lookupFileInPath (baseName fn) [""]
+  getLoadPathForFile fn >>= lookupFileInPath (takeFileName fn) [""]
 
 --- Adds a directory name to a file by looking up the current load path.
 --- An error message is delivered if there is no such file.
 findFileInLoadPath :: String -> IO String
 findFileInLoadPath fn =
-  getLoadPathForFile fn >>= getFileInPath (baseName fn) [""]
+  getLoadPathForFile fn >>= getFileInPath (takeFileName fn) [""]
 
 --- Returns the contents of the file found first in the current load path.
 --- An error message is delivered if there is no such file.
 readFirstFileInLoadPath :: String -> IO String
-readFirstFileInLoadPath fn = findFileInLoadPath fn >>= readFile 
+readFirstFileInLoadPath fn = findFileInLoadPath fn >>= readFile
 
 --- Returns the current path (list of directory names) that is
 --- used for loading modules.
@@ -179,15 +228,16 @@ getLoadPathForFile :: String -> IO [String]
 getLoadPathForFile file = do
   syslib <- getSysLibPath
   mblib  <- getRcVar "libraries"
-  let fileDir = dirName file
+  let fileDir = dropFileName file
   if curryCompiler `elem` ["pakcs","kics","kics2"] then
     do currypath <- getEnviron "CURRYPATH"
-       let llib = maybe [] splitPath mblib
-       return (addCurrySubdirs (fileDir :
-                                   (if null currypath
-                                    then []
-                                    else splitPath currypath) ++
-                                    llib ++ syslib))
+       let llib      = maybe [] splitSearchPath mblib
+           curryDirs = [fileDir, normalise (currySubdir </> fileDir)]
+       return $ curryDirs ++ (addCurrySubdirs
+                  (fileDir : (if null currypath
+                              then []
+                              else splitSearchPath currypath) ++
+                              llib ++ syslib))
 
     else error "Distribution.getLoadPathForFile: unknown curryCompiler"
  where
@@ -256,27 +306,27 @@ setOverlapWarn s (FrontendParams a b _ x y z sp) = FrontendParams a b s x y z sp
 --- Set the full path of the front end.
 --- If this parameter is set, the front end searches all modules
 --- in this path (instead of using the default path).
-setFullPath ::  [String] -> FrontendParams -> FrontendParams 
+setFullPath ::  [String] -> FrontendParams -> FrontendParams
 setFullPath s (FrontendParams a b c _ y z sp) =
   FrontendParams a b c (Just s) y z sp
 
 --- Set the htmldir parameter of the front end.
 --- Relevant for HTML generation.
-setHtmlDir ::  String -> FrontendParams -> FrontendParams 
+setHtmlDir ::  String -> FrontendParams -> FrontendParams
 setHtmlDir  s (FrontendParams a b c d _ z sp) =
   FrontendParams a b c d (Just s) z sp
 
 --- Set the logfile parameter of the front end.
 --- If this parameter is set, all messages produced by the front end
 --- are stored in this file.
-setLogfile ::  String -> FrontendParams -> FrontendParams 
+setLogfile ::  String -> FrontendParams -> FrontendParams
 setLogfile  s (FrontendParams a b c d e _ sp) =
   FrontendParams a b c d e (Just s) sp
 
 --- Set additional specials parameters of the front end.
 --- These parameters are specific for the current front end and
 --- should be used with care, since their form might change in the future.
-setSpecials :: String -> FrontendParams -> FrontendParams 
+setSpecials :: String -> FrontendParams -> FrontendParams
 setSpecials sp (FrontendParams a b c d e z _) =
   FrontendParams a b c d e z sp
 
@@ -331,7 +381,7 @@ callFrontendWithParams target params progname = do
   parsecurry <- callParseCurry
   let lf      = maybe "" id (logfile params)
       syscall = parsecurry ++ " " ++ showFrontendTarget target
-                           ++ " " ++ showFrontendParams 
+                           ++ " " ++ showFrontendParams
                            ++ " " ++ progname
   retcode <- if null lf
              then system syscall
@@ -342,8 +392,10 @@ callFrontendWithParams target params progname = do
  where
    callParseCurry = do
      path <- maybe getLoadPath return (fullPath params)
-     return ("\"" ++ installDir </> "bin" </> "cymake\"" ++
-             concatMap (\d->" -i\""++d++"\"") path)
+     return (quote (installDir </> "bin" </> "cymake")
+             ++ concatMap ((" -i" ++) . quote) path)
+
+   quote s = '"' : s ++ "\""
 
    showFrontendTarget FCY  = "--flat"
    showFrontendTarget FINT = "--flat"
@@ -361,6 +413,3 @@ callFrontendWithParams target params progname = do
     ]
 
    runQuiet = "--no-verb --no-warn --no-overlap-warn"
-
-rcErr :: String -> a -> IO a
-rcErr s x = hPutStrLn stderr (s ++ " undefined in rc file") >> return x

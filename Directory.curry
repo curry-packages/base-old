@@ -10,11 +10,12 @@ module Directory
   , getDirectoryContents, createDirectory, createDirectoryIfMissing
   , removeDirectory, renameDirectory
   , getHomeDirectory, getTemporaryDirectory
+  , getAbsolutePath
   , removeFile, renameFile, copyFile
   ) where
 
-import FilePath (FilePath, (</>), splitDirectories)
-import List     (scanl1, last)
+import FilePath (FilePath, (</>), splitDirectories, isAbsolute, normalise)
+import List     (isPrefixOf, scanl1, last)
 import System   (getEnviron, isWindows)
 import Time     (ClockTime)
 
@@ -102,16 +103,27 @@ renameDirectory dir1 dir2 = (prim_renameDirectory $## dir1) $## dir2
 prim_renameDirectory :: FilePath -> FilePath -> IO ()
 prim_renameDirectory external
 
---- Return the home directory of the current user.
+--- Returns the home directory of the current user.
 getHomeDirectory :: IO FilePath
 getHomeDirectory = if isWindows
                       then getEnviron "USERPROFILE"
                       else getEnviron "HOME"
 
---- Return the temporary directory of the operating system.
+--- Returns the temporary directory of the operating system.
 getTemporaryDirectory :: IO FilePath
 getTemporaryDirectory = if isWindows then getEnviron "TMP" else return "/tmp"
 
+--- Convert a path name into an absolute one.
+--- For instance, a leading `~` is replaced by the current home directory.
+getAbsolutePath :: FilePath -> IO FilePath
+getAbsolutePath path
+  | isAbsolute path        = return (normalise path)
+  | path == "~"            = getHomeDirectory
+  | "~/" `isPrefixOf` path = do homedir <- getHomeDirectory
+                                return (normalise (homedir </> drop 2 path))
+  | otherwise              = do curdir <- getCurrentDirectory
+                                return (normalise (curdir </> path))
+  
 --- Deletes a file from the file system.
 removeFile :: FilePath -> IO ()
 removeFile file = prim_removeFile $## file
