@@ -4,6 +4,8 @@
 --- are always available in any Curry program.
 ----------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
+
 module Prelude where
 
 -- Lines beginning with "--++" are part of the prelude
