@@ -5,6 +5,8 @@
 --- @version September 2012
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
+
 module List
   ( elemIndex, elemIndices, find, findIndex, findIndices
   , nub, nubBy, delete, deleteBy, (\\), union, intersect
