@@ -6,7 +6,7 @@
 --- transform them into this representation (function "readFlatCurry").
 ---
 --- @author Michael Hanus
---- @version June 2009
+--- @version November 2014
 ------------------------------------------------------------------------------
 
 module FlatCurry where
@@ -14,7 +14,6 @@ module FlatCurry where
 import Directory(doesFileExist)
 import ReadShowTerm
 import Distribution
-import FileGoodies(stripSuffix)
 
 ------------------------------------------------------------------------------
 -- Definition of data types for representing FlatCurry programs:
@@ -276,13 +275,13 @@ readFlatCurryWithParseOptions progname options = do
 --- or ".lcurry") into the name of the file containing the
 --- corresponding FlatCurry program.
 flatCurryFileName :: String -> String
-flatCurryFileName prog = inCurrySubdir (stripSuffix prog ++ ".fcy")
+flatCurryFileName prog = inCurrySubdir (stripCurrySuffix prog ++ ".fcy")
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
 --- corresponding FlatCurry program.
 flatCurryIntName :: String -> String
-flatCurryIntName prog = inCurrySubdir (stripSuffix prog ++ ".fint")
+flatCurryIntName prog = inCurrySubdir (stripCurrySuffix prog ++ ".fint")
 
 --- I/O action which reads a FlatCurry program from a file in ".fcy" format.
 --- In contrast to `readFlatCurry`, this action does not parse

@@ -5,13 +5,14 @@
 --- <b>curryCompiler...</b>.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version May 2014
+--- @version November 2014
 --------------------------------------------------------------------------------
 
 module Distribution (
   curryCompiler,curryCompilerMajorVersion,curryCompilerMinorVersion,
   curryRuntime,curryRuntimeMajorVersion,curryRuntimeMinorVersion,
-  installDir,currySubdir,inCurrySubdir,addCurrySubdir,
+  installDir,stripCurrySuffix,modNameToPath,
+  currySubdir,inCurrySubdir,addCurrySubdir,
   
   rcFileName,rcFileContents,getRcVar,getRcVars,
 
@@ -28,7 +29,7 @@ module Distribution (
   callFrontend,callFrontendWithParams
   ) where
 
-import List(intersperse)
+import List(intersperse,split)
 import Char(toLower)
 import System
 import IO
@@ -107,6 +108,18 @@ getRcVars vars = do
 --- Name of the main installation directory of the Curry compiler.
 installDir :: String
 installDir external
+
+--- Strips the suffix ".curry" or ".lcurry" from a file name.
+stripCurrySuffix :: String -> String
+stripCurrySuffix s =
+  if fileSuffix s `elem` ["curry","lcurry"]
+  then stripSuffix s
+  else s
+
+--- Transforms a hierarchical module name into a path name, i.e.,
+--- replace the dots in the name by directory separator chars.
+modNameToPath :: String -> String
+modNameToPath = foldr1 (</>) . split (=='.')
 
 --- Name of the sub directory where auxiliary files (.fint, .fcy, etc)
 --- are stored.
