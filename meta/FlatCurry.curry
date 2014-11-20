@@ -11,9 +11,15 @@
 
 module FlatCurry where
 
-import Directory(doesFileExist)
-import ReadShowTerm
-import Distribution
+import Directory    (doesFileExist)
+import FilePath     (replaceExtension)
+import Maybe        (isNothing)
+import ReadShowTerm (readUnqualifiedTerm, showTerm)
+import Distribution ( FrontendParams, FrontendTarget (..), defaultParams
+                    , setQuiet, inCurrySubdir
+                    , callFrontend, callFrontendWithParams
+                    , findFileInLoadPath, lookupFileInLoadPath
+                    )
 
 ------------------------------------------------------------------------------
 -- Definition of data types for representing FlatCurry programs:
@@ -21,18 +27,16 @@ import Distribution
 
 --- Data type for representing a Curry module in the intermediate form.
 --- A value of this data type has the form
---- 
+---
 ---     (Prog modname imports typedecls functions opdecls)
---- 
+---
 --- where
 --- `modname` is the name of this module,
 --- `imports` is the list of modules names that are imported, and
 --- `typedecls`, `functions`, and `opdecls` are the list of
 --- data type, function, and operator declarations
 --- contained in this module, respectively.
-
 data Prog = Prog String [String] [TypeDecl] [FuncDecl] [OpDecl]
-
 
 --- The data type for representing qualified names.
 --- In FlatCurry all names are qualified to avoid name clashes.
@@ -41,7 +45,6 @@ data Prog = Prog String [String] [TypeDecl] [FuncDecl] [OpDecl]
 type QName = (String,String)
 
 --- Data type to specify the visibility of various entities.
-
 data Visibility = Public    -- public (exported) entity
                 | Private   -- private entity
 
@@ -67,15 +70,12 @@ type TVarIndex = Int
 ---
 --- Thus, a data type declaration consists of the name of the data type,
 --- a list of type parameters and a list of constructor declarations.
-
 data TypeDecl = Type    QName Visibility [TVarIndex] [ConsDecl]
               | TypeSyn QName Visibility [TVarIndex] TypeExpr
 
 --- A constructor declaration consists of the name and arity of the
 --- constructor and a list of the argument types of the constructor.
-
 data ConsDecl = Cons QName Int Visibility [TypeExpr]
-
 
 --- Data type for type expressions.
 --- A type expression is either a type variable, a function type,
@@ -84,29 +84,24 @@ data ConsDecl = Cons QName Int Visibility [TypeExpr]
 --- Note: the names of the predefined type constructors are
 --- "Int", "Float", "Bool", "Char", "IO", "Success",
 --- "()" (unit type), "(,...,)" (tuple types), "[]" (list type)
-
-data TypeExpr =
-     TVar TVarIndex                 -- type variable
-   | FuncType TypeExpr TypeExpr     -- function type t1->t2
-   | TCons QName [TypeExpr]         -- type constructor application
-                                    -- TCons module name typeargs
-
+data TypeExpr
+  = TVar TVarIndex                 -- type variable
+  | FuncType TypeExpr TypeExpr     -- function type t1->t2
+  | TCons QName [TypeExpr]         -- type constructor application
+                                  -- TCons module name typeargs
 
 --- Data type for operator declarations.
 --- An operator declaration `fix p n` in Curry corresponds to the
 --- FlatCurry term `(Op n fix p)`.
-
 data OpDecl = Op QName Fixity Int
 
 --- Data types for the different choices for the fixity of an operator.
 data Fixity = InfixOp | InfixlOp | InfixrOp
 
-
 --- Data type for representing object variables.
 --- Object variables occurring in expressions are represented by `(Var i)`
 --- where `i` is a variable index.
 type VarIndex = Int
-
 
 --- Data type for representing function declarations.
 ---
@@ -131,19 +126,15 @@ type VarIndex = Int
 --- where s is the external name associated to this function.
 ---
 --- Thus, a function declaration consists of the name, arity, type, and rule.
-
 data FuncDecl = Func QName Int Visibility TypeExpr Rule
-
 
 --- A rule is either a list of formal parameters together with an expression
 --- or an "External" tag.
-
 data Rule = Rule [VarIndex] Expr
           | External String
 
 --- Data type for classifying case expressions.
 --- Case expressions can be either flexible or rigid in Curry.
-
 data CaseType = Rigid | Flex       -- type of a case expression
 
 --- Data type for classifying combinations
@@ -156,7 +147,6 @@ data CaseType = Rigid | Flex       -- type of a case expression
 --- @cons ConsPartCall - a partial call to a constructor (i.e., not all arguments
 ---                      are provided) where the parameter is the number of
 ---                      missing arguments
-
 data CombType = FuncCall | ConsCall | FuncPartCall Int | ConsPartCall Int
 
 --- Data type for representing expressions.
@@ -170,7 +160,7 @@ data CombType = FuncCall | ConsCall | FuncPartCall Int | ConsPartCall Int
 --- is represented as
 ---
 ---     (Comb FuncCall ("Prelude","if_then_else") [e1,e2,e3])
---- 
+---
 --- Higher-order applications are represented as calls to the (external)
 --- function `apply`. For instance, the rule
 ---
@@ -179,7 +169,7 @@ data CombType = FuncCall | ConsCall | FuncPartCall Int | ConsPartCall Int
 --- is represented as
 ---
 ---     (Rule  [0,1] (Comb FuncCall ("Prelude","apply") [Var 0, Var 1]))
---- 
+---
 --- A conditional rule is represented as a call to an external function
 --- `cond` where the first argument is the condition (a constraint).
 --- For instance, the rule
@@ -204,8 +194,7 @@ data CombType = FuncCall | ConsCall | FuncPartCall Int | ConsPartCall Int
 --- @cons Case - case distinction (rigid or flex)
 --- @cons Typed - typed expression to represent an expression with a
 ---               type declaration
-
-data Expr = Var VarIndex 
+data Expr = Var VarIndex
           | Lit Literal
           | Comb CombType QName [Expr]
           | Let [(VarIndex,Expr)] Expr
@@ -213,7 +202,6 @@ data Expr = Var VarIndex
           | Or Expr Expr
           | Case CaseType Expr [BranchExpr]
           | Typed Expr TypeExpr
-
 
 --- Data type for representing branches in a case expression.
 ---
@@ -227,29 +215,26 @@ data Expr = Var VarIndex
 ---
 --- for integers as branch patterns (similarly for other literals
 --- like float or character constants).
-
 data BranchExpr = Branch Pattern Expr
 
 --- Data type for representing patterns in case expressions.
-
 data Pattern = Pattern QName [VarIndex]
              | LPattern Literal
 
 --- Data type for representing literals occurring in an expression
 --- or case branch. It is either an integer, a float, or a character constant.
-
 data Literal = Intc   Int
              | Floatc Float
              | Charc  Char
 
-
-------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- Reading and writing of files
+-- -----------------------------------------------------------------------------
 --- I/O action which parses a Curry program and returns the corresponding
 --- FlatCurry program.
 --- Thus, the argument is the file name without suffix ".curry"
 --- (or ".lcurry") and the result is a FlatCurry term representing this
 --- program.
-
 readFlatCurry :: String -> IO Prog
 readFlatCurry progfile =
    readFlatCurryWithParseOptions progfile (setQuiet True defaultParams)
@@ -259,36 +244,32 @@ readFlatCurry progfile =
 --- This I/O action is used by the standard action `readFlatCurry`.
 --- @param progfile - the program file name (without suffix ".curry")
 --- @param options - parameters passed to the front end
-
 readFlatCurryWithParseOptions :: String -> FrontendParams -> IO Prog
 readFlatCurryWithParseOptions progname options = do
-  mbCurryFile  <- lookupFileInLoadPath (progname++".curry")
-  mbLCurryFile <- lookupFileInLoadPath (progname++".lcurry")
-  if mbCurryFile==Nothing && mbLCurryFile==Nothing
-   then done
-   else callFrontendWithParams FCY options progname
-  filename <- findFileInLoadPath (progname++".fcy")
+  mbCurryFile  <- lookupFileInLoadPath (progname ++ ".curry")
+  mbLCurryFile <- lookupFileInLoadPath (progname ++ ".lcurry")
+  unless (isNothing mbCurryFile && isNothing mbLCurryFile)
+    (callFrontendWithParams FCY options progname)
+  filename <- findFileInLoadPath (progname ++ ".fcy")
   readFlatCurryFile filename
-
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
 --- corresponding FlatCurry program.
 flatCurryFileName :: String -> String
-flatCurryFileName prog = inCurrySubdir (stripCurrySuffix prog ++ ".fcy")
+flatCurryFileName prog = inCurrySubdir (replaceExtension prog ".fcy")
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
 --- corresponding FlatCurry program.
 flatCurryIntName :: String -> String
-flatCurryIntName prog = inCurrySubdir (stripCurrySuffix prog ++ ".fint")
+flatCurryIntName prog = inCurrySubdir (replaceExtension prog ".fint")
 
 --- I/O action which reads a FlatCurry program from a file in ".fcy" format.
 --- In contrast to `readFlatCurry`, this action does not parse
 --- a source program. Thus, the argument must be the name of an existing
 --- file (with suffix ".fcy") containing a FlatCurry program in ".fcy"
 --- format and the result is a FlatCurry term representing this program.
-
 readFlatCurryFile :: String -> IO Prog
 readFlatCurryFile filename = do
   exfcy <- doesFileExist filename
@@ -298,7 +279,7 @@ readFlatCurryFile filename = do
            exdirfcy <- doesFileExist subdirfilename
            if exdirfcy
             then readExistingFCY subdirfilename
-            else error ("EXISTENCE ERROR: FlatCurry file '"++filename++
+            else error ("EXISTENCE ERROR: FlatCurry file '" ++ filename ++
                         "' does not exist")
  where
    readExistingFCY fname = do
@@ -311,17 +292,13 @@ readFlatCurryFile filename = do
 --- The argument is the file name without suffix ".curry"
 --- (or ".lcurry") and the result is a FlatCurry term representing the
 --- interface of this program.
-
 readFlatCurryInt :: String -> IO Prog
 readFlatCurryInt progname = do
-  existsCurry <- doesFileExist (progname++".curry")
-  existsLCurry <- doesFileExist (progname++".lcurry")
-  if existsCurry || existsLCurry
-   then callFrontend FINT progname
-   else done
-  filename <- findFileInLoadPath (progname++".fint")
+  existsCurry  <- doesFileExist (progname ++ ".curry")
+  existsLCurry <- doesFileExist (progname ++ ".lcurry")
+  when (existsCurry || existsLCurry) (callFrontend FINT progname)
+  filename <- findFileInLoadPath (progname ++ ".fint")
   readFlatCurryFile filename
-
 
 --- Writes a FlatCurry program into a file in ".fcy" format.
 --- The first argument must be the name of the target file
@@ -329,14 +306,11 @@ readFlatCurryInt progname = do
 writeFCY :: String -> Prog -> IO ()
 writeFCY file prog = writeFile file (showTerm prog)
 
-
 -----------------------------------------------------------------------
 --- Translates a given qualified type name into external name relative to
 --- a module. Thus, names not defined in this module (except for names
 --- defined in the prelude) are prefixed with their module name.
-showQNameInModule :: String -> (String,String) -> String
-showQNameInModule mod (qmod,name) =
-  if qmod==mod || qmod=="Prelude"
-  then name
-  else qmod++"."++name
-
+showQNameInModule :: String -> (String, String) -> String
+showQNameInModule mod (qmod, name)
+  | qmod == mod || qmod == "Prelude" = name
+  | otherwise                        = qmod ++ '.' : name
