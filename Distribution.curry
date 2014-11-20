@@ -136,10 +136,7 @@ splitModuleFileName mid fn = case splitModuleIdentifiers mid of
 --- Split up the components of a module identifier. For instance,
 --- `splitModuleIdentifiers "Data.Set"` evaluates to `["Data", "Set"]`.
 splitModuleIdentifiers :: ModuleIdent -> [String]
-splitModuleIdentifiers s = let (pref, rest) = break (== '.') s in
-  pref : case rest of
-    []     -> []
-    _ : s' -> splitModuleIdentifiers s'
+splitModuleIdentifiers = split (=='.')
 
 --- Join the components of a module identifier. For instance,
 --- `joinModuleIdentifiers ["Data", "Set"]` evaluates to `"Data.Set"`.
@@ -156,7 +153,7 @@ stripCurrySuffix s =
 
 --- Transforms a hierarchical module name into a path name, i.e.,
 --- replace the dots in the name by directory separator chars.
-modNameToPath :: String -> String
+modNameToPath :: ModuleIdent -> String
 modNameToPath = foldr1 (</>) . split (=='.')
 
 --- Name of the sub directory where auxiliary files (.fint, .fcy, etc)
@@ -164,13 +161,15 @@ modNameToPath = foldr1 (</>) . split (=='.')
 currySubdir :: FilePath
 currySubdir = ".curry"
 
---- Transforms a file name by adding the currySubDir to the file name.
---- Be careful with this function as it does not respect hierarchical
---- module names!
+--- Transforms a path to a module name into a file name
+--- by adding the `currySubDir` to the path and transforming
+--- a hierarchical module name into a path.
+--- For instance, `inCurrySubdir "mylib/Data.Char"` evaluates to
+--- `"mylib/.curry/Data/Char"`.
 inCurrySubdir :: FilePath -> FilePath
 inCurrySubdir filename =
   let (base,file) = splitFileName filename
-   in base </> currySubdir </> file
+   in base </> currySubdir </> modNameToPath file
 
 --- Transforms a file name by adding the currySubDir to the file name.
 --- This version respects hierarchical module names.

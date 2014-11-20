@@ -16,7 +16,7 @@ import FilePath     (replaceExtension)
 import Maybe        (isNothing)
 import ReadShowTerm (readUnqualifiedTerm, showTerm)
 import Distribution ( FrontendParams, FrontendTarget (..), defaultParams
-                    , setQuiet, inCurrySubdir
+                    , setQuiet, inCurrySubdir, stripCurrySuffix
                     , callFrontend, callFrontendWithParams
                     , findFileInLoadPath, lookupFileInLoadPath
                     )
@@ -250,20 +250,20 @@ readFlatCurryWithParseOptions progname options = do
   mbLCurryFile <- lookupFileInLoadPath (progname ++ ".lcurry")
   unless (isNothing mbCurryFile && isNothing mbLCurryFile)
     (callFrontendWithParams FCY options progname)
-  filename <- findFileInLoadPath (progname ++ ".fcy")
+  filename <- findFileInLoadPath (flatCurryFileName progname)
   readFlatCurryFile filename
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
 --- corresponding FlatCurry program.
 flatCurryFileName :: String -> String
-flatCurryFileName prog = inCurrySubdir (replaceExtension prog ".fcy")
+flatCurryFileName prog = inCurrySubdir (stripCurrySuffix prog) ++ ".fcy"
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
 --- corresponding FlatCurry program.
 flatCurryIntName :: String -> String
-flatCurryIntName prog = inCurrySubdir (replaceExtension prog ".fint")
+flatCurryIntName prog = inCurrySubdir (stripCurrySuffix prog) ++ ".fint"
 
 --- I/O action which reads a FlatCurry program from a file in ".fcy" format.
 --- In contrast to `readFlatCurry`, this action does not parse
