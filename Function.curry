@@ -4,9 +4,10 @@
 --- @author Björn Peemöller
 --- @version July 2013
 --- ----------------------------------------------------------------------------
-module Function where
 
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
+module Function where
 
 --- `fix f` is the least fixed point of the function `f`,
 --- i.e. the least defined `x` such that `f x = x`.
