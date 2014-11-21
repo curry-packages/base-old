@@ -15,6 +15,8 @@
 --- @version July 2013
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module ValueSequence(ValueSequence, emptyVS, addVS, failVS, (|++|), vsToList)
  where
 

@@ -9,6 +9,8 @@
 --- @version December 2012
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Parser where
 
 -- Operator declarations for the parser combinators:

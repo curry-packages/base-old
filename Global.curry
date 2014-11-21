@@ -23,6 +23,8 @@
 --- @version June 2007
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Global(Global,GlobalSpec(..),global,readGlobal,writeGlobal) where
 
 ----------------------------------------------------------------------

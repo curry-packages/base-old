@@ -7,6 +7,8 @@
 --- @version September 2013
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Unsafe
   ( unsafePerformIO, trace
   ) where

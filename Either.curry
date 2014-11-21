@@ -4,6 +4,9 @@
 --- @author  Björn Peemöller
 --- @version September 2014
 --- ----------------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Either
   ( Either (..)
   , either

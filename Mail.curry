@@ -7,6 +7,8 @@
 --- @version May 2007
 ---------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Mail(sendMail,MailOption(..),sendMailWithOptions) where
 
 import List(intersperse)

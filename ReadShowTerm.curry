@@ -5,6 +5,8 @@
 --- @version April 2005
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module ReadShowTerm(showTerm,showQTerm,readQTerm,readsQTerm,
                     readsUnqualifiedTerm,readUnqualifiedTerm,readsTerm,readTerm,
                     readQTermFile,readQTermListFile,

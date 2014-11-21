@@ -8,6 +8,8 @@
 --- @version February 2008
 ---------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Traversal (
 
   Traversable, noChildren,

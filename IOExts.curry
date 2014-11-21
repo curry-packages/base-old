@@ -5,6 +5,8 @@
 --- @version January 2014
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module IOExts
   ( -- execution of shell commands
     execCmd, evalCmd, connectToCommand

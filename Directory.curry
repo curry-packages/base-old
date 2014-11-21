@@ -4,6 +4,8 @@
 --- @author Michael Hanus
 --- @version January 2013
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Directory
   ( doesFileExist, doesDirectoryExist, fileSize, getModificationTime
   , getCurrentDirectory, setCurrentDirectory

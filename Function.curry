@@ -6,6 +6,8 @@
 --- ----------------------------------------------------------------------------
 module Function where
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 --- `fix f` is the least fixed point of the function `f`,
 --- i.e. the least defined `x` such that `f x = x`.
 fix :: (a -> a) -> a

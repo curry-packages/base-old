@@ -13,6 +13,8 @@
 --- in the old concept.
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module AllSolutions(getAllValues,getOneValue,getAllSolutions,getOneSolution,
                     getAllFailures)  where
 

@@ -5,6 +5,8 @@
 --- @version October 2014
 --- ----------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module Maybe
   ( Maybe (..)
   , maybe

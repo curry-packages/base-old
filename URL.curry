@@ -5,6 +5,8 @@
 --- @version November 2003
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+
 module URL(getContentsOfUrl) where
 
 import System
