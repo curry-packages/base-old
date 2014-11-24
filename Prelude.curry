@@ -69,8 +69,6 @@ data Char
 
 type String = [Char]
 
-type Bla = String
-
 -- Some standard combinators:
 
 --- Function composition.
@@ -269,6 +267,7 @@ null (_:_)      = False
 --length []       = 0
 --length (_:xs)   = 1 + length xs
 
+length :: [_] -> Int
 length xs = len xs 0
   where
     len [] n = n
