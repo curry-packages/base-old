@@ -20,6 +20,7 @@ module Distribution (
 
   findFileInLoadPath,lookupFileInLoadPath,
   readFirstFileInLoadPath,getLoadPath,getLoadPathForFile,
+  getLoadPathForModule, lookupModuleSourceInLoadPath,
 
   FrontendTarget(..),
 
@@ -33,6 +34,7 @@ module Distribution (
 
 import List         (split)
 import Char         (toLower)
+import Directory    (doesFileExist)
 import FileGoodies  (lookupFileInPath, getFileInPath, fileSuffix, stripSuffix)
 import FilePath     ( FilePath, (</>), (<.>), addTrailingPathSeparator
                     , dropFileName, joinPath, normalise, splitDirectories
@@ -151,6 +153,15 @@ stripCurrySuffix s =
   then stripSuffix s
   else s
 
+--- A module path consists of a directory prefix (which can be omitted)
+--- and a module name (which can be hierarchical). For instance, the
+--- following strings are module paths in Unix-based systems:
+---
+---     HTML
+---     Data.Number.Int
+---     curry/Data.Number.Int
+type ModulePath = String
+
 --- Transforms a hierarchical module name into a path name, i.e.,
 --- replace the dots in the name by directory separator chars.
 modNameToPath :: ModuleIdent -> String
@@ -241,6 +252,48 @@ getLoadPathForFile file = do
     else error "Distribution.getLoadPathForFile: unknown curryCompiler"
  where
   addCurrySubdirs = concatMap (\ d -> [d, addCurrySubdir d])
+
+--- Returns the current path (list of directory names) that is
+--- used for loading modules w.r.t. a given module path.
+--- The directory prefix of the module path (or "." if there is
+--- no such prefix) is the first element of the load path and the
+--- remaining elements are determined by the environment variable
+--- CURRYRPATH and the entry "libraries" of the system's rc file.
+getLoadPathForModule :: ModulePath -> IO [String]
+getLoadPathForModule modpath = do
+  syslib <- getSysLibPath
+  mblib  <- getRcVar "libraries"
+  let fileDir = dropFileName modpath
+  if curryCompiler `elem` ["pakcs","kics","kics2"] then
+    do currypath <- getEnviron "CURRYPATH"
+       let llib = maybe [] (\l -> if null l then [] else splitSearchPath l)
+                        mblib
+       return $ (fileDir : (if null currypath
+                            then []
+                            else splitSearchPath currypath) ++
+                           llib ++ syslib)
+    else error "Distribution.getLoadPathForModule: unknown curryCompiler"
+
+--- Returns a directory name and the actual source file name for a module
+--- by looking up the module source in the current load path.
+--- If the module is hierarchical, the directory is the top directory
+--- of the hierarchy.
+--- Returns Nothing if there is no corresponding source file.
+lookupModuleSourceInLoadPath :: ModulePath -> IO (Maybe (String,String))
+lookupModuleSourceInLoadPath modpath =
+  getLoadPathForModule modpath >>= lookupSourceInPath
+ where
+  fn       = takeFileName modpath
+  fnlcurry = modNameToPath fn ++ ".lcurry"
+  fncurry  = modNameToPath fn ++ ".curry"
+
+  lookupSourceInPath [] = return Nothing
+  lookupSourceInPath (dir:dirs) = do
+    lcurryExists <- doesFileExist (dir </> fnlcurry)
+    if lcurryExists then return (Just (dir, dir </> fnlcurry)) else do
+     curryExists <- doesFileExist (dir </> fncurry)
+     if curryExists then return (Just (dir, dir </> fncurry))
+                    else lookupSourceInPath dirs
 
 -------------------------------------------------------------------
 -- calling the front end
@@ -390,7 +443,7 @@ callFrontendWithParams target params progname = do
    else ioError (userError "Illegal source program")
  where
    callParseCurry = do
-     path <- maybe getLoadPath return (fullPath params)
+     path <- maybe (getLoadPathForModule progname) return (fullPath params)
      return (quote (installDir </> "bin" </> "cymake")
              ++ concatMap ((" -i" ++) . quote) path)
 

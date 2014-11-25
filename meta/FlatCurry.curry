@@ -11,14 +11,14 @@
 
 module FlatCurry where
 
-import Directory    (doesFileExist)
-import FilePath     (replaceExtension)
-import Maybe        (isNothing)
+import Directory    (doesFileExist, getCurrentDirectory, setCurrentDirectory)
+import FilePath     (replaceExtension, takeFileName)
+import Maybe        (fromJust, isNothing)
 import ReadShowTerm (readUnqualifiedTerm, showTerm)
 import Distribution ( FrontendParams, FrontendTarget (..), defaultParams
                     , setQuiet, inCurrySubdir, stripCurrySuffix
                     , callFrontend, callFrontendWithParams
-                    , findFileInLoadPath, lookupFileInLoadPath
+                    , lookupModuleSourceInLoadPath, findFileInLoadPath
                     )
 
 ------------------------------------------------------------------------------
@@ -230,26 +230,31 @@ data Literal = Intc   Int
 -- -----------------------------------------------------------------------------
 -- Reading and writing of files
 -- -----------------------------------------------------------------------------
+
 --- I/O action which parses a Curry program and returns the corresponding
 --- FlatCurry program.
---- Thus, the argument is the file name without suffix ".curry"
---- (or ".lcurry") and the result is a FlatCurry term representing this
+--- Thus, the argument is the module path (without suffix ".curry"
+--- or ".lcurry") and the result is a FlatCurry term representing this
 --- program.
 readFlatCurry :: String -> IO Prog
 readFlatCurry progfile =
    readFlatCurryWithParseOptions progfile (setQuiet True defaultParams)
 
---- I/O action which reads a FlatCurry program from a file
---- with respect to some parser options.
+--- I/O action which parses a Curry program
+--- with respect to some parser options and returns the
+--- corresponding FlatCurry program.
 --- This I/O action is used by the standard action `readFlatCurry`.
 --- @param progfile - the program file name (without suffix ".curry")
 --- @param options - parameters passed to the front end
 readFlatCurryWithParseOptions :: String -> FrontendParams -> IO Prog
 readFlatCurryWithParseOptions progname options = do
-  mbCurryFile  <- lookupFileInLoadPath (progname ++ ".curry")
-  mbLCurryFile <- lookupFileInLoadPath (progname ++ ".lcurry")
-  unless (isNothing mbCurryFile && isNothing mbLCurryFile)
-    (callFrontendWithParams FCY options progname)
+  mbmoddir <- lookupModuleSourceInLoadPath progname
+                >>= return . maybe Nothing (Just . fst)
+  unless (isNothing mbmoddir) $ do
+    cdir <- getCurrentDirectory
+    setCurrentDirectory (fromJust mbmoddir)
+    callFrontendWithParams FCY options (takeFileName progname)
+    setCurrentDirectory cdir
   filename <- findFileInLoadPath (flatCurryFileName progname)
   readFlatCurryFile filename
 
@@ -286,18 +291,22 @@ readFlatCurryFile filename = do
      filecontents <- readFile fname
      return (readUnqualifiedTerm ["FlatCurry","Prelude"] filecontents)
 
---- I/O action which returns the interface of a Curry program, i.e.,
+--- I/O action which returns the interface of a Curry module, i.e.,
 --- a FlatCurry program containing only "Public" entities and function
 --- definitions without rules (i.e., external functions).
 --- The argument is the file name without suffix ".curry"
 --- (or ".lcurry") and the result is a FlatCurry term representing the
---- interface of this program.
+--- interface of this module.
 readFlatCurryInt :: String -> IO Prog
 readFlatCurryInt progname = do
-  existsCurry  <- doesFileExist (progname ++ ".curry")
-  existsLCurry <- doesFileExist (progname ++ ".lcurry")
-  when (existsCurry || existsLCurry) (callFrontend FINT progname)
-  filename <- findFileInLoadPath (progname ++ ".fint")
+  mbmoddir <- lookupModuleSourceInLoadPath progname
+                >>= return . maybe Nothing (Just . fst)
+  unless (isNothing mbmoddir) $ do
+    cdir <- getCurrentDirectory
+    setCurrentDirectory (fromJust mbmoddir)
+    callFrontend FINT (takeFileName progname)
+    setCurrentDirectory cdir
+  filename <- findFileInLoadPath (flatCurryIntName progname)
   readFlatCurryFile filename
 
 --- Writes a FlatCurry program into a file in ".fcy" format.
