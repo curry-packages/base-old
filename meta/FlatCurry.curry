@@ -12,7 +12,7 @@
 module FlatCurry where
 
 import Directory    (doesFileExist, getCurrentDirectory, setCurrentDirectory)
-import FilePath     (replaceExtension, takeFileName)
+import FilePath     ((<.>), takeFileName)
 import Maybe        (fromJust, isNothing)
 import ReadShowTerm (readUnqualifiedTerm, showTerm)
 import Distribution ( FrontendParams, FrontendTarget (..), defaultParams
@@ -262,13 +262,13 @@ readFlatCurryWithParseOptions progname options = do
 --- or ".lcurry") into the name of the file containing the
 --- corresponding FlatCurry program.
 flatCurryFileName :: String -> String
-flatCurryFileName prog = inCurrySubdir (stripCurrySuffix prog) ++ ".fcy"
+flatCurryFileName prog = inCurrySubdir (stripCurrySuffix prog) <.> "fcy"
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
 --- corresponding FlatCurry program.
 flatCurryIntName :: String -> String
-flatCurryIntName prog = inCurrySubdir (stripCurrySuffix prog) ++ ".fint"
+flatCurryIntName prog = inCurrySubdir (stripCurrySuffix prog) <.> "fint"
 
 --- I/O action which reads a FlatCurry program from a file in ".fcy" format.
 --- In contrast to `readFlatCurry`, this action does not parse

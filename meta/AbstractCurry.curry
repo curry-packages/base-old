@@ -12,7 +12,7 @@
 --- extension .acy
 ---
 --- @author Michael Hanus, Bjoern Peemoeller
---- @version January 2012
+--- @version November 2014
 -- ---------------------------------------------------------------------------
 
 module AbstractCurry where
@@ -21,7 +21,7 @@ import Char         (isSpace)
 import Directory    (doesFileExist)
 import ReadShowTerm
 import Distribution
-import FileGoodies  (stripSuffix)
+import FilePath     ((<.>))
 
 -- ---------------------------------------------------------------------------
 -- Definition of data types for representing abstract Curry programs:
@@ -275,13 +275,14 @@ readUntypedCurryWithParseOptions progname options = do
 --- or ".lcurry") into the name of the file containing the
 --- corresponding AbstractCurry program.
 abstractCurryFileName :: String -> String
-abstractCurryFileName prog = inCurrySubdir (stripSuffix prog ++ ".acy")
+abstractCurryFileName prog = inCurrySubdir (stripCurrySuffix prog) <.> "acy"
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
 --- corresponding untyped AbstractCurry program.
 untypedAbstractCurryFileName :: String -> String
-untypedAbstractCurryFileName prog = inCurrySubdir (stripSuffix prog ++ ".uacy")
+untypedAbstractCurryFileName prog =
+  inCurrySubdir (stripCurrySuffix prog) <.> "uacy"
 
 --- I/O action which reads an AbstractCurry program from a file in ".acy"
 --- format. In contrast to <CODE>readCurry</CODE>, this action does not parse
