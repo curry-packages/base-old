@@ -11,9 +11,9 @@
 
 module FlatCurry where
 
-import Directory    (doesFileExist, getCurrentDirectory, setCurrentDirectory)
-import FilePath     ((<.>), takeFileName)
-import Maybe        (fromJust, isNothing)
+import Directory    (doesFileExist)
+import FilePath     ((<.>))
+import Maybe        (isNothing)
 import ReadShowTerm (readUnqualifiedTerm, showTerm)
 import Distribution ( FrontendParams, FrontendTarget (..), defaultParams
                     , setQuiet, inCurrySubdir, stripCurrySuffix
@@ -250,11 +250,8 @@ readFlatCurryWithParseOptions :: String -> FrontendParams -> IO Prog
 readFlatCurryWithParseOptions progname options = do
   mbmoddir <- lookupModuleSourceInLoadPath progname
                 >>= return . maybe Nothing (Just . fst)
-  unless (isNothing mbmoddir) $ do
-    cdir <- getCurrentDirectory
-    setCurrentDirectory (fromJust mbmoddir)
-    callFrontendWithParams FCY options (takeFileName progname)
-    setCurrentDirectory cdir
+  unless (isNothing mbmoddir) $
+    callFrontendWithParams FCY options progname
   filename <- findFileInLoadPath (flatCurryFileName progname)
   readFlatCurryFile filename
 
@@ -301,11 +298,8 @@ readFlatCurryInt :: String -> IO Prog
 readFlatCurryInt progname = do
   mbmoddir <- lookupModuleSourceInLoadPath progname
                 >>= return . maybe Nothing (Just . fst)
-  unless (isNothing mbmoddir) $ do
-    cdir <- getCurrentDirectory
-    setCurrentDirectory (fromJust mbmoddir)
-    callFrontend FINT (takeFileName progname)
-    setCurrentDirectory cdir
+  unless (isNothing mbmoddir) $
+    callFrontend FINT progname
   filename <- findFileInLoadPath (flatCurryIntName progname)
   readFlatCurryFile filename
 

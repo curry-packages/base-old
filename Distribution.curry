@@ -427,14 +427,17 @@ callFrontend target p = do
 --- If the front end returns with an error, an exception is raised.
 --- @param target - the kind of target file to be generated
 --- @param params - parameters for the front end
---- @param progname - the name of the main module of the application to be compiled
-callFrontendWithParams :: FrontendTarget -> FrontendParams -> String -> IO ()
-callFrontendWithParams target params progname = do
+--- @param modpath - the name of the main module possibly prefixed with a
+---                  directory where this module resides
+callFrontendWithParams :: FrontendTarget -> FrontendParams -> ModulePath
+                       -> IO ()
+callFrontendWithParams target params modpath = do
   parsecurry <- callParseCurry
   let lf      = maybe "" id (logfile params)
       syscall = parsecurry ++ " " ++ showFrontendTarget target
                            ++ " " ++ showFrontendParams
-                           ++ " " ++ progname
+                           ++ " " ++ takeFileName modpath
+  putStrLn syscall
   retcode <- if null lf
              then system syscall
              else system (syscall ++ " > " ++ lf ++ " 2>&1")
@@ -443,7 +446,7 @@ callFrontendWithParams target params progname = do
    else ioError (userError "Illegal source program")
  where
    callParseCurry = do
-     path <- maybe (getLoadPathForModule progname) return (fullPath params)
+     path <- maybe (getLoadPathForModule modpath) return (fullPath params)
      return (quote (installDir </> "bin" </> "cymake")
              ++ concatMap ((" -i" ++) . quote) path)
 
