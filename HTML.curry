@@ -16,7 +16,7 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version February 2014
+--- @version November 2014
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
@@ -1235,7 +1235,11 @@ computeFormInStateAndEnv url cgikey fparams state scriptkey hformact cenv =
 
 formWithMultipleHandlers :: HtmlForm -> Bool
 formWithMultipleHandlers (HtmlAnswer _ _) = False
-formWithMultipleHandlers (HtmlForm _ params _) = any (==MultipleHandlers) params
+formWithMultipleHandlers (HtmlForm _ params _) = any isMultipleHandlers params
+ where
+  isMultipleHandlers formparam =
+    case formparam of MultipleHandlers -> True
+                      _                -> False
 
 -- Encode an arbitrary string to make it less readable.
 -- Used for encoding CGI keys before storing them on the web server.

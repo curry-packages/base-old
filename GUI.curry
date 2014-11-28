@@ -4,7 +4,7 @@
 --- contains a description of the basic ideas behind this library.
 ---
 --- @authors Michael Hanus, Bernd Brassel
---- @version September 2014
+--- @version November 2014
 ------------------------------------------------------------------------------
 
 module GUI(GuiPort,Widget(..),Button,ConfigButton,
@@ -124,6 +124,18 @@ data ConfItem =
  | Width Int       
  | Fill | FillX | FillY           
  | TclOption String
+
+isFill :: ConfItem -> Bool
+isFill ci = case ci of Fill -> True
+                       _    -> False
+
+isFillX :: ConfItem -> Bool
+isFillX ci = case ci of FillX -> True
+                        _     -> False
+
+isFillY :: ConfItem -> Bool
+isFillY ci = case ci of FillY -> True
+                        _     -> False
 
 --- Data type for describing configurations that are applied
 --- to a widget or GUI by some event handler.
@@ -506,9 +518,9 @@ matrix2tcl nextLabel n label confs (ws:wss) =
 
 -- compute the required resize behavior of the top window
 resizeBehavior :: [[ConfItem]] -> String
-resizeBehavior ws = if any (elem Fill) ws then "1 1" else
-                    if any (elem FillX) ws then "1 0" else
-                    if any (elem FillY) ws then "0 1" else "0 0"
+resizeBehavior ws = if any (any isFill)  ws then "1 1" else
+                    if any (any isFillX) ws then "1 0" else
+                    if any (any isFillY) ws then "0 1" else "0 0"
 
 
 -- list of labels of the widgets
@@ -523,26 +535,17 @@ widgets2gridinfo (w:ws) =
              if fillx then [FillX] else
              if filly then [FillY] else []
              
-hasFillX w = any isFillXConf (propagateFillInfo w)
-isFillXConf conf = case conf of
-  FillX -> True
-  _       -> False
+hasFillX w = any isFillX (propagateFillInfo w)
 
-hasFillY w = any isFillYConf (propagateFillInfo w)
-isFillYConf conf = case conf of
-  FillY -> True
-  _       -> False
+hasFillY w = any isFillY (propagateFillInfo w)
 
-hasFill w = any isFillConf (propagateFillInfo w)
-isFillConf conf = case conf of
-  Fill -> True
-  _      -> False
+hasFill  w = any isFill  (propagateFillInfo w)
 
 isFillInfo conf = case conf of
                     FillX -> True
                     FillY -> True
                     Fill  -> True
-                    _       -> False
+                    _     -> False
 
 -- propagate FillInfo for those kinds of widgets which are resizable on their on
 propagateFillInfo (PlainButton _)     = []
@@ -591,25 +594,25 @@ confCollection2tcl (BottomAlign : confs) = "-sticky s " ++ confCollection2tcl co
 -- translate the Fill - options to sticky options and grid configures
 gridInfo2tcl :: Int -> String -> String -> [ConfItem] -> String
 gridInfo2tcl n label "col" confs 
-  | elem Fill confs || (elem FillX confs && elem FillY confs)
+  | any isFill confs || (any isFillX confs && any isFillY confs)
   = "-sticky nsew \ngrid columnconfigure "++lab++" "++show n++
     " -weight 1\ngrid rowconfigure "++lab++" 1 -weight 1"
-  | elem FillX confs = "-sticky we \ngrid columnconfigure "++lab++
-                         " "++show n++" -weight 1"
-  | elem FillY confs = "-sticky ns \ngrid rowconfigure "++lab++
-                         " 1 -weight 1"
+  | any isFillX confs = "-sticky we \ngrid columnconfigure "++lab++
+                        " "++show n++" -weight 1"
+  | any isFillY confs = "-sticky ns \ngrid rowconfigure "++lab++
+                        " 1 -weight 1"
   | otherwise = ""
   where
     lab = if label=="" then "." else label
 
 gridInfo2tcl n label "row" confs 
-  | elem Fill confs || (elem FillX confs && elem FillY confs)
+  | any isFill confs || (any isFillX confs && any isFillY confs)
   = "-sticky nsew \ngrid columnconfigure "++lab++
     " 1 -weight 1\ngrid rowconfigure "++lab++" "++show n++" -weight 1"
-  | elem FillX confs = "-sticky we \ngrid columnconfigure "++lab++
-                         " 1 -weight 1"
-  | elem FillY confs =  "-sticky ns \ngrid rowconfigure "++lab++
-                          " "++show n++" -weight 1"
+  | any isFillX confs = "-sticky we \ngrid columnconfigure "++lab++
+                        " 1 -weight 1"
+  | any isFillY confs =  "-sticky ns \ngrid rowconfigure "++lab++
+                         " "++show n++" -weight 1"
   | otherwise = ""
   where
     lab = if label=="" then "." else label

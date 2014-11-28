@@ -437,7 +437,6 @@ callFrontendWithParams target params modpath = do
       syscall = parsecurry ++ " " ++ showFrontendTarget target
                            ++ " " ++ showFrontendParams
                            ++ " " ++ takeFileName modpath
-  putStrLn syscall
   retcode <- if null lf
              then system syscall
              else system (syscall ++ " > " ++ lf ++ " 2>&1")
