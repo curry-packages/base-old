@@ -210,10 +210,9 @@ lineBeginsWith :: [Char] -> [Char] -> Bool
 lineBeginsWith line s | length line < lens = False
                       | otherwise 
                       = line==s || 
-                        let (s',rest) = splitAt (length s :: Int) line 
+                        let (s',rest) = splitAt (length s) line 
                          in s==s' && (null rest || isSep (head rest))
   where
-    lens :: Int
     lens = length s
 
 

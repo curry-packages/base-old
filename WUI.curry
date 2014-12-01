@@ -316,7 +316,7 @@ wSelect showelem selset =
   selWidget render v =
     let ref free
         idx = elemIndex v selset
-        namevalues = zip (map showelem selset) (map show [(0 :: Int)..])
+        namevalues = zip (map showelem selset) (map show [0..])
      in (render [maybe (selection ref namevalues)
                        (\i -> selectionInitial ref namevalues i)
                        idx],

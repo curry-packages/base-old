@@ -181,7 +181,7 @@ showXmlExp i encFun (XElem tag attrs xexps) =
   xtab i ++ showXmlOpenTag tag attrs encFun ++
   if xexps == []
   then " />\n"
-  else if length xexps == (1 :: Int) && isXText (head xexps)
+  else if length xexps == 1 && isXText (head xexps)
        then let [XText s] = xexps
             in  ">" ++ (encFun s) ++ "</" ++ tag ++ ">\n"
        else ">\n" ++ showXmlExps (i+2) xexps encFun ++

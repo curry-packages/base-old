@@ -190,9 +190,9 @@ bitOr n m = if m == 0 then n
 
 bitNot :: Int -> Int
 bitNot n = aux 32 n
-  where aux c m = if c==(0 :: Int) then 0
-                  else let p = 2 * aux (c-1) (m `div` (2 :: Int))
-                           q = 1 - m `mod` (2 :: Int)
+  where aux c m = if c==0 then 0
+                  else let p = 2 * aux (c-1) (m `div` 2)
+                           q = 1 - m `mod` 2
                         in p + q
 
 --- Returns the bitwise exclusive OR of the two arguments.

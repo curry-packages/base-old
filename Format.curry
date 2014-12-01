@@ -277,9 +277,9 @@ onePrePoint (Floater s m1 m2 e) | m1 == "0" && m2 == ""       =
   Floater s m1 m2 e
                                 | m1 == "0" && m2 /= ""       =
   onePrePoint (Floater s [head m2] (tail m2) (e-1))
-                                | m1 /= "0" && length m1 == (1 :: Int) =
+                                | m1 /= "0" && length m1 == 1 =
   Floater s m1 m2 e
-                                | m1 /= "0" && length m1 >= (1 :: Int) =
+                                | m1 /= "0" && length m1 >= 1 =
   onePrePoint (Floater s (init m1) ((last m1):m2) (e+1))
 
 roundFloater :: Int -> Floater -> Floater

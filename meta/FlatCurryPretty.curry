@@ -104,7 +104,7 @@ ppTypeExpr _ (TVar           v) = ppTVarIndex v
 ppTypeExpr p (FuncType ty1 ty2) = parenIf (p > 0) $
   ppTypeExpr 1 ty1 </> text "->" <+> ppTypeExpr 0 ty2
 ppTypeExpr p (TCons     qn tys)
-  | isListId qn && length tys == (1 :: Int) = brackets (ppTypeExpr 0 (head tys))
+  | isListId qn && length tys == 1 = brackets (ppTypeExpr 0 (head tys))
   | isTupleId qn                   = tupled   (map (ppTypeExpr 0) tys)
   | otherwise                      = parenIf (p > 1 && not (null tys)) $ sep
                                      (ppPrefixOp qn : map (ppTypeExpr 2) tys)
@@ -112,7 +112,7 @@ ppTypeExpr p (TCons     qn tys)
 --- pretty-print a type variable
 ppTVarIndex :: TVarIndex -> Doc
 ppTVarIndex i = text $ vars !! i
-  where vars = [ chr c : if n == (0 :: Int) then [] else show n
+  where vars = [ chr c : if n == 0 then [] else show n
                | n <- [0 ..], c <- [ord 'a' .. ord 'z']
                ]
 

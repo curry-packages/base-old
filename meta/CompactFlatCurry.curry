@@ -165,7 +165,7 @@ computeCompactFlatCurry orgoptions progname =
     prog <- readCurrentFlatCurry progname
     resultprog <- makeCompactFlatCurry prog options
     putStrLn ("CompactFlat: Number of functions after optimization: " ++
-              show (length (moduleFuns resultprog) :: Int))
+              show (length (moduleFuns resultprog))
     return resultprog
 
 --- Create the optimized program.
@@ -185,7 +185,7 @@ makeCompactFlatCurry mainmod options = do
                     (emptySetRBT leqQName) (emptySetRBT leqQName)
                     initreqfuncs
   putStrLn ("\nCompactFlat: Total number of functions (without unused imports): "
-            ++ show (foldr (+) (0 :: Int) (map (length . moduleFuns) finalmods)))
+            ++ show (foldr (+) 0 (map (length . moduleFuns) finalmods)))
   let finalfnames  = map functionName finalfuncs
   return (Prog (moduleName mainmod)
                []

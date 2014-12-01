@@ -446,7 +446,7 @@ wSelect showelem selset =
     where
       ref free
       idx = elemIndex v selset
-      namevalues = zip (map showelem selset) (map show [(0 :: Int)..])
+      namevalues = zip (map showelem selset) (map show [0..])
 
 
 --- A widget to select a value from a given list of values that are
@@ -481,7 +481,7 @@ wSelectJS showelem showjselem selset =
                            JSFCall "new Array" (map showjselem selset)]
       jsCheckCall = maybeJSFun2checkCall refname jsaccess mbjs
       idx = elemIndex v selset
-      namevalues = zip (map showelem selset) (map show [(0 :: Int)..])
+      namevalues = zip (map showelem selset) (map show [0..])
 
 
 --- A widget to select a value from a given list of integers (provided as

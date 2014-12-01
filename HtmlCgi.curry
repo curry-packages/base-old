@@ -115,7 +115,7 @@ runCgiServerCmd portname cmd = case cmd of
      -- for upward compatibility with previous implementations:
     h <- trySendScriptServerMessage portname GetLoad
     cs <- hGetContents h
-    if length cs < (7 :: Int)
+    if length cs < 7
      then do h' <- trySendScriptServerMessage portname SketchStatus
              copyOutputAndClose h'
              putChar '\n'
@@ -130,7 +130,7 @@ runCgiServerCmd portname cmd = case cmd of
      -- for upward compatibility with previous implementations:
     lh <- trySendScriptServerMessage portname GetLoad
     cs <- hGetContents lh
-    if length cs < (7 :: Int)
+    if length cs < 7
      then do h <- trySendScriptServerMessage portname SketchHandlers
              copyOutputAndClose h
      else do h <- trySendScriptServerMessage portname SketchStatus
@@ -438,7 +438,7 @@ unregisterCgiServer epname =
 readCgiServerRegistry :: IO [(Int,String,String)]
 readCgiServerRegistry = do
   regs <- readQTermListFile cgiServerRegistry
-  seq (length regs :: Int) done -- just to be sure that everything is immediately read
+  seq (length regs) done -- just to be sure that everything is immediately read
   return regs
 
 ---------------------------------------------------------------------------

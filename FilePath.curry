@@ -645,7 +645,7 @@ equalFilePath a b = f a == f b
     where
         f x | isWindows = dropTrailSlash $ map toLower $ normalise x
             | otherwise = dropTrailSlash $ normalise x
-        dropTrailSlash x | length x >= (2 :: Int) && isPathSeparator (last x) = init x
+        dropTrailSlash x | length x >= 2 && isPathSeparator (last x) = init x
                          | otherwise = x
 
 
@@ -776,7 +776,7 @@ isValid path@(_:_)
   | isPosix   = True
   | otherwise =    not (any (`elem` badCharacters) x2)
                 && not (any f $ splitDirectories x2)
-                && not (length path >= (2 :: Int) && all isPathSeparator path)
+                && not (length path >= 2 && all isPathSeparator path)
   where
     x2 = dropDrive path
     f x = map toUpper (dropExtensions x) `elem` badElements
@@ -797,7 +797,7 @@ makeValid :: FilePath -> FilePath
 makeValid []                                     = "_"
 makeValid path@(_:_)
   | isPosix                                      = path
-  | length path >= (2 :: Int) && all isPathSeparator path = take 2 path ++ "drive"
+  | length path >= 2 && all isPathSeparator path = take 2 path ++ "drive"
   | otherwise = joinDrive drv $ validElements $ validChars pth
  where
   (drv,pth) = splitDrive path

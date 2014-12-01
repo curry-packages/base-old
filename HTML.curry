@@ -1302,13 +1302,13 @@ showAnswerFormInEnv url key hform@(HtmlForm _ _ _) crefnr = do
   (htmlstring,evhs) <- showHtmlFormInEnv url key hform crefnr
   return (addHtmlContentType htmlstring, evhs)
 showAnswerFormInEnv _ _ (HtmlAnswer ctype cont) _ = do
-  return ("Content-Length: " ++ show (length cont :: Int) ++
+  return ("Content-Length: " ++ show (length cont) ++
           "\nContent-Type: "++ctype++"\n\n"++cont, [])
 
 
 -- Adds the initial content lines (including content length) to an HTML string.
 addHtmlContentType htmlstring =
-    "Content-Length: " ++ show (length htmlstring :: Int) ++ "\n" ++
+    "Content-Length: " ++ show (length htmlstring) ++ "\n" ++
     "Content-Type: text/html\n\n" ++ htmlstring
 
 -- return the HTML string corresponding to an HtmlForm:
@@ -1588,7 +1588,7 @@ attrLatexEnv env attr content
 -- to avoid having to rerun latex for inaccurat tables.
 latexTabFormat :: [HtmlExp] -> String
 latexTabFormat rows = "{" ++ replicate breadth 'l' ++ "}"
-  ++ "\\setcounter{LTchunksize}{"++show ((length rows+5) :: Int)++"}%"
+  ++ "\\setcounter{LTchunksize}{"++show (length rows+5)++"}%"
   where
     breadth = foldl max 0 (map getBreadth rows)
 
@@ -1953,7 +1953,7 @@ getServerStatus state@(stime,maxkey,_,evs) = do
   lstime <- toCalendarTime stime
   pinfos <- getProcessInfos
   return $ "Status: " ++ busy ++ ", Maxkey: "++show maxkey ++ ", #Handlers: " ++
-           show (length evs :: Int) ++ ", Start time: " ++
+           show (length evs) ++ ", Start time: " ++
            calendarTimeToString lstime ++ "\n" ++
            showMemInfo pinfos
 

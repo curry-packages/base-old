@@ -159,8 +159,8 @@ tryMDHeader s rtxt =
 
 -- is a line a horizontal rule:
 isHRule l =
-  (all (\c -> isSpace c || c=='-') l && length (filter (=='-') l) > (3 :: Int)) ||
-  (all (\c -> isSpace c || c=='*') l && length (filter (=='*') l) > (3 :: Int))
+  (all (\c -> isSpace c || c=='-') l && length (filter (=='-') l) > 3) ||
+  (all (\c -> isSpace c || c=='*') l && length (filter (=='*') l) > 3)
 
 -- check whether a line starts with an unordered item indicator ("* ")
 -- and return indent:
@@ -293,7 +293,7 @@ markdownHRef txt = let (url,rtxt) = break (=='>') txt in
 insideMarkdownElem marker etext s =
   if marker `isPrefixOf` s
   then text2MDElem marker (reverse etext)
-        : outsideMarkdownElem "" (drop (length marker :: Int) s)
+        : outsideMarkdownElem "" (drop (length marker) s)
   else case s of
         []     -> [SMDText (marker ++ reverse etext)] -- end marker missing
         ('\\':c:cs) -> if c `elem` markdownEscapeChars

@@ -78,7 +78,7 @@ showExports types funcs =
     getTypeName (CTypeSyn (_,name) _ _ _) = name
 
     allPublicCons :: CTypeDecl -> Bool
-    allPublicCons (CType _ _ _ c) = length (filter isPublicCons c) == (length c :: Int) 
+    allPublicCons (CType _ _ _ c) = length (filter isPublicCons c) == length c 
       where isPublicCons (CCons _ _ visibility _) = visibility==Public
     allPublicCons (CTypeSyn _ _ _ _) = False
 

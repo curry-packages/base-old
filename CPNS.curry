@@ -206,7 +206,7 @@ showAndCleanRegs regs = do
 printMemInfo :: [(String,Int,Int,Int)] -> IO ()
 printMemInfo regs = do
   pinfos <- getProcessInfos
-  putStrLn ("NumRegs: " ++ show (length regs :: Int) ++ ", " ++ showMemInfo pinfos)
+  putStrLn ("NumRegs: " ++ show (length regs) ++ ", " ++ showMemInfo pinfos)
 
 -- test whether a process with a given pid is running:
 doesProcessExists :: Int -> IO Bool
