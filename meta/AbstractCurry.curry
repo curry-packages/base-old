@@ -12,7 +12,7 @@
 --- extension .acy
 ---
 --- @author Michael Hanus, Bjoern Peemoeller
---- @version January 2012
+--- @version November 2014
 -- ---------------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
@@ -21,9 +21,10 @@ module AbstractCurry where
 
 import Char         (isSpace)
 import Directory    (doesFileExist)
+import Maybe        (isNothing)
 import ReadShowTerm
 import Distribution
-import FileGoodies  (stripSuffix)
+import FilePath     ((<.>))
 
 -- ---------------------------------------------------------------------------
 -- Definition of data types for representing abstract Curry programs:
@@ -268,12 +269,11 @@ readUntypedCurry prog =
 
 readCurryWithParseOptions :: String -> FrontendParams -> IO CurryProg
 readCurryWithParseOptions progname options = do
-  existsCurry  <- doesFileExist $ progname ++ ".curry"
-  existsLCurry <- doesFileExist $ progname ++ ".lcurry"
-  if existsCurry || existsLCurry
-   then callFrontendWithParams ACY options progname
-   else done
-  filename <- findFileInLoadPath $ progname ++ ".acy"
+  mbmoddir <- lookupModuleSourceInLoadPath progname
+                >>= return . maybe Nothing (Just . fst)
+  unless (isNothing mbmoddir) $
+    callFrontendWithParams ACY options progname
+  filename <- findFileInLoadPath (abstractCurryFileName progname)
   readAbstractCurryFile filename
 
 --- I/O action which reads an untyped Curry program from a file (with extension
@@ -281,25 +281,25 @@ readCurryWithParseOptions progname options = do
 --- see function 'readCurryWithParseOptions'
 readUntypedCurryWithParseOptions :: String -> FrontendParams -> IO CurryProg
 readUntypedCurryWithParseOptions progname options = do
-  existsCurry <- doesFileExist (progname++".curry")
-  existsLCurry <- doesFileExist (progname++".lcurry")
-  if existsCurry || existsLCurry
-   then callFrontendWithParams UACY options progname
-   else done
-  filename <- findFileInLoadPath (progname++".uacy")
+  mbmoddir <- lookupModuleSourceInLoadPath progname
+                >>= return . maybe Nothing (Just . fst)
+  unless (isNothing mbmoddir) $
+    callFrontendWithParams UACY options progname
+  filename <- findFileInLoadPath (untypedAbstractCurryFileName progname)
   readAbstractCurryFile filename
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
 --- corresponding AbstractCurry program.
 abstractCurryFileName :: String -> String
-abstractCurryFileName prog = inCurrySubdir (stripSuffix prog ++ ".acy")
+abstractCurryFileName prog = inCurrySubdir (stripCurrySuffix prog) <.> "acy"
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
 --- corresponding untyped AbstractCurry program.
 untypedAbstractCurryFileName :: String -> String
-untypedAbstractCurryFileName prog = inCurrySubdir (stripSuffix prog ++ ".uacy")
+untypedAbstractCurryFileName prog =
+  inCurrySubdir (stripCurrySuffix prog) <.> "uacy"
 
 --- I/O action which reads an AbstractCurry program from a file in ".acy"
 --- format. In contrast to <CODE>readCurry</CODE>, this action does not parse

@@ -6,6 +6,7 @@
 ------------------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 
 module List
   ( elemIndex, elemIndices, find, findIndex, findIndices

@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
---- A finite map is an efficient purely functional data structure 
+--- A finite map is an efficient purely functional data structure
 --- to store a mapping from keys to values.
---- In order to store the mapping efficiently, an irreflexive(!) order predicate 
+--- In order to store the mapping efficiently, an irreflexive(!) order predicate
 --- has to be given, i.e., the order predicate `le` should not satisfy
 --- `(le x x)` for some key `x`.
 ---
@@ -18,8 +18,8 @@
 module FiniteMap (
         FM,                -- abstract type
 
-        emptyFM, 
-        unitFM, 
+        emptyFM,
+        unitFM,
         listToFM,
 
         addToFM,
@@ -36,20 +36,20 @@ module FiniteMap (
         intersectFM,
         intersectFM_C,
 
-        foldFM, 
-        mapFM, 
-        filterFM, 
+        foldFM,
+        mapFM,
+        filterFM,
 
-        sizeFM, 
+        sizeFM,
         eqFM,
-        isEmptyFM, 
-        elemFM, 
-        lookupFM, 
+        isEmptyFM,
+        elemFM,
+        lookupFM,
         lookupWithDefaultFM,
         keyOrder,
 
-        fmToList, 
-        keysFM, 
+        fmToList,
+        keysFM,
         eltsFM,
         fmSortBy,
 
@@ -61,7 +61,7 @@ module FiniteMap (
 import Maybe
 import ReadShowTerm (readQTerm, showQTerm)
 
---- order predicates are boolean 
+--- order predicates are boolean
 type LeKey key = key -> key -> Bool
 
 -----------------------------------------------
@@ -71,23 +71,23 @@ type LeKey key = key -> key -> Bool
 --- The empty finite map.
 --- @param le an irreflexive order predicate on the keys.
 --- @result an empty finite map
-
 emptyFM :: (LeKey key) -> FM key _
 emptyFM le = FM le EmptyFM
 
 --- Construct a finite map with only a single element.
 --- @param le an irreflexive order predicate on the keys.
---- @param key key of 
+--- @param key key of
 --- @param elt the single element to form
 --- @result a finite map with only a single element
 unitFM :: (LeKey key) -> key -> elt -> FM key elt
 unitFM le key elt = FM le (unitFM' key elt)
 
+unitFM' :: key -> elt -> FiniteMap key elt
 unitFM' key elt = BranchFM key elt 1 EmptyFM EmptyFM
 
 
 --- Builts a finite map from given list of tuples (key,element).
---- For multiple occurences of key, the last corresponding 
+--- For multiple occurences of key, the last corresponding
 --- element of the list is taken.
 --- @param le an irreflexive order predicate on the keys.
 listToFM :: Eq key => (LeKey key) -> [(key,elt)] -> FM key elt
@@ -102,8 +102,11 @@ listToFM le = addListToFM (emptyFM le)
 addToFM :: Eq key => FM key elt -> key -> elt  -> FM key elt
 addToFM (FM le fm) key elt = FM le (addToFM' le fm key elt)
 
+addToFM' :: (LeKey key) -> FiniteMap key elt -> key -> elt -> FiniteMap key elt
 addToFM' le fm key elt = addToFM_C' le (\ _ new -> new) fm key elt
 
+addToFM_C' :: (LeKey key) -> (elt -> elt -> elt)
+           -> FiniteMap key elt -> key -> elt -> FiniteMap key elt
 addToFM_C' _ _ EmptyFM key elt = unitFM' key elt
 addToFM_C' le combiner (BranchFM key elt size fm_l fm_r) new_key new_elt
   = if le new_key key
@@ -120,22 +123,27 @@ addListToFM :: Eq key => FM key elt -> [(key,elt)] -> FM key elt
 addListToFM (FM le fm) key_elt_pairs =
   FM le (addListToFM' le fm key_elt_pairs)
 
+addListToFM' :: (LeKey key) -> FiniteMap key elt
+             -> [(key, elt)] -> FiniteMap key elt
 addListToFM' le fm key_elt_pairs =
   addListToFM_C' le (\ _ new -> new) fm key_elt_pairs
 
+addListToFM_C' :: (LeKey key) -> (elt -> elt -> elt)
+               -> FiniteMap key elt -> [(key, elt)] -> FiniteMap key elt
 addListToFM_C' le combiner fm key_elt_pairs
   = foldl add fm key_elt_pairs        -- foldl adds from the left
   where
     add fmap (key,elt) = addToFM_C' le combiner fmap key elt
 
 
---- Instead of throwing away the old binding, 
+--- Instead of throwing away the old binding,
 --- addToFM_C combines the new element with the old one.
 --- @param combiner a function combining to elements
---- @param fm a finite map 
+--- @param fm a finite map
 --- @param key the key of the elements to be combined
 --- @param elt the new element
 --- @result a modified finite map
+<<<<<<< HEAD
 addToFM_C :: Eq key => (elt -> elt -> elt)
                     -> FM key elt
                     -> key
@@ -158,6 +166,7 @@ addListToFM_C combiner (FM le fm) key_elt_pairs =
 delFromFM :: Eq key => FM key elt -> key   -> FM key elt
 delFromFM (FM le fm) del_key = FM le (delFromFM' le fm del_key)
 
+delFromFM' :: (LeKey key) -> FiniteMap key elt -> key -> FiniteMap key elt
 delFromFM' _ EmptyFM _ = EmptyFM
 delFromFM' le (BranchFM key elt _ fm_l fm_r) del_key
   = if le del_key key
@@ -178,10 +187,10 @@ updFM :: Eq a => FM a b -> a -> (b -> b) -> FM a b
 updFM (FM lt fm) i f = FM lt (upd fm)
   where
     upd EmptyFM                          =  EmptyFM
-    upd (BranchFM k x h l r) 
-            | i==k       =  BranchFM k (f x) h l r   
-            | lt i k     =  BranchFM k x h (upd l) r  
-            | otherwise  =  BranchFM k x h l (upd r) 
+    upd (BranchFM k x h l r)
+            | i == k     =  BranchFM k (f x) h l r
+            | lt i k     =  BranchFM k x h (upd l) r
+            | otherwise  =  BranchFM k x h l (upd r)
 
 --- Combines delFrom and lookup.
 splitFM :: Eq a => FM a b -> a -> Maybe (FM a b,(a,b))
@@ -196,6 +205,8 @@ splitFM g v = maybe Nothing (\x->Just (delFromFM g v,(v,x))) (lookupFM g v)
 plusFM :: Eq key => FM key elt -> FM key elt -> FM key elt
 plusFM (FM le1 fm1) (FM _ fm2) = FM le1 (plusFM' le1 fm1 fm2)
 
+plusFM' :: (LeKey key)
+        -> FiniteMap key elt -> FiniteMap key elt -> FiniteMap key elt
 plusFM' _  EmptyFM fm2 = fm2
 plusFM' _  (BranchFM split_key1 elt1 s1 left1 right1) EmptyFM =
   (BranchFM split_key1 elt1 s1 left1 right1)
@@ -207,7 +218,7 @@ plusFM' le (BranchFM split_key1 elt1 s1 left1 right1)
     lts     = splitLT le fm1 split_key
     gts     = splitGT le fm1 split_key
 
---- Efficiently combine key/element mappings of two maps into a single one, 
+--- Efficiently combine key/element mappings of two maps into a single one,
 --- cf. addToFM_C
 plusFM_C :: Eq key => (elt -> elt -> elt)
                    -> FM key elt
@@ -216,6 +227,8 @@ plusFM_C :: Eq key => (elt -> elt -> elt)
 plusFM_C combiner (FM le1 fm1) (FM _ fm2) =
   FM le1 (plusFM_C' le1 combiner fm1 fm2)
 
+plusFM_C' :: LeKey key -> (elt -> elt -> elt)
+          -> FiniteMap key elt -> FiniteMap key elt -> FiniteMap key elt
 plusFM_C' _  _        EmptyFM fm2 = fm2
 plusFM_C' _  _        (BranchFM split_key1 elt1 s1 left1 right1) EmptyFM =
           BranchFM split_key1 elt1 s1 left1 right1
@@ -236,6 +249,8 @@ plusFM_C' le combiner (BranchFM split_key1 elt1 s1 left1 right1)
 minusFM :: Eq key => FM key elt -> FM key elt -> FM key elt
 minusFM (FM le1 fm1) (FM _ fm2) = FM le1 (minusFM' le1 fm1 fm2)
 
+minusFM' :: (LeKey key)
+         -> FiniteMap key elt -> FiniteMap key elt -> FiniteMap key elt
 minusFM' _  EmptyFM _ = EmptyFM
 minusFM' _  (BranchFM split_key1 elt1 s1 left1 right1) EmptyFM =
   BranchFM split_key1 elt1 s1 left1 right1
@@ -253,6 +268,8 @@ minusFM' le (BranchFM split_key1 elt1 s1 left1 right1)
 intersectFM :: Eq key => FM key elt -> FM key elt -> FM key elt
 intersectFM (FM le1 fm1) (FM _ fm2) = FM le1 (intersectFM' le1 fm1 fm2)
 
+intersectFM' :: LeKey key
+             -> FiniteMap key elt -> FiniteMap key elt -> FiniteMap key elt
 intersectFM' le fm1 fm2 = intersectFM_C' le (\ _ right -> right) fm1 fm2
 
 --- Filters only those keys that are bound in both of the given maps
@@ -264,13 +281,15 @@ intersectFM_C :: Eq key => (elt -> elt -> elt2)
 intersectFM_C combiner (FM le1 fm1) (FM _ fm2) =
   FM le1 (intersectFM_C' le1 combiner fm1 fm2)
 
+intersectFM_C' :: LeKey key -> (elt -> elt2 -> elt3)
+               -> FiniteMap key elt -> FiniteMap key elt2 -> FiniteMap key elt3
 intersectFM_C' _  _        _        EmptyFM = EmptyFM
 intersectFM_C' _  _        EmptyFM (BranchFM _ _ _ _ _) = EmptyFM
 intersectFM_C' le combiner (BranchFM split_key1 elt1 s1 left1 right1)
                            (BranchFM split_key elt2 _ left right)
 
   | isJust maybe_elt1   -- split_elt *is* in intersection
-  = mkVBalBranch le split_key (combiner elt1' elt2) 
+  = mkVBalBranch le split_key (combiner elt1' elt2)
                  (intersectFM_C' le combiner lts left)
                  (intersectFM_C' le combiner gts right)
 
@@ -294,6 +313,7 @@ intersectFM_C' le combiner (BranchFM split_key1 elt1 s1 left1 right1)
 foldFM :: (key -> elt -> a -> a) -> a -> FM key elt -> a
 foldFM k z (FM le fm) = foldFM' le k z fm
 
+foldFM' :: LeKey key -> (key -> elt -> a -> a) -> a -> FiniteMap key elt -> a
 foldFM' _  _ z EmptyFM = z
 foldFM' le k z (BranchFM key elt _ fm_l fm_r)
   = foldFM' le k (k key elt (foldFM' le k z fm_r)) fm_l
@@ -302,6 +322,8 @@ foldFM' le k z (BranchFM key elt _ fm_l fm_r)
 mapFM :: (key -> elt1 -> elt2) -> FM key elt1 -> FM key elt2
 mapFM f (FM le fm) = FM le (mapFM' le f fm)
 
+mapFM' :: LeKey key -> (key -> elt1 -> elt2)
+       -> FiniteMap key elt1 -> FiniteMap key elt2
 mapFM' _  _ EmptyFM = EmptyFM
 mapFM' le f (BranchFM key elt size fm_l fm_r)
   = BranchFM key (f key elt) size (mapFM' le f fm_l) (mapFM' le f fm_r)
@@ -311,6 +333,8 @@ mapFM' le f (BranchFM key elt size fm_l fm_r)
 filterFM :: Eq key => (key -> elt -> Bool) -> FM key elt -> FM key elt
 filterFM p (FM le fm) = FM le (filterFM' le p fm)
 
+filterFM' :: LeKey key -> (key -> elt -> Bool)
+          -> FiniteMap key elt -> FiniteMap key elt
 filterFM' _  _ EmptyFM = EmptyFM
 filterFM' le p (BranchFM key elt _ fm_l fm_r)
   | p key elt          -- Keep the item
@@ -328,9 +352,9 @@ sizeFM :: FM _ _ -> Int
 sizeFM (FM _ EmptyFM)               = 0
 sizeFM (FM _ (BranchFM _ _ size _ _)) = size
 
+sizeFM' :: FiniteMap _ _ -> Int
 sizeFM' EmptyFM              = 0
 sizeFM' (BranchFM _ _ size _ _) = size
-
 
 --- Do two given maps contain the same key/element pairs?
 eqFM :: (Eq key, Eq elt) => FM key elt -> FM key elt -> Bool
@@ -350,6 +374,7 @@ key `elemFM` fm = isJust (lookupFM fm key)
 lookupFM :: Eq key => FM key elt -> key -> Maybe elt
 lookupFM (FM le fm) key = lookupFM' le fm key
 
+lookupFM' :: LeKey key -> FiniteMap key elt -> key -> Maybe elt
 lookupFM' _  EmptyFM _   = Nothing
 lookupFM' le (BranchFM key elt _ fm_l fm_r) key_to_find
   = if le key_to_find key
@@ -360,7 +385,7 @@ lookupFM' le (BranchFM key elt _ fm_l fm_r) key_to_find
 
 
 --- Retrieves element bound to given key.
---- If the element is not contained in map, return 
+--- If the element is not contained in map, return
 --- default value.
 lookupWithDefaultFM :: Eq key => FM key elt -> elt -> key -> elt
 lookupWithDefaultFM fm deflt key
@@ -372,7 +397,7 @@ lookupWithDefaultFM fm deflt key
 keyOrder :: FM key _ -> (key->key->Bool)
 keyOrder (FM lt _) = lt
 
---- Retrieves the smallest key/element pair in the finite map 
+--- Retrieves the smallest key/element pair in the finite map
 --- according to the basic key ordering.
 minFM :: (Eq a, Eq b) => FM a b -> Maybe (a,b)
 minFM = min . tree
@@ -381,7 +406,7 @@ minFM = min . tree
    min (BranchFM k x _ l _) | l==EmptyFM = Just (k,x)
                             | otherwise  = min l
 
---- Retrieves the greatest key/element pair in the finite map 
+--- Retrieves the greatest key/element pair in the finite map
 --- according to the basic key ordering.
 maxFM :: (Eq a, Eq b) => FM a b -> Maybe (a,b)
 maxFM = max . tree
@@ -396,25 +421,25 @@ maxFM = max . tree
 -- LISTIFYING: transform finite maps to lists
 ----------------------------------------------------
 
---- Builds a list of key/element pairs. The list is ordered 
+--- Builds a list of key/element pairs. The list is ordered
 --- by the initially given irreflexive order predicate on keys.
 fmToList        :: FM key elt -> [(key,elt)]
 fmToList fm = foldFM (\ key elt rest -> (key,elt) : rest) [] fm
 
---- Retrieves a list of keys contained in finite map. 
---- The list is ordered 
+--- Retrieves a list of keys contained in finite map.
+--- The list is ordered
 --- by the initially given irreflexive order predicate on keys.
 keysFM                :: FM key _ -> [key]
 keysFM fm   = foldFM (\ key _   rest -> key : rest)       [] fm
 
---- Retrieves a list of elements contained in finite map. 
---- The list is ordered 
+--- Retrieves a list of elements contained in finite map.
+--- The list is ordered
 --- by the initially given irreflexive order predicate on keys.
 eltsFM                :: FM _ elt -> [elt]
 eltsFM fm   = foldFM (\ _   elt rest -> elt : rest)       [] fm
 
 --- Retrieves list of key/element pairs in preorder of the internal tree.
---- Useful for lists that will be retransformed into a tree or to match 
+--- Useful for lists that will be retransformed into a tree or to match
 --- any elements regardless of basic order.
 
 fmToListPreOrder :: FM key elt -> [(key,elt)]
@@ -461,19 +486,18 @@ data FiniteMap key elt
     (FiniteMap key elt)
   deriving Eq
 
-toGT le x y = not (le x y) && x/=y
-
+isEmptyFM' :: FiniteMap _ _ -> Bool
 isEmptyFM' fm = sizeFM' fm == 0
 
 -------------------------------------------------------------------------
---                                                                        -
+--                                                                      -
 --  The implementation of balancing                                     -
---                                                                        -
+--                                                                      -
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
---                                                                        -
+--                                                                      -
 --  Basic construction of a FiniteMap                                   -
---                                                                        -
+--                                                                      -
 -------------------------------------------------------------------------
 sIZE_RATIO :: Int
 sIZE_RATIO = 5
@@ -536,6 +560,7 @@ mkBalBranch key elt fm_L fm_R
                 then single_L fm_L fm_R
                 else double_L fm_L fm_R
         -- Other case impossible
+        EmptyFM -> error "FiniteMap.mkBalBranch"
 
   | size_l > sIZE_RATIO * size_r        -- Left tree too big
   = case fm_L of
@@ -544,6 +569,7 @@ mkBalBranch key elt fm_L fm_R
                 then single_R fm_L fm_R
                 else double_R fm_L fm_R
         -- Other case impossible
+        EmptyFM -> error "FiniteMap.mkBalBranch"
 
   | otherwise                                -- No imbalance
   = mkBranch 2{-which-} key elt fm_L fm_R
@@ -554,17 +580,23 @@ mkBalBranch key elt fm_L fm_R
 
     single_L fm_l (BranchFM key_r elt_r _ fm_rl fm_rr)
         = mkBranch 3{-which-} key_r elt_r (mkBranch 4{-which-} key elt fm_l fm_rl) fm_rr
+    single_L _ EmptyFM = error "FiniteMap.single_L"
 
     double_L fm_l (BranchFM key_r elt_r _ (BranchFM key_rl elt_rl _ fm_rll fm_rlr) fm_rr)
         = mkBranch 5{-which-} key_rl elt_rl (mkBranch 6{-which-} key   elt   fm_l   fm_rll)
                                  (mkBranch 7{-which-} key_r elt_r fm_rlr fm_rr)
+    double_L _ EmptyFM = error "FiniteMap.double_L"
+    double_L _ (BranchFM _ _ _ EmptyFM _) = error "FiniteMap.double_L"
 
     single_R (BranchFM key_l elt_l _ fm_ll fm_lr) fm_r
         = mkBranch 8{-which-} key_l elt_l fm_ll (mkBranch 9{-which-} key elt fm_lr fm_r)
+    single_R EmptyFM _ = error "FiniteMap.single_R"
 
     double_R (BranchFM key_l elt_l _ fm_ll (BranchFM key_lr elt_lr _ fm_lrl fm_lrr)) fm_r
         = mkBranch 10{-which-} key_lr elt_lr (mkBranch 11{-which-} key_l elt_l fm_ll  fm_lrl)
                                  (mkBranch 12{-which-} key   elt   fm_lrr fm_r)
+    double_R EmptyFM _ = error "FiniteMap.double_R"
+    double_R (BranchFM _ _ _ _ EmptyFM) _ = error "FiniteMap.double_R"
 
 
 mkVBalBranch :: Eq key => (LeKey key)
@@ -580,9 +612,9 @@ mkVBalBranch :: Eq key => (LeKey key)
 --           (c) all keys in r are > key
 
 mkVBalBranch le key elt EmptyFM fm_r = addToFM' le fm_r key elt
-mkVBalBranch le key elt (BranchFM key_l elt_l s_l fm_ll fm_lr) EmptyFM = 
+mkVBalBranch le key elt (BranchFM key_l elt_l s_l fm_ll fm_lr) EmptyFM =
    addToFM' le (BranchFM key_l elt_l s_l fm_ll fm_lr) key elt
-  
+
 mkVBalBranch le key elt (BranchFM key_l elt_l s_l fm_ll fm_lr)
                         (BranchFM key_r elt_r s_r fm_rl fm_rr)
   | sIZE_RATIO * size_l < size_r
@@ -609,12 +641,12 @@ glueBal :: (LeKey key)
         -> FiniteMap key elt -> FiniteMap key elt
         -> FiniteMap key elt
 
-glueBal le fm1 fm2 = 
+glueBal le fm1 fm2 =
   if isEmptyFM' fm1
     then fm2
     else if isEmptyFM' fm2
            then fm1
-           else 
+           else
         -- The case analysis here (absent in Adams' program) is really to deal
         -- with the case where fm2 is a singleton. Then deleting the minimum means
         -- we pass an empty tree to mkBalBranch, which breaks its invariant.
@@ -629,12 +661,12 @@ glueVBal :: (LeKey key)
          -> FiniteMap key elt -> FiniteMap key elt
          -> FiniteMap key elt
 
-glueVBal le fm_l fm_r = 
+glueVBal le fm_l fm_r =
   if isEmptyFM' fm_l
     then fm_r
     else if isEmptyFM' fm_r
            then fm_l
-           else 
+           else
              let BranchFM key_l elt_l _ fm_ll fm_lr = fm_l
                  BranchFM key_r elt_r _ fm_rl fm_rr = fm_r
                  --(mid_key_l,mid_elt_l) = findMax fm_l
@@ -651,7 +683,7 @@ glueVBal le fm_l fm_r =
 
                       -- We now need the same two cases as in glueBal above.
                     else glueBal le fm_l fm_r
-  
+
 -------------------------------------------------------------------------
 --                                                                        -
 -- Local utilities                                                      -
@@ -683,22 +715,26 @@ splitGT le (BranchFM key elt _ fm_l fm_r) split_key
          else splitGT le fm_r split_key
 
 findMin :: FiniteMap key elt -> (key,elt)
+findMin EmptyFM = error "FiniteMap.findMin: empty map"
 findMin (BranchFM key elt _ EmptyFM _) = (key,elt)
 findMin (BranchFM _   _   _ (BranchFM key_l elt_l s_l fm_ll fm_lr)_) =
       findMin (BranchFM key_l elt_l s_l fm_ll fm_lr)
 
 deleteMin :: (LeKey key) -> FiniteMap key elt -> FiniteMap key elt
+deleteMin _  EmptyFM                           = error "FiniteMap.deleteMin: empty map"
 deleteMin _  (BranchFM _   _   _ EmptyFM fm_r) = fm_r
 deleteMin le (BranchFM key elt _ (BranchFM key_l elt_l s_l fm_ll fm_lr) fm_r) =
   mkBalBranch key elt (deleteMin le (BranchFM key_l elt_l s_l fm_ll fm_lr))
                          fm_r
 
 findMax :: FiniteMap key elt -> (key,elt)
+findMax EmptyFM = error "FiniteMap.findMax: empty map"
 findMax (BranchFM key elt _ _ EmptyFM) = (key,elt)
 findMax (BranchFM _   _   _ _  (BranchFM key_r elt_r s_r fm_rl fm_rr)) =
   findMax (BranchFM key_r elt_r s_r fm_rl fm_rr)
 
 deleteMax :: (LeKey key) -> FiniteMap key elt -> FiniteMap key elt
+deleteMax _  EmptyFM                           = error "FiniteMap.deleteMax: empty map"
 deleteMax _  (BranchFM _   _   _ fm_l EmptyFM) = fm_l
 deleteMax le (BranchFM key elt _ fm_l (BranchFM key_r elt_r s_r fm_rl fm_rr)) =
   mkBalBranch key elt fm_l
@@ -727,5 +763,3 @@ elementOf = elemFM
 minusSet  = minusFM
 setToList = keysFM
 union = plusFM
-
-

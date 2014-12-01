@@ -60,7 +60,10 @@ empty = text ""
 
 --- Is the document empty?
 isEmpty :: Doc -> Bool
-isEmpty (Doc d) = d Empty == Text "" Empty
+isEmpty (Doc d) = isEmptyText (d Empty)
+ where
+  isEmptyText t = case t of Text s Empty -> s==""
+                            _            -> False
 
 --- The document `(text s)` contains the literal string `s`.
 --- The string shouldn't contain any newline ('\n') characters.

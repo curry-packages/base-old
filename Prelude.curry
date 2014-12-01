@@ -4,6 +4,7 @@
 --- in this module are always available in any Curry program.
 ----------------------------------------------------------------------------
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
 
 module Prelude
   (
@@ -38,6 +39,7 @@ module Prelude
   , normalForm, groundNormalForm, apply, cond, (=:<=)
   , enumFrom_, enumFromTo_, enumFromThen_, enumFromThenTo_, negate_, negateFloat
   ) where
+
 
 -- Lines beginning with "--++" are part of the prelude
 -- but cannot parsed by the compiler
@@ -270,10 +272,8 @@ null (_:_)      = False
 length :: [_] -> Int
 length xs = len xs 0
   where
-    len [] n = n
-    len (_:ys) n
-        = let np1 = n + 1
-          in len ys $!! np1
+    len []     n = n
+    len (_:ys) n = let np1 = n + 1 in len ys $!! np1
 
 --- List index (subscript) operator, head has index 0.
 (!!)            :: [a] -> Int -> a
