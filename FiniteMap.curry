@@ -102,10 +102,10 @@ listToFM le = addListToFM (emptyFM le)
 addToFM :: Eq key => FM key elt -> key -> elt  -> FM key elt
 addToFM (FM le fm) key elt = FM le (addToFM' le fm key elt)
 
-addToFM' :: (LeKey key) -> FiniteMap key elt -> key -> elt -> FiniteMap key elt
+addToFM' :: Eq key => (LeKey key) -> FiniteMap key elt -> key -> elt -> FiniteMap key elt
 addToFM' le fm key elt = addToFM_C' le (\ _ new -> new) fm key elt
 
-addToFM_C' :: (LeKey key) -> (elt -> elt -> elt)
+addToFM_C' :: Eq key => (LeKey key) -> (elt -> elt -> elt)
            -> FiniteMap key elt -> key -> elt -> FiniteMap key elt
 addToFM_C' _ _ EmptyFM key elt = unitFM' key elt
 addToFM_C' le combiner (BranchFM key elt size fm_l fm_r) new_key new_elt
@@ -123,12 +123,12 @@ addListToFM :: Eq key => FM key elt -> [(key,elt)] -> FM key elt
 addListToFM (FM le fm) key_elt_pairs =
   FM le (addListToFM' le fm key_elt_pairs)
 
-addListToFM' :: (LeKey key) -> FiniteMap key elt
+addListToFM' :: Eq key => (LeKey key) -> FiniteMap key elt
              -> [(key, elt)] -> FiniteMap key elt
 addListToFM' le fm key_elt_pairs =
   addListToFM_C' le (\ _ new -> new) fm key_elt_pairs
 
-addListToFM_C' :: (LeKey key) -> (elt -> elt -> elt)
+addListToFM_C' :: Eq key => (LeKey key) -> (elt -> elt -> elt)
                -> FiniteMap key elt -> [(key, elt)] -> FiniteMap key elt
 addListToFM_C' le combiner fm key_elt_pairs
   = foldl add fm key_elt_pairs        -- foldl adds from the left
@@ -165,7 +165,7 @@ addListToFM_C combiner (FM le fm) key_elt_pairs =
 delFromFM :: Eq key => FM key elt -> key   -> FM key elt
 delFromFM (FM le fm) del_key = FM le (delFromFM' le fm del_key)
 
-delFromFM' :: (LeKey key) -> FiniteMap key elt -> key -> FiniteMap key elt
+delFromFM' :: Eq key => (LeKey key) -> FiniteMap key elt -> key -> FiniteMap key elt
 delFromFM' _ EmptyFM _ = EmptyFM
 delFromFM' le (BranchFM key elt _ fm_l fm_r) del_key
   = if le del_key key
@@ -204,7 +204,7 @@ splitFM g v = maybe Nothing (\x->Just (delFromFM g v,(v,x))) (lookupFM g v)
 plusFM :: Eq key => FM key elt -> FM key elt -> FM key elt
 plusFM (FM le1 fm1) (FM _ fm2) = FM le1 (plusFM' le1 fm1 fm2)
 
-plusFM' :: (LeKey key)
+plusFM' :: Eq key => (LeKey key)
         -> FiniteMap key elt -> FiniteMap key elt -> FiniteMap key elt
 plusFM' _  EmptyFM fm2 = fm2
 plusFM' _  (BranchFM split_key1 elt1 s1 left1 right1) EmptyFM =
@@ -226,7 +226,7 @@ plusFM_C :: Eq key => (elt -> elt -> elt)
 plusFM_C combiner (FM le1 fm1) (FM _ fm2) =
   FM le1 (plusFM_C' le1 combiner fm1 fm2)
 
-plusFM_C' :: LeKey key -> (elt -> elt -> elt)
+plusFM_C' :: Eq key => LeKey key -> (elt -> elt -> elt)
           -> FiniteMap key elt -> FiniteMap key elt -> FiniteMap key elt
 plusFM_C' _  _        EmptyFM fm2 = fm2
 plusFM_C' _  _        (BranchFM split_key1 elt1 s1 left1 right1) EmptyFM =
@@ -248,7 +248,7 @@ plusFM_C' le combiner (BranchFM split_key1 elt1 s1 left1 right1)
 minusFM :: Eq key => FM key elt -> FM key elt -> FM key elt
 minusFM (FM le1 fm1) (FM _ fm2) = FM le1 (minusFM' le1 fm1 fm2)
 
-minusFM' :: (LeKey key)
+minusFM' :: Eq key => (LeKey key)
          -> FiniteMap key elt -> FiniteMap key elt -> FiniteMap key elt
 minusFM' _  EmptyFM _ = EmptyFM
 minusFM' _  (BranchFM split_key1 elt1 s1 left1 right1) EmptyFM =
@@ -267,7 +267,7 @@ minusFM' le (BranchFM split_key1 elt1 s1 left1 right1)
 intersectFM :: Eq key => FM key elt -> FM key elt -> FM key elt
 intersectFM (FM le1 fm1) (FM _ fm2) = FM le1 (intersectFM' le1 fm1 fm2)
 
-intersectFM' :: LeKey key
+intersectFM' :: Eq key => LeKey key
              -> FiniteMap key elt -> FiniteMap key elt -> FiniteMap key elt
 intersectFM' le fm1 fm2 = intersectFM_C' le (\ _ right -> right) fm1 fm2
 
@@ -280,7 +280,7 @@ intersectFM_C :: Eq key => (elt -> elt -> elt2)
 intersectFM_C combiner (FM le1 fm1) (FM _ fm2) =
   FM le1 (intersectFM_C' le1 combiner fm1 fm2)
 
-intersectFM_C' :: LeKey key -> (elt -> elt2 -> elt3)
+intersectFM_C' :: Eq key => LeKey key -> (elt -> elt2 -> elt3)
                -> FiniteMap key elt -> FiniteMap key elt2 -> FiniteMap key elt3
 intersectFM_C' _  _        _        EmptyFM = EmptyFM
 intersectFM_C' _  _        EmptyFM (BranchFM _ _ _ _ _) = EmptyFM
@@ -332,7 +332,7 @@ mapFM' le f (BranchFM key elt size fm_l fm_r)
 filterFM :: Eq key => (key -> elt -> Bool) -> FM key elt -> FM key elt
 filterFM p (FM le fm) = FM le (filterFM' le p fm)
 
-filterFM' :: LeKey key -> (key -> elt -> Bool)
+filterFM' :: Eq key => LeKey key -> (key -> elt -> Bool)
           -> FiniteMap key elt -> FiniteMap key elt
 filterFM' _  _ EmptyFM = EmptyFM
 filterFM' le p (BranchFM key elt _ fm_l fm_r)
@@ -373,7 +373,7 @@ key `elemFM` fm = isJust (lookupFM fm key)
 lookupFM :: Eq key => FM key elt -> key -> Maybe elt
 lookupFM (FM le fm) key = lookupFM' le fm key
 
-lookupFM' :: LeKey key -> FiniteMap key elt -> key -> Maybe elt
+lookupFM' :: Eq key => LeKey key -> FiniteMap key elt -> key -> Maybe elt
 lookupFM' _  EmptyFM _   = Nothing
 lookupFM' le (BranchFM key elt _ fm_l fm_r) key_to_find
   = if le key_to_find key
