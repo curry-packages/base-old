@@ -108,24 +108,6 @@ data HtmlExp =
  | HtmlCRef   HtmlExp CgiRef
  | HtmlEvent  HtmlExp HtmlHandler
 
-instance Eq HtmlExp where
-  HtmlText str1 == HtmlText str2 = str1 == str2
-  HtmlText str1 == HtmlStruct str2 [] [] = str1 == str2
-  HtmlText _ == HtmlStruct _ (_:_) (_:_) = False
-  HtmlText _ == HtmlCRef _ _ = False
-  HtmlText _ == HtmlEvent _ _ = False
-  HtmlStruct str1 strs1 exprs1 == HtmlStruct str2 strs2 exprs2 =
-    str1 == str2 && strs1 == strs2 && exprs1 == exprs2
-  HtmlStruct str1 [] [] == HtmlText str2 = str1 == str2
-  HtmlStruct _ (_:_) (_:_) == HtmlText _ = False
-  HtmlStruct _ _ _ == HtmlCRef _ _ = False
-  HtmlStruct _ _ _ == HtmlEvent _ _ = False
-  HtmlCRef expr1 ref1 == HtmlCRef expr2 ref2 = expr1 == expr2 && ref1 == ref2
-  HtmlCRef _ _ == HtmlText _ = False
-  HtmlCRef _ _ == HtmlStruct _ _ _ = False
-  HtmlCRef _ _ == HtmlEvent _ _ = False
-  HtmlEvent _ _ == _ = False
-
 --- Extracts the textual contents of a list of HTML expressions.
 ---
 --- For instance,
@@ -187,7 +169,6 @@ data FormParam = FormCookie   String String [CookieParam]
                | HeadInclude  HtmlExp
                | MultipleHandlers
                | BodyAttr     (String,String)
-  deriving Eq
 
 --- An encoding scheme for a HTML form.
 formEnc :: String -> FormParam

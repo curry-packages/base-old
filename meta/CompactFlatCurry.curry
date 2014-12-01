@@ -165,7 +165,7 @@ computeCompactFlatCurry orgoptions progname =
     prog <- readCurrentFlatCurry progname
     resultprog <- makeCompactFlatCurry prog options
     putStrLn ("CompactFlat: Number of functions after optimization: " ++
-              show (length (moduleFuns resultprog))
+              show (length (moduleFuns resultprog)))
     return resultprog
 
 --- Create the optimized program.

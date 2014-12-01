@@ -126,7 +126,6 @@ data ConfItem =
  | Width Int       
  | Fill | FillX | FillY           
  | TclOption String
-  deriving Eq
 
 isFill :: ConfItem -> Bool
 isFill ci = case ci of Fill -> True
@@ -153,7 +152,6 @@ data ReconfigureItem =
    WidgetConf WidgetRef ConfItem
  | StreamHandler Handle (Handle -> GuiPort -> IO [ReconfigureItem])
  | RemoveStreamHandler Handle
-  deriving Eq
 
 --- The data type of possible events on which handlers can react.
 --- This list is still incomplete and might be extended or restructured
@@ -202,7 +200,6 @@ data MenuItem =
    MButton (GuiPort -> IO [ReconfigureItem]) String
  | MSeparator
  | MMenuButton String [MenuItem]
-  deriving Eq
 
 --- The data type of items in a canvas.
 --- The last argument are further options in Tcl/Tk (for testing).

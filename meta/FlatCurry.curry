@@ -96,7 +96,7 @@ data TypeExpr =
    | FuncType TypeExpr TypeExpr     -- function type t1->t2
    | TCons QName [TypeExpr]         -- type constructor application
                                     -- TCons module name typeargs
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Show)
 
 --- Data type for operator declarations.
 --- An operator declaration `fix p n` in Curry corresponds to the
