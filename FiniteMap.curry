@@ -143,7 +143,6 @@ addListToFM_C' le combiner fm key_elt_pairs
 --- @param key the key of the elements to be combined
 --- @param elt the new element
 --- @result a modified finite map
-<<<<<<< HEAD
 addToFM_C :: Eq key => (elt -> elt -> elt)
                     -> FM key elt
                     -> key
