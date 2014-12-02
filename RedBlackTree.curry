@@ -150,8 +150,8 @@ data Tree a = Tree Color a (Tree a) (Tree a)
   deriving Eq
 
 isEmptyTree :: Tree a -> Bool
-isEmptyTree Empty = True
-isEmptyTree _     = False
+isEmptyTree Empty          = True
+isEmptyTree (Tree _ _ _ _) = False
 
 isBlack :: Tree _ -> Bool
 isBlack Empty = True
