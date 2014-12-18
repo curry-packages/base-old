@@ -20,7 +20,7 @@ module IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,
 data Handle -- internally defined
 
 instance Eq Handle where
-  (==) = handle_eq
+  h1 == h2 = (handle_eq $# h2) $# h1
 
 handle_eq :: Handle -> Handle -> Bool
 handle_eq external

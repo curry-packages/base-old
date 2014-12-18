@@ -88,6 +88,7 @@ runQ (QueryDB q) = q
 
 --- The type of errors that might occur during a transaction.
 data TError = TError TErrorKind String
+ deriving Eq
 
 --- The various kinds of transaction errors.
 data TErrorKind = KeyNotExistsError
@@ -99,6 +100,7 @@ data TErrorKind = KeyNotExistsError
                 | MaxError
                 | UserDefinedError
                 | ExecutionError
+ deriving (Eq,Show)
 
 --- Transforms a transaction error into a string.
 showTError :: TError -> String

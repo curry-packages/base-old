@@ -51,6 +51,7 @@ module SetFunctions
 import Findall
 import Sort(mergeSort)
 import List(delete)
+import Maybe(isNothing)
 
 --- Combinator to transform a 0-ary function into a corresponding set function.
 set0 :: b -> Values b
@@ -130,14 +131,14 @@ someValue e =
 
 --- Is a multiset of values empty?
 isEmpty :: Values _ -> Bool
-isEmpty (Values firstval _) = firstval == Nothing
+isEmpty (Values firstval _) = isNothing firstval
 
 --- Is a multiset of values not empty?
 notEmpty :: Values _ -> Bool
 notEmpty vs = not (isEmpty vs)
 
 --- Is some value an element of a multiset of values?
-valueOf :: a -> Values a -> Bool
+valueOf :: Eq a => a -> Values a -> Bool
 valueOf e (Values _ s) = e `elem` s
 
 --- Chooses (non-deterministically) some value in a multiset of values
@@ -149,7 +150,7 @@ valueOf e (Values _ s) = e `elem` s
 --- then `(set1 chooseValue)` is the identity on value sets, i.e.,
 --- `(set1 chooseValue s)` contains the same elements as the
 --- value set `s`.
-choose :: Values a -> (a,Values a)
+choose :: Eq a => Values a -> (a,Values a)
 choose (Values _ vs) =
   (x, Values (if null xs then Nothing else Just (head xs)) xs)
  where x = foldr1 (?) vs
@@ -160,7 +161,7 @@ choose (Values _ vs) =
 --- Thus, `(set1 chooseValue)` is the identity on value sets, i.e.,
 --- `(set1 chooseValue s)` contains the same elements as the
 --- value set `s`.
-chooseValue :: Values a -> a
+chooseValue :: Eq a => Values a -> a
 chooseValue s = fst (choose s)
 
 --- Selects (indeterministically) some value in a multiset of values
@@ -227,13 +228,13 @@ values2list :: Values a -> IO [a]
 values2list (Values _ s) = return s
 
 --- Prints all elements of a multiset of values.
-printValues :: Values _ -> IO ()
+printValues :: Show a => Values a -> IO ()
 printValues s = values2list s >>= mapIO_ print
 
 --- Transforms a multiset of values into a list sorted by
 --- the standard term ordering. As a consequence, the multiset of values
 --- is completely evaluated.
-sortValues :: Values a -> [a]
+sortValues :: Ord a => Values a -> [a]
 sortValues = sortValuesBy (<=)
 
 --- Transforms a multiset of values into a list sorted by a given ordering

@@ -1,7 +1,7 @@
 # precompile all modules of the library
 # to avoid recompilation when they are used:
 
-CYMAKEPARAMS = --extended --no-verb --no-warn --no-overlap-warn -i. -imeta
+CYMAKEPARAMS = --extended -X TypeClassExtensions --no-verb --no-warn --no-overlap-warn -i. -imeta
 
 PAKCS=$(ROOT)/bin/pakcs
 

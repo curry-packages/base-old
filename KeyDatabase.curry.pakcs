@@ -21,7 +21,7 @@ import Database
 import Integer(maxlist)
 import Sort
 import List
-import Maybe(sequenceMaybe)
+import Maybe(isJust,sequenceMaybe)
 
 --- The type of a database key is an integer.
 type Key = Int
@@ -34,7 +34,7 @@ type KeyPred a = Key -> a -> Dynamic
 --- @param key - a key (an integer)
 existsDBKey :: KeyPred _ -> Key -> Query Bool
 existsDBKey db key = seq db $ seq key $
-  transformQ (/=Nothing) (queryOne (db key))
+  transformQ isJust (queryOne (db key))
 
 --- Query that returns all keys of entries in the database.
 allDBKeys :: KeyPred _ -> Query [Key]
@@ -59,7 +59,7 @@ getDBInfo db key = seq db $ seq key $ queryOne (\info -> db key info)
 --- @param x - the entry searched for
 --- @param xs - the list to search in
 
-index :: a -> [a] -> Int
+index :: Eq a => a -> [a] -> Int
 index x xs = idx 0 xs
   where
     idx n (y:ys) = if x==y then n else idx (n+1) ys

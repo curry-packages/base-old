@@ -19,6 +19,7 @@ import Dynamic
 import Integer(maxlist)
 import Sort
 import List
+import Maybe(isJust)
 
 --- Exists an entry with a given key in the database?
 --- @param db - the database (a dynamic predicate)
@@ -26,7 +27,7 @@ import List
 existsDBKey :: (Int -> _ -> Dynamic) -> Int -> IO Bool
 existsDBKey db key = seq db $ seq key $ do
   entries <- getDynamicSolution (\info -> db key info)
-  return (entries /= Nothing)
+  return (isJust entries)
 
 --- Returns all keys of entries in the database.
 allDBKeys :: (Int -> _ -> Dynamic) -> IO [Int]
@@ -49,7 +50,7 @@ getDBInfo db key = seq db $ seq key $ do
 --- @param x - the entry searched for
 --- @param xs - the list to search in
 
-index :: a -> [a] -> Int
+index :: Eq a => a -> [a] -> Int
 index x xs = idx 0 xs
   where
     idx n (y:ys) = if x==y then n else idx (n+1) ys
