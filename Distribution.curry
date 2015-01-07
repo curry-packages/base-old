@@ -438,13 +438,14 @@ callFrontendWithParams target params modpath = do
   let lf      = maybe "" id (logfile params)
       syscall = parsecurry ++ " " ++ showFrontendTarget target
                            ++ " " ++ showFrontendParams
+                           ++ " -X TypeClassExtensions "
                            ++ " " ++ takeFileName modpath
   retcode <- if null lf
              then system syscall
              else system (syscall ++ " > " ++ lf ++ " 2>&1")
   if retcode == 0
    then done
-   else ioError (userError "Illegal source program")
+   else ioError (userError $ "Illegal source program: "++modpath)
  where
    callParseCurry = do
      path <- maybe (getLoadPathForModule modpath) return (fullPath params)
