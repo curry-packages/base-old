@@ -10,7 +10,7 @@
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Integer((^), pow, ilog, isqrt, factorial, binomial,
-               abs, max3, min3, maxlist, minlist,
+               max3, min3, maxlist, minlist,
                bitTrunc, bitAnd, bitOr, bitNot, bitXor,
                even, odd) where
 
@@ -98,14 +98,6 @@ factorial n | n >= 0 = if n == 0 then 1 else n * factorial (n-1)
 binomial :: Int -> Int -> Int
 binomial n m | m > 0 && n >= m = aux m n `div` factorial m
   where aux x y = if x == 0 then 1 else y * aux (x-1) (y-1)
-
---- The value of `abs n` is the absolute value of `n`.
----
---- @param n - The argument.
---- @return the absolute value of `n`.
-
-abs :: Int -> Int
-abs n = if n<0 then -n else n
 
 --- Returns the maximum of the three arguments.
 ---
