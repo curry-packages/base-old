@@ -6,6 +6,7 @@
 module AbstractCurryGoodies where
 
 import AbstractCurry
+import List(union)
 
 infixr 9 ~>
 
@@ -55,6 +56,45 @@ boolType = baseType (pre "Bool")
 --- The type expression of the Time.CalendarTime type.
 dateType :: CTypeExpr
 dateType = baseType ("Time", "CalendarTime")
+
+------------------------------------------------------------------------
+-- Goodies to analyze type expressions
+
+--- Returns true if the type expression contains type variables.
+isPolyType :: CTypeExpr -> Bool
+isPolyType (CTVar                _) = True
+isPolyType (CFuncType domain range) = isPolyType domain || isPolyType range
+isPolyType (CTCons      _ typelist) = any isPolyType typelist
+isPolyType (CRecordType fields   _) = any isPolyType (map snd fields)
+
+--- Returns true if the type expression is a functional type.
+isFunctionalType :: CTypeExpr -> Bool
+isFunctionalType texp = case texp of
+  CFuncType _ _ -> True
+  _             -> False
+
+--- Returns true if the type expression is (IO t).
+isIOType :: CTypeExpr -> Bool
+isIOType texp = case texp of
+  CTCons tc _ -> tc == pre "IO"
+  _           -> False
+
+--- Returns true if the type expression is (IO t) with t/=() and
+--- t is not functional
+isIOReturnType :: CTypeExpr -> Bool
+isIOReturnType (CTVar            _) = False
+isIOReturnType (CFuncType      _ _) = False
+isIOReturnType (CTCons tc typelist) =
+  tc==pre "IO" && head typelist /= CTCons (pre "()") []
+  && not (isFunctionalType (head typelist))
+isIOReturnType (CRecordType    _ _) = False
+
+--- Returns all modules used in the given type.
+modsOfType :: CTypeExpr -> [String]
+modsOfType (CTVar            _) = []
+modsOfType (CFuncType    t1 t2) = modsOfType t1 `union` modsOfType t2
+modsOfType (CTCons (mod,_) tys) = foldr union [mod] $ map modsOfType tys
+modsOfType (CRecordType flds _) = foldr union [] $ map (modsOfType . snd) flds
 
 ------------------------------------------------------------------------
 -- Goodies to construct function declarations
