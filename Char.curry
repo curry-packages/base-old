@@ -2,7 +2,7 @@
 --- Library with some useful functions on characters.
 ---
 --- @author Michael Hanus, Björn Peemöller
---- @version January 2014
+--- @version January 2015
 ------------------------------------------------------------------------------
 
 module Char
@@ -46,7 +46,7 @@ isAlpha c       =  isUpper c || isLower c
 
 --- Returns true if the argument is a decimal digit.
 isDigit         :: Char -> Bool
-isDigit c       =  '0' <= c && c <= '9'
+isDigit c       =  c >= '0' && c <= '9'
 
 --- Returns true if the argument is a letter or digit.
 isAlphaNum      :: Char -> Bool
@@ -54,7 +54,7 @@ isAlphaNum c    =  isAlpha c || isDigit c
 
 --- Returns true if the argument is a binary digit.
 isBinDigit     :: Char -> Bool
-isBinDigit c   =  c == '0' || c == '1'
+isBinDigit c   =  c >= '0' || c <= '1'
 
 --- Returns true if the argument is an octal digit.
 isOctDigit     :: Char -> Bool
@@ -62,8 +62,8 @@ isOctDigit c    =  c >= '0' && c <= '7'
 
 --- Returns true if the argument is a hexadecimal digit.
 isHexDigit      :: Char -> Bool
-isHexDigit c      =  isDigit c || c >= 'A' && c <= 'F'
-                           || c >= 'a' && c <= 'f'
+isHexDigit c     = isDigit c || c >= 'A' && c <= 'F'
+                             || c >= 'a' && c <= 'f'
 
 --- Returns true if the argument is a white space.
 isSpace         :: Char -> Bool
