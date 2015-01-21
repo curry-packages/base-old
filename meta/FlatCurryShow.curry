@@ -21,6 +21,7 @@ module FlatCurryShow(showFlatProg,showFlatType,showFlatFunc,
 import FlatCurry
 import List
 import Char
+import SetFunctions
 
 --- Shows a FlatCurry program term as a string (with some pretty printing).
 showFlatProg :: Prog -> String
@@ -135,23 +136,89 @@ showFlatListElems format elems = concat (intersperse "," (map format elems))
 --- @return the String representation of the formatted type expression
 
 showCurryType :: ((String,String) -> String) -> Bool -> TypeExpr -> String
+showCurryType tf nested texp = case texp of
+  FuncType t1 t2 -> maybe (showCurryType_ tf nested texp)
+                          (\ (cn,cv) -> showBracketsIf nested $
+                                cn ++ " " ++ showCurryType_ tf False cv ++
+                                " => " ++ showCurryType tf False t2)
+                          (isClassContext t1)
+  _              -> showCurryType_ tf nested texp
 
-showCurryType _ _ (TVar i) = if i<5 then [chr (97+i)] else 't':show i
-showCurryType tf nested (FuncType t1 t2) =
+isClassContext' :: TypeExpr -> Maybe (String,TypeExpr)
+isClassContext' texp = case texp of
+  TCons ("Prelude","(,)")
+        [FuncType tv1 (FuncType tv2 (TCons ("Prelude","Bool") []))
+        ,FuncType tv3 (FuncType tv4 (TCons ("Prelude","Bool") []))]
+   -> if tv1==tv2 && tv2==tv3 && tv3==tv4
+      then Just ("Eq",tv1)
+      else Nothing
+  _ -> Nothing
+
+isClassContext :: TypeExpr -> Maybe (String,TypeExpr)
+isClassContext texp =
+  let vals = set1 classContext texp
+   in if isEmpty vals then Nothing
+                      else Just (selectValue vals)
+
+--------------------------------
+-- Auxiliary operations to define current implementation types
+-- of various class contexts:
+
+classContext :: TypeExpr -> (String,TypeExpr)
+classContext (eqContext  a) = ("Eq",a)
+classContext (ordContext a) = ("Ord",a)
+classContext (numContext a) = ("Num",a)
+classContext (frcContext a) = ("Fractional",a)
+classContext (shwContext a) = ("Show",a)
+
+eqContext  a = TCons ("Prelude","(,)") [binBoolOp a, binBoolOp a]
+
+ordContext a = TCons ("Prelude","(,,,,,,,)")
+                     [eqContext a, binOrderingOp a, binBoolOp a, binBoolOp a,
+                      binBoolOp a, binBoolOp a, binOp a, binOp a]
+
+numContext a = TCons ("Prelude","(,,,,,,)")
+                     [binOp a, binOp a, binOp a, unOp a, unOp a, unOp a,
+                      FuncType intType a]
+
+frcContext a = TCons ("Prelude","(,,,)")
+                     [numContext a,
+                      binOp a, unOp a,
+                      FuncType (TCons ("Prelude","Float") []) a]
+
+shwContext a = TCons ("Prelude","(,,)")
+                     [FuncType a stringType,
+                      FuncType intType
+                               (FuncType a (FuncType stringType stringType)),
+                      FuncType (TCons ("Prelude","[]") [a])
+                               (FuncType stringType stringType)]
+
+unOp a          = FuncType a a
+binOp a         = FuncType a (FuncType a a)
+binOrderingOp a = FuncType a (FuncType a (TCons ("Prelude","Ordering") []))
+binBoolOp a     = FuncType a (FuncType a (TCons ("Prelude","Bool") []))
+intType    = TCons ("Prelude","Int") []
+stringType = TCons ("Prelude","[]") [TCons ("Prelude","Char") []]
+
+------------------------------
+
+showCurryType_ :: ((String,String) -> String) -> Bool -> TypeExpr -> String
+showCurryType_ _ _ (TVar i) = if i<5 then [chr (97+i)] else 't':show i
+showCurryType_ tf nested (FuncType t1 t2) =
   showBracketsIf nested
-    (showCurryType tf (isFuncType t1) t1 ++ " -> " ++
-     showCurryType tf False t2)
-showCurryType tf nested (TCons tc ts)
+    (showCurryType_ tf (isFuncType t1) t1 ++ " -> " ++
+     showCurryType_ tf False t2)
+showCurryType_ tf nested (TCons tc ts)
  | ts==[]  = tf tc
  | tc==("Prelude","[]") && (head ts == TCons ("Prelude","Char") [])
    = "String"
  | tc==("Prelude","[]")
-  = "[" ++ showCurryType tf False (head ts) ++ "]" -- list type
+  = "[" ++ showCurryType_ tf False (head ts) ++ "]" -- list type
  | take 2 (snd tc) == "(,"                         -- tuple type
-  = "(" ++ concat (intersperse "," (map (showCurryType tf False) ts)) ++ ")"
+  = "(" ++ concat (intersperse "," (map (showCurryType_ tf False) ts)) ++ ")"
  | otherwise
   = showBracketsIf nested
-    (tf tc ++ concatMap (\t->' ':showCurryType tf True t) ts)
+    (tf tc ++ concatMap (\t->' ':showCurryType_ tf True t) ts)
 
 isFuncType (TVar _)       = False
 isFuncType (FuncType _ _) = True
