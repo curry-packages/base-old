@@ -533,6 +533,9 @@ instance ConvertCurryHaskell ct ht =>
   fromCurry (C_Just x) = Just (fromCurry x)
   fromCurry _          = error "KiCS2 error: Maybe data with no ground term occurred"
 
+toCurryString :: String -> OP_List C_Char
+toCurryString = toCurry
+
 -- -----------------------------------------------------------------------------
 -- Auxiliary operations for showing lists
 -- -----------------------------------------------------------------------------

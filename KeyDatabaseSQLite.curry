@@ -36,6 +36,8 @@
 
 module KeyDatabaseSQLite (
 
+  Key, KeyPred,
+
   Query, runQ, transformQ, getDB,
 
   Transaction, TError(..), TErrorKind(..), showTError, runT, runJustT,

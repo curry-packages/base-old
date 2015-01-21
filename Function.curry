@@ -31,7 +31,7 @@ second f (x, y) = (x, f y)
 (***) :: (a -> b) -> (c -> d) -> (a, c) -> (b, d)
 (f *** g) (x, y) = (f x, g y)
 
---- Apply two functions to a value and returns a tuple fo the results.
+--- Apply two functions to a value and returns a tuple of the results.
 (&&&) :: (a -> b) -> (a -> c) -> a -> (b, c)
 (f &&& g) x = (f x, g x)
 
