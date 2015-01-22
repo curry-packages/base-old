@@ -6,8 +6,8 @@
 --- [linear-time, bounded implementation](http://www.cs.kent.ac.uk/pubs/2006/2381/index.html)
 ---  by Olaf Chitil.
 ---
---- @author Sebastian Fischer
---- @version June 2011
+--- @author Sebastian Fischer, Björn Peemöller
+--- @version January 2015
 ------------------------------------------------------------------------------
 
 module Pretty (
@@ -22,21 +22,24 @@ module Pretty (
   nest, hang, align, --indent??,
 
   -- composition combinators
-  combine, (<>), (<+>), (<$>), (</>), (<$$>), (<//>),
+  combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>),
 
   -- list combinators
   compose, hsep, vsep, fillSep, sep, hcat, vcat, fillCat, cat,
-  punctuate, encloseSep, hEncloseSep, fillEncloseSep, list, tupled, semiBraces,
+  punctuate, encloseSep, hEncloseSep, fillEncloseSep, fillEncloseSepSpaced,
+  list, listSpaced, tupled, tupledSpaced, semiBraces, semiBracesSpaced,
 
   -- bracketing combinators
-  enclose, squotes, dquotes, bquotes, parens, angles, braces, brackets,
+  enclose, squotes, dquotes, bquotes, parens,
+  parensIf, angles, braces, brackets,
 
   -- primitve type documents
   char, string, int, float,
 
   -- character documents
   lparen, rparen, langle, rangle, lbrace, rbrace, lbracket, rbracket,
-  squote, dquote, semi, colon, comma, space, dot, backslash, equals
+  squote, dquote, semi, colon, comma, space, dot, backslash, equals,
+  arrow, doubleArrow, doubleColon, bar
 
   ) where
 
@@ -47,6 +50,8 @@ infixl 1 <>, <+>, <$>, </>, <$$>, <//>
 --- The abstract data type Doc represents pretty documents.
 data Doc = Doc (Tokens -> Tokens)
 
+--- Extract the internal representation from a document.
+deDoc :: Doc -> Tokens -> Tokens
 deDoc (Doc d) = d
 
 --- The empty document is, indeed, empty. Although empty has no content,
@@ -59,9 +64,8 @@ empty = text ""
 --- Is the document empty?
 isEmpty :: Doc -> Bool
 isEmpty (Doc d) = isEmptyText (d Empty)
- where
-  isEmptyText t = case t of Text s Empty -> s==""
-                            _            -> False
+ where isEmptyText t = case t of Text s Empty -> null s
+                                 _            -> False
 
 --- The document `(text s)` contains the literal string `s`.
 --- The string shouldn't contain any newline ('\n') characters.
@@ -135,7 +139,7 @@ group d = Doc (Open . deDoc d . Close)
 --- @param d - a document
 --- @return document d with an indentation level increased by i
 nest :: Int -> Doc -> Doc
-nest i d = Doc (OpenNest (\ms@(m:_) _ _ -> (m+i):ms) . deDoc d . CloseNest)
+nest i d = Doc (OpenNest (\ms@(m:_) _ _ -> (m + i) : ms) . deDoc d . CloseNest)
 
 --- The hang combinator implements hanging indentation.
 --- The document `(hang i d)` renders document `d` with a nesting level set
@@ -161,7 +165,7 @@ nest i d = Doc (OpenNest (\ms@(m:_) _ _ -> (m+i):ms) . deDoc d . CloseNest)
 --- @param d - a document
 --- @return document d with an indentation level set to the current column plus i
 hang :: Int -> Doc -> Doc
-hang i d = Doc (OpenNest (\ms r w -> (w-r+i):ms) . deDoc d . CloseNest)
+hang i d = Doc (OpenNest (\ms r w -> (w - r + i) : ms) . deDoc d . CloseNest)
 
 --- The document `(align d)` renders document `d with the nesting level
 --- set to the current column. It is used for example to implement hang.
@@ -218,6 +222,14 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 (<$>) :: Doc -> Doc -> Doc
 (<$>) = combine line
 
+--- The document `(x &lt;$&gt; y)` concatenates document x and y with a
+--- blank line in between.
+--- @param x - the first document
+--- @param y - the second document
+--- @return concatenation of x and y with a `line` in between
+(<$+>) :: Doc -> Doc -> Doc
+(<$+>) = combine (line <> line)
+
 --- The document (x &lt;/&gt; y) concatenates document x and y with
 --- a `softline` in between. This effectively puts x and y either
 --- next to each other (with a `space` in between)
@@ -252,7 +264,7 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 --- @return concatenation of documents
 compose :: (Doc -> Doc -> Doc) -> [Doc] -> Doc
 --compose op = foldr op empty
-compose _ [] = empty
+compose _ []        = empty
 compose op ds@(_:_) = foldr1 op ds -- no seperator at the end
 
 --- The document (hsep xs) concatenates all documents xs
@@ -371,10 +383,10 @@ cat = group . vcat
 --- @param xs - a list of documents
 --- @return concatenation of documents with p in between
 punctuate :: Doc -> [Doc] -> [Doc]
-punctuate _ [] = []
-punctuate d ds@(_:_) = go ds
+punctuate d ds = go ds
  where
-  go [x] = [x]
+  go []           = []
+  go [x]          = [x]
   go (x:xs@(_:_)) = (x <> d) : go xs
 
 --- The document (encloseSep l r sep xs) concatenates the documents xs
@@ -436,10 +448,27 @@ fillEncloseSep l r _ [] = l <> r
 fillEncloseSep l r s (d:ds)
   = align (enclose l r (hcat (d:withSoftBreaks (map (s<>) ds))))
  where
-  withSoftBreaks [] = []
+  withSoftBreaks []  = []
   withSoftBreaks [x] = [group (linebreak <> x)]
   withSoftBreaks (x:xs@(_:_))
     = (group (linebreak <> (group (x <> linebreak))) : withSoftBreaks xs)
+
+--- The document `(fillEncloseSepSpaced l r sep xs)` concatenates the documents
+--- v seperated by `sep` and encloses the resulting document by `l` and `r`.
+--- In addition, after each occurrence of `sep`, after `l`, and before `r`,
+--- a `space` is inserted.
+---
+--- The documents are rendered horizontally if that fits the page.
+--- Otherwise, they are aligned vertically.
+--- All seperators are put in front of the elements.
+--- @param l - left document
+--- @param r - right document
+--- @param sep - a document as seperator
+--- @param xs - a list of documents
+--- @return concatenation of l, xs (with p in between) and r
+fillEncloseSepSpaced :: Doc -> Doc -> Doc -> [Doc] -> Doc
+fillEncloseSepSpaced l r s =
+  fillEncloseSep (l <> space) (space <> r) (s <> space)
 
 --- The document (list xs) comma seperates the documents xs and encloses
 --- them in square brackets. The documents are rendered horizontally if
@@ -451,6 +480,10 @@ fillEncloseSep l r s (d:ds)
 list :: [Doc] -> Doc
 list = fillEncloseSep lbracket rbracket comma
 
+--- Spaced version of `list`
+listSpaced :: [Doc] -> Doc
+listSpaced = fillEncloseSepSpaced lbracket rbracket comma
+
 --- The document (tupled xs) comma seperates the documents xs and encloses
 --- them in parenthesis. The documents are rendered horizontally if that fits
 --- the page. Otherwise they are aligned vertically.
@@ -461,6 +494,10 @@ list = fillEncloseSep lbracket rbracket comma
 tupled :: [Doc] -> Doc
 tupled = fillEncloseSep lparen rparen comma
 
+--- Spaced version of `tupled`
+tupledSpaced :: [Doc] -> Doc
+tupledSpaced = fillEncloseSepSpaced lparen rparen comma
+
 --- The document (semiBraces xs) seperates the documents xs with semi colons
 --- and encloses them in braces. The documents are rendered horizontally
 --- if that fits the page. Otherwise they are aligned vertically.
@@ -470,6 +507,10 @@ tupled = fillEncloseSep lparen rparen comma
 --- in braces
 semiBraces :: [Doc] -> Doc
 semiBraces = fillEncloseSep lbrace rbrace semi
+
+--- Spaced version of `semiBraces`
+semiBracesSpaced :: [Doc] -> Doc
+semiBracesSpaced = fillEncloseSepSpaced lbrace rbrace semi
 
 --- The document (enclose l r x) encloses document x between
 --- documents l and r using (&lt;&gt;).<br><br>
@@ -505,6 +546,13 @@ bquotes = enclose bquote bquote
 --- @return document x enclosed in parenthesis
 parens :: Doc -> Doc
 parens = enclose lparen rparen
+
+--- Document (parens x) encloses document x in parenthesis,`"("` and `")"`,
+--- iff the condition is true.
+--- @param x - a document
+--- @return document x enclosed in parenthesis iff the condition is true
+parensIf :: Bool -> Doc -> Doc
+parensIf b s = if b then parens s else s
 
 --- Document (angles x) encloses document x in angles,
 --- `"<"` and `">"`.
@@ -649,42 +697,67 @@ backslash = char '\\'
 equals :: Doc
 equals = char '='
 
+--- The document equals contains an arrow sign, `"->"`.
+--- @return a document which contains an arrow sign
+arrow :: Doc
+arrow = text "->"
 
-type Layout = String
-type Horizontal = Bool
-type Remaining = Int
-type Width = Int
-type Position = Int
-type StartPosition = Int
-type EndPosition = Int
-type Out = Remaining -> Margins -> String
+--- The document equals contains an double arrow sign, `"=>"`.
+--- @return a document which contains an double arrow sign
+doubleArrow :: Doc
+doubleArrow = text "=>"
+
+--- The document equals contains a double colon sign, `"::"`.
+--- @return a document which contains a double colon sign
+doubleColon :: Doc
+doubleColon = text "::"
+
+--- The document equals contains a vertical bar sign, `"|"`.
+--- @return a document which contains a vertical bar sign
+bar :: Doc
+bar = char '|'
+
+-- -----------------------------------------------------------------------------
+-- Implementation
+-- -----------------------------------------------------------------------------
+
+
+type Layout         = String
+type Horizontal     = Bool
+type Remaining      = Int
+type Width          = Int
+type Position       = Int
+type StartPosition  = Int
+type EndPosition    = Int
+type Out            = Remaining -> Margins -> String
 type OutGroupPrefix = Horizontal -> Out -> Out
-type Margins = [Int]
+type Margins        = [Int]
 
-data Tokens = Text String Tokens
-            | Line String Tokens
-            | Open Tokens
-            | Close Tokens
-            | Empty
-            | OpenNest (Margins -> Remaining -> Width -> Margins) Tokens
-            | CloseNest Tokens
+data Tokens
+  = Text  String Tokens
+  | Line  String Tokens
+  | Open  Tokens
+  | Close Tokens
+  | Empty
+  | OpenNest  (Margins -> Remaining -> Width -> Margins) Tokens
+  | CloseNest Tokens
 
 normalise :: Tokens -> Tokens
 normalise = go id
   where
-  go co Empty = co Empty
+  go co Empty           = co Empty
     -- there should be no deferred opening brackets
-  go co (Open ts) = go (co . open) ts
-  go co (Close ts) = go (co . Close) ts
-  go co (Line s ts) = co . Line s . go id $ ts
-  go co (Text s ts) = Text s (go co ts)
+  go co (Open       ts) = go (co . open) ts
+  go co (Close      ts) = go (co . Close) ts
+  go co (Line     s ts) = co . Line s . go id $ ts
+  go co (Text     s ts) = Text s (go co ts)
   go co (OpenNest f ts) = OpenNest f (go co ts)
-  go co (CloseNest ts) = CloseNest (go co ts)
+  go co (CloseNest  ts) = CloseNest (go co ts)
 
   open t = case t of Close ts -> ts; _ -> Open t
 
+doc2Tokens :: Doc -> Tokens
 doc2Tokens (Doc d) = normalise (d Empty)
-
 
 --- `(pretty w d)` pretty prints document `d` with a page width of `w` characters
 --- @param w - width of page
@@ -693,46 +766,52 @@ doc2Tokens (Doc d) = normalise (d Empty)
 pretty :: Width -> Doc -> String
 pretty w d = noGroup (doc2Tokens d) w 1 w [0]
 
-
-length = Prelude.length . filter (not . (`elem` ([5,6,7]++[16..31])) . ord)
+length :: String -> Int
+length = Prelude.length . filter isVisible
+  where
+  isVisible c = ord c `notElem` ([5, 6, 7] ++ [16 .. 31])
 
 noGroup :: Tokens -> Width -> Position -> Out
-noGroup Empty _ _ _ _ = ""
-noGroup (Text t ts) w p r ms = t ++ noGroup ts w (p+l) (r-l) ms
-  where
-  l = length t
-noGroup (Line _ ts) w p _ ms@(m:_) =
-  '\n' : replicate m ' ' ++ noGroup ts w (p+1) (w-m) ms
-noGroup (Open ts) w p r ms = oneGroup ts w p (p+r) (\_ c -> c) r ms
-noGroup (Close ts) w p r ms = noGroup ts w p r ms -- may have been pruned
+noGroup Empty           _ _ _ _  = ""
+noGroup (Text     t ts) w p r ms = t ++ noGroup ts w (p + l) (r - l) ms
+  where l = length t
+noGroup (Line     _ _ ) _ _ _ []       = error "Pretty.noGroup: illegal line"
+noGroup (Line     _ ts) w p _ ms@(m:_) =
+  '\n' : replicate m ' ' ++ noGroup ts w (p + 1) (w - m) ms
+noGroup (Open       ts) w p r ms = oneGroup ts w p (p+r) (\_ c -> c) r ms
+noGroup (Close      ts) w p r ms = noGroup ts w p r ms -- may have been pruned
 noGroup (OpenNest f ts) w p r ms = noGroup ts w p r (f ms r w)
-noGroup (CloseNest ts) w p r ms = noGroup ts w p r (tail ms)
+noGroup (CloseNest  ts) w p r ms = noGroup ts w p r (tail ms)
 
 oneGroup :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix -> Out
-oneGroup (Text t ts) w p e outGrpPre =
-  pruneOne ts w (p+l) e (\h c -> outGrpPre h (outText c))
+oneGroup Empty           _ _ _ _         = error "Pretty.oneGroup: Empty"
+oneGroup (Text     s ts) w p e outGrpPre =
+  pruneOne ts w (p + l) e (\h c -> outGrpPre h (outText c))
   where
-  l = length t
-  outText c r ms = t ++ c (r-l) ms
-oneGroup (Line s ts) w p e outGrpPre =
-  pruneOne ts w (p + lens) e (\h c -> outGrpPre h (outLine h c))
+  l = length s
+  outText c r ms = s ++ c (r - l) ms
+oneGroup (Line     s ts) w p e outGrpPre =
+  pruneOne ts w (p + l) e (\h c -> outGrpPre h (outLine h c))
   where
-  lens = length s
-  outLine h c r ms@(m:_) =
-    if h then s ++ c (r-lens) ms else '\n' : replicate m ' ' ++ c (w-m) ms
-oneGroup (Open ts) w p e outGrpPre =
+  l = length s
+  outLine _ _ _ []       = error "Pretty.oneGroup.outLine: empty margins"
+  outLine h c r ms@(m:_) = if h then s ++ c (r - l) ms
+                                else '\n' : replicate m ' ' ++ c (w - m) ms
+oneGroup (Open       ts) w p e outGrpPre =
   multiGroup ts w p e outGrpPre Q.empty p (\_ c -> c)
-oneGroup (Close ts) w p e outGrpPre = outGrpPre (p<=e) (noGroup ts w p)
-oneGroup (OpenNest f ts) w p e outGrpPre =
-  oneGroup ts w p e (\h c -> outGrpPre h (\r ms -> c r (f ms r w)))
-oneGroup (CloseNest ts) w p e outGrpPre =
-  oneGroup ts w p e (\h c -> outGrpPre h (\r ms -> c r (tail ms)))
+oneGroup (Close      ts) w p e outGrpPre = outGrpPre (p <= e) (noGroup ts w p)
+oneGroup (OpenNest f ts) w p e outGrpPre = oneGroup ts w p e
+  (\h c -> outGrpPre h (\r ms -> c r (f ms r w)))
+oneGroup (CloseNest  ts) w p e outGrpPre = oneGroup ts w p e
+  (\h c -> outGrpPre h (\r ms -> c r (tail ms)))
 
 multiGroup :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix
-              -> Queue (StartPosition,OutGroupPrefix)
-              -> StartPosition -> OutGroupPrefix -> Out
-multiGroup (Text t ts) w p e outGrpPreOuter qs s outGrpPreInner =
-  pruneMulti ts w (p+l) e outGrpPreOuter qs s
+           -> Queue (StartPosition, OutGroupPrefix)
+           -> StartPosition -> OutGroupPrefix -> Out
+multiGroup Empty       _ _ _ _              _  _ _
+  = error "Pretty.multiGroup: Empty"
+multiGroup (Text t ts) w p e outGrpPreOuter qs s outGrpPreInner
+  = pruneMulti ts w (p+l) e outGrpPreOuter qs s
     (\h c -> outGrpPreInner h (outText c))
   where
   l = length t
@@ -742,6 +821,7 @@ multiGroup (Line s ts) w p e outGrpPreOuter qs si outGrpPreInner =
     (\h c -> outGrpPreInner h (outLine h c))
   where
   lens = length s
+  outLine _ _ _ []       = error "Pretty.multiGroup.outLine: empty margins"
   outLine h c r ms@(m:_) =
     if h then s ++ c (r-lens) ms else '\n': replicate m ' ' ++ c (w-m) ms
 multiGroup (Open ts) w p e outGrpPreOuter qs si outGrpPreInner =
@@ -761,18 +841,16 @@ multiGroup (CloseNest ts) w p e outGrpPreOuter qs si outGrpPreInner =
   multiGroup ts w p e outGrpPreOuter qs si
     (\h c -> outGrpPreInner h (\r ms -> c r (tail ms)))
 
-
 pruneOne :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix -> Out
-pruneOne ts w p e outGrpPre =
-  if p <= e then oneGroup ts w p e outGrpPre
-            else outGrpPre False (noGroup ts w p)
+pruneOne ts w p e outGrpPre | p <= e    = oneGroup ts w p e outGrpPre
+                            | otherwise = outGrpPre False (noGroup ts w p)
 
 pruneMulti :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix
-              -> Queue (StartPosition,OutGroupPrefix)
+              -> Queue (StartPosition, OutGroupPrefix)
               -> StartPosition -> OutGroupPrefix -> Out
-pruneMulti ts w p e outGrpPreOuter qs si outGrpPreInner =
-  if p <= e then multiGroup ts w p e outGrpPreOuter qs si outGrpPreInner
-            else outGrpPreOuter False (\r ->
+pruneMulti ts w p e outGrpPreOuter qs si outGrpPreInner
+  | p <= e    = multiGroup ts w p e outGrpPreOuter qs si outGrpPreInner
+  | otherwise = outGrpPreOuter False (\r ->
                    (case matchLast qs of
                       Nothing -> pruneOne ts w p (si+r) outGrpPreInner
                       Just ((s,outGrpPre),qs') ->
