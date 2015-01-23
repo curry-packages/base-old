@@ -144,16 +144,6 @@ showCurryType tf nested texp = case texp of
                           (isClassContext t1)
   _              -> showCurryType_ tf nested texp
 
-isClassContext' :: TypeExpr -> Maybe (String,TypeExpr)
-isClassContext' texp = case texp of
-  TCons ("Prelude","(,)")
-        [FuncType tv1 (FuncType tv2 (TCons ("Prelude","Bool") []))
-        ,FuncType tv3 (FuncType tv4 (TCons ("Prelude","Bool") []))]
-   -> if tv1==tv2 && tv2==tv3 && tv3==tv4
-      then Just ("Eq",tv1)
-      else Nothing
-  _ -> Nothing
-
 isClassContext :: TypeExpr -> Maybe (String,TypeExpr)
 isClassContext texp =
   let vals = set1 classContext texp
@@ -164,41 +154,56 @@ isClassContext texp =
 -- Auxiliary operations to define current implementation types
 -- of various class contexts:
 
+-- Try to match a given type expression against some class context
+-- representation (as defined in the prelude):
 classContext :: TypeExpr -> (String,TypeExpr)
-classContext (eqContext  a) = ("Eq",a)
-classContext (ordContext a) = ("Ord",a)
-classContext (numContext a) = ("Num",a)
-classContext (frcContext a) = ("Fractional",a)
-classContext (shwContext a) = ("Show",a)
+classContext (eqContext   a) = ("Eq",a)
+classContext (ordContext  a) = ("Ord",a)
+classContext (numContext  a) = ("Num",a)
+classContext (frcContext  a) = ("Fractional",a)
+classContext (intgContext a) = ("Integral",a)
+classContext (enumContext a) = ("Enum",a)
+classContext (showContext a) = ("Show",a)
 
-eqContext  a = TCons ("Prelude","(,)") [binBoolOp a, binBoolOp a]
+eqContext  a = pairType (binBoolOp a) (binBoolOp a)
 
-ordContext a = TCons ("Prelude","(,,,,,,,)")
-                     [eqContext a, binOrderingOp a, binBoolOp a, binBoolOp a,
-                      binBoolOp a, binBoolOp a, binOp a, binOp a]
+ordContext a  = tupleType [eqContext a, binOrderingOp a,
+                           binBoolOp a, binBoolOp a,
+                           binBoolOp a, binBoolOp a, binOp a a, binOp a a]
 
-numContext a = TCons ("Prelude","(,,,,,,)")
-                     [binOp a, binOp a, binOp a, unOp a, unOp a, unOp a,
-                      FuncType intType a]
+numContext a  = tupleType [binOp a a, binOp a a, binOp a a, unOp a, unOp a,
+                           unOp a, FuncType intType a]
 
-frcContext a = TCons ("Prelude","(,,,)")
-                     [numContext a,
-                      binOp a, unOp a,
-                      FuncType (TCons ("Prelude","Float") []) a]
+intgContext a = tupleType [tupleType [numContext a, ordContext a],
+                           binOp a a, binOp a a, binOp a a, binOp a a,
+                           binOp a (pairType a a),
+                           binOp a (pairType a a)]
 
-shwContext a = TCons ("Prelude","(,,)")
-                     [FuncType a stringType,
-                      FuncType intType
-                               (FuncType a (FuncType stringType stringType)),
-                      FuncType (TCons ("Prelude","[]") [a])
-                               (FuncType stringType stringType)]
+frcContext a  = tupleType [numContext a, binOp a a, unOp a,
+                           FuncType (TCons ("Prelude","Float") []) a]
+
+enumContext a = tupleType [unOp a, unOp a,
+                           FuncType intType a, FuncType a intType,
+                           FuncType a (listType a),
+                           binOp a (listType a),
+                           binOp a (listType a),
+                           FuncType a (FuncType a (FuncType a (listType a)))]
+
+showContext a = tupleType [FuncType a stringType,
+                           FuncType intType
+                                (FuncType a (FuncType stringType stringType)),
+                           FuncType (listType a)
+                                (FuncType stringType stringType)]
 
 unOp a          = FuncType a a
-binOp a         = FuncType a (FuncType a a)
-binOrderingOp a = FuncType a (FuncType a (TCons ("Prelude","Ordering") []))
-binBoolOp a     = FuncType a (FuncType a (TCons ("Prelude","Bool") []))
-intType    = TCons ("Prelude","Int") []
-stringType = TCons ("Prelude","[]") [TCons ("Prelude","Char") []]
+binOp a b       = FuncType a (FuncType a b)
+binOrderingOp a = binOp a (TCons ("Prelude","Ordering") [])
+binBoolOp a     = binOp a (TCons ("Prelude","Bool") [])
+intType      = TCons ("Prelude","Int") []
+stringType   = TCons ("Prelude","[]") [TCons ("Prelude","Char") []]
+listType a   = TCons ("Prelude","[]") [a]
+pairType a b = TCons ("Prelude","(,)") [a,b]
+tupleType ts = TCons ("Prelude","("++take (length ts - 1) (repeat ',')++")") ts
 
 ------------------------------
 
@@ -214,7 +219,7 @@ showCurryType_ tf nested (TCons tc ts)
    = "String"
  | tc==("Prelude","[]")
   = "[" ++ showCurryType_ tf False (head ts) ++ "]" -- list type
- | take 2 (snd tc) == "(,"                         -- tuple type
+ | take 2 (snd tc) == "(,"                          -- tuple type
   = "(" ++ concat (intersperse "," (map (showCurryType_ tf False) ts)) ++ ")"
  | otherwise
   = showBracketsIf nested
@@ -222,7 +227,7 @@ showCurryType_ tf nested (TCons tc ts)
 
 isFuncType (TVar _)       = False
 isFuncType (FuncType _ _) = True
-isFuncType (TCons _ _)  = False
+isFuncType (TCons _ _)    = False
 
 
 ------------------------------------------------------------------------------
