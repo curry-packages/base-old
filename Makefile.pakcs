@@ -15,15 +15,19 @@ TEXDOCDIR := $(DOCDIR)/src/lib
 CURRYDOC=$(ROOT)/bin/currydoc
 
 # Curry library files
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry))
+LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry CLP/*.curry))
 # lib names without meta/ prefix
 LIB_NAMES = `echo $(LIB_CURRY) | sed 's|meta/||g'`
 # generated files:
 LIB_FCY   = `echo $(LIB_CURRY:%.curry=.curry/%.fcy) | sed 's|\.curry/meta/|meta/.curry/|g'`
 LIB_ACY   = `echo $(LIB_CURRY:%.curry=.curry/%.acy) | sed 's|\.curry/meta/|meta/.curry/|g'`
 LIB_PL    = `echo $(LIB_CURRY:%.curry=.curry/pakcs/%.pl) | sed 's|\.curry/pakcs/meta/|meta/.curry/pakcs/|g'`
-LIB_HTML  = $(LIB_CURRY:.curry=.html)
-LIB_TEX   = $(LIB_CURRY:.curry=.tex)
+# HTML documentation files
+LIB_HTMLI = $(LIB_CURRY:.curry=.html)
+LIB_HTML  = $(LIB_HTMLI:CLP/%.html=CLP.%.html)
+# LaTeX documentation files
+LIB_TEXI  = $(LIB_CURRY:.curry=.tex)
+LIB_TEX   = $(LIB_TEXI:CLP/%.tex=CLP.%.tex)
 
 EXCLUDES  = SearchTree.curry ValueSequence.curry UnsafeSearchTree.curry
 
@@ -50,17 +54,22 @@ acy:
 pl:
 	@$(MAKE) $(LIB_PL)
 
-# generate all FlatCurry files in subdirectory .curry:
+# generate all FlatCurry files:
 .curry/%.fcy: %.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
-# generate all FlatCurry files in subdirectory meta/.curry:
+.curry/CLP/%.fcy: CLP/%.curry
+	"$(CYMAKE)" --flat $(CYMAKEPARAMS) CLP.$*
+
 meta/.curry/%.fcy: meta/%.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
-# generate all AbstractCurry files in subdirectory .curry:
+# generate all AbstractCurry files:
 .curry/%.acy: %.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
+
+.curry/CLP/%.acy: CLP/%.curry
+	"$(CYMAKE)" --acy $(CYMAKEPARAMS) CLP.$*
 
 meta/.curry/%.acy: meta/%.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
@@ -68,6 +77,9 @@ meta/.curry/%.acy: meta/%.curry
 # generate all Prolog translations:
 .curry/pakcs/%.pl: .curry/%.fcy
 	rm -f $@ && "$(PAKCS)" --quiet -c $*
+
+.curry/pakcs/CLP/%.pl: .curry/CLP/%.fcy
+	rm -f $@ && "$(PAKCS)" --quiet -c CLP.$*
 
 meta/.curry/pakcs/%.pl: meta/.curry/%.fcy
 	rm -f $@ && "$(PAKCS)" --quiet -c $*
@@ -99,6 +111,10 @@ meta/%.html: ../meta/%.curry
 	@touch DOINDEX
 	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
+CLP.%.html: ../CLP/%.curry
+	@touch DOINDEX
+	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
+
 ##############################################################################
 # create LaTeX documentation files for system libraries
 ##############################################################################
@@ -118,6 +134,10 @@ texdoc: $(LIB_CURRY)
 
 meta/%.tex: $(LIBDIR)/meta/%.curry
 	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
+	touch LAST
+
+CLP.%.tex: $(LIBDIR)/CLP/%.curry
+	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$*
 	touch LAST
 
 
