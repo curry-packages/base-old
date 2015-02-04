@@ -55,31 +55,31 @@ pl:
 	@$(MAKE) $(LIB_PL)
 
 # generate all FlatCurry files:
-.curry/%.fcy: %.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
-
 .curry/CLP/%.fcy: CLP/%.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) CLP.$*
+
+.curry/%.fcy: %.curry
+	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
 meta/.curry/%.fcy: meta/%.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
 # generate all AbstractCurry files:
-.curry/%.acy: %.curry
-	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
-
 .curry/CLP/%.acy: CLP/%.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) CLP.$*
+
+.curry/%.acy: %.curry
+	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
 
 meta/.curry/%.acy: meta/%.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
 
 # generate all Prolog translations:
-.curry/pakcs/%.pl: .curry/%.fcy
-	rm -f $@ && "$(PAKCS)" --quiet -c $*
-
 .curry/pakcs/CLP/%.pl: .curry/CLP/%.fcy
 	rm -f $@ && "$(PAKCS)" --quiet -c CLP.$*
+
+.curry/pakcs/%.pl: .curry/%.fcy
+	rm -f $@ && "$(PAKCS)" --quiet -c $*
 
 meta/.curry/pakcs/%.pl: meta/.curry/%.fcy
 	rm -f $@ && "$(PAKCS)" --quiet -c $*
@@ -103,10 +103,6 @@ htmlindex:
 	@"$(CURRYDOC)" --onlyindexhtml "$(LIBDOCDIR)" $(LIB_NAMES)
 
 # generate individual documentations for libraries:
-%.html: ../%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
-
 meta/%.html: ../meta/%.curry
 	@touch DOINDEX
 	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
@@ -114,6 +110,10 @@ meta/%.html: ../meta/%.curry
 CLP.%.html: ../CLP/%.curry
 	@touch DOINDEX
 	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
+
+%.html: ../%.curry
+	@touch DOINDEX
+	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
@@ -128,16 +128,16 @@ texdoc: $(LIB_CURRY)
 	@cd "$(TEXDOCDIR)" && rm -f meta
 
 # generate individual LaTeX documentations for libraries:
-%.tex: $(LIBDIR)/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
-	touch LAST
-
 meta/%.tex: $(LIBDIR)/meta/%.curry
 	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
 	touch LAST
 
 CLP.%.tex: $(LIBDIR)/CLP/%.curry
 	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$*
+	touch LAST
+
+%.tex: $(LIBDIR)/%.curry
+	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
 	touch LAST
 
 
