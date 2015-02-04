@@ -42,7 +42,7 @@ type Precs = [(QName,(CFixity,Int))]
 --- the precedences of the operators in the <code>Prelude</code> module
 --- @return a list of precedences
 preludePrecs :: Precs
-preludePrecs = 
+preludePrecs =
     [(("Prelude","!!"),(CInfixlOp,9)),(("Prelude","."),(CInfixrOp,9)),
      (("Prelude","mod"),(CInfixlOp,7)),(("Prelude","div"),(CInfixlOp,7)),
      (("Prelude","*"),(CInfixlOp,7)),(("Prelude","-"),(CInfixlOp,6)),
@@ -65,16 +65,16 @@ preludePrecs =
 -- ----------------------------------------------------------------------------+
 
 --- (prettyCProg w prog) pretty prints the curry prog <code>prog</code> and
---- fits it to a page width of <code>w</code> characters. 
+--- fits it to a page width of <code>w</code> characters.
 --- @param w - width of page
 --- @param prog - a curry prog
 --- @return a string, which represents the <code>prog</code>
 prettyCProg :: Int -> CurryProg -> String
 prettyCProg w = pretty w . cprogDoc
 
---- (prettyCTypeExpr mod typeExpr) pretty prints the type expression 
+--- (prettyCTypeExpr mod typeExpr) pretty prints the type expression
 --- <code>typeExpr</code> of the module <code>mod</code> and fits it to a page
---- width of 78 characters. 
+--- width of 78 characters.
 --- @param mod - module name of the current module
 --- @param typeExpr - a type expression
 --- @return a string, which represents the <code>typeExpr</code>
@@ -83,7 +83,7 @@ prettyCTypeExpr mod = pretty 78 . typeExprDoc mod 0
 
 --- (prettyCTypes mod typeDecls) pretty prints the type declarations
 --- <code>typeDecls</code> of the module <code>mod</code> and fits it to a page
---- width of 78 characters. 
+--- width of 78 characters.
 --- @param mod - module name of the current module
 --- @param typeDecls - a list of type declarations
 --- @return a string, which represents the <code>typeDecls</code>
@@ -109,7 +109,7 @@ showCProg = prettyCProg 78
 --- untyped Abstract Curry program.
 --- main is suitable for an initial expression (:save main).<br><br>
 --- <code>usage: prettyabstract [--uacy] &lt;modulname&gt;</code><br>
---- <code>--uacy : use untyped Abstract Curry program instead 
+--- <code>--uacy : use untyped Abstract Curry program instead
 ---                of typed Abstract Curry program</code>
 main :: IO()
 main = do
@@ -129,19 +129,19 @@ main = do
     usage = do
         putStrLn "usage: prettyabstract [--uacy] <modulname>"
         putStrLn "--uacy : use untyped Abstract Curry program instead of typed Abstract Curry program"
-        
+
     checkMod m
         | "-" == take 1 m = False
         | otherwise = checkMod' $ reverse m
-        
+
     checkMod' "" = True
     checkMod' (c:cs)
         | c == '/' = True
         | otherwise = c /= '.' && checkMod' cs
-         
+
 
 --- (printCProg modulname) pretty prints the typed Abstract Curry program of
---- <code>modulname</code> produced by <code>AbstractCurry.readCurry</code> and 
+--- <code>modulname</code> produced by <code>AbstractCurry.readCurry</code> and
 --- fits it to a page width of 78 characters.
 --- The output is standard io.
 --- @param modulname - the file name without suffix ".curry" or ".acy"
@@ -149,7 +149,7 @@ printCProg :: String -> IO ()
 printCProg modulname = readCurry modulname >>= putStrLn . showCProg
 
 --- (printUCProg modulname) pretty prints the untyped Abstract Curry program of
---- <code>modulname</code> produced by <code>AbstractCurry.readUntypedCurry</code> 
+--- <code>modulname</code> produced by <code>AbstractCurry.readUntypedCurry</code>
 --- and fits it to a page width of 78 characters.
 --- The output ist standard io.
 --- @param modulname - the file name without suffix ".curry" or ".uacy"
@@ -164,8 +164,8 @@ cprogDoc :: CurryProg -> Doc
 cprogDoc = cprogDocWithPrecedences preludePrecs
 
 --- (cprogDocWithPrecedences precs prog) creates a document of the curry prog
---- <code>prog</code> and fits it to a page width of 78 characters, 
---- the precedences <code>precs</code> ensure a correct bracketing 
+--- <code>prog</code> and fits it to a page width of 78 characters,
+--- the precedences <code>precs</code> ensure a correct bracketing
 --- of infix operators
 --- @param precs - a list of precedences
 --- @param prog - a curry prog
@@ -182,7 +182,7 @@ cprogDocWithPrecedences ps cprog@(CurryProg name imps types funcs ops)
 --- @return a list of precedences
 precs :: [COpDecl] -> Precs
 precs = map (\(COp name fix i) -> (name,(fix,i)))
-    
+
 -- -------------------------------layout--------------------------------------
 
 d1 <$>> d2 | isEmpty d1 = d2
@@ -192,7 +192,7 @@ d1 <$>> d2 | isEmpty d1 = d2
 def :: Doc -> [CTVarIName] -> Doc -> Doc
 def name params body = block (name <> paramDoc <$> body)
  where
-  paramDoc = if null params then empty 
+  paramDoc = if null params then empty
               else space <> align (fillSep (map varDoc params))
 
 block :: Doc -> Doc
@@ -201,7 +201,7 @@ block = group . hang 1
 app :: Doc -> [Doc] -> Doc
 app d ds = if null ds then d
             else block (fillEncloseSep empty empty space (d:ds))
-            
+
 par mPrec = if isJust mPrec then parens else id
 
 precFillEncloseSep :: Bool -> (CFixity,Int) -> Maybe (CFixity,Int) -> Doc -> Doc -> Doc -> [Doc] -> Doc
@@ -210,7 +210,7 @@ precFillEncloseSep amILeft p1 mp2 l r s ds
   | otherwise = fillEncloseSep (pre p1 p2 l) (pre p1 p2 r) s ds
  where
   p2 = fromJust mp2
-  
+
   pre (fO,pO) (fI,pI) br
    | pO>pI = empty
    | pO<pI = br
@@ -228,14 +228,14 @@ layout = align . compose (combine (linesep "; "))
 qname :: String -> QName -> Doc
 qname prog mn@(mod,name)
   | mn == (prelude,"[]") || isTupleName mn = text name
-  | isInfixName mn = 
+  | isInfixName mn =
       if mod == prog || mod == prelude || not qualifiedNames
        then parens (text name)
        else parens (text mod <> dot <> (text name))
   | otherwise
     = if mod == prog || mod == prelude || not qualifiedNames
-       then text (correctName name) 
-       else text mod <> dot <> (text name)
+       then text name
+       else text mod <> dot <> text name
 
 isTupleName :: QName -> Bool
 isTupleName (mod,name) = mod == prelude && elem (take 2 name) ["()","(,"]
@@ -246,23 +246,16 @@ isInfixName (_,n) = all (`elem` infixIDs) n
 infixIDs :: String
 infixIDs =  "~!@#$%^&*+-=<>?./|\\:"
 
-correctName :: String -> String
-correctName name = 
-  let name' = filter (not . flip elem ['#','.']) name
-  in
-  case name' of 
-       ('_':xs) -> xs
-       _        -> name'
-
 varDoc :: CTVarIName  -> Doc
 varDoc = text . snd
 
 tvarDoc :: CTVarIName -> Doc
-tvarDoc (i,v)
-  | v /= "" && '_' /= head v || v == "_" = text v
-  | i>25      = text ("x" ++ show i)
-  | otherwise = text [chr (97+i)]
-  
+tvarDoc (i, v)
+  | v /= "" && '_' /= head v = text v
+  | v == "_"  = text v
+  | i > 25    = text ('x' : show i)
+  | otherwise = char (chr (97 + i))
+
 litDoc :: CLiteral -> Doc
 litDoc (CIntc n) = int n
 litDoc (CFloatc x) = float x
@@ -311,11 +304,11 @@ opLineDoc :: [COpDecl] -> Doc
 opLineDoc [] = empty
 opLineDoc ops@(COp _ fix prec:_) =
     text "infix" <> fixDoc fix <+> int prec <+> align (hsep (punctuate comma (map opDoc ops)))
-  where     
+  where
     fixDoc CInfixOp = empty
     fixDoc CInfixlOp = text "l"
     fixDoc CInfixrOp = text "r"
-    
+
 eqCOpDecl :: COpDecl -> COpDecl -> Bool
 eqCOpDecl (COp _ fix1 prec1) (COp _ fix2 prec2) =
     fix1 == fix2 && prec1 == prec2
@@ -348,9 +341,9 @@ consDeclsDoc mod consDecls
 consDeclDoc :: String -> CConsDecl -> Doc
 consDeclDoc mod (CCons name _ _ args)
   = app (qname mod name) (map (typeExprDoc mod 2) args)
-  
+
 -- p == 0 -> parent is list / tuple / this is function result
--- p == 1 -> parent is CFuncType 
+-- p == 1 -> parent is CFuncType
 -- p == 2 -> parent is CTCons
 typeExprDoc :: String -> Int -> CTypeExpr -> Doc
 typeExprDoc _ _ (CTVar n) = tvarDoc n
@@ -359,29 +352,29 @@ typeExprDoc mod p (CTCons name args)
   | null args = qname mod name
   | name == (prelude,"[]") = brackets (typeExprDoc mod 0 (head args))
   | isTupleName name = tupled (map (typeExprDoc mod 0) args)
-  | otherwise 
+  | otherwise
     = (if p == 2 then parens else id) $ app (qname mod name) (map (typeExprDoc mod 2) args)
 
 typeExprDoc mod p typ@(CFuncType _ _)
   = (if p > 0 then parens else id) $ fillEncloseSep empty empty (space<>arrow<>space)
-     (map (typeExprDoc mod 1) (argTypes typ) ++ 
+     (map (typeExprDoc mod 1) (argTypes typ) ++
       [typeExprDoc mod 0 (resultType typ)])
 
 --typeExprDoc mod _ (CRecordType fields mName) =
---    fillEncloseSep lbrace 
+--    fillEncloseSep lbrace
 --                   (maybe rbrace nDoc mName)
---                   comma 
+--                   comma
 --                   (map (fieldDoc dcolon (typeExprDoc mod 0)) fields)
 --  where
---      nDoc n = space <> bar <+> tvarDoc n <> rbrace  
-      
+--      nDoc n = space <> bar <+> tvarDoc n <> rbrace
+
 isUntyped :: CTypeExpr -> Bool
-isUntyped typ = 
+isUntyped typ =
     case typ of
         (CTCons ("Prelude","untyped") []) -> True
         _ -> False
-        
-        
+
+
 -- -------------------------------function and localDecls----------------------
 
 funcsDoc :: Precs -> String -> [CFuncDecl] -> Doc
@@ -395,7 +388,7 @@ funcDoc pr mod (CFunc name _ _ typ rules) =
 funcDoc pr mod (CmtFunc cmt name ar vis typ rules) =
   vsep (map (\l->text ("--- "++l)) (lines cmt)) <$>
   funcDoc pr mod (CFunc name ar vis typ rules)
-    
+
 hasRec :: CTypeExpr -> Bool
 hasRec (CTVar _) = False
 hasRec (CFuncType t1 t2) = hasRec t1 || hasRec t2
@@ -409,8 +402,8 @@ localDeclDoc :: Precs -> String -> CLocalDecl -> Doc
 localDeclDoc pr mod (CLocalFunc f) = funcDoc pr mod f
 localDeclDoc pr mod (CLocalPat  pn e lds) =
     hang 1 $ patternDoc mod pn <+> equals <+> expDoc unknown pr Nothing mod e <>
-             if null lds 
-                then empty 
+             if null lds
+                then empty
                 else line <> text "where" <+> localDeclsDoc pr mod lds
 localDeclDoc _ _ (CLocalVar vn) = hang 1 $ tvarDoc vn <+> text "free"
 
@@ -432,13 +425,13 @@ rulesDoc :: Precs -> String -> QName -> CRules -> Doc
 rulesDoc pr mod name (CRules _ rules) =
     vsep (map (ruleDoc pr mod name) rules)
 rulesDoc _ mod name (CExternal _) =
-    qname mod name <+> text "external" 
+    qname mod name <+> text "external"
 
 
 ruleDoc :: Precs -> String -> QName -> CRule -> Doc
 ruleDoc pr mod name (CRule patterns choices localDecls) -- (CRule args body)
     | fst (head choices) ==  CSymbol ("Prelude","success")
-          =  hang 2 $ (group $ hang 2 ((nameAndParam <+> 
+          =  hang 2 $ (group $ hang 2 ((nameAndParam <+>
                    equals <$> align (expDoc unknown pr Nothing mod (snd (head choices))))))
             <> whereDoc
     | otherwise = hang 2 (hang 2 (nameAndParam <$> align (vsep (map choiceDoc choices))) <> whereDoc)
@@ -447,11 +440,11 @@ ruleDoc pr mod name (CRule patterns choices localDecls) -- (CRule args body)
         if isInfixName name && length patterns == 2
             then patternDoc mod (patterns!!0) <+> text (snd name) <+> patternDoc mod (patterns!!1)
             else qname mod name <> paramDoc
-  
-    paramDoc = if null patterns 
-                     then empty 
+
+    paramDoc = if null patterns
+                     then empty
                  else space <> patternsDoc mod patterns
-    choiceDoc (e1,e2) = text "|" <+> align (expDoc unknown pr Nothing mod e1) <+> 
+    choiceDoc (e1,e2) = text "|" <+> align (expDoc unknown pr Nothing mod e1) <+>
                         equals <+> (expDoc unknown pr Nothing mod e2)
     whereDoc = if null localDecls
                   then empty
@@ -461,14 +454,14 @@ ruleDoc pr mod name (CRule patterns choices localDecls) -- (CRule args body)
 -- -------------------------------expressions----------------------------------
 
 expDoc :: Bool -> Precs -> Maybe (CFixity,Int) -> String -> CExpr -> Doc
-expDoc amILeft pr mPrec mod exp = 
+expDoc amILeft pr mPrec mod exp =
   maybe (maybe (expDoc2 amILeft pr mPrec mod exp)
           (\l -> list (map (expDoc unknown pr Nothing mod) l))
           (toList exp))
     (\s -> if null s then text "[]" else dquotes (text s))
       (toString exp)
 
-          
+
 toList :: CExpr -> Maybe [CExpr]
 toList exp
   = case exp of
@@ -490,32 +483,32 @@ expDoc2 _ _ mPrec _ (CLit l) = showPrecs l mPrec <> litDoc l
 expDoc2 _ _ mPrec mod (CSymbol qn) = showPrecs qn mPrec <> qname mod qn
 
 expDoc2 _ pr mPrec mod (CLetDecl bs e)
-  = par mPrec $ hang 1 $ 
-     text "let" <+> localDeclsDoc pr mod bs <$> 
+  = par mPrec $ hang 1 $
+     text "let" <+> localDeclsDoc pr mod bs <$>
      text "in" <+> expDoc unknown pr Nothing mod e
 
 expDoc2 _ pr mPrec mod (CCase e bs)
-  = par mPrec $ hang 1 $ 
-     text "case" <+> align (expDoc unknown pr Nothing mod e) 
+  = par mPrec $ hang 1 $
+     text "case" <+> align (expDoc unknown pr Nothing mod e)
        <+> text "of" <$> layout (map (branchDoc pr mod) bs)
 
 expDoc2 _ pr mPrec mod (CLambda ps e)
-  = par mPrec $ hang 1 $ 
+  = par mPrec $ hang 1 $
      backslash  <+> patternsDoc mod ps
        <+> arrow <+> expDoc unknown pr Nothing mod e
 
 expDoc2 amILeft pr mPrec mod (CApply e1 e2)
     | maybe False isTupleName mfname = tupled (map (expDoc unknown pr Nothing mod) fargs)
     | maybe False isInfixName mfname && length fargs == 2
-       = showPrecs (snd fname) (amILeft,pOp, mPrec) <> 
+       = showPrecs (snd fname) (amILeft,pOp, mPrec) <>
          (align $ precFillEncloseSep amILeft pOp mPrec lbr rbr empty
-                 [expDoc True pr (Just pOp) mod (fargs!!0) 
+                 [expDoc True pr (Just pOp) mod (fargs!!0)
                  ,space <> text (snd fname)
                  ,space <> expDoc False pr (Just pOp) mod (fargs!!1)])
     | maybe False isInfixName mfname && length fargs > 2
        = appPar True mPrec $
          app (fillEncloseSep lparen rparen empty
-                 [expDoc  True pr (Just pOp) mod (fargs!!0) 
+                 [expDoc  True pr (Just pOp) mod (fargs!!0)
                  ,space <> text (snd fname)
                  ,space <> expDoc False pr (Just pOp) mod (fargs!!1)])
              (map (expDoc False pr (Just (unknown,11)) mod) (drop 2 fargs))
@@ -525,76 +518,76 @@ expDoc2 amILeft pr mPrec mod (CApply e1 e2)
         appPar True mPrec $ hang 1 $
         app (parens ifThenElse)
             (map (expDoc False pr (Just (unknown,11)) mod) (drop 3 fargs))
-    | otherwise = showPrecs (name (CApply e1 e2)) mPrec <> (appPar (not (null fargs)) mPrec $ 
-                  app (expDoc False pr (Just (unknown,11)) mod (name (CApply e1 e2))) 
+    | otherwise = showPrecs (name (CApply e1 e2)) mPrec <> (appPar (not (null fargs)) mPrec $
+                  app (expDoc False pr (Just (unknown,11)) mod (name (CApply e1 e2)))
                       (map (expDoc False pr (Just (unknown,11)) mod) fargs))
-   
- where    
- 
+
+ where
+
     appPar _ Nothing = id
     appPar br (Just fNp)
         | snd fNp == 11 && br = parens
         | otherwise = id
-    
-    ifThenElse = 
+
+    ifThenElse =
         text "if" <+> align (expDoc unknown pr Nothing mod (fargs!!0)) <$>
         text "then" <+> align (expDoc unknown pr Nothing mod (fargs!!1)) <$>
         text "else" <+> align (expDoc unknown pr Nothing mod (fargs!!2))
- 
+
     fname = maybe ("","") id mfname
- 
+
     mfname = case name (CApply e1 e2) of
                 CSymbol qn -> Just qn
                 _          -> Nothing
     fargs = args (CApply e1 e2)
- 
+
     name e = case e of
         (CApply e' _) -> name e'
         _ -> e
     args e = case e of
         (CApply e1' e2') -> args e1' ++ [e2']
         _ -> []
-        
+
     (lbr,rbr) = if isJust mPrec then (lparen,rparen) else (empty,empty)
     pOp = case lookup fname pr of
                Just p' -> p'
-               Nothing -> (CInfixlOp,9) 
-        
+               Nothing -> (CInfixlOp,9)
+
 
 expDoc2 _ pr mPrec mod (CDoExpr stms)
   = par mPrec $
       text "do" <+> layout (map (statementDoc pr mod) stms)
 
 expDoc2 _ pr _ mod (CListComp e stms)
-  = brackets $ expDoc unknown pr Nothing mod e <+> text "|" <+> 
+  = brackets $ expDoc unknown pr Nothing mod e <+> text "|" <+>
                encloseSep empty empty comma (map (statementDoc pr mod) stms)
-               
+
 --expDoc2 _ pr _ mod (CRecConstr fields)
---  = fillEncloseSep lbrace 
+--  = fillEncloseSep lbrace
 --                   rbrace
---                   comma 
+--                   comma
 --                   (map (fieldDoc equals (expDoc unknown pr Nothing mod)) fields)
---                   
+--
 --expDoc2 _ pr mPrec mod (CRecSelect exp label)
 --  = par mPrec $ expDoc False pr (Just (unknown,11)) mod exp <+> arrow <+> text label
---  
+--
 --expDoc2 _ pr _ mod (CRecUpdate fields exp)
---  = fillEncloseSep lbrace 
+--  = fillEncloseSep lbrace
 --                   (space <> bar <+> expDoc unknown pr Nothing mod exp <> rbrace)
---                   comma 
+--                   comma
 --                   (map (fieldDoc (colon<>equals) (expDoc unknown pr Nothing mod)) fields)
-   
+
 
 --fieldDoc :: Doc -> (a -> Doc) -> (CField a) -> Doc
 --fieldDoc sep toDoc (label,x) = text label <+> sep <+> toDoc x
 
 statementDoc :: Precs -> String -> CStatement -> Doc
-statementDoc pr mod (CSExpr e) = hang 1 $ expDoc False pr Nothing mod e 
-statementDoc pr mod (CSPat p e) = 
+statementDoc pr mod (CSExpr e) = hang 1 $ expDoc False pr Nothing mod e
+statementDoc pr mod (CSPat p e) =
     hang 1 $ patternDoc mod p <+> text "<-" <+> expDoc False pr Nothing mod e
 statementDoc pr mod (CSLet localDecls) =
     text "let" <+> localDeclsDoc pr mod localDecls
-    
+
 
 branchDoc :: Precs -> String -> CBranchExpr -> Doc
 branchDoc pr mod (CBranch pat e)
@@ -609,27 +602,27 @@ patternDoc :: String -> CPattern -> Doc
 patternDoc _ (CPVar vname) = tvarDoc vname
 patternDoc _ (CPLit l) = litDoc l
 patternDoc mod cpc@(CPComb qn pns)
-   | isJust mStringPatt = if null stringPatt 
-                                 then text "[]" 
+   | isJust mStringPatt = if null stringPatt
+                                 then text "[]"
                                  else dquotes (text stringPatt)
    | isJust mListPatt = listDoc (map (patternDoc mod) listPatt)
    | null pns = qname mod qn
    | isTupleName qn = tupleDoc (map (patternDoc mod) pns)
-   | isInfixName qn && length pns == 2 = 
-        parens $ patternDoc mod (pns!!0)  <+> 
+   | isInfixName qn && length pns == 2 =
+        parens $ patternDoc mod (pns!!0)  <+>
                  text (snd qn) <+>
                  patternDoc mod (pns!!1)
    | otherwise = parens (qname mod qn <+> group (hang 0 (vsep (map (patternDoc mod) pns))))
   where
       listDoc = fillEncloseSep lbracket rbracket (space<>comma)
       tupleDoc = fillEncloseSep lparen rparen (space<>comma)
-  
+
       mListPatt = toListPattern cpc
       mStringPatt = toStringPattern cpc
-      
+
       listPatt = fromJust mListPatt
       stringPatt = fromJust mStringPatt
-      
+
 patternDoc mod (CPAs vn p) = tvarDoc vn <> text "@" <> patternDoc mod p
 patternDoc mod (CPFuncComb qn pns)
    | null pns = qname mod qn
@@ -638,9 +631,9 @@ patternDoc mod (CPFuncComb qn pns)
    | otherwise = parens (qname mod qn <+> hsep (map (patternDoc mod) pns))
 --patternDoc mod (CPLazy pn) = text "~" <> patternDoc mod pn
 --patternDoc mod (CPRecord fields mPatt) =
---    fillEncloseSep lbrace 
+--    fillEncloseSep lbrace
 --                   (maybe rbrace pattDoc mPatt)
---                   comma 
+--                   comma
 --                   (map (fieldDoc equals (patternDoc mod)) fields)
 --  where
 --      pattDoc p = space <> bar <+> patternDoc mod p <> rbrace

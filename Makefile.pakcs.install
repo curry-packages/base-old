@@ -75,9 +75,6 @@ KeyDB.curry: $(LIBTRUNKDIR)/KeyDB.curry.$(CURRYSYSTEM)
 KeyDatabase.curry: $(LIBTRUNKDIR)/KeyDatabase.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-KeyDatabaseSQLite.curry: $(LIBTRUNKDIR)/KeyDatabaseSQLite.curry.$(CURRYSYSTEM)
-	cp $< $@
-
 PlProfileData.curry: $(LIBTRUNKDIR)/PlProfileData.curry.$(CURRYSYSTEM)
 	cp $< $@
 

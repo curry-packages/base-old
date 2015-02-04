@@ -52,7 +52,7 @@
 <div class="span3">
   <div class="well sidebar-nav">
     <ul class="nav nav-list">
-     <li><a href="https://www-ps.informatik.uni-kiel.de/kics2/currygle/" target="_blank"><i class="fa fa-external-link"></i> API Search / Curr(y)gle</a></li>
+     <li><a href="https://www-ps.informatik.uni-kiel.de/kics2/currygle/" target="_blank"><i class="fa fa-external-link"></i> Search with Curr(y)gle</a></li>
      <li><a href="#general">General libraries</a></li>
      <li><a href="#algorithms">Data structures and algorithms</a></li>
      <li><a href="#web">Libraries for web applications</a></li>
@@ -328,11 +328,6 @@ to support a simple implementation of parsers in Curry.
 It is adapted from Rafael Caballero and Francisco J. Lopez-Fraguas:
 A Functional Logic Perspective of Parsing,
 Proc. FLOPS'99, Springer LNCS 1722, pp. 85-99, 1999
-</dd>
-
-<dt><code><a href="CDOC/Prolog.html">Prolog</a></code></dt>
-<dd>
-A library to represent Prolog programs.
 </dd>
 
 <dt><code><a href="CDOC/Ports.html">Ports</a></code></dt>
