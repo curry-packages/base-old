@@ -1,6 +1,8 @@
 ------------------------------------------------------------------------
 --- This module provides some useful functions to write programs
 --- that generate AbstractCurry programs more compact and readable.
+---
+--- @version February 2015
 ------------------------------------------------------------------------
 
 module AbstractCurryGoodies where
@@ -60,6 +62,17 @@ dateType = baseType ("Time", "CalendarTime")
 ------------------------------------------------------------------------
 -- Goodies to analyze type expressions
 
+--- Returns the name of a given type declaration
+typeName :: CTypeDecl -> QName
+typeName (CTypeSyn n _ _ _) = n
+typeName (CType n    _ _ _) = n
+
+--- Returns true if the type expression is a base type.
+isBaseType :: CTypeExpr -> Bool
+isBaseType texp = case texp of
+  CTCons (m,name) args -> null args
+  _                    -> False
+
 --- Returns true if the type expression contains type variables.
 isPolyType :: CTypeExpr -> Bool
 isPolyType (CTVar                _) = True
@@ -88,6 +101,12 @@ isIOReturnType (CTCons tc typelist) =
   tc==pre "IO" && head typelist /= CTCons (pre "()") []
   && not (isFunctionalType (head typelist))
 isIOReturnType (CRecordType    _ _) = False
+
+--- Returns all type variables occurring in a type expression.
+tvarsOfType :: CTypeExpr -> [CTVarIName]
+tvarsOfType (CTVar v) = [v]
+tvarsOfType (CFuncType t1 t2) = tvarsOfType t1 ++ tvarsOfType t2
+tvarsOfType (CTCons _ args) = concatMap tvarsOfType args
 
 --- Returns all modules used in the given type.
 modsOfType :: CTypeExpr -> [String]
@@ -124,6 +143,10 @@ noGuard e = (CSymbol (pre "success"), e)
 applyF :: QName -> [CExpr] -> CExpr
 applyF f es = foldl CApply (CSymbol f) es 
 
+--- An application of an expression to a list of arguments.
+applyE :: CExpr -> [CExpr] -> CExpr
+applyE f args = foldl CApply f args
+
 --- A constant, i.e., an application without arguments.
 constF :: QName -> CExpr
 constF f = applyF f []
@@ -156,12 +179,24 @@ tuplePattern ps
   | otherwise = CPComb (pre ('(' : take (l-1) (repeat ',') ++ ")")) ps
  where l = length ps
 
+--- Constructs, for given n, a list of n PVars starting from 0.
+pVars :: Int -> [CPattern]
+pVars n = [CPVar (i,"x"++show i) | i<-[0..n-1]] 
+
+--- Converts a character into a pattern.
+pChar :: Char -> CPattern
+pChar x = CPLit (CCharc x)
+
+--- Constructs an empty list pattern.
+pNil :: CPattern
+pNil = CPComb (pre "[]") []
+
 --- Constructs a list pattern from list of component patterns.
 listPattern :: [CPattern] -> CPattern
-listPattern []     = CPComb (pre "[]") []
+listPattern []     = pNil
 listPattern (p:ps) = CPComb (pre ":") [p, listPattern ps]
 
---- Constructs a string into a pattern representing this string.
+--- Converts a string into a pattern representing this string.
 stringPattern :: String -> CPattern
 stringPattern = listPattern . map (CPLit . CCharc)
 
@@ -171,6 +206,10 @@ list2ac :: [CExpr] -> CExpr
 list2ac []     = constF (pre "[]")
 list2ac (c:cs) = applyF (pre ":") [c, list2ac cs]
 
+--- Converts a character into an AbstractCurry expression.
+cChar :: Char -> CExpr
+cChar x = CLit (CCharc x)
+
 --- Converts a string into an AbstractCurry represention of this string.  
 string2ac :: String -> CExpr
 string2ac = list2ac . map (CLit . CCharc)
@@ -179,9 +218,19 @@ string2ac = list2ac . map (CLit . CCharc)
 pre :: String -> QName
 pre f = ("Prelude", f)
 
+--- Tests whether a module name is the prelude.
+isPrelude :: String -> Bool
+isPrelude m = m=="Prelude"
+
+--- Converts an index i into a variable named xi.
+toVar :: Int -> CExpr
+toVar i = CVar (1,"x"++show i)
+
+--- Converts a string into a variable with index 1.
 cvar :: String -> CExpr
 cvar s = CVar (1,s)
 
+--- Converts a string into a type variable with index 1.
 ctvar :: String -> CTypeExpr
 ctvar s = CTVar (1,s)
 
