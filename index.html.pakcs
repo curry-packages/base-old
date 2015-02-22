@@ -114,6 +114,18 @@ Curry module tester "currytest".
 This library contains some useful functions on characters.
 </dd>
 
+<dt><code><a href="CDOC/CHR.html">CHR</a></code></dt>
+<dd>
+This library defines CHR(Curry), a representation of CHR rules in Curry,
+an interpreter for CHR rules, and a compiler into CHR(Prolog).
+</dd>
+
+<dt><code><a href="CDOC/CHRcompiled.html">CHRcompiled</a></code></dt>
+<dd>
+This library defines the structure of CHR goals and some constructors
+to be used in compiled CHR(Curry) rules.
+</dd>
+
 <dt><code><a href="CDOC/CLPFD.html">CLPFD</a></code></dt>
 <dd>
 This library supports constraint programming with
