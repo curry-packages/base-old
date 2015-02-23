@@ -178,8 +178,8 @@ data PrimConstraint a = Eq a a -- equality
                       | Neq a a -- disequality
                       | Fail   -- always unsatisfiable
                       | Compare (a -> a -> Bool) a a -- ordering constraint
-                      | Nonvar a -- unbound variable
                       | Ground a -- ground value
+                      | Nonvar a -- not an unbound variable
                       | AnyPrim (() -> Success) -- user-defined primitive
 
 --- Transforms a primitive constraint into a CHR goal.
@@ -210,13 +210,13 @@ x .<. y = primToGoal (Compare (<) x y)
 (.>.) :: dom -> dom -> Goal dom chr
 x .>. y = primToGoal (Compare (>) x y)
 
---- Primitive nonvar constraint (useful for guards).
-nonvar :: dom -> Goal dom chr
-nonvar x = primToGoal (Nonvar x)
-
 --- Primitive groundness constraint (useful for guards).
 ground :: dom -> Goal dom chr
 ground x = primToGoal (Ground x)
+
+--- Primitive nonvar constraint (useful for guards).
+nonvar :: dom -> Goal dom chr
+nonvar x = primToGoal (Nonvar x)
 
 --- Embed user-defined primitive constraint.
 anyPrim :: (() -> Success) -> Goal dom chr
