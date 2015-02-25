@@ -1,7 +1,7 @@
 # directory containing the repository library files:
 LIBTRUNKDIR=$(ROOT)/lib-trunk
 # specific PAKCS libraries:
-PAKCSONLYLIBS = CLPB.curry CLPFD.curry CLPR.curry CLP/R.curry CLP/FD.curry \
+PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry CLPFD.curry CLPR.curry CLP/R.curry CLP/FD.curry \
 	        Database.curry Dynamic.curry Findall.curry \
 		GlobalVariable.curry KeyDB.curry KeyDatabase.curry \
 		PlProfileData.curry Ports.curry 
@@ -37,6 +37,12 @@ AllSolutions.curry: $(LIBTRUNKDIR)/AllSolutions.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 CLPB.curry: $(LIBTRUNKDIR)/CLPB.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+CHR.curry: $(LIBTRUNKDIR)/CHR.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+CHRcompiled.curry: $(LIBTRUNKDIR)/CHRcompiled.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 CLPFD.curry: $(LIBTRUNKDIR)/CLPFD.curry.$(CURRYSYSTEM)
