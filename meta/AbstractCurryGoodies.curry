@@ -64,21 +64,21 @@ dateType = baseType ("Time", "CalendarTime")
 
 --- Returns the name of a given type declaration
 typeName :: CTypeDecl -> QName
+typeName (CType    n _ _ _) = n
 typeName (CTypeSyn n _ _ _) = n
-typeName (CType n    _ _ _) = n
+typeName (CNewType n _ _ _) = n
 
 --- Returns true if the type expression is a base type.
 isBaseType :: CTypeExpr -> Bool
 isBaseType texp = case texp of
-  CTCons (m,name) args -> null args
-  _                    -> False
+  CTCons _ args -> null args
+  _             -> False
 
 --- Returns true if the type expression contains type variables.
 isPolyType :: CTypeExpr -> Bool
 isPolyType (CTVar                _) = True
 isPolyType (CFuncType domain range) = isPolyType domain || isPolyType range
 isPolyType (CTCons      _ typelist) = any isPolyType typelist
-isPolyType (CRecordType fields   _) = any isPolyType (map snd fields)
 
 --- Returns true if the type expression is a functional type.
 isFunctionalType :: CTypeExpr -> Bool
@@ -100,7 +100,6 @@ isIOReturnType (CFuncType      _ _) = False
 isIOReturnType (CTCons tc typelist) =
   tc==pre "IO" && head typelist /= CTCons (pre "()") []
   && not (isFunctionalType (head typelist))
-isIOReturnType (CRecordType    _ _) = False
 
 --- Returns all type variables occurring in a type expression.
 tvarsOfType :: CTypeExpr -> [CTVarIName]
@@ -113,7 +112,6 @@ modsOfType :: CTypeExpr -> [String]
 modsOfType (CTVar            _) = []
 modsOfType (CFuncType    t1 t2) = modsOfType t1 `union` modsOfType t2
 modsOfType (CTCons (mod,_) tys) = foldr union [mod] $ map modsOfType tys
-modsOfType (CRecordType flds _) = foldr union [] $ map (modsOfType . snd) flds
 
 ------------------------------------------------------------------------
 -- Goodies to construct function declarations
@@ -121,16 +119,14 @@ modsOfType (CRecordType flds _) = foldr union [] $ map (modsOfType . snd) flds
 --- Constructs a function declaration from a given qualified function name,
 --- arity, visibility, type expression and list of defining rules.
 cfunc :: QName -> Int -> CVisibility -> CTypeExpr -> [CRule] -> CFuncDecl
-cfunc name arity v t rules = 
-  CFunc name arity v t (CRules CFlex rules)
+cfunc = CFunc
 
 --- Constructs a function declaration from a given comment,
 --- qualified function name,
 --- arity, visibility, type expression and list of defining rules.
 cmtfunc :: String -> QName -> Int -> CVisibility -> CTypeExpr -> [CRule]
         -> CFuncDecl
-cmtfunc comment name arity v t rules = 
-  CmtFunc comment name arity v t (CRules CFlex rules)
+cmtfunc = CmtFunc
 
 --- Constructs a guarded expression with the trivial guard.
 noGuard :: CExpr -> (CExpr, CExpr)
@@ -212,7 +208,7 @@ cChar x = CLit (CCharc x)
 
 --- Converts a string into an AbstractCurry represention of this string.  
 string2ac :: String -> CExpr
-string2ac = list2ac . map (CLit . CCharc)
+string2ac s = CLit (CStringc s)
 
 --- Converts a string into a qualified name of the Prelude.
 pre :: String -> QName
