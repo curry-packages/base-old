@@ -301,7 +301,10 @@ readAbstractCurryFile filename = do
  where
    readExistingACY fname = do
      filecontents <- readFile fname
-     return (readUnqualifiedTerm ["AbstractCurry","Prelude"] filecontents)
+     let (line1,lines) = break (=='\n') filecontents
+     if line1 == "{- "++version++" -}"
+      then return (readUnqualifiedTerm ["AbstractCurry","Prelude"] lines)
+      else error $ "AbstractCurry: incompatible file found: "++fname
 
 --- Tries to read an AbstractCurry file and returns
 ---
