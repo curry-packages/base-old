@@ -7,9 +7,9 @@
 --- @author Stefan Junge
 --- @version June 2011
 -------------------------------------------------------------------------------
-module PrettyAbstract (showCProg, printCProg, cprogDoc,
+module PrettyAbstract (showCProg, cprogDoc,
                        prettyCProg, cprogDocWithPrecedences,
-                       printUCProg, preludePrecs, precs, prettyCTypeExpr,
+                       preludePrecs, precs, prettyCTypeExpr,
                        prettyCTypes, prettyCOps) where
 
 import Pretty
@@ -103,58 +103,6 @@ prettyCOps = pretty 78 . opsDoc
 showCProg :: CurryProg -> String
 showCProg = prettyCProg 78
 
---- main uses <code>printCProg</code> to pretty print a
---- typed Abstract Curry program and <code>printUCProg</code> to pretty print an
---- untyped Abstract Curry program.
---- main is suitable for an initial expression (:save main).<br><br>
---- <code>usage: prettyabstract [--uacy] &lt;modulname&gt;</code><br>
---- <code>--uacy : use untyped Abstract Curry program instead
----                of typed Abstract Curry program</code>
-main :: IO()
-main = do
-    args <- getArgs
-    case args of
-        --["--acy",m] -> if checkMod m
-        --                   then printCProg m
-        --                   else usage
-        ["--uacy",m] -> if checkMod m
-                            then printUCProg m
-                            else usage
-        [m] -> if checkMod m
-                   then printCProg m
-                   else usage
-        _ -> usage
-  where
-    usage = do
-        putStrLn "usage: prettyabstract [--uacy] <modulname>"
-        putStrLn "--uacy : use untyped Abstract Curry program instead of typed Abstract Curry program"
-
-    checkMod m
-        | "-" == take 1 m = False
-        | otherwise = checkMod' $ reverse m
-
-    checkMod' "" = True
-    checkMod' (c:cs)
-        | c == '/' = True
-        | otherwise = c /= '.' && checkMod' cs
-
-
---- (printCProg modulname) pretty prints the typed Abstract Curry program of
---- <code>modulname</code> produced by <code>AbstractCurry.readCurry</code> and
---- fits it to a page width of 78 characters.
---- The output is standard io.
---- @param modulname - the file name without suffix ".curry" or ".acy"
-printCProg :: String -> IO ()
-printCProg modulname = readCurry modulname >>= putStrLn . showCProg
-
---- (printUCProg modulname) pretty prints the untyped Abstract Curry program of
---- <code>modulname</code> produced by <code>AbstractCurry.readUntypedCurry</code>
---- and fits it to a page width of 78 characters.
---- The output ist standard io.
---- @param modulname - the file name without suffix ".curry" or ".uacy"
-printUCProg :: String -> IO ()
-printUCProg modulname = readUntypedCurry modulname >>= putStrLn . showCProg
-
 --- (cprogDoc prog) creates a document of the Curry program
 --- <code>prog</code> and fits it to a page width of 78 characters.
 --- @param prog - a curry prog
@@ -185,7 +133,7 @@ precs = map (\(COp name fix i) -> (name,(fix,i)))
 record :: Doc -> Doc
 record doc | isEmpty doc = braces empty
            | otherwise   = braces $ space <> doc <> space
-           
+
 commaSepList :: [Doc] -> Doc
 commaSepList = fillSep . punctuate comma
 
@@ -358,7 +306,7 @@ consDeclDoc mod (CRecord name _ fieldDecls)
 
 fieldDeclsDoc :: String -> CFieldDecl -> Doc
 fieldDeclsDoc mod (CField (_, name) _ ty)
-  = text name <+> doubleColon <+> typeExprDoc mod 2 ty
+  = text name <+> doubleColon <+> typeExprDoc mod 0 ty
 
 -- p == 0 -> parent is list / tuple / this is function result
 -- p == 1 -> parent is CFuncType
@@ -406,7 +354,7 @@ hasRec (CTCons _ ts) = any hasRec ts
 localDeclsDoc :: Precs -> String -> [CLocalDecl] -> Doc
 localDeclsDoc pr mod lds
   | null lds  = empty
-  | otherwise = line <>  text "where" 
+  | otherwise = line <>  text "where"
                      <+> align (vsep (punctuate line (map (localDeclDoc pr mod) lds)))
 
 localDeclDoc :: Precs -> String -> CLocalDecl -> Doc
@@ -448,7 +396,7 @@ rhsDoc pr mod eqOrArrow (CSimpleRhs e locals)
   =  eqOrArrow <+> expDoc unknown pr Nothing mod e
   <> localDeclsDoc pr mod locals
 rhsDoc pr mod eqOrArrow (CGuardedRhs guardedExprs locals)
-  =  vcat (map (guardedExprDoc pr mod eqOrArrow) guardedExprs) 
+  =  vcat (map (guardedExprDoc pr mod eqOrArrow) guardedExprs)
   <> localDeclsDoc pr mod locals
 
 guardedExprDoc :: Precs -> String -> Doc -> (CExpr, CExpr) -> Doc
@@ -572,7 +520,7 @@ expDoc2 _ pr mPrec mod (CCase ct e bs)
 
 expDoc2 _ pr mPrec mod (CTyped e ty)
   = par mPrec $
-      expDoc unknown pr Nothing mod e <+> doubleColon <+> typeExprDoc mod 2 ty
+      expDoc unknown pr Nothing mod e <+> doubleColon <+> typeExprDoc mod 0 ty
 
 expDoc2 _ pr mPrec mod (CRecConstr (_, name) cfields)
   = par mPrec $
@@ -584,26 +532,8 @@ expDoc2 _ pr mPrec mod (CRecUpdate e cfields)
   where
     expDoc' = expDoc unknown pr Nothing mod
 
---expDoc2 _ pr _ mod (CRecConstr fields)
---  = fillEncloseSep lbrace
---                   rbrace
---                   comma
---                   (map (fieldDoc equals (expDoc unknown pr Nothing mod)) fields)
---
---expDoc2 _ pr mPrec mod (CRecSelect exp label)
---  = par mPrec $ expDoc False pr (Just (unknown,11)) mod exp <+> arrow <+> text label
---
---expDoc2 _ pr _ mod (CRecUpdate fields exp)
---  = fillEncloseSep lbrace
---                   (space <> bar <+> expDoc unknown pr Nothing mod exp <> rbrace)
---                   comma
---                   (map (fieldDoc (colon<>equals) (expDoc unknown pr Nothing mod)) fields)
-
 fieldDoc :: (a -> Doc) -> CField a -> Doc
 fieldDoc expOrPatDoc ((_, name), x) = text name <+> equals <+> expOrPatDoc x
-
---fieldDoc :: Doc -> (a -> Doc) -> (CField a) -> Doc
---fieldDoc sep toDoc (label,x) = text label <+> sep <+> toDoc x
 
 statementDoc :: Precs -> String -> CStatement -> Doc
 statementDoc pr mod (CSExpr e) = hang 1 $ expDoc False pr Nothing mod e
@@ -656,14 +586,6 @@ patternDoc mod (CPLazy p) = text "~" <> patternDoc mod p
 patternDoc mod (CPRecord (_, name) cfields)
   = text name <+> record (commaSepList (map (fieldDoc (patternDoc mod)) cfields))
 
---patternDoc mod (CPRecord fields mPatt) =
---    fillEncloseSep lbrace
---                   (maybe rbrace pattDoc mPatt)
---                   comma
---                   (map (fieldDoc equals (patternDoc mod)) fields)
---  where
---      pattDoc p = space <> bar <+> patternDoc mod p <> rbrace
-
 toListPattern :: CPattern -> Maybe [CPattern]
 toListPattern patt
   = case patt of
@@ -678,5 +600,3 @@ toStringPattern patt
       CPComb ("Prelude",":") [CPLit (CCharc c),cs] ->
         toStringPattern cs >>- Just . (quoteChar c++)
       _ -> Nothing
-
--- end of PrettyAbstract
