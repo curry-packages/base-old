@@ -14,25 +14,27 @@ module PrettyAbstract (showCProg, printCProg, cprogDoc,
 
 import Pretty
 import AbstractCurry
+import AbstractCurryGoodies ( typeCons, typeName, typeVis, funcName, funcVis
+                            , consVis, argTypes, resultType)
 import Char
 import System
 import Maybe
 import List (groupBy)
 
 --- Should names from imported modules be shown with module prefixes?
+qualifiedNames :: Bool
 qualifiedNames = True --False
 
+debug :: Bool
 debug = False
 
+showPrecs :: a -> b -> Doc
 showPrecs name prec
     | debug = text ("{-" ++ show name ++ "@" ++ show prec ++ "-}")
     | otherwise = empty
 
+prelude :: String
 prelude = "Prelude"
-
-arrow = text "->"
-bar = char '|'
-dcolon = text "::"
 
 type Precs = [(QName,(CFixity,Int))]
 
@@ -180,8 +182,16 @@ cprogDocWithPrecedences ps cprog@(CurryProg name imps types funcs ops)
 precs :: [COpDecl] -> Precs
 precs = map (\(COp name fix i) -> (name,(fix,i)))
 
+record :: Doc -> Doc
+record doc | isEmpty doc = braces empty
+           | otherwise   = braces $ space <> doc <> space
+           
+commaSepList :: [Doc] -> Doc
+commaSepList = fillSep . punctuate comma
+
 -- -------------------------------layout--------------------------------------
 
+(<$>>) :: Doc -> Doc -> Doc
 d1 <$>> d2 | isEmpty d1 = d2
            | isEmpty d2 = d1
            | otherwise = d1 <$> line <> d2
@@ -199,6 +209,7 @@ app :: Doc -> [Doc] -> Doc
 app d ds = if null ds then d
             else block (fillEncloseSep empty empty space (d:ds))
 
+par :: Maybe a -> Doc -> Doc
 par mPrec = if isJust mPrec then parens else id
 
 precFillEncloseSep :: Bool -> (CFixity,Int) -> Maybe (CFixity,Int) -> Doc -> Doc -> Doc -> [Doc] -> Doc
@@ -254,12 +265,15 @@ tvarDoc (i, v)
   | otherwise = char (chr (97 + i))
 
 litDoc :: CLiteral -> Doc
-litDoc (CIntc n) = int n
-litDoc (CFloatc x) = float x
-litDoc (CCharc c) = squotes (text (quoteChar c))
+litDoc (CIntc    n) = int n
+litDoc (CFloatc  x) = float x
+litDoc (CCharc   c) = squotes (text (quoteChar c))
+litDoc (CStringc s) = text s
 
+quoteChar :: Char -> String
 quoteChar c = maybe [c] id (lookup c specialChars)
 
+specialChars :: [(Char, String)]
 specialChars = [('\\',"\\\\"),('\n',"\\n"),('\r',"\\r"),('\t',"\\t"),('"',"\\\"")]
 
 -- -------------------------------module header and exports-------------------
@@ -276,16 +290,16 @@ exportsDoc xs
 
 hasPrivate :: CurryProg -> Bool
 hasPrivate (CurryProg _ _ types funcs _) =
-    any (Private==) (map typeCVisibility types ++ map funcCVisibility funcs)
+    any (Private==) (map typeVis types ++ map funcVis funcs)
 
 exportedNames :: String -> CurryProg -> [Doc]
 exportedNames mod (CurryProg _ _ types funcs _)
-  = map typeExpDoc (filter ((Public==) . typeCVisibility) types)
- ++ map (qname mod . funcName) (filter ((Public==) . funcCVisibility) funcs)
+  = map typeExpDoc (filter ((Public==) . typeVis) types)
+ ++ map (qname mod . funcName) (filter ((Public==) . funcVis) funcs)
  where
   typeExpDoc tdecl =
-    let ecs = filter ((Public==) . consCVisibility)
-                     (trCType (\_ _ _ cs -> cs) (\_ _ _ _ -> []) tdecl)
+    let ecs = filter ((Public==) . consVis)
+                     (typeCons tdecl)
      in qname mod (typeName tdecl) <> if null ecs then empty else text "(..)"
 
 -- -------------------------------imports and ops------------------------------
@@ -324,10 +338,11 @@ typesDoc mod = vcat . map (typeDoc mod)
 typeDoc :: String -> CTypeDecl -> Doc
 typeDoc mod (CType name _ params cs)
   = def (text "data" <+> qname mod name) params (consDeclsDoc mod cs)
-
 typeDoc mod (CTypeSyn name _ params syn)
   = def (text "type" <+> qname mod name) params
         (equals <+> typeExprDoc mod 0 syn)
+typeDoc mod (CNewType name _ params c)
+  = def (text "newtype" <+> qname mod name) params (consDeclsDoc mod [c])
 
 consDeclsDoc :: String -> [CConsDecl] -> Doc
 consDeclsDoc mod consDecls
@@ -336,34 +351,30 @@ consDeclsDoc mod consDecls
                   $ map ((<>space) . consDeclDoc mod) consDecls
 
 consDeclDoc :: String -> CConsDecl -> Doc
-consDeclDoc mod (CCons name _ _ args)
+consDeclDoc mod (CCons name _ args)
   = app (qname mod name) (map (typeExprDoc mod 2) args)
+consDeclDoc mod (CRecord name _ fieldDecls)
+  = (qname mod name) <+> record (commaSepList (map (fieldDeclsDoc mod) fieldDecls))
+
+fieldDeclsDoc :: String -> CFieldDecl -> Doc
+fieldDeclsDoc mod (CField (_, name) _ ty)
+  = text name <+> doubleColon <+> typeExprDoc mod 2 ty
 
 -- p == 0 -> parent is list / tuple / this is function result
 -- p == 1 -> parent is CFuncType
 -- p == 2 -> parent is CTCons
 typeExprDoc :: String -> Int -> CTypeExpr -> Doc
 typeExprDoc _ _ (CTVar n) = tvarDoc n
-
 typeExprDoc mod p (CTCons name args)
   | null args = qname mod name
   | name == (prelude,"[]") = brackets (typeExprDoc mod 0 (head args))
   | isTupleName name = tupled (map (typeExprDoc mod 0) args)
   | otherwise
     = (if p == 2 then parens else id) $ app (qname mod name) (map (typeExprDoc mod 2) args)
-
 typeExprDoc mod p typ@(CFuncType _ _)
   = (if p > 0 then parens else id) $ fillEncloseSep empty empty (space<>arrow<>space)
      (map (typeExprDoc mod 1) (argTypes typ) ++
       [typeExprDoc mod 0 (resultType typ)])
-
---typeExprDoc mod _ (CRecordType fields mName) =
---    fillEncloseSep lbrace
---                   (maybe rbrace nDoc mName)
---                   comma
---                   (map (fieldDoc dcolon (typeExprDoc mod 0)) fields)
---  where
---      nDoc n = space <> bar <+> tvarDoc n <> rbrace
 
 isUntyped :: CTypeExpr -> Bool
 isUntyped typ =
@@ -381,7 +392,7 @@ funcDoc :: Precs -> String -> CFuncDecl -> Doc
 funcDoc pr mod (CFunc name _ _ typ rules) =
   (if hasRec typ then text "--" else empty) <>
   (if isUntyped typ then empty else funcTypeDeclDoc mod name typ <$> empty) <>
-  rulesDoc pr mod name rules
+  vsep (map (ruleDoc pr mod name) rules)
 funcDoc pr mod (CmtFunc cmt name ar vis typ rules) =
   vsep (map (\l->text ("--- "++l)) (lines cmt)) <$>
   funcDoc pr mod (CFunc name ar vis typ rules)
@@ -393,16 +404,17 @@ hasRec (CTCons _ ts) = any hasRec ts
 --hasRec (CRecordType _ _) = True
 
 localDeclsDoc :: Precs -> String -> [CLocalDecl] -> Doc
-localDeclsDoc pr mod lds = align $ vsep $ punctuate line $ map (localDeclDoc pr mod) lds
+localDeclsDoc pr mod lds
+  | null lds  = empty
+  | otherwise = line <>  text "where" 
+                     <+> align (vsep (punctuate line (map (localDeclDoc pr mod) lds)))
 
 localDeclDoc :: Precs -> String -> CLocalDecl -> Doc
-localDeclDoc pr mod (CLocalFunc f) = funcDoc pr mod f
-localDeclDoc pr mod (CLocalPat  pn e lds) =
-    hang 1 $ patternDoc mod pn <+> equals <+> expDoc unknown pr Nothing mod e <>
-             if null lds
-                then empty
-                else line <> text "where" <+> localDeclsDoc pr mod lds
-localDeclDoc _ _ (CLocalVar vn) = hang 1 $ tvarDoc vn <+> text "free"
+localDeclDoc pr mod (CLocalFunc    f) =  funcDoc pr mod f
+localDeclDoc pr mod (CLocalPat p rhs) =  hang 1 $ patternDoc mod p
+                                     <+> rhsDoc pr mod equals rhs
+localDeclDoc _  _   (CLocalVars   vs) =  hang 1 $ commaSepList (map tvarDoc vs)
+                                     <+> text "free"
 
 -- -------------------------------function type--------------------------------
 
@@ -412,26 +424,15 @@ funcTypeDeclDoc mod name typ
 
 funcTypeDoc :: String -> [CTypeExpr] -> CTypeExpr -> Doc
 funcTypeDoc mod args res
-  = fillEncloseSep dcolon empty (space<>arrow)
+  = fillEncloseSep doubleColon empty (space<>arrow)
      ((map ((space<>) . typeExprDoc mod 1) args) ++
       (map ((space<>) . typeExprDoc mod 1) [res]))
 
 -- -------------------------------rules----------------------------------------
 
-rulesDoc :: Precs -> String -> QName -> CRules -> Doc
-rulesDoc pr mod name (CRules _ rules) =
-    vsep (map (ruleDoc pr mod name) rules)
-rulesDoc _ mod name (CExternal _) =
-    qname mod name <+> text "external"
-
-
 ruleDoc :: Precs -> String -> QName -> CRule -> Doc
-ruleDoc pr mod name (CRule patterns choices localDecls) -- (CRule args body)
-    | fst (head choices) ==  CSymbol ("Prelude","success")
-          =  hang 2 $ (group $ hang 2 ((nameAndParam <+>
-                   equals <$> align (expDoc unknown pr Nothing mod (snd (head choices))))))
-            <> whereDoc
-    | otherwise = hang 2 (hang 2 (nameAndParam <$> align (vsep (map choiceDoc choices))) <> whereDoc)
+ruleDoc pr mod name (CRule patterns crhs)
+  = hang 2 (hang 2 (nameAndParam <$> align (rhsDoc pr mod equals crhs)))
   where
     nameAndParam =
         if isInfixName name && length patterns == 2
@@ -441,12 +442,20 @@ ruleDoc pr mod name (CRule patterns choices localDecls) -- (CRule args body)
     paramDoc = if null patterns
                      then empty
                  else space <> patternsDoc mod patterns
-    choiceDoc (e1,e2) = text "|" <+> align (expDoc unknown pr Nothing mod e1) <+>
-                        equals <+> (expDoc unknown pr Nothing mod e2)
-    whereDoc = if null localDecls
-                  then empty
-                  else line <>  text "where" <+> localDeclsDoc pr mod localDecls
 
+rhsDoc :: Precs -> String -> Doc -> CRhs -> Doc
+rhsDoc pr mod eqOrArrow (CSimpleRhs e locals)
+  =  eqOrArrow <+> expDoc unknown pr Nothing mod e
+  <> localDeclsDoc pr mod locals
+rhsDoc pr mod eqOrArrow (CGuardedRhs guardedExprs locals)
+  =  vcat (map (guardedExprDoc pr mod eqOrArrow) guardedExprs) 
+  <> localDeclsDoc pr mod locals
+
+guardedExprDoc :: Precs -> String -> Doc -> (CExpr, CExpr) -> Doc
+guardedExprDoc pr mod eqOrArrow (g, e)
+  = bar <+> align (expDoc unknown pr Nothing mod g)
+        <+> eqOrArrow
+        <+> expDoc unknown pr Nothing mod e
 
 -- -------------------------------expressions----------------------------------
 
@@ -478,21 +487,6 @@ expDoc2 :: Bool -> Precs -> Maybe (CFixity,Int) -> String -> CExpr -> Doc
 expDoc2 _ _ mPrec _ (CVar n) = showPrecs n mPrec <> varDoc n
 expDoc2 _ _ mPrec _ (CLit l) = showPrecs l mPrec <> litDoc l
 expDoc2 _ _ mPrec mod (CSymbol qn) = showPrecs qn mPrec <> qname mod qn
-
-expDoc2 _ pr mPrec mod (CLetDecl bs e)
-  = par mPrec $ hang 1 $
-     text "let" <+> localDeclsDoc pr mod bs <$>
-     text "in" <+> expDoc unknown pr Nothing mod e
-
-expDoc2 _ pr mPrec mod (CCase e bs)
-  = par mPrec $ hang 1 $
-     text "case" <+> align (expDoc unknown pr Nothing mod e)
-       <+> text "of" <$> layout (map (branchDoc pr mod) bs)
-
-expDoc2 _ pr mPrec mod (CLambda ps e)
-  = par mPrec $ hang 1 $
-     backslash  <+> patternsDoc mod ps
-       <+> arrow <+> expDoc unknown pr Nothing mod e
 
 expDoc2 amILeft pr mPrec mod (CApply e1 e2)
     | maybe False isTupleName mfname = tupled (map (expDoc unknown pr Nothing mod) fargs)
@@ -550,6 +544,15 @@ expDoc2 amILeft pr mPrec mod (CApply e1 e2)
                Just p' -> p'
                Nothing -> (CInfixlOp,9)
 
+expDoc2 _ pr mPrec mod (CLambda ps e)
+  = par mPrec $ hang 1 $
+     backslash  <+> patternsDoc mod ps
+       <+> arrow <+> expDoc unknown pr Nothing mod e
+
+expDoc2 _ pr mPrec mod (CLetDecl bs e)
+  = par mPrec $ hang 1 $
+     text "let" <+> localDeclsDoc pr mod bs <$>
+     text "in" <+> expDoc unknown pr Nothing mod e
 
 expDoc2 _ pr mPrec mod (CDoExpr stms)
   = par mPrec $
@@ -558,6 +561,28 @@ expDoc2 _ pr mPrec mod (CDoExpr stms)
 expDoc2 _ pr _ mod (CListComp e stms)
   = brackets $ expDoc unknown pr Nothing mod e <+> text "|" <+>
                encloseSep empty empty comma (map (statementDoc pr mod) stms)
+
+expDoc2 _ pr mPrec mod (CCase ct e bs)
+  = par mPrec $ hang 1 $
+     caseTypeDoc ct <+> align (expDoc unknown pr Nothing mod e)
+       <+> text "of" <$> layout (map (branchDoc pr mod) bs)
+  where
+    caseTypeDoc CRigid = text "case"
+    caseTypeDoc CFlex  = text "fcase"
+
+expDoc2 _ pr mPrec mod (CTyped e ty)
+  = par mPrec $
+      expDoc unknown pr Nothing mod e <+> doubleColon <+> typeExprDoc mod 2 ty
+
+expDoc2 _ pr mPrec mod (CRecConstr (_, name) cfields)
+  = par mPrec $
+      text name <+> record (commaSepList (map (fieldDoc (expDoc unknown pr Nothing mod)) cfields))
+
+expDoc2 _ pr mPrec mod (CRecUpdate e cfields)
+  = par mPrec $
+      expDoc' e <+> record (commaSepList (map (fieldDoc expDoc') cfields))
+  where
+    expDoc' = expDoc unknown pr Nothing mod
 
 --expDoc2 _ pr _ mod (CRecConstr fields)
 --  = fillEncloseSep lbrace
@@ -574,6 +599,8 @@ expDoc2 _ pr _ mod (CListComp e stms)
 --                   comma
 --                   (map (fieldDoc (colon<>equals) (expDoc unknown pr Nothing mod)) fields)
 
+fieldDoc :: (a -> Doc) -> CField a -> Doc
+fieldDoc expOrPatDoc ((_, name), x) = text name <+> equals <+> expOrPatDoc x
 
 --fieldDoc :: Doc -> (a -> Doc) -> (CField a) -> Doc
 --fieldDoc sep toDoc (label,x) = text label <+> sep <+> toDoc x
@@ -585,10 +612,9 @@ statementDoc pr mod (CSPat p e) =
 statementDoc pr mod (CSLet localDecls) =
     text "let" <+> localDeclsDoc pr mod localDecls
 
-
-branchDoc :: Precs -> String -> CBranchExpr -> Doc
-branchDoc pr mod (CBranch pat e)
-  = def (patternDoc mod pat <+> arrow) [] (align (expDoc False pr Nothing mod e))
+branchDoc :: Precs -> String -> (CPattern, CRhs) -> Doc
+branchDoc pr mod (cpat, crhs)
+  = def (patternDoc mod cpat) [] (align (rhsDoc pr mod arrow crhs))
 
 -- -------------------------------pattern--------------------------------------
 
@@ -626,7 +652,10 @@ patternDoc mod (CPFuncComb qn pns)
    | isInfixName qn && length pns == 2
        = parens $ patternDoc mod (pns!!0) <> text (snd qn) <> patternDoc mod (pns!!1)
    | otherwise = parens (qname mod qn <+> hsep (map (patternDoc mod) pns))
---patternDoc mod (CPLazy pn) = text "~" <> patternDoc mod pn
+patternDoc mod (CPLazy p) = text "~" <> patternDoc mod p
+patternDoc mod (CPRecord (_, name) cfields)
+  = text name <+> record (commaSepList (map (fieldDoc (patternDoc mod)) cfields))
+
 --patternDoc mod (CPRecord fields mPatt) =
 --    fillEncloseSep lbrace
 --                   (maybe rbrace pattDoc mPatt)
@@ -649,81 +678,5 @@ toStringPattern patt
       CPComb ("Prelude",":") [CPLit (CCharc c),cs] ->
         toStringPattern cs >>- Just . (quoteChar c++)
       _ -> Nothing
-
-
-
--- AbstractCurryGoodies -------------------------------------------------------
-
--- Prog -------------------------------
-
---- transform program
-trCurryProg :: (String -> [String] -> [CTypeDecl] -> [CFuncDecl] -> [COpDecl] -> a)
-          -> CurryProg -> a
-trCurryProg prog (CurryProg name imps types funcs ops) = prog name imps types funcs ops
-
--- TypeDecl ---------------------------
-
--- Selectors
-
---- transform type declaration
-trCType  :: (QName -> CVisibility -> [CTVarIName] -> [CConsDecl] -> a) ->
-          (QName -> CVisibility -> [CTVarIName] -> CTypeExpr -> a) -> CTypeDecl -> a
-trCType  typ _ (CType name vis params cs) = typ name vis params cs
-trCType  _ typesyn (CTypeSyn name vis params syn) = typesyn name vis params syn
-
---- get visibility of type declaration
-typeCVisibility :: CTypeDecl -> CVisibility
-typeCVisibility = trCType  (\_ vis _ _ -> vis) (\_ vis _ _ -> vis)
-
---- get name of type declaration
-typeName :: CTypeDecl -> QName
-typeName = trCType (\name _ _ _ -> name) (\name _ _ _ -> name)
-
--- FuncDecl ---------------------------
-
---- transform function
-trCFunc :: (QName -> Int -> CVisibility -> CTypeExpr -> CRules -> a)
-        -> CFuncDecl -> a
-trCFunc func (CFunc name arity vis t rules) = func name arity vis t rules
-trCFunc func (CmtFunc _ name arity vis t rules) = func name arity vis t rules
-
--- Selectors
-
---- get name of function
-funcName :: CFuncDecl -> QName
-funcName = trCFunc (\name _ _ _ _ -> name)
-
---- get visibility of function
-funcCVisibility :: CFuncDecl -> CVisibility
-funcCVisibility = trCFunc (\_ _ vis _ _ -> vis)
-
--- ConsDecl ---------------------------
-
--- Selectors
-
---- transform constructor declaration
-trCCons :: (QName -> Int -> CVisibility -> [CTypeExpr] -> a) -> CConsDecl -> a
-trCCons cons (CCons name arity vis args) = cons name arity vis args
-
---- get visibility of constructor declaration
-consCVisibility :: CConsDecl -> CVisibility
-consCVisibility = trCCons (\_ _ vis _ -> vis)
-
-
--- Auxiliary Functions ----------------
-
---- get argument types from functional type
-argTypes :: CTypeExpr -> [CTypeExpr]
-argTypes (CTVar _) = []
-argTypes (CTCons _ _) = []
-argTypes (CFuncType dom ran) = dom : argTypes ran
---argTypes (CRecordType _ _) = []
-
---- get result type from (nested) functional type
-resultType :: CTypeExpr -> CTypeExpr
-resultType (CTVar n) = CTVar n
-resultType (CTCons name args) = CTCons name args
-resultType (CFuncType _ ran) = resultType ran
---resultType rec@(CRecordType _ _) = rec
 
 -- end of PrettyAbstract

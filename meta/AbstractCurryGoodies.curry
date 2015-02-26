@@ -68,6 +68,33 @@ typeName (CType    n _ _ _) = n
 typeName (CTypeSyn n _ _ _) = n
 typeName (CNewType n _ _ _) = n
 
+--- Returns the visibility of a given type declaration
+typeVis :: CTypeDecl -> CVisibility
+typeVis (CType    _ vis _ _) = vis
+typeVis (CTypeSyn _ vis _ _) = vis
+typeVis (CNewType _ vis _ _) = vis
+
+--- Returns the constructors of a given type declaration
+typeCons :: CTypeDecl -> [CConsDecl]
+typeCons (CType    _ _ _ cs) = cs
+typeCons (CTypeSyn _ _ _ _ ) = []
+typeCons (CNewType _ _ _ c ) = [c]
+
+--- Returns the name of a given function declaration
+funcName :: CFuncDecl -> QName
+funcName (CFunc     n _ _ _ _) = n
+funcName (CmtFunc _ n _ _ _ _) = n
+
+--- Returns the visibility of a given function declaration
+funcVis :: CFuncDecl -> CVisibility
+funcVis (CFunc     _ _ vis _ _) = vis
+funcVis (CmtFunc _ _ _ vis _ _) = vis
+
+--- Returns the visibility of a given constructor declaration
+consVis :: CConsDecl -> CVisibility
+consVis (CCons   _ vis _) = vis
+consVis (CRecord _ vis _) = vis
+
 --- Returns true if the type expression is a base type.
 isBaseType :: CTypeExpr -> Bool
 isBaseType texp = case texp of
@@ -100,6 +127,18 @@ isIOReturnType (CFuncType      _ _) = False
 isIOReturnType (CTCons tc typelist) =
   tc==pre "IO" && head typelist /= CTCons (pre "()") []
   && not (isFunctionalType (head typelist))
+  
+--- Returns all argument types from a functional type
+argTypes :: CTypeExpr -> [CTypeExpr]
+argTypes (CTVar         _) = []
+argTypes (CTCons      _ _) = []
+argTypes (CFuncType t1 t2) = t1 : argTypes t2
+
+--- Return the result type from a (nested) functional type
+resultType :: CTypeExpr -> CTypeExpr
+resultType (CTVar          n) = CTVar n
+resultType (CTCons name args) = CTCons name args
+resultType (CFuncType   _ t2) = resultType t2
 
 --- Returns all type variables occurring in a type expression.
 tvarsOfType :: CTypeExpr -> [CTVarIName]
