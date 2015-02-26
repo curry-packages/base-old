@@ -395,7 +395,7 @@ showLiteral :: CLiteral -> String
 showLiteral (CIntc    i) = show i
 showLiteral (CFloatc  f) = show f
 showLiteral (CCharc   c) = quotes $ showCCharc (CCharc c)
-showLiteral (CStringc s) = s
+showLiteral (CStringc s) = show s
 
 showCCharc :: CLiteral -> String
 showCCharc (CCharc c) | c == '\n' = "\\n"

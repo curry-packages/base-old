@@ -268,7 +268,7 @@ litDoc :: CLiteral -> Doc
 litDoc (CIntc    n) = int n
 litDoc (CFloatc  x) = float x
 litDoc (CCharc   c) = squotes (text (quoteChar c))
-litDoc (CStringc s) = text s
+litDoc (CStringc s) = text (show s)
 
 quoteChar :: Char -> String
 quoteChar c = maybe [c] id (lookup c specialChars)

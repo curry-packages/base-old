@@ -51,9 +51,17 @@ stringType = baseType (pre "String")
 intType :: CTypeExpr
 intType = baseType (pre "Int")
 
+--- The type expression of the Float type.
+floatType :: CTypeExpr
+floatType = baseType (pre "Float")
+
 --- The type expression of the Bool type.
 boolType :: CTypeExpr
 boolType = baseType (pre "Bool")
+
+--- The type expression of the unit type.
+unitType :: CTypeExpr
+unitType = baseType (pre "()")
 
 --- The type expression of the Time.CalendarTime type.
 dateType :: CTypeExpr
@@ -167,6 +175,11 @@ cmtfunc :: String -> QName -> Int -> CVisibility -> CTypeExpr -> [CRule]
         -> CFuncDecl
 cmtfunc = CmtFunc
 
+--- Constructs a simple rule with a pattern list and an
+--- unconditional right-hand side.
+simpleRule :: [CPattern] -> CExpr -> CRule
+simpleRule pats rhs = CRule pats (CSimpleRhs rhs [])
+
 --- Constructs a guarded expression with the trivial guard.
 noGuard :: CExpr -> (CExpr, CExpr)
 noGuard e = (CSymbol (pre "success"), e)
@@ -205,6 +218,10 @@ tupleExpr es | l==0 = constF (pre "()")
              | otherwise = applyF (pre ('(' : take (l-1) (repeat ',') ++ ")"))
                                   es
  where l = length es
+
+--- Constructs from a pattern and an expression a branch for a case expression.
+cBranch :: CPattern -> CExpr -> (CPattern, CRhs)
+cBranch pattern exp = (pattern, CSimpleRhs exp [])
 
 --- Constructs a tuple pattern from list of component patterns.
 tuplePattern :: [CPattern] -> CPattern
@@ -264,6 +281,10 @@ toVar i = CVar (1,"x"++show i)
 --- Converts a string into a variable with index 1.
 cvar :: String -> CExpr
 cvar s = CVar (1,s)
+
+--- Converts a string into a pattern variable with index 1.
+cpvar :: String -> CPattern
+cpvar s = CPVar (1,s)
 
 --- Converts a string into a type variable with index 1.
 ctvar :: String -> CTypeExpr
