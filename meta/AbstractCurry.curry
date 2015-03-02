@@ -324,12 +324,15 @@ tryReadACYFile fn = do
  where
   tryRead file = do
     src <- readFile file
-    case readsUnqualifiedTerm ["AbstractCurry","Prelude"] src of
-      []       -> cancel
-      [(p,tl)] -> if all isSpace tl
-                    then return $ Just p
-                    else cancel
-      _        -> cancel
+    let (line1,lines) = break (=='\n') src
+    if line1 /= "{- "++version++" -}"
+      then error $ "AbstractCurry: incompatible file found: "++fn
+      else case readsUnqualifiedTerm ["AbstractCurry","Prelude"] lines of
+        []       -> cancel
+        [(p,tl)] -> if all isSpace tl
+                      then return $ Just p
+                      else cancel
+        _        -> cancel
   cancel = return Nothing
 
 --- Writes an AbstractCurry program into a file in ".acy" format.
