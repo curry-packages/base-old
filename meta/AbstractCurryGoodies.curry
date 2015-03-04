@@ -51,9 +51,17 @@ stringType = baseType (pre "String")
 intType :: CTypeExpr
 intType = baseType (pre "Int")
 
+--- The type expression of the Float type.
+floatType :: CTypeExpr
+floatType = baseType (pre "Float")
+
 --- The type expression of the Bool type.
 boolType :: CTypeExpr
 boolType = baseType (pre "Bool")
+
+--- The type expression of the unit type.
+unitType :: CTypeExpr
+unitType = baseType (pre "()")
 
 --- The type expression of the Time.CalendarTime type.
 dateType :: CTypeExpr
@@ -64,21 +72,48 @@ dateType = baseType ("Time", "CalendarTime")
 
 --- Returns the name of a given type declaration
 typeName :: CTypeDecl -> QName
+typeName (CType    n _ _ _) = n
 typeName (CTypeSyn n _ _ _) = n
-typeName (CType n    _ _ _) = n
+typeName (CNewType n _ _ _) = n
+
+--- Returns the visibility of a given type declaration
+typeVis :: CTypeDecl -> CVisibility
+typeVis (CType    _ vis _ _) = vis
+typeVis (CTypeSyn _ vis _ _) = vis
+typeVis (CNewType _ vis _ _) = vis
+
+--- Returns the constructors of a given type declaration
+typeCons :: CTypeDecl -> [CConsDecl]
+typeCons (CType    _ _ _ cs) = cs
+typeCons (CTypeSyn _ _ _ _ ) = []
+typeCons (CNewType _ _ _ c ) = [c]
+
+--- Returns the name of a given function declaration
+funcName :: CFuncDecl -> QName
+funcName (CFunc     n _ _ _ _) = n
+funcName (CmtFunc _ n _ _ _ _) = n
+
+--- Returns the visibility of a given function declaration
+funcVis :: CFuncDecl -> CVisibility
+funcVis (CFunc     _ _ vis _ _) = vis
+funcVis (CmtFunc _ _ _ vis _ _) = vis
+
+--- Returns the visibility of a given constructor declaration
+consVis :: CConsDecl -> CVisibility
+consVis (CCons   _ vis _) = vis
+consVis (CRecord _ vis _) = vis
 
 --- Returns true if the type expression is a base type.
 isBaseType :: CTypeExpr -> Bool
 isBaseType texp = case texp of
-  CTCons (m,name) args -> null args
-  _                    -> False
+  CTCons _ args -> null args
+  _             -> False
 
 --- Returns true if the type expression contains type variables.
 isPolyType :: CTypeExpr -> Bool
 isPolyType (CTVar                _) = True
 isPolyType (CFuncType domain range) = isPolyType domain || isPolyType range
 isPolyType (CTCons      _ typelist) = any isPolyType typelist
-isPolyType (CRecordType fields   _) = any isPolyType (map snd fields)
 
 --- Returns true if the type expression is a functional type.
 isFunctionalType :: CTypeExpr -> Bool
@@ -100,7 +135,18 @@ isIOReturnType (CFuncType      _ _) = False
 isIOReturnType (CTCons tc typelist) =
   tc==pre "IO" && head typelist /= CTCons (pre "()") []
   && not (isFunctionalType (head typelist))
-isIOReturnType (CRecordType    _ _) = False
+  
+--- Returns all argument types from a functional type
+argTypes :: CTypeExpr -> [CTypeExpr]
+argTypes (CTVar         _) = []
+argTypes (CTCons      _ _) = []
+argTypes (CFuncType t1 t2) = t1 : argTypes t2
+
+--- Return the result type from a (nested) functional type
+resultType :: CTypeExpr -> CTypeExpr
+resultType (CTVar          n) = CTVar n
+resultType (CTCons name args) = CTCons name args
+resultType (CFuncType   _ t2) = resultType t2
 
 --- Returns all type variables occurring in a type expression.
 tvarsOfType :: CTypeExpr -> [CTVarIName]
@@ -113,7 +159,6 @@ modsOfType :: CTypeExpr -> [String]
 modsOfType (CTVar            _) = []
 modsOfType (CFuncType    t1 t2) = modsOfType t1 `union` modsOfType t2
 modsOfType (CTCons (mod,_) tys) = foldr union [mod] $ map modsOfType tys
-modsOfType (CRecordType flds _) = foldr union [] $ map (modsOfType . snd) flds
 
 ------------------------------------------------------------------------
 -- Goodies to construct function declarations
@@ -121,16 +166,19 @@ modsOfType (CRecordType flds _) = foldr union [] $ map (modsOfType . snd) flds
 --- Constructs a function declaration from a given qualified function name,
 --- arity, visibility, type expression and list of defining rules.
 cfunc :: QName -> Int -> CVisibility -> CTypeExpr -> [CRule] -> CFuncDecl
-cfunc name arity v t rules = 
-  CFunc name arity v t (CRules CFlex rules)
+cfunc = CFunc
 
 --- Constructs a function declaration from a given comment,
 --- qualified function name,
 --- arity, visibility, type expression and list of defining rules.
 cmtfunc :: String -> QName -> Int -> CVisibility -> CTypeExpr -> [CRule]
         -> CFuncDecl
-cmtfunc comment name arity v t rules = 
-  CmtFunc comment name arity v t (CRules CFlex rules)
+cmtfunc = CmtFunc
+
+--- Constructs a simple rule with a pattern list and an
+--- unconditional right-hand side.
+simpleRule :: [CPattern] -> CExpr -> CRule
+simpleRule pats rhs = CRule pats (CSimpleRhs rhs [])
 
 --- Constructs a guarded expression with the trivial guard.
 noGuard :: CExpr -> (CExpr, CExpr)
@@ -170,6 +218,10 @@ tupleExpr es | l==0 = constF (pre "()")
              | otherwise = applyF (pre ('(' : take (l-1) (repeat ',') ++ ")"))
                                   es
  where l = length es
+
+--- Constructs from a pattern and an expression a branch for a case expression.
+cBranch :: CPattern -> CExpr -> (CPattern, CRhs)
+cBranch pattern exp = (pattern, CSimpleRhs exp [])
 
 --- Constructs a tuple pattern from list of component patterns.
 tuplePattern :: [CPattern] -> CPattern
@@ -212,7 +264,7 @@ cChar x = CLit (CCharc x)
 
 --- Converts a string into an AbstractCurry represention of this string.  
 string2ac :: String -> CExpr
-string2ac = list2ac . map (CLit . CCharc)
+string2ac s = CLit (CStringc s)
 
 --- Converts a string into a qualified name of the Prelude.
 pre :: String -> QName
@@ -229,6 +281,10 @@ toVar i = CVar (1,"x"++show i)
 --- Converts a string into a variable with index 1.
 cvar :: String -> CExpr
 cvar s = CVar (1,s)
+
+--- Converts a string into a pattern variable with index 1.
+cpvar :: String -> CPattern
+cpvar s = CPVar (1,s)
 
 --- Converts a string into a type variable with index 1.
 ctvar :: String -> CTypeExpr

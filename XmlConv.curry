@@ -3,8 +3,8 @@
 --- See <a href="http://www-ps.informatik.uni-kiel.de/~sebf/projects/xmlconv/">
 --- here</a> for a description of this library.
 ---
---- @author Sebastian Fischer
---- @version March 2006
+--- @author Sebastian Fischer (with changes by Michael Hanus)
+--- @version February 2015
 module XmlConv (
 
   -- converter types
@@ -431,9 +431,8 @@ eRep name xa = element name (rep xa)
 seq1 :: (a -> b) -> XmlConv rep _ a -> XmlConv rep NoElem b
 seq1 cons xa = Conv rd sh
  where
-  cf a = cons a
   rd = xmlReads xa />= ret . cons
-  sh (cf a) = xmlShows xa a
+  sh arg | cons a =:<= arg = xmlShows xa a where a free
 
 --- Creates an XML converter that represents a repetition of a sequence
 --- of repeatable XML data. The repetition may be used in other
@@ -473,11 +472,11 @@ seq2_ :: (a -> b -> c)
       -> XmlConv _ NoElem c
 seq2_ cons xa xb = Conv rd sh
  where
-  cf a b = cons a b
   rd = xmlReads xa />= \a ->
        xmlReads xb />= \b ->
        ret (cons a b)
-  sh (cf a b) = xmlShows xa a . xmlShows xb b
+  sh arg | cons a b =:<= arg = xmlShows xa a . xmlShows xb b  where a,b free
+  
 
 --- Creates an XML converter representing a sequence of arbitrary XML data.
 --- The sequence must not be used in repetitions and does not represent an
@@ -535,12 +534,12 @@ seq3_ :: (a -> b -> c -> d)
       -> XmlConv _ NoElem d
 seq3_ cons xa xb xc = Conv rd sh
  where
-  cf a b c = cons a b c
   rd = xmlReads xa />= \a ->
        xmlReads xb />= \b ->
        xmlReads xc />= \c ->
        ret (cons a b c)
-  sh (cf a b c) = xmlShows xa a . xmlShows xb b . xmlShows xc c
+  sh arg | (cons a b c) =:<= arg = xmlShows xa a . xmlShows xb b . xmlShows xc c
+    where a,b,c free
 
 --- Creates an XML converter representing a sequence of arbitrary XML data.
 --- The sequence must not be used in repetitions and does not represent an
@@ -600,14 +599,14 @@ seq4_ :: (a -> b -> c -> d -> e)
       -> XmlConv _ NoElem e
 seq4_ cons xa xb xc xd = Conv rd sh
  where
-  cf a b c d = cons a b c d
   rd = xmlReads xa />= \a ->
        xmlReads xb />= \b ->
        xmlReads xc />= \c ->
        xmlReads xd />= \d ->
        ret (cons a b c d)
-  sh (cf a b c d) = xmlShows xa a . xmlShows xb b . xmlShows xc c
-                  . xmlShows xd d
+  sh arg | (cons a b c d) =:<= arg
+         = xmlShows xa a . xmlShows xb b . xmlShows xc c
+                         . xmlShows xd d  where a,b,c,d free
 
 --- Creates an XML converter representing a sequence of arbitrary XML data.
 --- The sequence must not be used in repetitions and does not represent an
@@ -668,15 +667,16 @@ seq5_ :: (a -> b -> c -> d -> e -> f)
       -> XmlConv _ NoElem f
 seq5_ cons xa xb xc xd xe = Conv rd sh
  where
-  cf a b c d e = cons a b c d e
   rd = xmlReads xa />= \a ->
        xmlReads xb />= \b ->
        xmlReads xc />= \c ->
        xmlReads xd />= \d ->
        xmlReads xe />= \e ->
        ret (cons a b c d e)
-  sh (cf a b c d e) = xmlShows xa a . xmlShows xb b . xmlShows xc c
-                    . xmlShows xd d . xmlShows xe e
+  sh arg | (cons a b c d e) =:<= arg
+         = xmlShows xa a . xmlShows xb b . xmlShows xc c
+                         . xmlShows xd d . xmlShows xe e  where a,b,c,d,e free
+  
 
 --- Creates an XML converter representing a sequence of arbitrary XML data.
 --- The sequence must not be used in repetitions and does not represent an
@@ -741,7 +741,6 @@ seq6_ :: (a -> b -> c -> d -> e -> f -> g)
       -> XmlConv _ NoElem g
 seq6_ cons xa xb xc xd xe xf = Conv rd sh
  where
-  cf a b c d e f = cons a b c d e f
   rd = xmlReads xa />= \a ->
        xmlReads xb />= \b ->
        xmlReads xc />= \c ->
@@ -749,8 +748,10 @@ seq6_ cons xa xb xc xd xe xf = Conv rd sh
        xmlReads xe />= \e ->
        xmlReads xf />= \f ->
        ret (cons a b c d e f)
-  sh (cf a b c d e f)  = xmlShows xa a . xmlShows xb b . xmlShows xc c
-                       . xmlShows xd d . xmlShows xe e . xmlShows xf f
+  sh arg | (cons a b c d e f) =:<= arg
+         = xmlShows xa a . xmlShows xb b . xmlShows xc c
+                         . xmlShows xd d . xmlShows xe e . xmlShows xf f
+			 where a,b,c,d,e,f free
 
 --- Creates an XML converter representing a sequence of arbitrary XML data.
 --- The sequence must not be used in repetitions and does not represent an

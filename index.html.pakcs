@@ -238,6 +238,11 @@ A collection of operations on floating point numbers.
 A collection of utility operations for function application.
 </dd>
 
+<dt><code><a href="CDOC/FunctionInversion.html">FunctionInversion</a></code></dt>
+<dd>
+A collection of utility operations for inverting functions.
+</dd>
+
 <dt><code><a href="CDOC/Global.html">Global</a></code></dt>
 <dd>
 This library provides functionality for global entities.
