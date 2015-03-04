@@ -112,3 +112,8 @@ external_d_C_prim_hIsReadable h _ _ = toCurry (hIsReadable . inputHandle) h
 external_d_C_prim_hIsWritable :: C_Handle -> Cover -> ConstStore 
                               -> Curry_Prelude.C_IO Curry_Prelude.C_Bool
 external_d_C_prim_hIsWritable h _ _ = toCurry (hIsWritable . outputHandle) h
+
+external_d_C_prim_hIsTerminalDevice :: C_Handle -> Cover -> ConstStore 
+                              -> Curry_Prelude.C_IO Curry_Prelude.C_Bool
+external_d_C_prim_hIsTerminalDevice h _ _ =
+    toCurry (hIsTerminalDevice . outputHandle) h
