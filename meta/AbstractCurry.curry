@@ -49,9 +49,9 @@ data CVisibility
 
 --- Data type for representing a Curry module in the intermediate form.
 --- A value of this data type has the form
---- <CODE>
----  (CProg modname imports typedecls functions opdecls)
---- </CODE>
+--- 
+---     (CProg modname imports typedecls functions opdecls)
+--- 
 --- where modname: name of this module,
 ---       imports: list of modules names that are imported,
 ---       typedecls: Type declarations
@@ -64,14 +64,13 @@ data CurryProg = CurryProg MName [MName] [CTypeDecl] [CFuncDecl] [COpDecl]
 ---
 --- A data type definition of the form
 ---
---- <code>data t x1...xn = ...| c t1....tkc |...</code>
+---     data t x1...xn = ...| c t1....tkc |...
 ---
 --- is represented by the Curry term
 ---
---- <code>(CType t v [i1,...,in] [...(CCons c kc v [t1,...,tkc])...])</code>
+---     (CType t v [i1,...,in] [...(CCons c kc v [t1,...,tkc])...])
 ---
---- where each <code>ij</code> is the index of the type variable
---- <code> xj</code>.
+--- where each `ij` is the index of the type variable `xj`.
 ---
 --- Note: the type variable indices are unique inside each type declaration
 ---       and are usually numbered from 0
@@ -154,15 +153,16 @@ data CFuncDecl
   | CmtFunc String QName Arity CVisibility CTypeExpr [CRule]
 
 --- The general form of a function rule. It consists of a list of patterns
---- (left-hand side), a list of guards (@success@ if not present in the
---- source text) with their corresponding right-hand sides, and
---- a list of local declarations.
+--- (left-hand side) and the right-hand side for these patterns.
 data CRule = CRule [CPattern] CRhs
 
---- Right-hand-side of a 'CRule' or an @case@ expression
+--- Right-hand-side of a 'CRule' or a `case` expression.
+--- It is either a simple unconditional right-hand side or
+--- a list of guards with their corresponding right-hand sides, and
+--- a list of local declarations.
 data CRhs
-  = CSimpleRhs  CExpr            [CLocalDecl] -- @expr where decls@
-  | CGuardedRhs [(CExpr, CExpr)] [CLocalDecl] -- @| cond = expr where decls@
+  = CSimpleRhs  CExpr            [CLocalDecl] -- expr where decls
+  | CGuardedRhs [(CExpr, CExpr)] [CLocalDecl] -- | cond = expr where decls
 
 --- Data type for representing local (let/where) declarations
 data CLocalDecl

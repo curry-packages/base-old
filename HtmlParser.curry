@@ -2,7 +2,7 @@
 --- This module contains a very simple parser for HTML documents.
 ---
 --- @author Michael Hanus
---- @version November 2011
+--- @version March 2015
 ------------------------------------------------------------------------------
 
 module HtmlParser(readHtmlFile,parseHtmlString) where
@@ -41,6 +41,8 @@ parseHtmlTokens helems (HElem (t:ts) args : hs) =
 
 
 -- split the HTML token stack up to a particular token:
+splitHtmlElems :: String -> [HtmlExp]
+               -> ([(String,String)],[HtmlExp],[HtmlExp])
 splitHtmlElems _ [] = ([],[],[])
 splitHtmlElems tag (HtmlText s : hs) =
  let (largs,elems,rest) = splitHtmlElems tag hs
@@ -72,15 +74,20 @@ scanHtmlString s = scanHtml s
 
 -- scan an HTML element
 scanHtmlElem :: String -> String -> [HtmlToken]
-scanHtmlElem ct [] = [HText ('<':ct)] -- incomplete element
+scanHtmlElem ct [] = [HText ("&lt;"++ct)] -- incomplete element
 scanHtmlElem ct (c:cs)
-  | c=='>'    = HElem ct [] : scanHtmlString cs
-  | isSpace c = let (args,rest) = splitAtElement (=='>') (dropWhile isSpace cs)
-                    revargs = reverse args
-                 in if null args || head revargs /= '/'
-                    then HElem ct (string2args args) : scanHtmlString rest
-                    else HElem ct (string2args (reverse (tail revargs)))
-                           : HElem ('/':ct) [] : scanHtmlString rest
+  | c=='>'    = (if null ct
+                 then HText "&lt;&gt;" -- invalid HTML, but we accept it...
+                 else HElem ct [])  : scanHtmlString cs
+  | isSpace c =
+     if null ct
+     then HText "&lt; " : scanHtmlString cs -- invalid HTML, but we accept it...
+     else let (args,rest) = splitAtElement (=='>') (dropWhile isSpace cs)
+              revargs = reverse args
+           in if null args || head revargs /= '/'
+              then HElem ct (string2args args) : scanHtmlString rest
+              else HElem ct (string2args (reverse (tail revargs)))
+                    : HElem ('/':ct) [] : scanHtmlString rest
   | c=='/' && head cs == '>' = HElem ct [] : HElem ('/':ct) []
                                            : scanHtmlString (tail cs)
   | otherwise = scanHtmlElem (ct++[toLower c]) cs
@@ -110,17 +117,20 @@ string2args (c:cs) =
    in  deleteApo (splitAtElement (=='=') arg1)
         : string2args (dropWhile isSpace rest)
 
+deleteApo :: (String,String) -> (String,String)
 deleteApo (tag,[]) = (map toLower tag,[])
 deleteApo (tag,c:cs) | c=='"'    = (map toLower tag, deleteLastApo cs)
                      | c=='\''   = (map toLower tag, deleteLastApo cs)
                      | otherwise = (map toLower tag, c:cs)
 
+deleteLastApo :: String -> String
 deleteLastApo [] = []
 deleteLastApo [c] = if c=='"' || c=='\'' then [] else [c]
 deleteLastApo (c1:c2:cs) = c1 : deleteLastApo (c2:cs)
 
 
 -- split a list at the first element satisfying a predicate:
+splitAtElement :: (a -> Bool) -> [a] -> ([a],[a])
 splitAtElement _ [] = ([],[])
 splitAtElement p (c:cs) =
   if p c then ([],cs)

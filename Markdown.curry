@@ -77,12 +77,15 @@ data SourceMDElem = SMDText String
                   | SMDHRule
                   | SMDHeader Int String
 
+isSMDUItem :: SourceMDElem -> Bool
 isSMDUItem md = case md of SMDUItem _ -> True
                            _          -> False
 
+isSMDOItem :: SourceMDElem -> Bool
 isSMDOItem md = case md of SMDOItem _ -> True
                            _          -> False
 
+textOfItem :: SourceMDElem -> String
 textOfItem (SMDUItem txt) = txt
 textOfItem (SMDOItem txt) = txt
 
@@ -107,6 +110,8 @@ groupMarkDownElems (SMDQuote md : mds) = Quote md : groupMarkDownElems mds
 groupMarkDownElems (SMDHRule : mds) = HRule : groupMarkDownElems mds
 groupMarkDownElems (SMDHeader l s : mds) = Header l s : groupMarkDownElems mds
 
+joinItems :: ([[MarkdownElem]] -> MarkdownElem) -> (SourceMDElem -> Bool)
+          -> [String] -> [SourceMDElem] -> [MarkdownElem]
 joinItems mdlcons _ items [] = [mdlcons (reverse (map fromMarkdownText items))]
 joinItems mdlcons isitem items (md:mds) =
   if isitem md
@@ -145,9 +150,11 @@ markdownLine fstline remtxt
   uitemlen = isUnorderedItemLine fstline
   blanklen = isCodeLine fstline
 
+dropFirst :: [a] -> [a]
 dropFirst s = if null s then [] else tail s
 
 -- translate a header line
+tryMDHeader :: String -> String -> [SourceMDElem]
 tryMDHeader s rtxt =
   let (sharps,htxt) = break (==' ') s
       level = length sharps
@@ -156,17 +163,20 @@ tryMDHeader s rtxt =
       else SMDHeader level (dropFirst htxt) : markdownText rtxt
 
 -- is a line a horizontal rule:
+isHRule :: String -> Bool
 isHRule l =
   (all (\c -> isSpace c || c=='-') l && length (filter (=='-') l) > 3) ||
   (all (\c -> isSpace c || c=='*') l && length (filter (=='*') l) > 3)
 
 -- check whether a line starts with an unordered item indicator ("* ")
 -- and return indent:
+isUnorderedItemLine :: String -> Int
 isUnorderedItemLine s =
   let (blanks,nonblanks) = span (==' ') s
    in if take 2 nonblanks `elem` ["* ","- ","+ "] then length blanks+2 else 0
 
 -- check whether a line starts with an indented number and return indent value:
+isNumberedItemLine :: String -> Int
 isNumberedItemLine s =
   let (blanks,nonblanks) = span (==' ') s
       numblanks = length blanks
@@ -182,6 +192,7 @@ isNumberedItemLine s =
         else 0
 
 -- check whether a line starts with at least four blanks and return indent value:
+isCodeLine :: String -> Int
 isCodeLine s =
   let (blanks,nonblanks) = span (==' ') s
       numblanks = length blanks
@@ -203,6 +214,7 @@ markdownPar ptxt txt
   uitemlen = isUnorderedItemLine fstline
 
 -- parse a quoted section:
+markdownQuote :: String -> String -> [SourceMDElem]
 markdownQuote qtxt alltxt =
   let txt = if take 2 alltxt == ">\n" -- allow empty quote lines
             then "> " ++ drop 1 alltxt
@@ -227,6 +239,8 @@ markdownCodeBlock n ctxt txt =
   else SMDCodeBlock ctxt : markdownText txt
 
 -- parse a markdown list item:
+markdownItem :: (String -> SourceMDElem) -> Int -> String -> String
+             -> [SourceMDElem]
 markdownItem icons n itxt txt =
   if take n txt == take n (repeat ' ')
   then let (fstline,remtxt) = break (=='\n') (drop n txt)
@@ -272,9 +286,11 @@ outsideMarkdownElem txt s = case s of
               else outsideMarkdownElem ('<':txt) cs
   (c:cs)   -> outsideMarkdownElem (c:txt) cs
 
+addPrevious :: String -> [SourceMDElem] -> [SourceMDElem]
 addPrevious ptxt xs = if null ptxt then xs else SMDText (reverse ptxt) : xs
 
 -- Try to parse a link of the form [link test](url)
+tryParseLink :: String -> [SourceMDElem]
 tryParseLink txt = let (linktxt,rtxt) = break (==']') txt in
   if null rtxt || null (tail rtxt) || (rtxt!!1 /= '(')
   then outsideMarkdownElem "[" txt
@@ -283,11 +299,13 @@ tryParseLink txt = let (linktxt,rtxt) = break (==']') txt in
            then outsideMarkdownElem "[" txt
            else SMDHRef linktxt url : outsideMarkdownElem "" (tail mtxt)
 
+markdownHRef :: String -> [SourceMDElem]
 markdownHRef txt = let (url,rtxt) = break (=='>') txt in
   if null rtxt
   then outsideMarkdownElem "" ('<':txt)
   else SMDHRef url url : outsideMarkdownElem "" (dropFirst rtxt)
 
+insideMarkdownElem :: String -> String -> String -> [SourceMDElem]
 insideMarkdownElem marker etext s =
   if marker `isPrefixOf` s
   then text2MDElem marker (reverse etext)
@@ -299,6 +317,7 @@ insideMarkdownElem marker etext s =
                        else insideMarkdownElem marker ('\\':etext) (c:cs)
         (c:cs)      -> insideMarkdownElem marker (c:etext) cs
 
+text2MDElem :: String -> String -> SourceMDElem
 text2MDElem marker txt = case marker of
   "**" -> SMDStrong txt
   "__" -> SMDStrong txt
@@ -315,6 +334,7 @@ mdDoc2html :: MarkdownDoc -> [HtmlExp]
 mdDoc2html = map mdElem2html
 
 -- translate markdown special characters in text to HTML
+mdtxt2html :: String -> HtmlExp
 mdtxt2html s = HtmlText (removeEscapes s)
 
 mdElem2html :: MarkdownElem -> HtmlExp
@@ -397,6 +417,7 @@ mdElem2latex txt2latex (Header l s) = case l of
 --- Translator for basic text to LaTeX.
 --- markdown escapes are removed and possible HTML markups
 --- are translated to LaTeX.
+html2latex :: String -> String
 html2latex = showLatexExps . parseHtmlString . removeEscapes
 
 --- Translate a markdown text into a (partial) LaTeX document.
@@ -421,6 +442,7 @@ markdownText2CompleteLaTeX mds =
   latexHeader ++ mdDoc2latex html2latex (fromMarkdownText mds) ++
   "\\end{document}\n"
 
+latexHeader :: String
 latexHeader =
  "\\documentclass{article}\n"++
  "\\usepackage[utf8x]{inputenc}\n"++
