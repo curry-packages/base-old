@@ -28,11 +28,11 @@ import FilePath     ((<.>))
 -- Definition of data types for representing abstract Curry programs:
 -- ---------------------------------------------------------------------------
 
--- |Current version of AbstractCurry
+--- Current version of AbstractCurry
 version :: String
 version = "AbstractCurry 1.0"
 
--- |A module name.
+--- A module name.
 type MName = String
 
 --- The data type for representing qualified names.
@@ -42,7 +42,7 @@ type MName = String
 type QName = (MName, String)
 
 --- Data type to specify the visibility of various entities.
-data CVisibility 
+data CVisibility
   = Public    -- exported entity
   | Private   -- private entity
 
@@ -127,7 +127,7 @@ data CFixity
   | CInfixlOp  -- left-associative infix operator
   | CInfixrOp  -- right-associative infix operator
 
--- |Function arity
+--- Function arity
 type Arity = Int
 
 --- Data type for representing function declarations.
@@ -153,13 +153,13 @@ data CFuncDecl
   = CFunc          QName Arity CVisibility CTypeExpr [CRule]
   | CmtFunc String QName Arity CVisibility CTypeExpr [CRule]
 
--- |The general form of a function rule. It consists of a list of patterns
--- (left-hand side), a list of guards (@success@ if not present in the
--- source text) with their corresponding right-hand sides, and
--- a list of local declarations.
+--- The general form of a function rule. It consists of a list of patterns
+--- (left-hand side), a list of guards (@success@ if not present in the
+--- source text) with their corresponding right-hand sides, and
+--- a list of local declarations.
 data CRule = CRule [CPattern] CRhs
 
--- |Right-hand-side of a 'CRule' or an @case@ expression
+--- Right-hand-side of a 'CRule' or an @case@ expression
 data CRhs
   = CSimpleRhs  CExpr            [CLocalDecl] -- @expr where decls@
   | CGuardedRhs [(CExpr, CExpr)] [CLocalDecl] -- @| cond = expr where decls@
