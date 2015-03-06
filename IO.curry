@@ -3,7 +3,7 @@
 --- that are not already contained in the prelude.
 ---
 --- @author Michael Hanus, Bernd Brassel
---- @version September 2014
+--- @version March 2015
 -----------------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
@@ -14,7 +14,7 @@ module IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,
           hWaitForInputOrMsg,hWaitForInputsOrMsg,hReady,
           hGetChar,hGetLine,hGetContents,getContents,
           hPutChar,hPutStr,hPutStrLn,hPrint,
-          hIsReadable,hIsWritable) where
+          hIsReadable,hIsWritable,hIsTerminalDevice) where
 
 --- The abstract type of a handle for a stream.
 data Handle -- internally defined
@@ -224,16 +224,22 @@ hPrint h = hPutStrLn h . show
 
 --- Is the handle readable?
 hIsReadable :: Handle -> IO Bool
-hIsReadable  h = prim_hIsReadable  $# h
+hIsReadable  h = prim_hIsReadable $# h
 
 prim_hIsReadable :: Handle -> IO Bool
 prim_hIsReadable external
 
 --- Is the handle writable?
 hIsWritable :: Handle -> IO Bool
-hIsWritable h = prim_hIsWritable  $# h
+hIsWritable h = prim_hIsWritable $# h
 
 prim_hIsWritable :: Handle -> IO Bool
 prim_hIsWritable external
 
+--- Is the handle connected to a terminal?
+hIsTerminalDevice :: Handle -> IO Bool
+hIsTerminalDevice h = prim_hIsTerminalDevice $# h
+
+prim_hIsTerminalDevice :: Handle -> IO Bool
+prim_hIsTerminalDevice external
 

@@ -108,10 +108,15 @@ external_d_C_prim_hGetChar h _ _ = toCurry (hGetChar . inputHandle) h
 external_d_C_prim_hPutChar :: C_Handle -> Curry_Prelude.C_Char -> Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.OP_Unit
 external_d_C_prim_hPutChar h c _ _ = toCurry (hPutChar . outputHandle) h c
 
-external_d_C_prim_hIsReadable :: C_Handle -> Cover -> ConstStore 
+external_d_C_prim_hIsReadable :: C_Handle -> Cover -> ConstStore
                               -> Curry_Prelude.C_IO Curry_Prelude.C_Bool
 external_d_C_prim_hIsReadable h _ _ = toCurry (hIsReadable . inputHandle) h
 
-external_d_C_prim_hIsWritable :: C_Handle -> Cover -> ConstStore 
+external_d_C_prim_hIsWritable :: C_Handle -> Cover -> ConstStore
                               -> Curry_Prelude.C_IO Curry_Prelude.C_Bool
 external_d_C_prim_hIsWritable h _ _ = toCurry (hIsWritable . outputHandle) h
+
+external_d_C_prim_hIsTerminalDevice :: C_Handle -> Cover -> ConstStore
+                              -> Curry_Prelude.C_IO Curry_Prelude.C_Bool
+external_d_C_prim_hIsTerminalDevice h _ _ =
+    toCurry (hIsTerminalDevice . outputHandle) h
