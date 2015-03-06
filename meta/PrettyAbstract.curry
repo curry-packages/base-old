@@ -29,7 +29,7 @@ qualifiedNames = True --False
 debug :: Bool
 debug = False
 
-showPrecs :: a -> b -> Doc
+showPrecs :: (Show a, Show b) => a -> b -> Doc
 showPrecs name prec
     | debug = text ("{-" ++ show name ++ "@" ++ show prec ++ "-}")
     | otherwise = empty
