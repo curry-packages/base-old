@@ -9,7 +9,6 @@
 -------------------------------------------------------------------------------
 {-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 module PrettyAbstract (showCProg, cprogDoc,
-module PrettyAbstract (showCProg, cprogDoc,
                        prettyCProg, cprogDocWithPrecedences,
                        preludePrecs, precs, prettyCTypeExpr,
                        prettyCTypes, prettyCOps) where
