@@ -16,10 +16,11 @@ module IOExts
   , IORef, newIORef, readIORef, writeIORef, modifyIORef
   ) where
 
-import System
-import IO
+import Char(isSpace)
 import Directory(removeFile)
+import IO
 import Read(readNat)
+import System
 
 --- Executes a command with a new default shell process.
 --- The standard I/O streams of the new process (stdin,stdout,stderr)
@@ -47,7 +48,8 @@ evalCmd :: String -> [String] -> String -> IO (Int, String, String)
 evalCmd cmd args input = do
   pid <- getPID
   let tmpfile = "/tmp/PAKCS_evalCMD"++show pid
-  (hi,ho,he) <- execCmd (unwords (cmd:args) ++ " ; (echo $? > "++tmpfile++")")
+  (hi,ho,he) <- execCmd (unwords (map wrapArg (cmd:args)) ++
+                         " ; (echo $? > "++tmpfile++")")
   hPutStrLn hi input
   hClose hi
   outs <- hGetEOF ho
@@ -56,6 +58,8 @@ evalCmd cmd args input = do
   removeFile tmpfile
   return (readNat ecodes, outs, errs)
  where
+  wrapArg s = if any isSpace s then '"':s++"\"" else s
+
   --- Reads from an input handle until EOF and returns the input.
   hGetEOF  :: Handle -> IO String
   hGetEOF h = do
