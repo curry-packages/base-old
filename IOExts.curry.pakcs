@@ -16,10 +16,10 @@ module IOExts
   , IORef, newIORef, readIORef, writeIORef, modifyIORef
   ) where
 
-import Char(isSpace)
-import Directory(removeFile)
+import Char      (isAlphaNum)
+import Directory (removeFile)
 import IO
-import Read(readNat)
+import Read      (readNat)
 import System
 
 --- Executes a command with a new default shell process.
@@ -58,7 +58,17 @@ evalCmd cmd args input = do
   removeFile tmpfile
   return (readNat ecodes, outs, errs)
  where
-  wrapArg s = if any isSpace s then '"':s++"\"" else s
+  wrapArg str
+    | null str         = "''"
+    -- goodChar is a pessimistic predicate, such that if an argument is
+    -- non-empty and only contains goodChars, then there is no need to
+    -- do any quoting or escaping
+    | all goodChar str = str
+    | otherwise        = '\'' : foldr escape "'" str
+      where escape c s
+              | c == '\'' = "'\\''" ++ s
+              | otherwise = c : s
+            goodChar c    = isAlphaNum c || c `elem` "-_.,/"
 
   --- Reads from an input handle until EOF and returns the input.
   hGetEOF  :: Handle -> IO String
