@@ -19,7 +19,7 @@ module Pretty (
   empty, isEmpty, text, linesep, line, linebreak, group, softline, softbreak,
 
   -- alignment combinators
-  nest, hang, align, --indent??,
+  nest, hang, align, indent,
 
   -- composition combinators
   combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>),
@@ -32,6 +32,9 @@ module Pretty (
   -- bracketing combinators
   enclose, squotes, dquotes, bquotes, parens,
   parensIf, angles, braces, brackets,
+  
+  -- fillers
+  fill, fillBreak,
 
   -- primitve type documents
   char, string, int, float,
@@ -185,6 +188,25 @@ hang i d = Doc (OpenNest (\ms r w -> (w - r + i) : ms) . deDoc d . CloseNest)
 --- @return document d with the nesting level set to the current column
 align :: Doc -> Doc
 align = hang 0
+
+
+--- The document `(indent i d)` indents document `d` with `i` spaces.
+---
+---     test  = indent 4 (fillSep (map text
+---             (words "the indent combinator indents these words !")))
+---
+--- Which lays out with a page width of 20 as:
+---
+---     the indent
+---     combinator
+---     indents these
+---     words !
+---
+--- @param i - an integer which increases the indentation level
+--- @param d - a document
+--- @return document d with an indentation level set to the current column plus i
+indent :: Int -> Doc -> Doc
+indent i d = hang i (spaces i <> d)
 
 --- The document `(combine x l r)` encloses document `x` between
 --- documents `l` and `r` using `(&lt;&gt;)`.
@@ -682,6 +704,15 @@ comma = char ','
 space :: Doc
 space = char ' '
 
+--- The document (spaces n) contains n spaces, when n is greater than 0.
+--- Otherwise the document is empty.
+---
+--- @return a document which contains n spaces or the empty document,
+---  if n <= 0
+spaces :: Int -> Doc
+spaces n | n <= 0    = empty
+         | otherwise = text $ replicate n ' '
+
 --- The document dot contains a single dot, `"."`.
 --- @return a document which contains a single dot
 dot :: Doc
@@ -717,6 +748,66 @@ doubleColon = text "::"
 bar :: Doc
 bar = char '|'
 
+--- The document `(fillBreak i d)` first renders document `d`. It
+--- than appends `space`s until the width is equal to `i`. If the
+--- width of `d` is already larger than `i`, the nesting level is
+--- increased by `i` and a `line` is appended. When we redefine `ptype`
+--- in the previous example to use `fillBreak`, we get a useful
+--- variation of the previous output:
+---
+---   ptype (name,tp)
+---          = fillBreak 6 (text name) <+> text "::" <+> text tp
+---
+--- The output will now be:
+---
+--- let empty  :: Doc
+---     nest   :: Int -> Doc -> Doc
+---     linebreak
+---            :: Doc
+--- 
+fillBreak :: Int -> Doc -> Doc
+fillBreak i d = d <> fill'
+  where w     = width d
+        fill' = if w >= i then nest i linebreak
+                          else spaces (i - w)
+
+--- The document `(fill i d)` renders document `d`. It than appends
+--- `space`s until the width is equal to `i`. If the width of `d` is
+--- already larger, nothing is appended. This combinator is quite
+--- useful in practice to output a list of bindings. The following
+--- example demonstrates this.
+---
+---   types  = [("empty","Doc")
+---            ,("nest","Int -> Doc -> Doc")
+---            ,("linebreak","Doc")]
+---
+---   ptype (name,tp)
+---          = fill 6 (text name) <+> text "::" <+> text tp
+---
+---   test   = text "let" <+> align (vcat (map ptype types))
+---
+--- Which is layed out as:
+---
+--- let empty  :: Doc
+---     nest   :: Int -> Doc -> Doc
+---     linebreak :: Doc
+--- 
+fill :: Int -> Doc -> Doc
+fill i d = d <> fill'
+  where w     = width d
+        fill' = if w >= i then empty else spaces (i - w)
+
+-- Compute the width of a given document
+width :: Doc -> Int
+width (Doc d) = width' 0 $ d Empty
+  where width' w Empty           = w
+        width' w (Text     s ts) = width' (w + length s) ts
+        width' w (Line     s ts) = width' (w + length s) ts
+        width' w (Open       ts) = width' w              ts
+        width' w (Close      ts) = width' w              ts
+        width' w (OpenNest _ ts) = width' w              ts
+        width' w (CloseNest  ts) = width' w              ts
+
 -- -----------------------------------------------------------------------------
 -- Implementation
 -- -----------------------------------------------------------------------------
@@ -729,10 +820,15 @@ type Width          = Int
 type Position       = Int
 type StartPosition  = Int
 type EndPosition    = Int
-type Out            = Remaining -> Margins -> String
+type Out            = Remaining -> Margins -> Layout
+
+-- Type of a `group output function`: Takes information whether group content
+-- should be formatted horizontally or vertically and a continuation to output
+-- parts of the document which come after the group
 type OutGroupPrefix = Horizontal -> Out -> Out
 type Margins        = [Int]
 
+-- Token sequence
 data Tokens
   = Text  String Tokens
   | Line  String Tokens
@@ -742,6 +838,14 @@ data Tokens
   | OpenNest  (Margins -> Remaining -> Width -> Margins) Tokens
   | CloseNest Tokens
 
+-- Normalise a token sequence using the following rewriting rules:
+--
+--   Close (Text s ts) => Text s (Close ts)
+--   Open  (Text s ts) => Text s (Open  ts)
+--   Open  (Close  ts) => ts
+--
+-- Rewriting moves `Text` tokens in and out of groups. The set of `lines`
+-- "belonging" to each group, i.e. the set of layouts is left unchanged.
 normalise :: Tokens -> Tokens
 normalise = go id
   where
@@ -756,6 +860,10 @@ normalise = go id
 
   open t = case t of Close ts -> ts; _ -> Open t
 
+-- Transform a document into a group-closed document by normalising its token
+-- sequence.
+-- A document is called group-closed, if between the end of every `group` and
+-- the next `text` document there is always a `line` document.
 doc2Tokens :: Doc -> Tokens
 doc2Tokens (Doc d) = normalise (d Empty)
 
@@ -763,14 +871,40 @@ doc2Tokens (Doc d) = normalise (d Empty)
 --- @param w - width of page
 --- @param d - a document
 --- @return pretty printed document
-pretty :: Width -> Doc -> String
+pretty :: Width -> Doc -> Layout
 pretty w d = noGroup (doc2Tokens d) w 1 w [0]
 
+-- Compute number of visible ASCII characters
 length :: String -> Int
 length = Prelude.length . filter isVisible
   where
   isVisible c = ord c `notElem` ([5, 6, 7] ++ [16 .. 31])
 
+-- Basic pretty printing algorithm:
+--
+-- 1. Determine for each group in the document its width, i.e. the space it
+--    requires for printing if it was printed horizontally, all in one line.
+-- 2. Traverse document tree and keep track of remaining free space in current
+--    output line.
+--    At the start of a group compare remaining space with width of the group:
+--    If the width is smaller or equal, the group is formatted horizontally,
+--    otherwise vertically.
+
+-- Determine widths of all groups and produce actual layout by traversing token
+-- sequence a single time using continuations:
+-- At the start of each group construct a `group output function` which receives
+-- formate information and information about the remaining space at the
+-- beginning of the group.
+-- Since groups can be nested we don't want to update a width value for each
+-- surrounding group when processing a token. Instead we introduce an absolute
+-- measure of a token's position: The width of a group is the difference between
+-- the position of its `Close` token and the position of its `Open` token.
+-- When traversing the document only the `group output function` of the
+-- innermost group is extended. All the other `group output function`s are
+-- passed on unchanged. When we come across a `Close` token we merge the
+-- function for the innermost group with the function for the next inner group.
+
+-- noGroup is used when there is currently no deferred group
 noGroup :: Tokens -> Width -> Position -> Out
 noGroup Empty           _ _ _ _  = ""
 noGroup (Text     t ts) w p r ms = t ++ noGroup ts w (p + l) (r - l) ms
@@ -783,6 +917,10 @@ noGroup (Close      ts) w p r ms = noGroup ts w p r ms -- may have been pruned
 noGroup (OpenNest f ts) w p r ms = noGroup ts w p r (f ms r w)
 noGroup (CloseNest  ts) w p r ms = noGroup ts w p r (tail ms)
 
+-- oneGroup is used when there is one deferred group
+-- Whenever the tokens `Text` or `Line` are processed, i.e. the current position
+-- is increased, pruneOne checks whether whether the group still fits the line
+-- Furthermore the `group output function` is extended with the current token
 oneGroup :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix -> Out
 oneGroup Empty           _ _ _ _         = error "Pretty.oneGroup: Empty"
 oneGroup (Text     s ts) w p e outGrpPre =
@@ -805,6 +943,19 @@ oneGroup (OpenNest f ts) w p e outGrpPre = oneGroup ts w p e
 oneGroup (CloseNest  ts) w p e outGrpPre = oneGroup ts w p e
   (\h c -> outGrpPre h (\r ms -> c r (tail ms)))
 
+-- multiGroup is used when there are at least two deferred groups
+-- Whenever the tokens `Text` or `Line` are processed, i.e. the current position
+-- is increased, pruneMulti checks whether whether the outermost group still
+-- fits the line.
+-- Furthermore the `group output function` of the innermost group is extended
+-- with the current token.
+-- When we come across a `Open` token during traversal of the token sequence,
+-- the current innermost `group output function` is added to the queue.
+-- Reaching a `Close` token it is checked whether the queue still contains a
+-- deferred `group output function`: If the queue is empty, there is only one
+-- group left, otherwise there are at least two groups left.
+-- In both cases the function for the innermost group is merged with the
+-- function for the next inner group
 multiGroup :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix
            -> Queue (StartPosition, OutGroupPrefix)
            -> StartPosition -> OutGroupPrefix -> Out
@@ -841,10 +992,18 @@ multiGroup (CloseNest ts) w p e outGrpPreOuter qs si outGrpPreInner =
   multiGroup ts w p e outGrpPreOuter qs si
     (\h c -> outGrpPreInner h (\r ms -> c r (tail ms)))
 
+-- pruneOne checks whether the outermost group (in this case there is only one
+-- group) still fits in the current line. If it doesn't fit, it applies the
+-- corresponding `group output function` (the group is formatted vertically)
+-- and continues processing the token sequence
 pruneOne :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix -> Out
 pruneOne ts w p e outGrpPre | p <= e    = oneGroup ts w p e outGrpPre
                             | otherwise = outGrpPre False (noGroup ts w p)
 
+-- pruneMulti checks whether the outermost group (in this case there are at
+-- least two groups) still fits in the current line. If it doesn't fit, it
+-- applies the corresponding `group output function` (the last queue entry) and
+-- continues checking whether the next outermost group fits
 pruneMulti :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix
               -> Queue (StartPosition, OutGroupPrefix)
               -> StartPosition -> OutGroupPrefix -> Out
