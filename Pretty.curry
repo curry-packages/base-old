@@ -25,7 +25,7 @@ module Pretty (
   combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>),
 
   -- list combinators
-  compose, hsep, vsep, fillSep, sep, hcat, vcat, fillCat, cat,
+  compose, hsep, vsep, fillSep, sep, hcat, hcatMap, vcat, vcatMap, fillCat, cat,
   punctuate, encloseSep, hEncloseSep, fillEncloseSep, fillEncloseSepSpaced,
   list, listSpaced, tupled, tupledSpaced, semiBraces, semiBracesSpaced,
 
@@ -353,6 +353,15 @@ sep = group . vsep
 hcat :: [Doc] -> Doc
 hcat = compose (<>)
 
+--- The document (hcatMap f xs) generates a list of documents by
+--- applying `f` to all list elements. Then it concatenates these
+--- documents horizontally using `hcat`.
+--- @param f  - a function to generate documents
+--- @param xs - a list of arbitrary elements
+--- @return horizontal concatenation of generated documents
+hcatMap :: (a -> Doc) -> [a] -> Doc
+hcatMap f = hcat . map f
+
 --- The document (vcat xs) concatenates all documents xs vertically
 --- with `(&lt;$$&gt;)`. If a `group` undoes the line
 --- breaks inserted by `vcat`, all documents are directly
@@ -361,6 +370,15 @@ hcat = compose (<>)
 --- @return vertical concatenation of documents
 vcat :: [Doc] -> Doc
 vcat = compose (<$$>)
+
+--- The document (vcatMap f xs) generates a list of documents by
+--- applying `f` to all list elements. Then it concatenates these
+--- documents vertically using `vcat`.
+--- @param f  - a function to generate documents
+--- @param xs - a list of arbitrary elements
+--- @return vertical concatenation of generated documents
+vcatMap :: (a -> Doc) -> [a] -> Doc
+vcatMap f = vcat . map f
 
 --- The document (fillCat xs) concatenates documents xs horizontally
 --- with `(&lt;&gt;)` as long as its fits the page, than inserts
