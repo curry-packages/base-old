@@ -746,25 +746,35 @@ backslash = char '\\'
 equals :: Doc
 equals = char '='
 
---- The document equals contains an arrow sign, `"->"`.
+--- The document arrow contains an arrow sign, `"->"`.
 --- @return a document which contains an arrow sign
 arrow :: Doc
 arrow = text "->"
 
---- The document equals contains an double arrow sign, `"=>"`.
+--- The document doubleArrow contains an double arrow sign, `"=>"`.
 --- @return a document which contains an double arrow sign
 doubleArrow :: Doc
 doubleArrow = text "=>"
 
---- The document equals contains a double colon sign, `"::"`.
+--- The document doubleColon contains a double colon sign, `"::"`.
 --- @return a document which contains a double colon sign
 doubleColon :: Doc
 doubleColon = text "::"
 
---- The document equals contains a vertical bar sign, `"|"`.
+--- The document bar contains a vertical bar sign, `"|"`.
 --- @return a document which contains a vertical bar sign
 bar :: Doc
 bar = char '|'
+
+--- The document at contains a at sign, `"@"`.
+--- @return a document which contains a at sign
+at :: Doc
+at = char '@'
+
+--- The document tilde contains a tilde sign, `"~"`.
+--- @return a document which contains a tilde sign
+tilde :: Doc
+tilde = char '~'
 
 --- The document `(fillBreak i d)` first renders document `d`. It
 --- than appends `space`s until the width is equal to `i`. If the
