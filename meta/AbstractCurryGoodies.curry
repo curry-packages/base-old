@@ -98,6 +98,11 @@ funcVis :: CFuncDecl -> CVisibility
 funcVis (CFunc     _ _ vis _ _) = vis
 funcVis (CmtFunc _ _ _ vis _ _) = vis
 
+--- Returns the name of a given constructor declaration
+consName :: CConsDecl -> QName
+consName (CCons   n _ _) = n
+consName (CRecord n _ _) = n
+
 --- Returns the visibility of a given constructor declaration
 consVis :: CConsDecl -> CVisibility
 consVis (CCons   _ vis _) = vis
