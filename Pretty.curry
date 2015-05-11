@@ -22,7 +22,7 @@ module Pretty (
   nest, hang, align, indent,
 
   -- composition combinators
-  combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>),
+  combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>), ($$), ($+$),
 
   -- list combinators
   compose, hsep, vsep, fillSep, sep, hcat, hcatMap, vcat, vcatMap, fillCat, cat,
@@ -251,6 +251,36 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 --- @return concatenation of x and y with a `line` in between
 (<$+>) :: Doc -> Doc -> Doc
 (<$+>) = combine (line <> line)
+
+--- The document (x $$ y) concatenates documents x and y with a `line`
+--- in between, just like `<$>`, but with identity empty.
+--- Thus, the following equations hold:
+---   d1    $$ empty == d1
+---   empty $$ d2    == d2
+---   d1    $$ d2    == d1 <$> d2 if neither d1 nor d2 are empty
+--- @param x - the first document
+--- @param y - the second document
+--- @return concatenation of x and y with a `line` in between unless one
+---         of the documents is empty
+($$) :: Doc -> Doc -> Doc
+($$) d1 d2 | isEmpty d1 = d2
+           | isEmpty d2 = d1
+           | otherwise  = d1 <$> d2
+
+--- The document (x $+$ y) concatenates documents x and y with a blank line
+--- in between, just like `<$+>`, but with identity empty.
+--- Thus, the following equations hold:
+---   d1    $+$ empty == d1
+---   empty $+$ d2    == d2
+---   d1    $+$ d2    == d1 <$+> d2 if neither d1 nor d2 are empty
+--- @param x - the first document
+--- @param y - the second document
+--- @return concatenation of x and y with a blank line in between unless one
+---         of the documents is empty
+($+$) :: Doc -> Doc -> Doc
+($+$) d1 d2 | isEmpty d1 = d2
+            | isEmpty d2 = d1
+            | otherwise  = d1 <$+> d2
 
 --- The document (x &lt;/&gt; y) concatenates document x and y with
 --- a `softline` in between. This effectively puts x and y either
