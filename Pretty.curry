@@ -32,7 +32,7 @@ module Pretty (
   -- bracketing combinators
   enclose, squotes, dquotes, bquotes, parens,
   parensIf, angles, braces, brackets,
-  
+
   -- fillers
   fill, fillBreak,
 
@@ -42,7 +42,7 @@ module Pretty (
   -- character documents
   lparen, rparen, langle, rangle, lbrace, rbrace, lbracket, rbracket,
   squote, dquote, semi, colon, comma, space, dot, backslash, equals,
-  arrow, doubleArrow, doubleColon, bar
+  arrow, doubleArrow, doubleColon, bar, at, tilde
 
   ) where
 
@@ -822,7 +822,7 @@ tilde = char '~'
 ---     nest   :: Int -> Doc -> Doc
 ---     linebreak
 ---            :: Doc
---- 
+---
 fillBreak :: Int -> Doc -> Doc
 fillBreak i d = d <> fill'
   where w     = width d
@@ -849,7 +849,7 @@ fillBreak i d = d <> fill'
 --- let empty  :: Doc
 ---     nest   :: Int -> Doc -> Doc
 ---     linebreak :: Doc
---- 
+---
 fill :: Int -> Doc -> Doc
 fill i d = d <> fill'
   where w     = width d
