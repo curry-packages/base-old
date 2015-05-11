@@ -20,18 +20,18 @@ pPrint = pretty 80
 
 --- pretty-print a FlatCurry module
 ppProg :: Prog -> Doc
-ppProg (Prog m is ts fs os)
-  =   ppHeader    m ts fs
-  <$> ppImports   is
-  <$> ppOpDecls   os
-  <$> ppTypeDecls ts
-  <$> ppFuncDecls fs
+ppProg (Prog m is ts fs os) = compose ($+$) -- adds blank line in between
+  [ ppHeader    m ts fs
+  , ppImports   is
+  , ppOpDecls   os
+  , ppTypeDecls ts
+  , ppFuncDecls fs
+  ]
 
 --- pretty-print the module header
 ppHeader :: String -> [TypeDecl] -> [FuncDecl] -> Doc
 ppHeader m ts fs
   = indent (sep [text "module" <+> text m, ppExports ts fs, text "where"])
-    <> line
 
 --- pretty-print the export list
 ppExports :: [TypeDecl] -> [FuncDecl] -> Doc
@@ -58,14 +58,12 @@ ppFuncExports fs = [ ppPrefixOp qn | Func qn _ Public _ _ <- fs]
 
 --- pretty-print a list of import statements
 ppImports :: [String] -> Doc
-ppImports []       = empty
-ppImports is@(_:_) = vsep (map (indent . ppImport) is) <> line
+ppImports is = vsep (map (indent . ppImport) is)
   where ppImport m = text "import" <+> text m
 
 --- pretty-print a list of operator fixity declarations
 ppOpDecls :: [OpDecl] -> Doc
-ppOpDecls []       = empty
-ppOpDecls os@(_:_) = vsep (map (indent . ppOpDecl) os) <> line
+ppOpDecls os = vsep (map (indent . ppOpDecl) os)
   where ppOpDecl (Op qn fix n) = ppFixity fix <+> int n <+> ppInfixOp qn
 
 --- pretty-print the associativity keyword
@@ -76,8 +74,7 @@ ppFixity InfixrOp = text "infixr"
 
 --- pretty-print a list of type declarations
 ppTypeDecls :: [TypeDecl] -> Doc
-ppTypeDecls []       = empty
-ppTypeDecls ts@(_:_) = vsep (map (indent . ppTypeDecl) ts) <> line
+ppTypeDecls ts = vsep (map (indent . ppTypeDecl) ts)
 
 --- pretty-print a type declaration
 ppTypeDecl :: TypeDecl -> Doc
@@ -115,8 +112,7 @@ ppTVarIndex i = text $ vars !! i
 
 --- pretty-print a list of function declarations
 ppFuncDecls :: [FuncDecl] -> Doc
-ppFuncDecls []       = empty
-ppFuncDecls fs@(_:_) = vsep (map ((<> line) . ppFuncDecl) fs)
+ppFuncDecls fs = compose ($+$) (map ppFuncDecl fs)
 
 --- pretty-print a function declaration
 ppFuncDecl :: FuncDecl -> Doc
