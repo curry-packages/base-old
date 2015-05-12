@@ -2,25 +2,27 @@
 --- This library defines operations to read a FlatCurry programs or interfaces
 --- together with all its imported modules in the current load path.
 ---
---- @author Michael Hanus
---- @version January 2015
+--- @author Michael Hanus, Björn Peemöller
+--- @version May 2015
 ------------------------------------------------------------------------------
 
-module FlatCurryRead(readFlatCurryWithImports,readFlatCurryWithImportsInPath,
-                     readFlatCurryIntWithImports,
-                     readFlatCurryIntWithImportsInPath)
-  where
+module FlatCurryRead
+  ( readFlatCurryWithImports
+  , readFlatCurryWithImportsInPath
+  , readFlatCurryIntWithImports
+  , readFlatCurryIntWithImportsInPath
+  ) where
 
-import FlatCurry
-import Directory
-import FileGoodies
-import System
+import Directory        (getModificationTime)
 import Distribution
-import List(intersperse)
+import FileGoodies      (baseName, lookupFileInPath, stripSuffix)
+import FilePath         (normalise)
+import FlatCurry
+import FlatCurryGoodies (progImports)
 
---------------------------------------------------------------------------
 --- Reads a FlatCurry program together with all its imported modules.
---- The argument is the name of the main module (possibly with a directory prefix).
+--- The argument is the name of the main module,
+--- possibly with a directory prefix.
 readFlatCurryWithImports :: String -> IO [Prog]
 readFlatCurryWithImports modname = do
   loadpath <- getLoadPathForModule modname
@@ -33,8 +35,10 @@ readFlatCurryWithImportsInPath :: [String] -> String -> IO [Prog]
 readFlatCurryWithImportsInPath loadpath modname =
   readFlatCurryFileWithImports loadpath modname [".fcy"]
 
---- Reads a FlatCurry interface together with all its imported module interfaces.
---- The argument is the name of the main module (possibly with a directory prefix).
+--- Reads a FlatCurry interface together with all its imported module
+--- interfaces.
+--- The argument is the name of the main module,
+--- possibly with a directory prefix.
 --- If there is no interface file but a FlatCurry file (suffix ".fcy"),
 --- the FlatCurry file is read instead of the interface.
 readFlatCurryIntWithImports :: String -> IO [Prog]
@@ -55,80 +59,66 @@ readFlatCurryIntWithImportsInPath loadpath modname =
 -- The argument is the loadpath, the name of the main module, and the
 -- possible suffixes of the FlatCurry file (e.g., [".fint",".fcy"]).
 readFlatCurryFileWithImports :: [String] -> String -> [String] -> IO [Prog]
-readFlatCurryFileWithImports loadpath mod suffixes = do
+readFlatCurryFileWithImports loadpath mod sfxs = do
   putStr "Reading FlatCurry files "
-  -- try to read the interface files directly:
-  mbaimps <- tryReadFlatCurryFileWithImports loadpath mod suffixes
-  maybe (parseFlatCurryFileWithImports loadpath mod suffixes) return mbaimps
+  -- try to read the interface files directly
+  eiMods <- tryReadFlatCurryFileWithImports loadpath mod sfxs
+  either (\_ -> parseFlatCurryFileWithImports loadpath mod sfxs) return eiMods
 
-
+-- Parse a FlatCurry file together with its imported modules.
+-- The argument is the loadpath, the name of the main module, and the
+-- possible suffixes of the FlatCurry file (e.g., [".fint",".fcy"]).
 parseFlatCurryFileWithImports :: [String] -> String -> [String] -> IO [Prog]
 parseFlatCurryFileWithImports loadpath modname suffixes = do
-  putStrLn $ ">>>>> FlatCurry files not up-to-date, parsing module \""++modname++"\"..."
+  putStrLn $ ">>>>> FlatCurry files not up-to-date, parsing module \""
+              ++ modname ++ "\"..."
   callFrontendWithParams FCY
      (setQuiet True (setFullPath loadpath defaultParams)) modname
   putStr "Reading FlatCurry files "
-  collectMods [modname] []
- where
-  collectMods [] _ = putStrLn "done" >> return []
-  collectMods (mod:mods) implist =
-    if mod `elem` implist
-    then collectMods mods implist
-    else lookupFileInPath mod suffixes loadpath >>= \mbfname ->
-         maybe (error $ "FlatCurry file for module \""++mod++"\" not found!")
-               (\filename ->
-                     putStr (filename++" ") >>
-                     readFlatCurryFile filename >>= \prog ->
-                     collectMods (mods++importsOf prog) (mod:implist) >>= \results ->
-                     return (prog : results))
-               mbfname
+  eiMods <- tryReadFlatCurryFileWithImports loadpath modname suffixes
+  return (either (error . notFound) id eiMods)
+ where notFound mods = "FlatCurry file not found for the following module(s): "
+                         ++ unwords mods
 
--- Read and process the imported interfaces of a module.
--- First argument is a processing action and second argument
--- is a module to be processed.
--- Nothing is returned if some interface files do not exists or are not
--- up-to-date
+-- Read a FlatCurry file with all its imports. If all files could be read,
+-- then `Right progs` is returned, otherwise `Left mods` where `mods` is
+-- the list of modules that could *not* be read.
 tryReadFlatCurryFileWithImports :: [String] -> String -> [String]
-                                -> IO (Maybe [Prog])
-tryReadFlatCurryFileWithImports loadpath modname suffixes =
-  collectMods [modname] []
+                                -> IO (Either [String] [Prog])
+tryReadFlatCurryFileWithImports loadpath modname suffixes = collect [modname] []
  where
-  collectMods [] _ = putStrLn "done" >> return (Just [])
-  collectMods (mod:mods) implist =
-    if mod `elem` implist
-    then collectMods mods implist
-    else
-      readFlatCurryIfPossible loadpath mod suffixes >>=
-      maybe (return Nothing)
-            (\prog-> do
-               mbresults <- collectMods (mods++importsOf prog) (mod:implist)
-               return (maybe Nothing
-                             (\results -> Just (prog : results))
-                             mbresults))
+  -- Collects all imported modules
+  collect []         _       = putStrLn "done" >> return (Right [])
+  collect (mod:mods) implist
+    | mod `elem` implist     = collect mods implist
+    | otherwise              = do
+      mbProg <- tryReadFlatCurry loadpath mod suffixes
+      case mbProg of
+        Nothing   -> return (Left [mod])
+        Just prog -> do
+          mbresults <- collect (mods ++ progImports prog) (mod:implist)
+          return (either Left (Right . (prog :)) mbresults)
 
-importsOf :: Prog -> [String]
-importsOf (Prog _ imps _ _ _) = imps
-
--- Read a FlatCurry file for a module if it exists and is up-to-date
+-- Read a single FlatCurry file for a module if it exists and is up-to-date
 -- w.r.t. the source program. If no source exists, it is always assumed
--- to be up-to-date.
-readFlatCurryIfPossible :: [String] -> String -> [String] -> IO (Maybe Prog)
-readFlatCurryIfPossible loadpath modname suffixes =
-  let flatbasename  = stripSuffix (flatCurryFileName modname) in
-  lookupModuleSourceInLoadPath modname >>=
-  maybe (lookupFileInPath flatbasename suffixes loadpath >>=
-         maybe (return Nothing)
-               (\flatfile -> readFlatCurryFile flatfile >>= return . Just))
-        (\ (_,modfile) -> do
-           mbflatfile <- lookupFileInPath flatbasename suffixes loadpath
-           maybe (return Nothing)
-                 (\flatfile -> do
-                    ctime <- getModificationTime modfile
-                    ftime <- getModificationTime flatfile
-                    if ctime>ftime
-                     then return Nothing
-                     else putStr (flatfile++" ") >>
-                          readFlatCurryFile flatfile >>= return . Just )
-                 mbflatfile)
-
---------------------------------------------------------------------------
+-- to be up-to-date. If the source is newer then the FlatCurry file or
+-- there is no FlatCurry file, the function returns `Nothing`.
+tryReadFlatCurry :: [String] -> String -> [String] -> IO (Maybe Prog)
+tryReadFlatCurry loadpath modname suffixes = do
+  mbSrc <- lookupModuleSourceInLoadPath modname
+  case mbSrc of
+    Nothing -> lookupFileInPath flatbasename suffixes loadpath >>=
+               maybe (return Nothing) (liftIO Just  . readFlatCurryFile)
+    Just (_,src) -> do
+      mbFcy <- lookupFileInPath flatbasename suffixes loadpath
+      case mbFcy of
+        Nothing  -> return Nothing
+        Just fcy -> do
+          ctime <- getModificationTime src
+          ftime <- getModificationTime fcy
+          if ctime > ftime
+            then return Nothing
+            else do
+              putStr (normalise fcy ++ " ")
+              Just `liftIO` readFlatCurryFile fcy
+ where flatbasename = stripSuffix (flatCurryFileName modname)
