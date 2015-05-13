@@ -59,7 +59,7 @@ deDoc (Doc d) = d
 
 --- The empty document is, indeed, empty. Although empty has no content,
 --- it does have a 'height' of 1 and behaves exactly like `(text "")`
---- (and is therefore not a unit of `&lt;$&gt;`).
+--- (and is therefore not a unit of `<$>`).
 --- @return an empty document
 empty :: Doc
 empty = text ""
@@ -209,7 +209,7 @@ indent :: Int -> Doc -> Doc
 indent i d = hang i (spaces i <> d)
 
 --- The document `(combine x l r)` encloses document `x` between
---- documents `l` and `r` using `(&lt;&gt;)`.
+--- documents `l` and `r` using `(<>)`.
 ---
 ---     combine x l r   = l <> x <> r
 ---
@@ -220,7 +220,7 @@ indent i d = hang i (spaces i <> d)
 combine :: Doc -> Doc -> Doc -> Doc
 combine s d1 d2 = enclose d1 d2 s
 
---- The document `(x &lt;&gt; y)` concatenates document `x` and document `y`.
+--- The document `(x <> y)` concatenates document `x` and document `y`.
 --- It is an associative operation having empty as a left and right unit.
 --- @param x - the first document
 --- @param y - the second document
@@ -228,7 +228,7 @@ combine s d1 d2 = enclose d1 d2 s
 (<>) :: Doc -> Doc -> Doc
 d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 
---- The document `(x &lt;+&gt; y)` concatenates document `x` and `y` with a
+--- The document `(x <+> y)` concatenates document `x` and `y` with a
 --- `space` in between.
 --- @param x - the first document
 --- @param y - the second document
@@ -236,7 +236,7 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 (<+>) :: Doc -> Doc -> Doc
 (<+>) = combine space
 
---- The document `(x &lt;$&gt; y)` concatenates document x and y with a
+--- The document `(x <$> y)` concatenates document x and y with a
 --- `line` in between.
 --- @param x - the first document
 --- @param y - the second document
@@ -244,7 +244,7 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 (<$>) :: Doc -> Doc -> Doc
 (<$>) = combine line
 
---- The document `(x &lt;$&gt; y)` concatenates document x and y with a
+--- The document `(x <$+> y)` concatenates document x and y with a
 --- blank line in between.
 --- @param x - the first document
 --- @param y - the second document
@@ -255,9 +255,11 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 --- The document (x $$ y) concatenates documents x and y with a `line`
 --- in between, just like `<$>`, but with identity empty.
 --- Thus, the following equations hold:
----   d1    $$ empty == d1
----   empty $$ d2    == d2
----   d1    $$ d2    == d1 <$> d2 if neither d1 nor d2 are empty
+---
+---     d1    $$ empty == d1
+---     empty $$ d2    == d2
+---     d1    $$ d2    == d1 <$> d2 if neither d1 nor d2 are empty
+---
 --- @param x - the first document
 --- @param y - the second document
 --- @return concatenation of x and y with a `line` in between unless one
@@ -267,12 +269,14 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
            | isEmpty d2 = d1
            | otherwise  = d1 <$> d2
 
---- The document (x $+$ y) concatenates documents x and y with a blank line
---- in between, just like `<$+>`, but with identity empty.
+--- The document `(x $+$ y)` concatenates documents `x` and `y` with a
+--- blank line in between, just like `<$+>`, but with identity empty.
 --- Thus, the following equations hold:
----   d1    $+$ empty == d1
----   empty $+$ d2    == d2
----   d1    $+$ d2    == d1 <$+> d2 if neither d1 nor d2 are empty
+---
+---     d1    $+$ empty == d1
+---     empty $+$ d2    == d2
+---     d1    $+$ d2    == d1 <$+> d2 if neither d1 nor d2 are empty
+---
 --- @param x - the first document
 --- @param y - the second document
 --- @return concatenation of x and y with a blank line in between unless one
@@ -282,8 +286,8 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
             | isEmpty d2 = d1
             | otherwise  = d1 <$+> d2
 
---- The document (x &lt;/&gt; y) concatenates document x and y with
---- a `softline` in between. This effectively puts x and y either
+--- The document `(x </> y)` concatenates document `x` and `y` with
+--- a `softline` in between. This effectively puts `x` and `y` either
 --- next to each other (with a `space` in between)
 --- or underneath each other.
 --- @param x - the first document
@@ -292,7 +296,7 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 (</>) :: Doc -> Doc -> Doc
 (</>) = combine softline
 
---- The document (x &lt;$$&gt; y) concatenates document x and y with a
+--- The document `(x <$$> y)` concatenates document `x` and `y` with a
 --- `linebreak` in between.
 --- @param x - the first document
 --- @param y - the second document
@@ -300,8 +304,8 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 (<$$>) :: Doc -> Doc -> Doc
 (<$$>) = combine linebreak
 
---- The document (x &lt;//&gt; y) concatenates document x and y with a
---- `softbreak` in between. This effectively puts x and y either
+--- The document `(x <//> y)` concatenates document `x` and `y` with a
+--- `softbreak` in between. This effectively puts `x` and `y` either
 --- right next to each other or underneath each other.
 --- @param x - the first document
 --- @param y - the second document
@@ -310,7 +314,7 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 (<//>) = combine softbreak
 
 --- The document (compose f xs) concatenates all documents xs with function f.
---- Function f should be like `(&lt;+&gt;)`, `(&lt;$&gt;)` and so on.
+--- Function f should be like `(<+>)`, `(<$>)` and so on.
 --- @param f - a combiner function
 --- @param xs - a list of documents
 --- @return concatenation of documents
@@ -320,14 +324,14 @@ compose _ []        = empty
 compose op ds@(_:_) = foldr1 op ds -- no seperator at the end
 
 --- The document (hsep xs) concatenates all documents xs
---- horizontally with `(&lt;+&gt;)`.
+--- horizontally with `(<+>)`.
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents
 hsep :: [Doc] -> Doc
 hsep = compose (<+>)
 
 --- The document `(vsep xs)` concatenates all documents `xs` vertically with
---- `(&lt;$&gt;)`. If a group undoes the line breaks inserted by `vsep`,
+--- `(<$>)`. If a group undoes the line breaks inserted by `vsep`,
 --- all documents are separated with a `space`.
 ---
 ---     someText = map text (words ("text to lay out"))
@@ -358,17 +362,17 @@ vsep :: [Doc] -> Doc
 vsep = compose (<$>)
 
 --- The document (fillSep xs) concatenates documents xs horizontally with
---- `(&lt;+&gt;)` as long as its fits the page, than inserts a
+--- `(<+>)` as long as its fits the page, than inserts a
 --- `line` and continues doing that for all documents in xs.<br><br>
---- `fillSep xs  = foldr (&lt;/&gt;) empty xs`
+--- `fillSep xs  = foldr (</>) empty xs`
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents
 fillSep :: [Doc] -> Doc
 fillSep = compose (</>)
 
 --- The document (sep xs) concatenates all documents xs either horizontally
---- with `(&lt;+&gt;)`, if it fits the page, or vertically
---- with `(&lt;$&gt;)`.<br><br>
+--- with `(<+>)`, if it fits the page, or vertically
+--- with `(<$>)`.<br><br>
 --- `sep xs  = group (vsep xs)`
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents, if it fits the page,
@@ -377,7 +381,7 @@ sep :: [Doc] -> Doc
 sep = group . vsep
 
 --- The document (hcat xs) concatenates all documents xs horizontally
---- with `(&lt;&gt;)`.
+--- with `(<>)`.
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents
 hcat :: [Doc] -> Doc
@@ -393,7 +397,7 @@ hcatMap :: (a -> Doc) -> [a] -> Doc
 hcatMap f = hcat . map f
 
 --- The document (vcat xs) concatenates all documents xs vertically
---- with `(&lt;$$&gt;)`. If a `group` undoes the line
+--- with `(<$$>)`. If a `group` undoes the line
 --- breaks inserted by `vcat`, all documents are directly
 --- concatenated.
 --- @param xs - a list of documents
@@ -411,18 +415,18 @@ vcatMap :: (a -> Doc) -> [a] -> Doc
 vcatMap f = vcat . map f
 
 --- The document (fillCat xs) concatenates documents xs horizontally
---- with `(&lt;&gt;)` as long as its fits the page, than inserts
+--- with `(<>)` as long as its fits the page, than inserts
 --- a `linebreak` and continues doing that for all documents in xs.
 --- <br><br>
---- `fillCat xs  = foldr (&lt;//&gt;) empty xs`
+--- `fillCat xs  = foldr (<//>) empty xs`
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents
 fillCat :: [Doc] -> Doc
 fillCat = compose (<//>)
 
 --- The document (cat xs) concatenates all documents xs either horizontally
---- with `(&lt;&gt;)`, if it fits the page, or vertically with
---- `(&lt;$$&gt;)`.<br><br>
+--- with `(<>)`, if it fits the page, or vertically with
+--- `(<$$>)`.<br><br>
 --- `cat xs  = group (vcat xs)`
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents
@@ -583,8 +587,8 @@ semiBracesSpaced :: [Doc] -> Doc
 semiBracesSpaced = fillEncloseSepSpaced lbrace rbrace semi
 
 --- The document (enclose l r x) encloses document x between
---- documents l and r using (&lt;&gt;).<br><br>
---- `enclose l r x   = l &lt;&gt; x &lt;&gt; r`
+--- documents l and r using `(<>)`.<br><br>
+--- `enclose l r x   = l <> x <> r`
 --- @param l - the left document
 --- @param r - the right document
 --- @param x - the middle document
@@ -598,15 +602,15 @@ enclose l r d = l <> d <> r
 squotes :: Doc -> Doc
 squotes = enclose squote squote
 
---- Document (dquotes x) encloses document x with double quotes `'"'`.
+--- Document (dquotes x) encloses document x with double quotes.
 --- @param x - a document
 --- @return document x enclosed by double quotes
 dquotes :: Doc -> Doc
 dquotes = enclose dquote dquote
 
---- Document (bquotes x) encloses document x with `'`'` quotes.
+--- Document (bquotes x) encloses document x with back quotes `"\`"`.
 --- @param x - a document
---- @return document x enclosed by `'`'` quotes
+--- @return document x enclosed by `\`` quotes
 bquotes  :: Doc -> Doc
 bquotes = enclose bquote bquote
 
@@ -646,7 +650,7 @@ brackets :: Doc -> Doc
 brackets = enclose lbracket rbracket
 
 --- The document (char c) contains the literal character c.
---- The character shouldn't be a newline ('\n'),
+--- The character should not be a newline (`\n`),
 --- the function `line` should be used for line breaks.
 --- @param c - a character
 --- @return a document which contains the literal character c
@@ -719,7 +723,7 @@ rbracket = char ']'
 squote :: Doc
 squote = char '\''
 
---- The document dquote contains a double quote, `'"'`.
+--- The document dquote contains a double quote.
 --- @return a document which contains a double quote
 dquote :: Doc
 dquote = char '\"'
@@ -813,15 +817,15 @@ tilde = char '~'
 --- in the previous example to use `fillBreak`, we get a useful
 --- variation of the previous output:
 ---
----   ptype (name,tp)
+---     ptype (name,tp)
 ---          = fillBreak 6 (text name) <+> text "::" <+> text tp
 ---
 --- The output will now be:
 ---
---- let empty  :: Doc
----     nest   :: Int -> Doc -> Doc
----     linebreak
----            :: Doc
+---     let empty  :: Doc
+---         nest   :: Int -> Doc -> Doc
+---         linebreak
+---                :: Doc
 ---
 fillBreak :: Int -> Doc -> Doc
 fillBreak i d = d <> fill'
@@ -835,27 +839,27 @@ fillBreak i d = d <> fill'
 --- useful in practice to output a list of bindings. The following
 --- example demonstrates this.
 ---
----   types  = [("empty","Doc")
----            ,("nest","Int -> Doc -> Doc")
----            ,("linebreak","Doc")]
+---     types  = [("empty","Doc")
+---              ,("nest","Int -> Doc -> Doc")
+---              ,("linebreak","Doc")]
 ---
----   ptype (name,tp)
----          = fill 6 (text name) <+> text "::" <+> text tp
+---     ptype (name,tp)
+---            = fill 6 (text name) <+> text "::" <+> text tp
 ---
----   test   = text "let" <+> align (vcat (map ptype types))
+---     test   = text "let" <+> align (vcat (map ptype types))
 ---
 --- Which is layed out as:
 ---
---- let empty  :: Doc
----     nest   :: Int -> Doc -> Doc
----     linebreak :: Doc
+---     let empty  :: Doc
+---         nest   :: Int -> Doc -> Doc
+---         linebreak :: Doc
 ---
 fill :: Int -> Doc -> Doc
 fill i d = d <> fill'
   where w     = width d
         fill' = if w >= i then empty else spaces (i - w)
 
--- Compute the width of a given document
+--- Compute the width of a given document
 width :: Doc -> Int
 width (Doc d) = width' 0 $ d Empty
   where width' w Empty           = w

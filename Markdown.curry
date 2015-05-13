@@ -344,7 +344,7 @@ mdElem2html (Strong s) = HtmlStruct "strong" [] [mdtxt2html s]
 mdElem2html (HRef s url) = if s==url
                              then href url [code [mdtxt2html s]]
                              else href url [mdtxt2html s]
-mdElem2html (Code s) = code [HtmlText s]
+mdElem2html (Code s) = code [HtmlText (htmlQuote s)]
 mdElem2html (CodeBlock s) = verbatim s
 mdElem2html (Quote md) = HtmlStruct "blockquote" [] (mdDoc2html md)
 mdElem2html (Par md) = par (mdDoc2html md)
@@ -390,7 +390,7 @@ mdElem2latex txt2latex (Strong s) = "\\textbf{"++txt2latex s++"}"
 mdElem2latex txt2latex (HRef s url) =
   if s==url then "\\url{"++url++"}"
             else "\\href{"++url++"}{"++txt2latex s++"}"
-mdElem2latex txt2latex (Code s) = "\\texttt{"++txt2latex s++"}"
+mdElem2latex txt2latex (Code s) = "\\texttt{"++txt2latex (htmlQuote s)++"}"
 mdElem2latex _ (CodeBlock s) =
   "\\begin{verbatim}\n"++s++"\n\\end{verbatim}\n"
 mdElem2latex txt2latex (Quote md) =
