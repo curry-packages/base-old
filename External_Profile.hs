@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses #-}
 
 import System.CPUTime
 import System.Mem (performGC)
