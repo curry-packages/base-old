@@ -25,9 +25,10 @@ module Pretty (
   combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>), ($$), ($+$),
 
   -- list combinators
-  compose, hsep, vsep, fillSep, sep, hcat, hcatMap, vcat, vcatMap, fillCat, cat,
-  punctuate, encloseSep, hEncloseSep, fillEncloseSep, fillEncloseSepSpaced,
-  list, listSpaced, tupled, tupledSpaced, semiBraces, semiBracesSpaced,
+  compose, hsep, hsepMap, vsep, vsepMap, fillSep, sep, hcat, hcatMap, vcat,
+  vcatMap, fillCat, cat, punctuate, encloseSep, hEncloseSep, fillEncloseSep,
+  fillEncloseSepSpaced, list, listSpaced, set, setSpaced, tupled, tupledSpaced,
+  semiBraces, semiBracesSpaced,
 
   -- bracketing combinators
   enclose, squotes, dquotes, bquotes, parens,
@@ -330,6 +331,15 @@ compose op ds@(_:_) = foldr1 op ds -- no seperator at the end
 hsep :: [Doc] -> Doc
 hsep = compose (<+>)
 
+--- The document (hsepMap f xs) generates a list of documents by
+--- applying `f` to all list elements. Then it concatenates these
+--- documents horizontally using `hsep`.
+--- @param f  - a function to generate documents
+--- @param xs - a list of arbitrary elements
+--- @return horizontal concatenation of generated documents
+hsepMap :: (a -> Doc) -> [a] -> Doc
+hsepMap f = hsep . map f
+
 --- The document `(vsep xs)` concatenates all documents `xs` vertically with
 --- `(<$>)`. If a group undoes the line breaks inserted by `vsep`,
 --- all documents are separated with a `space`.
@@ -360,6 +370,15 @@ hsep = compose (<+>)
 --- @return vertical concatenation of documents
 vsep :: [Doc] -> Doc
 vsep = compose (<$>)
+
+--- The document (vsepMap f xs) generates a list of documents by
+--- applying `f` to all list elements. Then it concatenates these
+--- documents vertically using `vsep`.
+--- @param f  - a function to generate documents
+--- @param xs - a list of arbitrary elements
+--- @return vertical concatenation of generated documents
+vsepMap :: (a -> Doc) -> [a] -> Doc
+vsepMap f = vsep . map f
 
 --- The document (fillSep xs) concatenates documents xs horizontally with
 --- `(<+>)` as long as its fits the page, than inserts a
@@ -557,6 +576,20 @@ list = fillEncloseSep lbracket rbracket comma
 --- Spaced version of `list`
 listSpaced :: [Doc] -> Doc
 listSpaced = fillEncloseSepSpaced lbracket rbracket comma
+
+--- The document (set xs) comma seperates the documents xs and encloses
+--- them in braces. The documents are rendered horizontally if
+--- that fits the page. Otherwise they are aligned vertically.
+--- All comma seperators are put in front of the elements.
+--- @param xs - a list of documents
+--- @return comma seperated documents xs and enclosed
+--- in braces
+set :: [Doc] -> Doc
+set = fillEncloseSep lbrace rbrace comma
+
+--- Spaced version of `set`
+setSpaced :: [Doc] -> Doc
+setSpaced = fillEncloseSepSpaced lbrace rbrace comma
 
 --- The document (tupled xs) comma seperates the documents xs and encloses
 --- them in parenthesis. The documents are rendered horizontally if that fits
