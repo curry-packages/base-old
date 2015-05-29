@@ -5,18 +5,13 @@
 --- substructures.
 ---
 --- @author  Björn Peemöller
---- @version August 2013
+--- @version May 2015
 --- --------------------------------------------------------------------------
 module FlatCurryPretty where
 
 import Pretty
 
 import FlatCurry
-import FlatCurryGoodies
-
---- Pretty printing for terminals, i.e., with a maximum width of 80 characters.
-pPrint :: Doc -> String
-pPrint = pretty 80
 
 --- pretty-print a FlatCurry module
 ppProg :: Prog -> Doc
@@ -35,7 +30,7 @@ ppHeader m ts fs
 
 --- pretty-print the export list
 ppExports :: [TypeDecl] -> [FuncDecl] -> Doc
-ppExports ts fs = tupled (map ppTypeExport ts ++ ppFuncExports fs)
+ppExports ts fs = tupledSpaced (map ppTypeExport ts ++ ppFuncExports fs)
 
 --- pretty-print a type export
 ppTypeExport :: TypeDecl -> Doc
@@ -92,15 +87,19 @@ ppConsDecls cs = vsep $
 ppConsDecl :: ConsDecl -> Doc
 ppConsDecl (Cons qn _ _ tys) = hsep $ ppPrefixOp qn : map (ppTypeExpr 2) tys
 
+--- pretty a top-level type expression
+ppTypeExp :: TypeExpr -> Doc
+ppTypeExp = ppTypeExpr 0
+
 --- pretty-print a type expression
 ppTypeExpr :: Int -> TypeExpr -> Doc
 ppTypeExpr _ (TVar           v) = ppTVarIndex v
-ppTypeExpr p (FuncType ty1 ty2) = parenIf (p > 0) $
-  ppTypeExpr 1 ty1 </> text "->" <+> ppTypeExpr 0 ty2
+ppTypeExpr p (FuncType ty1 ty2) = parensIf (p > 0) $
+  ppTypeExpr 1 ty1 </> rarrow <+> ppTypeExp ty2
 ppTypeExpr p (TCons     qn tys)
-  | isListId qn && length tys == 1 = brackets (ppTypeExpr 0 (head tys))
-  | isTupleId qn                   = tupled   (map (ppTypeExpr 0) tys)
-  | otherwise                      = parenIf (p > 1 && not (null tys)) $ sep
+  | isListId qn && length tys == 1 = brackets (ppTypeExp (head tys))
+  | isTupleId qn                   = tupled   (map ppTypeExp tys)
+  | otherwise                      = parensIf (p > 1 && not (null tys)) $ sep
                                      (ppPrefixOp qn : map (ppTypeExpr 2) tys)
 
 --- pretty-print a type variable
@@ -117,13 +116,19 @@ ppFuncDecls fs = compose ($+$) (map ppFuncDecl fs)
 --- pretty-print a function declaration
 ppFuncDecl :: FuncDecl -> Doc
 ppFuncDecl (Func qn _ _ ty r)
-  =   indent (sep [ppPrefixOp qn, text "::", ppTypeExpr 0 ty])
-  <$> indent (ppPrefixOp qn <+> ppRule r)
+  =  indent (sep [ppPrefixOp qn, text "::", ppTypeExp ty])
+  $$ indent (ppPrefixOp qn <+> ppRule r)
 
 --- pretty-print a function rule
 ppRule :: Rule -> Doc
-ppRule (Rule  vs e) = hsep (map ppVarIndex vs) </> equals <+> ppExpr 0 e
+ppRule (Rule  vs e)
+  | null vs   = equals <+> ppExp e
+  | otherwise = hsep (map ppVarIndex vs) </> equals <+> ppExp e
 ppRule (External e) = text "external" <+> dquotes (text e)
+
+--- Pretty-print a top-level expression.
+ppExp :: Expr -> Doc
+ppExp = ppExpr 0
 
 --- pretty-print an expression
 ppExpr :: Int -> Expr -> Doc
@@ -132,21 +137,21 @@ ppExpr _ (Lit        l) = ppLiteral l
 ppExpr p (Comb _ qn es) = ppComb p qn es
 ppExpr p (Free    vs e)
   | null vs             = ppExpr p e
-  | otherwise           = parenIf (p > 0) $ sep
+  | otherwise           = parensIf (p > 0) $ sep
                           [ text "let"
                             <+> encloseSep empty empty comma (map ppVarIndex vs)
                             <+> text "free"
-                          , text "in" </> ppExpr 0 e
+                          , text "in" </> ppExp e
                           ]
-ppExpr p (Let     ds e) = parenIf (p > 0) $ sep
-                          [text "let" <+> ppDecls ds, text "in"  <+> ppExpr 0 e]
-ppExpr p (Or     e1 e2) = parenIf (p > 0)
+ppExpr p (Let     ds e) = parensIf (p > 0) $ sep
+                          [text "let" <+> ppDecls ds, text "in" <+> ppExp e]
+ppExpr p (Or     e1 e2) = parensIf (p > 0)
                         $ ppExpr 1 e1 <+> text "?" <+> ppExpr 1 e2
-ppExpr p (Case ct e bs) = parenIf (p > 0) $ indent
-                        $ ppCaseType ct <+> ppExpr 0 e <+> text "of"
-                          <$> vsep (map ppBranch bs)
-ppExpr p (Typed   e ty) = parenIf (p > 0)
-                        $ ppExpr 0 e <+> text "::" <+> ppTypeExpr 0 ty
+ppExpr p (Case ct e bs) = parensIf (p > 0) $ indent
+                        $ ppCaseType ct <+> ppExpr 1 e <+> text "of"
+                          $$ vsep (map ppBranch bs)
+ppExpr p (Typed   e ty) = parensIf (p > 0)
+                        $ ppExp e <+> text "::" <+> ppTypeExp ty
 
 --- pretty-print a variable
 ppVarIndex :: VarIndex -> Doc
@@ -156,29 +161,18 @@ ppVarIndex i = text $ if i < 0 then "_" else 'v' : show i
 ppLiteral :: Literal -> Doc
 ppLiteral (Intc   i) = int i
 ppLiteral (Floatc f) = float f
-ppLiteral (Charc  c) = text (showEscape c)
-
---- Escape character literal
-showEscape :: Char -> String
-showEscape c
-  | o <   10  = "'\\00" ++ show o ++ "'"
-  | o <   32  = "'\\0"  ++ show o ++ "'"
-  | o == 127  = "'\\127'"
-  | otherwise = show c
-  where o = ord c
+ppLiteral (Charc  c) = text (show c)
 
 --- Pretty print a constructor or function call
 ppComb :: Int -> QName -> [Expr] -> Doc
 ppComb p qn es | isListId  qn && null es = text "[]"
-               | isTupleId qn            = tupled (map (ppExpr 0) es)
+               | isTupleId qn            = tupled (map ppExp es)
                | otherwise               = case es of
   []               -> ppPrefixOp qn
   [e1,e2]
-    | isConsId  qn -> parenIf (p > 0)
-                    $ sep [ppExpr 1 e1, text ":", ppExpr 1 e2]
-    | isInfixOp qn -> parenIf (p > 0)
+    | isInfixOp qn -> parensIf (p > 0)
                     $ sep [ppExpr 1 e1, ppInfixOp qn, ppExpr 1 e2]
-  _                -> parenIf (p > 0)
+  _                -> parensIf (p > 0)
                     $ sep (ppPrefixOp qn : map (ppExpr 1) es)
 
 --- pretty-print a list of declarations
@@ -187,7 +181,7 @@ ppDecls = vsep . map ppDecl
 
 --- pretty-print a single declaration
 ppDecl :: (VarIndex, Expr) -> Doc
-ppDecl (v, e) = ppVarIndex v <+> equals <+> ppExpr 0 e
+ppDecl (v, e) = ppVarIndex v <+> equals <+> ppExp e
 
 --- Pretty print the type of a case expression
 ppCaseType :: CaseType -> Doc
@@ -196,7 +190,7 @@ ppCaseType Flex  = text "fcase"
 
 --- Pretty print a case branch
 ppBranch :: BranchExpr -> Doc
-ppBranch (Branch p e) = ppPattern p <+> text "->" <+> indent (ppExpr 0 e)
+ppBranch (Branch p e) = ppPattern p <+> rarrow <+> indent (ppExp e)
 
 --- Pretty print a pattern
 ppPattern :: Pattern -> Doc
@@ -204,8 +198,7 @@ ppPattern (Pattern c vs)
   | isListId c && null vs = text "[]"
   | isTupleId c           = tupled (map ppVarIndex vs)
   | otherwise             = case vs of
-  [v1,v2] | isConsId  c -> ppVarIndex v1 <+> text ":"    <+> ppVarIndex v2
-          | isInfixOp c -> ppVarIndex v1 <+> ppInfixOp c <+> ppVarIndex v2
+  [v1,v2] | isInfixOp c -> ppVarIndex v1 <+> ppInfixOp c <+> ppVarIndex v2
   _                     -> hsep (ppPrefixOp c : map ppVarIndex vs)
 ppPattern (LPattern   l) = ppLiteral l
 
@@ -215,7 +208,7 @@ ppPattern (LPattern   l) = ppLiteral l
 
 --- pretty-print a prefix operator
 ppPrefixOp :: QName -> Doc
-ppPrefixOp qn = parenIf (isInfixOp qn) (ppQName qn)
+ppPrefixOp qn = parensIf (isInfixOp qn) (ppQName qn)
 
 --- pretty-print an infix operator
 ppInfixOp :: QName -> Doc
@@ -233,22 +226,10 @@ isInfixOp = all (`elem` "~!@#$%^&*+-=<>:?./|\\") . snd
 isListId :: QName -> Bool
 isListId (m, i) = m `elem` ["Prelude", ""] && i == "[]"
 
---- Check whether an identifier represents the list constructor `:`
-isConsId :: QName -> Bool
-isConsId (m, i) = m `elem` ["Prelude", ""] && i == ":"
-
 --- Check whether an identifier represents a tuple
 isTupleId :: QName -> Bool
 isTupleId (m, i) = m `elem` ["Prelude", ""] && i == mkTuple (length i)
   where mkTuple n = '(' : replicate (n - 2) ',' ++ ")"
-
--- ---------------------------------------------------------------------------
--- Helpers
--- ---------------------------------------------------------------------------
-
---- Surround with parentheses depending on the flag
-parenIf :: Bool -> Doc -> Doc
-parenIf b s = if b then parens s else s
 
 --- Indentation
 indent :: Doc -> Doc
