@@ -13,12 +13,15 @@ module FlatCurryRead
   , readFlatCurryIntWithImportsInPath
   ) where
 
-import Directory        (getModificationTime)
-import Distribution
-import FileGoodies      (baseName, lookupFileInPath, stripSuffix)
-import FilePath         (normalise)
+import Directory    (getModificationTime)
+import Distribution ( getLoadPathForModule, lookupModuleSourceInLoadPath
+                    , FrontendTarget (FCY), callFrontendWithParams
+                    , defaultParams, setQuiet, setFullPath
+                    )
+import FileGoodies  (baseName, lookupFileInPath, stripSuffix)
+import FilePath     (normalise)
+
 import FlatCurry
-import FlatCurryGoodies (progImports)
 
 --- Reads a FlatCurry program together with all its imported modules.
 --- The argument is the name of the main module,
@@ -94,9 +97,9 @@ tryReadFlatCurryFileWithImports loadpath modname suffixes = collect [modname] []
     | otherwise              = do
       mbProg <- tryReadFlatCurry loadpath mod suffixes
       case mbProg of
-        Nothing   -> return (Left [mod])
-        Just prog -> do
-          mbresults <- collect (mods ++ progImports prog) (mod:implist)
+        Nothing                     -> return (Left [mod])
+        Just prog@(Prog _ is _ _ _) -> do
+          mbresults <- collect (mods ++ is) (mod:implist)
           return (either Left (Right . (prog :)) mbresults)
 
 -- Read a single FlatCurry file for a module if it exists and is up-to-date
