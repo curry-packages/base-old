@@ -185,6 +185,16 @@ cmtfunc = CmtFunc
 simpleRule :: [CPattern] -> CExpr -> CRule
 simpleRule pats rhs = CRule pats (CSimpleRhs rhs [])
 
+--- Constructs a rule with a possibly guarded right-hand side
+--- and local declarations.
+--- A simple right-hand side is constructed if there is only one
+--- `success` condition.
+guardedRule :: [CPattern] -> [(CExpr,CExpr)] -> [CLocalDecl] -> CRule
+guardedRule pats gs ldecls
+  | length gs == 1 && fst (head gs) == CSymbol (pre "success")
+              = CRule pats (CSimpleRhs (snd (head gs)) ldecls)
+  | otherwise = CRule pats (CGuardedRhs gs ldecls)
+
 --- Constructs a guarded expression with the trivial guard.
 noGuard :: CExpr -> (CExpr, CExpr)
 noGuard e = (CSymbol (pre "success"), e)
