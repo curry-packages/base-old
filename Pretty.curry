@@ -7,13 +7,13 @@
 ---  by Olaf Chitil.
 ---
 --- @author Sebastian Fischer, Björn Peemöller
---- @version January 2015
+--- @version May 2015
 ------------------------------------------------------------------------------
 
 module Pretty (
 
   -- pretty printer and document type
-  pretty, Doc,
+  Doc, pPrint, pretty,
 
   -- basic document combinators
   empty, isEmpty, text, linesep, line, linebreak, group, softline, softbreak,
@@ -43,13 +43,17 @@ module Pretty (
   -- character documents
   lparen, rparen, langle, rangle, lbrace, rbrace, lbracket, rbracket,
   squote, dquote, semi, colon, comma, space, dot, backslash, equals,
-  arrow, doubleArrow, doubleColon, bar, at, tilde
+  arrow, larrow, rarrow, doubleArrow, doubleColon, bar, at, tilde
 
   ) where
 
 import Dequeue as Q
 
 infixl 1 <>, <+>, <$>, </>, <$$>, <//>
+
+--- Standard printing with a column length of 80.
+pPrint :: Doc -> String
+pPrint = pretty 80
 
 --- The abstract data type Doc represents pretty documents.
 data Doc = Doc (Tokens -> Tokens)
@@ -814,9 +818,20 @@ equals :: Doc
 equals = char '='
 
 --- The document arrow contains an arrow sign, `"->"`.
+--- DEPRECATED: Use `rarrow` instead.
 --- @return a document which contains an arrow sign
 arrow :: Doc
-arrow = text "->"
+arrow = rarrow
+
+--- The document arrow contains an arrow sign, `"->"`.
+--- @return a document which contains an arrow sign
+larrow :: Doc
+larrow = text "<-"
+
+--- The document arrow contains an arrow sign, `"->"`.
+--- @return a document which contains an arrow sign
+rarrow :: Doc
+rarrow = text "->"
 
 --- The document doubleArrow contains an double arrow sign, `"=>"`.
 --- @return a document which contains an double arrow sign
