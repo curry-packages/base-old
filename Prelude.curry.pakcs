@@ -20,7 +20,7 @@ infixl 7 *, `div`, `mod`, `quot`, `rem`
 infixl 6 +, -
 -- infixr 5 :                          -- declared together with list
 infixr 5 ++
-infix  4 =:=, ==, /=, <, >, <=, >=, =:<=, =:<<=
+infix  4 =:=, ==, ===, /=, <, >, <=, >=, =:<=, =:<<=
 infix  4  `elem`, `notElem`
 infixr 3 &&
 infixr 2 ||
@@ -591,6 +591,13 @@ data Success -- = Success
 --- function symbols).
 (=:=)   :: a -> a -> Success
 (=:=) external
+
+--- The equational constraint.
+--- (e1 === e2) reduces to `True` if both sides e1 and e2 can be
+--- reduced to a unifiable data term (i.e., a term without defined
+--- function symbols), otherwise it fails.
+(===)   :: a -> a -> Bool
+x === y | x =:= y = True
 
 --- The always satisfiable constraint.
 success :: Success
