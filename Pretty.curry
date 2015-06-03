@@ -7,7 +7,7 @@
 ---  by Olaf Chitil.
 ---
 --- @author Sebastian Fischer, Björn Peemöller
---- @version May 2015
+--- @version June 2015
 ------------------------------------------------------------------------------
 
 module Pretty (
@@ -25,8 +25,8 @@ module Pretty (
   combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>), ($$), ($+$),
 
   -- list combinators
-  compose, hsep, hsepMap, vsep, vsepMap, fillSep, sep, hcat, hcatMap, vcat,
-  vcatMap, fillCat, cat, punctuate, encloseSep, hEncloseSep, fillEncloseSep,
+  compose, hsep, hsepMap, vsep, vsepBlank, vsepMap, fillSep, sep, hcat, hcatMap,
+  vcat, vcatMap, fillCat, cat, punctuate, encloseSep, hEncloseSep, fillEncloseSep,
   fillEncloseSepSpaced, list, listSpaced, set, setSpaced, tupled, tupledSpaced,
   semiBraces, semiBracesSpaced,
 
@@ -255,7 +255,7 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 --- @param y - the second document
 --- @return concatenation of x and y with a `line` in between
 (<$+>) :: Doc -> Doc -> Doc
-(<$+>) = combine (line <> line)
+(<$+>) = combine (line <> linebreak)
 
 --- The document (x $$ y) concatenates documents x and y with a `line`
 --- in between, just like `<$>`, but with identity empty.
@@ -374,6 +374,14 @@ hsepMap f = hsep . map f
 --- @return vertical concatenation of documents
 vsep :: [Doc] -> Doc
 vsep = compose (<$>)
+
+--- The document `vsep xs` concatenates all documents `xs` vertically with
+--- `($+$)`. If a group undoes the line breaks inserted by `vsepBlank`,
+--- all documents are separated with a `space`.
+--- @param xs - a list of documents
+--- @return vertical concatenation of documents
+vsepBlank :: [Doc] -> Doc
+vsepBlank = compose ($+$)
 
 --- The document (vsepMap f xs) generates a list of documents by
 --- applying `f` to all list elements. Then it concatenates these
