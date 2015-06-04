@@ -2,6 +2,8 @@
 --- The standard prelude of Curry.
 --- All top-level functions defined in this module
 --- are always available in any Curry program.
+---
+--- @category general
 ----------------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}

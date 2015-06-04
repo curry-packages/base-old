@@ -4,6 +4,7 @@
 ---
 --- @author  Björn Peemöller
 --- @version March 2015
+--- @category general
 --------------------------------------------------------------------------------
 module ShowS where
 

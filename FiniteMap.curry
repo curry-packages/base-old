@@ -11,6 +11,7 @@
 ---
 --- @author Frank Huch, Bernd Brassel
 --- @version March 2013
+--- @category algorithm
 -----------------------------------------------------------------------------
 
 module FiniteMap (

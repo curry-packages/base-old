@@ -8,6 +8,7 @@
 ---
 --- @author Michael Hanus
 --- @version December 2011
+--- @category web
 ------------------------------------------------------------------------------
 
 module Markdown(MarkdownDoc,MarkdownElem(..),fromMarkdownText,

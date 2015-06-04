@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version April 2005
+--- @category general
 ------------------------------------------------------------------------------
 
 module ReadShowTerm(showTerm,showQTerm,readQTerm,readsQTerm,

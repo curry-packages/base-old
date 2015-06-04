@@ -6,6 +6,7 @@
 ---
 --- @author Michael Hanus, Carsten Heine
 --- @version June 2009
+--- @category meta
 ------------------------------------------------------------------------------
 
 module CompactFlatCurry(generateCompactFlatCurryFile,computeCompactFlatCurry,

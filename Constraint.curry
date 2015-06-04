@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version September 2010
+--- @category general
 ----------------------------------------------------------------------------
 
 module Constraint((<:),(>:),(<=:),(>=:),andC,orC,allC,anyC)

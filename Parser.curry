@@ -7,6 +7,7 @@
 ---
 --- @author Michael Hanus
 --- @version December 2012
+--- @category general
 ------------------------------------------------------------------------------
 
 module Parser where

@@ -5,6 +5,7 @@
 ---
 --- @author Sebastian Fischer (with changes by Michael Hanus)
 --- @version February 2015
+--- @category web
 module XmlConv (
 
   -- converter types

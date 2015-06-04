@@ -3,6 +3,7 @@
 --- that generate AbstractCurry programs more compact and readable.
 ---
 --- @version February 2015
+--- @category meta
 ------------------------------------------------------------------------
 
 module AbstractCurryGoodies where

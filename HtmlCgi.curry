@@ -8,6 +8,7 @@
 ---
 --- @author Michael Hanus
 --- @version September 2012
+--- @category web
 ------------------------------------------------------------------------------
 
 module HtmlCgi(CgiServerMsg(..),runCgiServerCmd,

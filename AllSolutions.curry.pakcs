@@ -11,6 +11,8 @@
 --- the operations to encapsulate search in this module
 --- are I/O actions in order to avoid some anomalities
 --- in the old concept.
+---
+--- @category general
 ------------------------------------------------------------------------------
 
 module AllSolutions(getAllSolutions,getAllValues,

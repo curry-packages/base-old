@@ -26,6 +26,7 @@
 ---
 --- @author Michael Hanus
 --- @version August 2011
+--- @category general
 ------------------------------------------------------------------------------
 
 module Dynamic(Dynamic,(<>),(|>),(|&>),dynamic,persistent,

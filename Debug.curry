@@ -3,6 +3,7 @@
 ---
 --- @author Björn Peemöller
 --- @version September 2014
+--- @category general
 ------------------------------------------------------------------------------
 
 module Debug

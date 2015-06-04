@@ -6,6 +6,7 @@
 ---
 --- @author Michael Hanus
 --- @version April 2007
+--- @category general
 ------------------------------------------------------------------------------
 
 module Ports(Port,openPort,send,doSend,openNamedPort,

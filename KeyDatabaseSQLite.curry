@@ -30,6 +30,7 @@
 ---
 --- @author Sebastian Fischer with changes by Michael Hanus
 --- @version August 2011
+--- @category general
 ------------------------------------------------------------------------------
 
 module KeyDatabaseSQLite (

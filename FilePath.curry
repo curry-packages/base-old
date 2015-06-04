@@ -4,6 +4,7 @@
 ---
 --- @author Bjoern Peemoeller
 --- @version November 2011
+--- @category general
 ------------------------------------------------------------------------------
 
 --

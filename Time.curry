@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version April 2007
+--- @category general
 ------------------------------------------------------------------------------
 
 module Time(ClockTime,

@@ -6,6 +6,7 @@
 ---
 --- @author Michael Hanus
 --- @version January 2011
+--- @category web
 ------------------------------------------------------------------------------
 
 module XML(XmlExp(..),Encoding(..),XmlDocParams(..),

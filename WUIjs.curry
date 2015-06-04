@@ -11,6 +11,7 @@
 ---
 --- @author Michael Hanus
 --- @version February, 2009
+--- @category web
 ------------------------------------------------------------------------------
 
 module WUIjs(--WuiState,cgiRef2state,state2cgiRef,value2state,state2value,

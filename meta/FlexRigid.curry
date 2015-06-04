@@ -4,6 +4,7 @@
 ---
 --- @author Michael Hanus
 --- @version April 2005
+--- @category meta
 ------------------------------------------------------------------------------
 
 module FlexRigid(FlexRigidResult(..),getFlexRigid) where

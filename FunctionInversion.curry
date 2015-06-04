@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version February 2015
+--- @category general
 --- ----------------------------------------------------------------------------
 
 module FunctionInversion where

@@ -6,6 +6,7 @@
 ---
 --- @author Johannes Koj, Michael Hanus, Bernd Brassel
 --- @version March 2013
+--- @category algorithm
 ----------------------------------------------------------------------------
 
 module SetRBT where

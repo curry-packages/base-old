@@ -13,6 +13,7 @@
 ---
 --- @author Michael Hanus, Björn Peemöller
 --- @version November 2015
+--- @category meta
 -- ---------------------------------------------------------------------------
 
 module AbstractCurry where

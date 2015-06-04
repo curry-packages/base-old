@@ -1,8 +1,9 @@
 --- ----------------------------------------------------------------------------
 --- Library with some useful operations for the `Either` data type.
 ---
---- @author  Björn Peemöller
---- @version March 2015
+--- @author   Björn Peemöller
+--- @version  March 2015
+--- @category general
 --- ----------------------------------------------------------------------------
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 module Either

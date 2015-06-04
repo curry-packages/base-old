@@ -10,6 +10,7 @@
 ---
 --- @author Bernd Brassel, Michael Hanus
 --- @version January 2006
+--- @category general
 
 module KeyDB(existsDBKey,allDBKeys,getDBInfo,getDBInfos,
              deleteDBEntry,updateDBEntry,newDBEntry,cleanDB,

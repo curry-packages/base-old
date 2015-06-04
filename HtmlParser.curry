@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version March 2015
+--- @category web
 ------------------------------------------------------------------------------
 
 module HtmlParser(readHtmlFile,parseHtmlString) where

@@ -2,6 +2,7 @@
 ---
 --- @author Sebastian Fischer
 --- @version May 2006
+--- @category general
 module CLPB (
 
   Boolean, true, false,

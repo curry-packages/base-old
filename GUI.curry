@@ -5,6 +5,7 @@
 ---
 --- @authors Michael Hanus, Bernd Brassel
 --- @version November 2014
+--- @category general
 ------------------------------------------------------------------------------
 
 module GUI(GuiPort,Widget(..),Button,ConfigButton,

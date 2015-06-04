@@ -5,6 +5,7 @@
 ---
 --- @author Jasper Sikorra
 --- @version January 2013
+--- @category general
 ------------------------------------------------------------------------------
 -- TODO
 -- - Stard and End are not implemented

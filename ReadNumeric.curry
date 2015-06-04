@@ -3,6 +3,7 @@
 --
 --- @author Michael Hanus, Frank Huch, Björn Peemöller
 --- @version November 2014
+--- @category general
 ------------------------------------------------------------------------------
 
 module ReadNumeric

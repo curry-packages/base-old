@@ -7,6 +7,7 @@
 ---
 --- @author  Björn Peemöller
 --- @version March 2015
+--- @category meta
 --- --------------------------------------------------------------------------
 module AnnotatedFlatCurryPretty where
 

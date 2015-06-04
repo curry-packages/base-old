@@ -8,6 +8,7 @@
 ---
 --- @author Michael Hanus
 --- @version May 2014
+--- @category web
 ------------------------------------------------------------------------------
 
 module WUI(--WuiState,cgiRef2state,state2cgiRef,value2state,state2value,

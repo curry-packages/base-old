@@ -3,6 +3,7 @@
 ---
 --- @author Frank Huch, Bernd Brassel, Björn Peemöller
 --- @version October 2014
+--- @category general
 --- ----------------------------------------------------------------------------
 
 module Maybe

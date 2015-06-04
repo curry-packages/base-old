@@ -8,6 +8,7 @@
 ---
 --- @author Johannes Koj, Michael Hanus, Bernd Brassel
 --- @version March 2005
+--- @category algorithm
 ----------------------------------------------------------------------------
 
 module RedBlackTree

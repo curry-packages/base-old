@@ -6,6 +6,7 @@
 ---
 --- @author  Michael Hanus, Bjoern Peemoeller, Fabian Reck
 --- @version September 2013
+--- @category algorithm
 ------------------------------------------------------------------------------
 
 module SearchTree

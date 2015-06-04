@@ -7,6 +7,7 @@
 ---
 --- @author Michael Hanus
 --- @version August 2006
+--- @category general
 ------------------------------------------------------------------------------
 
 module PropertyFile(readPropertyFile,updatePropertyFile) where

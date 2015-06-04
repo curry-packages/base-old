@@ -8,6 +8,7 @@
 ---
 --- @author Sebastian Fischer, Björn Peemöller
 --- @version June 2015
+--- @category general
 ------------------------------------------------------------------------------
 
 module Pretty (

@@ -13,6 +13,7 @@
 ---
 --- @author Sebastian Fischer, Björn Peemöller
 --- @version June 2013
+--- @category meta
 --------------------------------------------------------------------------------
 
 module AnnotatedFlatCurryGoodies where

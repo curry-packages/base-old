@@ -7,6 +7,7 @@
 --- @author Martin Engelke, Bernd Brassel, Michael Hanus, Marion Mueller,
 ---         Parissa Sadeghi, Bjoern Peemoeller
 --- @version June 2012
+--- @category meta
 ------------------------------------------------------------------------------
 
 module AbstractCurryPrinter

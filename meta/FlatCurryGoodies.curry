@@ -13,6 +13,7 @@
 ---
 --- @author Sebastian Fischer
 --- @version January 2006
+--- @category meta
 ----------------------------------------------------------------------------
 
 module FlatCurryGoodies where

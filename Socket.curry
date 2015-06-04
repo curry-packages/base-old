@@ -7,6 +7,7 @@
 ---
 --- @author Michael Hanus
 --- @version February 2008
+--- @category general
 ------------------------------------------------------------------------------
 
 module Socket(Socket, listenOn, listenOnFresh,

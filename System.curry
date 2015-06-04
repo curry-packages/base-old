@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus, Bernd Brassel, Bjoern Peemoeller
 --- @version July 2012
+--- @category general
 ------------------------------------------------------------------------------
 
 module System

@@ -13,6 +13,7 @@
 ---
 --- @author  Fabian Reck
 --- @version July 2013
+--- @category algorithm
 ------------------------------------------------------------------------------
 
 module ValueSequence(ValueSequence, emptyVS, addVS, failVS, (|++|), vsToList)

@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus, Björn Peemöller
 --- @version January 2015
+--- @category general
 ------------------------------------------------------------------------------
 
 module Char

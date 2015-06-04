@@ -4,6 +4,7 @@
 ---
 --- @author Michael Hanus, Björn Peemöller
 --- @version May 2015
+--- @category meta
 ------------------------------------------------------------------------------
 
 module FlatCurryRead

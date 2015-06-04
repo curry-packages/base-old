@@ -35,6 +35,7 @@
 ---
 --- @author Michael Hanus, Fabian Reck
 --- @version June 2014
+--- @category general
 ------------------------------------------------------------------------
 
 module SetFunctions

@@ -5,6 +5,7 @@
 ---
 --- @author Michael Hanus, Björn Peemöller
 --- @version September 2013
+--- @category general
 ------------------------------------------------------------------------------
 
 module Unsafe

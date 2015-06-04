@@ -4,6 +4,7 @@
 ---
 --- @author Michael Hanus
 --- @version February 2004
+--- @category algorithm
 ------------------------------------------------------------------------------
 
 module Sort(quickSort,mergeSort,

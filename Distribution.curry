@@ -6,6 +6,7 @@
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
 --- @version November 2014
+--- @category general
 --------------------------------------------------------------------------------
 
 module Distribution (

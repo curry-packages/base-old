@@ -6,6 +6,7 @@
 ---
 --- @author  Björn Peemöller
 --- @version June 2015
+--- @category meta
 --- --------------------------------------------------------------------------
 module FlatCurryPretty where
 

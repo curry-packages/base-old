@@ -7,6 +7,7 @@
 ---
 --- @author Michael Hanus
 --- @version November 2014
+--- @category meta
 ------------------------------------------------------------------------------
 
 module FlatCurry where

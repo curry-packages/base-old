@@ -9,6 +9,7 @@
 ---
 --- @author Michael Hanus
 --- @version February 2015
+--- @category general
 ----------------------------------------------------------------------
 
 module CHRcompiled where

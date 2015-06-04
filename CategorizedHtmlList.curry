@@ -1,6 +1,8 @@
 ------------------------------------------------------------------------------
 --- This library provides functions to categorize a list of entities
 --- into a HTML page with an index access (e.g., "A-Z") to these entities.
+---
+--- @category web
 ------------------------------------------------------------------------------
 
 module CategorizedHtmlList (list2CategorizedHtml,

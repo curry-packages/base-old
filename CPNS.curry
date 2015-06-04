@@ -5,6 +5,7 @@
 ---
 --- @author Michael Hanus
 --- @version January 2012
+--- @category web
 ------------------------------------------------------------------------------
 
 module CPNS(registerPort,getPortInfo,unregisterPort,

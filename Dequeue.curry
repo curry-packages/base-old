@@ -5,6 +5,7 @@
 --- @author Bernd Brassel, Olaf Chitil, Michael Hanus, Sebastian Fischer,
 ---         Björn Peemöller
 --- @version January 2015
+--- @category algorithm
 ------------------------------------------------------------------------------
 
 module Dequeue

@@ -17,6 +17,7 @@
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
 --- @version November 2014
+--- @category web
 ------------------------------------------------------------------------------
 
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),

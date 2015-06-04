@@ -1,5 +1,7 @@
 ------------------------------------------------------------------------------
 --- A collection of operations on floating point numbers.
+---
+--- @category general
 ------------------------------------------------------------------------------
 
 module Float(pi,(+.),(-.),(*.),(/.),(^.),i2f,truncate,round,recip,sqrt,log

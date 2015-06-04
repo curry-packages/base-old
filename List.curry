@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus, Bjoern Peemoeller
 --- @version September 2012
+--- @category general
 ------------------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}

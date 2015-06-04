@@ -6,6 +6,7 @@
 ---
 --- @author Sebastian Fischer
 --- @version February 2008
+--- @category algorithm
 ---------------------------------------------------------------------------
 
 module Traversal (

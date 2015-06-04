@@ -1,6 +1,8 @@
 --- Implementation of Arrays with Braun Trees. Conceptually, Braun trees
 --- are always infinite. Consequently, there is no test on emptiness.
+---
 --- @authors {bbr, fhu}@informatik.uni-kiel.de
+--- @category algorithm
 
 module Array 
   (Array,

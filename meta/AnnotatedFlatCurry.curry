@@ -12,6 +12,7 @@
 ---
 --- @author  Jonas Oberschweiber, Björn Peemöller, Michael Hanus
 --- @version July 2013
+--- @category meta
 ------------------------------------------------------------------------------
 
 module AnnotatedFlatCurry

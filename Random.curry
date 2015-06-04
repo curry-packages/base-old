@@ -26,6 +26,7 @@
 ---
 --- @author Sergio Antoy (with extensions by Michael Hanus)
 --- @version Fri Jun 10 12:49:36 PDT 2011
+--- @category algorithm
 ------------------------------------------------------------------------------
 
 module Random(nextInt, nextIntRange, nextBoolean, getRandomSeed) where

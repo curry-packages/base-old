@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version January 2013
+--- @category general
 
 module Directory
   ( doesFileExist, doesDirectoryExist, fileSize, getModificationTime

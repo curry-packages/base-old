@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version December 2007
+--- @category general
 ------------------------------------------------------------------------------
 
 module Profile(ProcessInfo(..), getProcessInfos, showMemInfo, printMemInfo,

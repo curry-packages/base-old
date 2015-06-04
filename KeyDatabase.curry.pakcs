@@ -7,6 +7,7 @@
 ---
 --- @author Bernd Brassel, Michael Hanus
 --- @version August 2011
+--- @category general
 ---------------------------------------------------------------------------
 
 module KeyDatabase(existsDBKey,allDBKeys,allDBInfos,allDBKeyInfos,

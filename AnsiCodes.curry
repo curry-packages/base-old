@@ -4,8 +4,9 @@
 --- Information on ANSI Codes can be found at
 --- http://en.wikipedia.org/wiki/ANSI_escape_code
 ---
---- @author  Sebastian Fischer, Björn Peemöller
+--- @author Sebastian Fischer, Björn Peemöller
 --- @version March 2015
+--- @category general
 ------------------------------------------------------------------------------
 
 module AnsiCodes

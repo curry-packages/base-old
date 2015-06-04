@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version November 2003
+--- @category web
 ------------------------------------------------------------------------------
 
 module URL(getContentsOfUrl) where

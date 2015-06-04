@@ -5,6 +5,7 @@
 ---
 --- @author Michael Hanus
 --- @version September 2004
+--- @category general
 ------------------------------------------------------------------------------
 
 module CSV(showCSV,readCSV,readCSVWithDelims,

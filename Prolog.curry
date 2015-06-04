@@ -6,6 +6,7 @@
 ---
 --- @author Michael Hanus
 --- @version August 14, 2014
+--- @category general
 ------------------------------------------------------------------------------
 
 module Prolog(PlClause(..), PlGoal(..), PlTerm(..), plList,

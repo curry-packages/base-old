@@ -4,6 +4,7 @@
 ---
 --- @author Michael Hanus, Bernd Brassel
 --- @version March 2015
+--- @category general
 -----------------------------------------------------------------------------
 
 module IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,

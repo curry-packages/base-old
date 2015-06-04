@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus, Bernd Brassel
 --- @version June 2009
+--- @category general
 ------------------------------------------------------------------------------
 
 module FileGoodies(separatorChar,pathSeparatorChar,suffixSeparatorChar,

@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version January 22, 2007
+--- @category general
 ------------------------------------------------------------------------------
 
 module JavaScript(JSExp(..),JSStat(..),JSBranch(..),JSFDecl(..),

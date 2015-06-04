@@ -38,6 +38,7 @@
 ---
 --- @author Michael Hanus
 --- @version July 2014
+--- @category general
 ------------------------------------------------------------------------
 
 module SetFunctions

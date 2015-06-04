@@ -12,6 +12,7 @@
 ---
 --- @author Michael Hanus
 --- @version February 2008
+--- @category general
 ------------------------------------------------------------------------------
 
 module NamedSocket(Socket,

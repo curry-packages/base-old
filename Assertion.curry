@@ -4,6 +4,7 @@
 ---
 --- @author Michael Hanus
 --- @version May 2014
+--- @category general
 ------------------------------------------------------------------------------
 
 module Assertion(-- for writing test cases:

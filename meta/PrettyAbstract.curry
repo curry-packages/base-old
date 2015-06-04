@@ -6,6 +6,7 @@
 ---
 --- @author Stefan Junge
 --- @version June 2011
+--- @category meta
 -------------------------------------------------------------------------------
 module PrettyAbstract (showCProg, cprogDoc,
                        prettyCProg, cprogDocWithPrecedences,

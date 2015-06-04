@@ -10,6 +10,7 @@
 ---
 --- @author Michael Hanus
 --- @version December 2005
+--- @category meta
 ------------------------------------------------------------------------------
 
 module FlatCurryShow(showFlatProg,showFlatType,showFlatFunc,

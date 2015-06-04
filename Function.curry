@@ -3,6 +3,7 @@
 ---
 --- @author Björn Peemöller
 --- @version July 2013
+--- @category general
 --- ----------------------------------------------------------------------------
 module Function where
 

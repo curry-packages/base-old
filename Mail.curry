@@ -5,6 +5,7 @@
 ---
 --- @author Michael Hanus
 --- @version May 2007
+--- @category web
 ---------------------------------------------------------------------------
 
 module Mail(sendMail,MailOption(..),sendMailWithOptions) where

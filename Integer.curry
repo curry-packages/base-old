@@ -5,6 +5,7 @@
 ---
 --- @author Sergio Antoy
 --- @version July 2014
+--- @category general
 ------------------------------------------------------------------------------
 
 module Integer((^), pow, ilog, isqrt, factorial, binomial,

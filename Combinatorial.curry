@@ -9,6 +9,7 @@
 ---
 --- @author Sergio Antoy
 --- @version August 2004
+--- @category general
 --  Fri Aug 20 11:04:22 MEST 2004
 ------------------------------------------------------------------------------
 

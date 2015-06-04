@@ -11,6 +11,7 @@
 ---
 --- @author Jasper Sikorra - jsi@informatik.uni-kiel.de
 --- @version March 2014
+--- @category general
 ------------------------------------------------------------------------------
 module Format(showChar,showInt,showFloat,showString) where
 

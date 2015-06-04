@@ -3,6 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version January 2014
+--- @category general
 ------------------------------------------------------------------------------
 
 module IOExts

@@ -7,6 +7,7 @@
 ---
 --- @author Michael Hanus
 --- @version January 2000
+--- @category general
 ------------------------------------------------------------------------------
 
 module Read(readNat,readInt,readHex)  where
