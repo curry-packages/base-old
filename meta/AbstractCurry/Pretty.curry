@@ -73,7 +73,7 @@ ppImports opts = vcatMap (\m -> text "import" <+> ppMName opts m)
 ppCOpDecl :: Options -> COpDecl -> Doc
 ppCOpDecl opts (COp qn fix p) = ppCFixity fix
                              <+> int p
-                             <+> backticksIf (not $ isInfixOp qn) (ppQName opts qn)
+                             <+> bquotesIf (not $ isInfixOp qn) (ppQName opts qn)
 
 --- pretty-print the fixity of a function.
 ppCFixity :: CFixity -> Doc
@@ -351,14 +351,8 @@ vsepBlankMap f = vsepBlank . map f
 indent' :: Options -> Doc -> Doc
 indent' opts = indent (indentationWidth opts)
 
-backtick :: Doc
-backtick = char '`'
-
-backticks :: Doc -> Doc
-backticks = enclose backtick backtick
-
-backticksIf :: Bool -> Doc -> Doc
-backticksIf b d = if b then backticks d else d
+bquotesIf :: Bool -> Doc -> Doc
+bquotesIf b d = if b then bquotes d else d
 
 larrow :: Doc
 larrow = text "<-"
