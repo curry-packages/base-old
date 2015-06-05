@@ -187,7 +187,7 @@ ppCVarIName _ (_, pvar) = text pvar
 ppCLiteral :: Options -> CLiteral -> Doc
 ppCLiteral _ (CIntc i)    = int i
 ppCLiteral _ (CFloatc f)  = float f
-ppCLiteral _ (CCharc c)   = char c
+ppCLiteral _ (CCharc c)   = text $ show c
 ppCLiteral _ (CStringc s) = text $ show s -- TODO: Escape sequences
 
 ppCFieldPattern :: Options -> CField CPattern -> Doc
