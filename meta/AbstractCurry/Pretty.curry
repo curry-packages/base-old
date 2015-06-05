@@ -343,29 +343,11 @@ isTupleCons (m, i) = m `elem` ["Prelude", ""] && i == mkTuple (length i)
   where mkTuple n = '(' : replicate (n - 2) ',' ++ ")"
 
 -- Helping functions (pretty printing)
-vcatMap :: (a -> Doc) -> [a] -> Doc
-vcatMap f = vcat . map f
-
-vsepLine :: [Doc] -> Doc
-vsepLine ds = text "" -- TODO
-
-vsepLineMap :: (a -> Doc) -> [a] -> Doc
-vsepLineMap f = vsepLine . map f
-
-hsepMap :: (a -> Doc) -> [a] -> Doc
-hsepMap f = hsep . map f
-
-setSpaced :: [Doc] -> Doc
-setSpaced = fillEncloseSepSpaced lbrace rbrace comma
+vsepBlankMap :: (a -> Doc) -> [a] -> Doc
+vsepBlankMap f = vsepBlank . map f
 
 indent' :: Options -> Doc -> Doc
-indent' opts d = indent (indentationWidth opts) d
-
-at :: Doc
-at = char '@'
-
-tilde :: Doc
-tilde = char '~'
+indent' opts = indent (indentationWidth opts)
 
 larrow :: Doc
 larrow = text "<-"
