@@ -50,7 +50,7 @@ ppCurryProg opts (CurryProg m ms ts fs os)
  <$+> ppImports opts' ms
  <$+> vcatMap (ppCOpDecl opts') os
  <$+> vcatMap (ppCTypeDecl opts') ts
- <$+> vcatMap (ppCFuncDecl opts') fs
+ <$+> vsepBlankMap (ppCFuncDecl opts') fs
     where exports = getExports opts' ts fs
           opts'   = opts { moduleName = m }
 
@@ -71,7 +71,9 @@ ppImports opts = vcatMap (\m -> text "import" <+> ppMName opts m)
 
 --- pretty-print operator precedence declarations.
 ppCOpDecl :: Options -> COpDecl -> Doc
-ppCOpDecl opts (COp qn fix p) = ppCFixity fix <+> int p <+> ppQName opts qn
+ppCOpDecl opts (COp qn fix p) = ppCFixity fix
+                             <+> int p
+                             <+> backticksIf (not $ isInfixOp qn) (ppQName opts qn)
 
 --- pretty-print the fixity of a function.
 ppCFixity :: CFixity -> Doc
@@ -310,7 +312,7 @@ getExports opts ts fs = map tDeclToDoc filteredTs ++ map fDeclToDoc filteredFs
           filteredFs = filter (\f -> case f of (CFunc     _ _ Public _ _) -> True
                                                (CmtFunc _ _ _ Public _ _) -> True
                                                _                          -> False) fs
-          ppQName' = ppQName opts
+          ppQName' qn = parensIf (isInfixOp qn) $ ppQName opts qn
 
 --- pretty-print a QName according to given options (how to qualify).
 ppQName :: Options -> QName -> Doc
@@ -348,6 +350,15 @@ vsepBlankMap f = vsepBlank . map f
 
 indent' :: Options -> Doc -> Doc
 indent' opts = indent (indentationWidth opts)
+
+backtick :: Doc
+backtick = char '`'
+
+backticks :: Doc -> Doc
+backticks = enclose backtick backtick
+
+backticksIf :: Bool -> Doc -> Doc
+backticksIf b d = if b then backticks d else d
 
 larrow :: Doc
 larrow = text "<-"
