@@ -30,7 +30,7 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             pageEnc,pageCSS,pageMetaInfo,pageLinkInfo,pageBodyAttr,addPageParam,
             formEnc,formCSS,formMetaInfo,formBodyAttr,addFormParam,
             htxt,htxts,hempty,nbsp,h1,h2,h3,h4,h5,
-            par,emphasize,strong,bold,italic,code,
+            par,emphasize,strong,bold,italic,nav,code,
             center,blink,teletype,pre,verbatim,address,href,anchor,
             ulist,olist,litem,dlist,table,headedTable,addHeadings,
             hrule,breakline,image,
@@ -456,6 +456,10 @@ bold hexps = HtmlStruct "b" [] hexps
 --- Italic
 italic      :: [HtmlExp] -> HtmlExp
 italic hexps = HtmlStruct "i" [] hexps
+
+--- Navigation
+nav :: [HtmlExp] -> HtmlExp
+nav doc = HtmlStruct "nav" [] doc
 
 --- Program code
 code      :: [HtmlExp] -> HtmlExp
