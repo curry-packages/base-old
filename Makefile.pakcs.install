@@ -25,7 +25,7 @@ $(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
 .PHONY: sources
 sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
-	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY) index.html
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp $(LIBTRUNKDIR)/*.prim_c2p .
 
 Prelude.curry: $(LIBTRUNKDIR)/Prelude.curry.$(CURRYSYSTEM)

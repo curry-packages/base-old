@@ -16,8 +16,8 @@ CURRYDOC=$(ROOT)/bin/currydoc
 
 # Curry library files
 LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry))
-# lib names without meta/ prefix
-LIB_NAMES = `echo $(LIB_CURRY) | sed 's|meta/||g'`
+# lib names without directory prefix
+LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
 # generated files:
 LIB_FCY   = `echo $(LIB_CURRY:%.curry=.curry/%.fcy) | sed 's|\.curry/meta/|meta/.curry/|g'`
 LIB_ACY   = `echo $(LIB_CURRY:%.curry=.curry/%.acy) | sed 's|\.curry/meta/|meta/.curry/|g'`
@@ -88,7 +88,7 @@ doc: $(LIB_CURRY)
 htmlindex:
 	@echo "Generating index pages for Curry libraries:"
 	@echo $(LIB_NAMES)
-	@"$(CURRYDOC)" --onlyindexhtml "$(LIBDOCDIR)" $(LIB_NAMES)
+	"$(CURRYDOC)" --libsindexhtml "$(LIBDOCDIR)" $(LIB_NAMES)
 
 # generate individual documentations for libraries:
 %.html: ../%.curry

@@ -20,7 +20,7 @@ $(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
 .PHONY: sources
 sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
-	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY) index.html
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp -p $(LIBTRUNKDIR)/*.hs .
 
 %.curry: $(LIBTRUNKDIR)/%.curry
