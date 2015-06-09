@@ -1,9 +1,7 @@
 -- ---------------------------------------------------------------------------
---- Library to support meta-programming in Curry.
----
 --- This library contains a definition for representing Curry programs
---- in Curry (type "CurryProg") and an I/O action to read Curry programs and
---- transform them into this abstract representation (function "readCurry").
+--- in Curry and an I/O action to read Curry programs and
+--- transform them into this abstract representation.
 ---
 --- Note this defines a slightly new format for AbstractCurry
 --- in comparison to the first proposal of 2003.
@@ -12,7 +10,7 @@
 --- extension .acy
 ---
 --- @author Michael Hanus, Björn Peemöller
---- @version November 2015
+--- @version March 2015
 --- @category meta
 -- ---------------------------------------------------------------------------
 

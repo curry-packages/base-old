@@ -1,6 +1,7 @@
 -------------------------------------------------------------------------------
---- Library for pretty printing AbstractCurry programs.
---- In contrast to the library AbstractCurryPrinter,
+--- This library contains a pretty printer for AbstractCurry programs
+--- in order to show an AbstractCurry program in human-readable Curry syntax.
+--- In contrast to the library `AbstractCurryPrinter`,
 --- this library implements a better human-readable pretty printing
 --- of AbstractCurry programs.
 ---

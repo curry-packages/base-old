@@ -1,8 +1,7 @@
 --------------------------------------------------------------------------------
 --- This module contains functions to obtain information concerning the current
---- distribution of the Curry implementation.
---- Most of the information is based on the external constants
---- <b>curryCompiler...</b>.
+--- distribution of the Curry implementation, e.g.,
+--- compiler version, load paths, front end.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
 --- @version November 2014

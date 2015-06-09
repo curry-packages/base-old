@@ -1,5 +1,7 @@
 ------------------------------------------------------------------------------
---- Some tools to show FlatCurry programs.
+--- This library contains operations to transform FlatCurry programs
+--- into string representations, either in a FlatCurry format or
+--- in a Curry-like syntax.
 ---
 --- This library contains
 --- 

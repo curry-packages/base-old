@@ -2,7 +2,8 @@
 --- This library contains functions to convert FlatCurry programs
 --- into corresponding XML expressions and vice versa.
 --- This can be used to store Curry programs in a way independent
---- from PAKCS or to use the PAKCS back end by other systems.
+--- of a Curry system or to use a Curry system, like PAKCS,
+--- as back end by other functional logic programming systems.
 ---
 --- @author Sebastian Fischer
 --- @version March 2006

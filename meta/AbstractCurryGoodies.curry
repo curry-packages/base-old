@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------
---- This module provides some useful functions to write programs
---- that generate AbstractCurry programs more compact and readable.
+--- This library provides some useful operations to write programs
+--- that generate AbstractCurry programs in a more compact and readable way.
 ---
 --- @version February 2015
 --- @category meta

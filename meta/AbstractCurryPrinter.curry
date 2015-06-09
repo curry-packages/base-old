@@ -1,5 +1,6 @@
 ------------------------------------------------------------------------------
---- A pretty printer for AbstractCurry programs.
+--- This library contains a pretty printer for AbstractCurry programs
+--- in order to show an AbstractCurry program in standard Curry syntax.
 ---
 --- This library defines a function "showProg" that shows
 --- an AbstractCurry program in standard Curry syntax.

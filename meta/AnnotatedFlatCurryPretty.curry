@@ -1,6 +1,4 @@
 --- --------------------------------------------------------------------------
---- Pretty printing of AnnotatedFlatCurry (ignoring annotations).
----
 --- This library provides pretty-printers for AnnotatedFlatCurry modules
 --- and all substructures (e.g., expressions). Note that annotations are
 --- ignored for pretty-printing.

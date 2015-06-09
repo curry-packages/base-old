@@ -1,7 +1,5 @@
 ------------------------------------------------------------------------------
---- An annotatable version of FlatCurry.
----
---- This module contains a version of FlatCurry's abstract syntax tree which
+--- This library contains a version of FlatCurry's abstract syntax tree which
 --- can be annotated with arbitrary information due to a polymorphic type
 --- parameter.
 --- For instance, this could be used to annotate function declarations

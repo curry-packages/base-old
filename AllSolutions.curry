@@ -3,7 +3,7 @@
 --- obtaining lists of solutions to constraints.
 --- These operations are useful to encapsulate
 --- non-deterministic operations between I/O actions in
---- order to connects the worlds of logic and functional programming
+--- order to connect the worlds of logic and functional programming
 --- and to avoid non-determinism failures on the I/O level.
 ---
 --- In contrast the "old" concept of encapsulated search

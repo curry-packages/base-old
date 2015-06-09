@@ -1,9 +1,9 @@
 ------------------------------------------------------------------------------
---- Library to support meta-programming in Curry.
----
---- This library contains a definition for representing FlatCurry programs
---- in Curry (type "Prog") and an I/O action to read Curry programs and
---- transform them into this representation (function "readFlatCurry").
+--- This library supports meta-programming, i.e., the manipulation of
+--- Curry programs in Curry. For this purpose, the library contains
+--- definitions of datatypes for the representation of
+--- so-called FlatCurry programs and an I/O action to read Curry programs
+--- and transform them into this representation.
 ---
 --- @author Michael Hanus
 --- @version November 2014

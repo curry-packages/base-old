@@ -1,6 +1,4 @@
 --- --------------------------------------------------------------------------
---- Pretty printing of FlatCurry.
----
 --- This library provides pretty-printers for FlatCurry modules
 --- and all substructures (e.g., expressions).
 ---
