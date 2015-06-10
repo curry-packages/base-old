@@ -22,6 +22,8 @@ comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
+# lib names included in library documentation page (without directory prefix)
+LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(LIB_NAMES))
 # Generated files
 LIB_ACY       = $(foreach lib, $(LIB_CURRY:.curry=.acy), $(call prefix,.curry/,$(lib)))
 LIB_FCY       = $(foreach lib, $(LIB_CURRY:.curry=.fcy), $(call prefix,.curry/,$(lib)))
@@ -34,7 +36,10 @@ HS_LIB_TRACE_NAMES = $(call comma_sep,$(LIB_NAMES:%=Curry_Trace_%))
 
 ALLLIBS       = AllLibraries
 MAINGOAL      = Curry_Main_Goal.curry
+# Modules not included as regular libraries:
 EXCLUDES      = $(ALLLIBS).curry $(MAINGOAL)
+# Modules not included in library documentation index page:
+DOCEXCLUDES  = CPNS HtmlCgi ValueSequence WUIjs
 
 PACKAGE          = kics2-libraries
 PACKAGE_TRACE    = kics2-libraries-trace
@@ -166,8 +171,8 @@ doc: $(LIB_CURRY)
 	mkdir -p "$(LIBDOCDIR)"
 	$(MAKE) $(LIB_HTML)
 	@echo "Generating index pages for Curry libraries:"
-	@echo $(LIB_NAMES)
-	"$(CURRYDOC)" --libsindexhtml "$(LIBDOCDIR)" $(LIB_NAMES)
+	@echo $(LIB_DOCNAMES)
+	"$(CURRYDOC)" --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries
 $(LIBDOCDIR)/%.html: %.curry
