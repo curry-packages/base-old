@@ -16,8 +16,8 @@ CURRYDOC=$(ROOT)/bin/currydoc
 
 # Curry library files
 LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry))
-# lib names without directory prefix
-LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
+# lib names included in library documentation page (without directory prefix)
+LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(basename $(notdir $(LIB_CURRY))))
 # generated files:
 LIB_FCY   = `echo $(LIB_CURRY:%.curry=.curry/%.fcy) | sed 's|\.curry/meta/|meta/.curry/|g'`
 LIB_ACY   = `echo $(LIB_CURRY:%.curry=.curry/%.acy) | sed 's|\.curry/meta/|meta/.curry/|g'`
@@ -25,7 +25,10 @@ LIB_PL    = `echo $(LIB_CURRY:%.curry=.curry/pakcs/%.pl) | sed 's|\.curry/pakcs/
 LIB_HTML  = $(LIB_CURRY:.curry=.html)
 LIB_TEX   = $(LIB_CURRY:.curry=.tex)
 
+# Modules not included as regular libraries:
 EXCLUDES  = SearchTree.curry ValueSequence.curry UnsafeSearchTree.curry
+# Modules not included in library documentation index page:
+DOCEXCLUDES  = CHRcompiled CPNS HtmlCgi WUIjs
 
 .PHONY: all
 all: fcy acy
@@ -87,8 +90,8 @@ doc: $(LIB_CURRY)
 .PHONY: htmlindex
 htmlindex:
 	@echo "Generating index pages for Curry libraries:"
-	@echo $(LIB_NAMES)
-	"$(CURRYDOC)" --libsindexhtml "$(LIBDOCDIR)" $(LIB_NAMES)
+	@echo $(LIB_DOCNAMES)
+	"$(CURRYDOC)" --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries:
 %.html: ../%.curry
