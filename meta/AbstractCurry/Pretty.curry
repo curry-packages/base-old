@@ -173,12 +173,13 @@ ppCPattern :: Options -> CPattern -> Doc
 ppCPattern opts (CPVar      pvar)   =  ppCVarIName opts pvar
 ppCPattern opts (CPLit      lit)    =  ppCLiteral opts lit
 ppCPattern opts (CPComb     qn ps)  =  ppCPComb opts qn ps
-ppCPattern opts (CPAs       pvar p) =  ppCVarIName opts pvar <> at <> parens (ppCPattern opts p)
+ppCPattern opts (CPAs       pvar p) =  ppCVarIName opts pvar <> at <> parens (ppCPattern opts p) -- TODO
 ppCPattern opts (CPFuncComb qn ps)  =  parens $ ppQName opts qn <+> hsepMap (ppCPattern opts) ps -- TODO
-ppCPattern opts (CPLazy     p)      =  tilde <> parens (ppCPattern opts p)
+ppCPattern opts (CPLazy     p)      =  tilde <> parens (ppCPattern opts p)                       -- TODO
 ppCPattern opts (CPRecord   qn rps) =  ppQName opts qn
-                                   <+> setSpaced (map (ppCFieldPattern opts) rps)
+                                   <+> setSpaced (map (ppCFieldPattern opts) rps)                -- TODO
 
+--- pretty print the application of an n-ary constructor.
 ppCPComb :: Options -> QName -> [CPattern] -> Doc
 ppCPComb opts qn ps =
     case pDocs of
@@ -200,7 +201,7 @@ ppCLiteral :: Options -> CLiteral -> Doc
 ppCLiteral _ (CIntc i)    = int i
 ppCLiteral _ (CFloatc f)  = float f
 ppCLiteral _ (CCharc c)   = text $ show c
-ppCLiteral _ (CStringc s) = text $ show s -- TODO: Escape sequences
+ppCLiteral _ (CStringc s) = text $ show s
 
 ppCFieldPattern :: Options -> CField CPattern -> Doc
 ppCFieldPattern opts (qn, p) = ppQName opts qn <+> equals <+> ppCPattern opts p
@@ -245,10 +246,11 @@ ppCLocalDecl opts (CLocalVars pvars)
 
 --- pretty-print an expression.
 ppCExpr :: Options -> CExpr -> Doc
-ppCExpr opts (CVar     pvar)   = ppCVarIName opts pvar
-ppCExpr opts (CLit     lit)    = ppCLiteral opts lit
-ppCExpr opts (CSymbol  qn)     = ppQName opts qn
-ppCExpr opts (CApply   e1 e2)  = ppCExpr opts e1 <+> ppCExpr opts e2
+ppCExpr opts (CVar     pvar) = ppCVarIName opts pvar
+ppCExpr opts (CLit     lit)  = ppCLiteral opts lit
+ppCExpr opts (CSymbol  qn)   = ppQName opts qn
+
+ppCExpr opts (CApply f e) = -- TODO
 ppCExpr opts (CLambda  ps exp) =  backslash <> hsepMap (ppCPattern opts) ps
                               <+> arrow <+> ppCExpr opts exp
 ppCExpr opts (CLetDecl lDecls exp) =  align $ ppCLocalDecls opts let_ lDecls
