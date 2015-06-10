@@ -156,17 +156,26 @@ ppCTVarINames opts = hsepMap (ppCTVarIName opts)
 ppCTVarIName :: Options -> CTVarIName -> Doc
 ppCTVarIName _ (_, tvar) = text tvar
 
---- pretty-print a list of function rules, concatenated vertically, prepending
---- the name of the function (second argument) in each rule.
+--- pretty-print a list of function rules, concatenated vertically.
 ppCRules :: Options -> QName -> [CRule] -> Doc
-ppCRules opts qn = vcatMap ((ppQName opts qn <+>) . ppCRule opts)
+ppCRules opts qn = vcatMap (ppCRule opts qn)
 
 --- pretty-print a rule of a function. Given a function
 --- `f x y = x * y`, then `x y = x * y` is a rule consisting of `x y` as list of
 --- patterns and `x * y` as right hand side.
-ppCRule :: Options -> CRule -> Doc
-ppCRule opts (CRule ps rhs) =  hsepMap (ppCPattern opts) ps
-                           <+> ppCRhs opts equals rhs
+ppCRule :: Options -> QName -> CRule -> Doc
+ppCRule opts qn (CRule ps rhs)
+    | null pDocs           =  standardPrefix <+> suffix
+    |    isInfixOp qn
+      && length pDocs == 2 =  pDocs !! 0
+                          <+> qnDoc -- no parens around infix operator
+                          <+> pDocs !! 1
+                          <+> suffix
+    | otherwise            =  standardPrefix <+> hsep pDocs <+> suffix
+    where pDocs          = map (ppCPattern opts) ps
+          standardPrefix = parensIf (isInfixOp qn) qnDoc
+          suffix         = ppCRhs opts equals rhs
+          qnDoc          = ppQName opts qn
 
 -- TODO: Handling of any non prefix constructor pattern, nesting
 ppCPattern :: Options -> CPattern -> Doc
