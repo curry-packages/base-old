@@ -164,29 +164,32 @@ ppCRules opts qn = vcatMap (ppCRule opts qn)
 --- `f x y = x * y`, then `x y = x * y` is a rule consisting of `x y` as list of
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
-ppCRule opts qn (CRule ps rhs)
-    | null pDocs           =  standardPrefix <+> suffix
-    |    isInfixOp qn
-      && length pDocs == 2 =  pDocs !! 0
-                          <+> qnDoc -- no parens around infix operator
-                          <+> pDocs !! 1
-                          <+> suffix
-    | otherwise            =  standardPrefix <+> hsep pDocs <+> suffix
-    where pDocs          = map (ppCPattern opts) ps
-          standardPrefix = parensIf (isInfixOp qn) qnDoc
-          suffix         = ppCRhs opts equals rhs
-          qnDoc          = ppQName opts qn
+ppCRule opts qn (CRule ps rhs) =  hsep (positionIdent opts qn pDocs)
+                              <+> ppCRhs opts equals rhs
+    where pDocs = map (ppCPattern opts) ps
 
 -- TODO: Handling of any non prefix constructor pattern, nesting
 ppCPattern :: Options -> CPattern -> Doc
 ppCPattern opts (CPVar      pvar)   =  ppCVarIName opts pvar
 ppCPattern opts (CPLit      lit)    =  ppCLiteral opts lit
-ppCPattern opts (CPComb     qn ps)  =  parens $ ppQName opts qn <+> hsepMap (ppCPattern opts) ps
+ppCPattern opts (CPComb     qn ps)  =  ppCPComb opts qn ps
 ppCPattern opts (CPAs       pvar p) =  ppCVarIName opts pvar <> at <> parens (ppCPattern opts p)
 ppCPattern opts (CPFuncComb qn ps)  =  parens $ ppQName opts qn <+> hsepMap (ppCPattern opts) ps -- TODO
 ppCPattern opts (CPLazy     p)      =  tilde <> parens (ppCPattern opts p)
 ppCPattern opts (CPRecord   qn rps) =  ppQName opts qn
                                    <+> setSpaced (map (ppCFieldPattern opts) rps)
+
+ppCPComb :: Options -> QName -> [CPattern] -> Doc
+ppCPComb opts qn ps =
+    case pDocs of
+         [cons]                     -> cons
+         [l, m, r] |    m == colon
+                     && r == nil    -> brackets l
+                                       {- assume tupled pattern and therefore avoid additional parenthesis. -}
+         (x:_) | x == lparen        -> hsep pDocs
+                                       {- surround every non trivial constructor pattern with parenthesis so far. -}
+               | otherwise          -> parens $ hsep pDocs
+    where pDocs = positionIdent opts qn $ map (ppCPattern opts) ps
 
 --- pretty-print a pattern variable (currently the Int is ignored).
 ppCVarIName :: Options -> CVarIName -> Doc
@@ -335,6 +338,28 @@ ppQName opts (m, f)
     where preparedFQName = ppMName opts m <> dot <> preparedName
           preparedName   = text f
 
+-- Helping functions (sugaring)
+--- `positionIdent qn [x1, ..., xn]` will return `[x1, ppQName qn, xn]` if `qn`
+--- is an infix identifier and n = 2. If `qn` in the tuple identifier return
+--- (simplified) `[(x1,, ..., xn)]`. Otherwise return `[ppQName qn, x1, ..., xn]`.
+positionIdent :: Options -> QName -> [Doc] -> [Doc]
+positionIdent opts qn ds
+    | null ds        = [prefixQnDoc]
+    | isInfixOp qn   = case ds of [x1, x2] -> [x1, qnDoc, x2]
+                                  _        -> prefixQnDoc:ds
+    | isTupleCons qn = tupledDs
+    | otherwise      = prefixQnDoc:ds
+
+--     case ds of []                        -> [prefixQnDoc]
+--                [x1, x2] | isInfixOp qn   -> [x1, qnDoc, x2]
+--                         | isTupleCons qn -> tupledQnDoc
+--                         | otherwise      -> prefixQnDoc:ds
+--                _ | isTupleCons qn        -> tupledQnDoc
+--                  | otherwise             -> prefixQnDoc:ds
+    where prefixQnDoc = parensIf (isInfixOp qn) qnDoc
+          qnDoc       = ppQName opts qn
+          tupledDs = lparen : punctuate comma ds ++ [rparen]
+
 -- Helping function (diagnosis)
 --- Check whether an operator is an infix operator
 isInfixOp :: QName -> Bool
@@ -371,3 +396,6 @@ where_ = text "where"
 
 let_ :: Doc
 let_ = text "let"
+
+nil :: Doc
+nil = text "[]"
