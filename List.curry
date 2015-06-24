@@ -279,7 +279,7 @@ maximumBy cmp xs@(_:_) = foldl1 maxBy xs
 
 --- Returns the minimum of a non-empty list.
 minimum :: [a] -> a
-minimum xs@(_:_) =  foldl1 max xs
+minimum xs@(_:_) =  foldl1 min xs
 
 --- Returns the minimum of a non-empty list
 --- according to the given comparison function
