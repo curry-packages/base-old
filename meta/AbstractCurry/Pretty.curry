@@ -73,7 +73,7 @@ ppImports opts = vcatMap (\m -> text "import" <+> ppMName opts m)
 ppCOpDecl :: Options -> COpDecl -> Doc
 ppCOpDecl opts (COp qn fix p) = ppCFixity fix
                              <+> int p
-                             <+> bquotesIf (not $ isInfixOp qn) (ppQName opts qn)
+                             <+> bquotesIf (not $ isInfixId qn) (ppQName opts qn)
 
 --- pretty-print the fixity of a function.
 ppCFixity :: CFixity -> Doc
@@ -127,7 +127,7 @@ ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
 ppCFuncSignature opts qn tExp
-    | isInfixOp qn = parens prefix <+> suffix
+    | isInfixId qn = parens prefix <+> suffix
     | otherwise    = prefix <+> suffix
     where prefix = ppQName opts qn
           suffix = doubleColon <+> ppCTypeExpr opts tExp
@@ -164,33 +164,58 @@ ppCRules opts qn = vcatMap (ppCRule opts qn)
 --- `f x y = x * y`, then `x y = x * y` is a rule consisting of `x y` as list of
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
-ppCRule opts qn (CRule ps rhs) =  hsep (positionIdent opts qn pDocs)
-                              <+> ppCRhs opts equals rhs
+ppCRule opts qn (CRule ps rhs) = hsep (positionIdent opts qn pDocs)
+                             <+> ppCRhs opts equals rhs
     where pDocs = map (ppCPattern opts) ps
 
--- TODO: Handling of any non prefix constructor pattern, nesting
+--- pretty-print a pattern expression.
 ppCPattern :: Options -> CPattern -> Doc
-ppCPattern opts (CPVar      pvar)   =  ppCVarIName opts pvar
-ppCPattern opts (CPLit      lit)    =  ppCLiteral opts lit
-ppCPattern opts (CPComb     qn ps)  =  ppCPComb opts qn ps
-ppCPattern opts (CPAs       pvar p) =  ppCVarIName opts pvar <> at <> parens (ppCPattern opts p) -- TODO
-ppCPattern opts (CPFuncComb qn ps)  =  parens $ ppQName opts qn <+> hsepMap (ppCPattern opts) ps -- TODO
-ppCPattern opts (CPLazy     p)      =  tilde <> parens (ppCPattern opts p)                       -- TODO
-ppCPattern opts (CPRecord   qn rps) =  ppQName opts qn
-                                   <+> setSpaced (map (ppCFieldPattern opts) rps)                -- TODO
+ppCPattern = ppCPattern' 0
+
+-- Internal use only: Pretty-print a pattern expression and make use of supplied
+-- precedence context. The supplied number represents the precedence of the
+-- enclosing pattern. Higher values mean more precedence, so if the nested pattern
+-- has lower precedence than the enclosing pattern, the nested one has to be
+-- enclosed in parentheses.
+-- Existing precedences (gaps kept intentionally):
+-- lowest
+--     0: top level
+--     2: infix application
+--     4: standard prefix application
+--     6: atoms like variables, literals, tuples, lists ...
+-- highest
+ppCPattern' :: Int -> Options -> CPattern -> Doc
+ppCPattern' _ opts (CPVar  pvar   ) = ppCVarIName opts pvar
+ppCPattern' _ opts (CPLit  lit    ) = ppCLiteral opts lit
+ppCPattern' p opts (CPComb qn   ps) = ppCPComb p opts qn ps
+ppCPattern' _ opts (CPAs   pvar p ) = ppCVarIName opts pvar
+                                   <> at
+                                   <> ppCPattern' 6 opts p
+ppCPattern' p opts (CPFuncComb qn ps ) = parens
+                                       $ ppQName opts qn
+                                     <+> hsepMap (ppCPattern' p opts) ps -- TODO
+ppCPattern' _ opts (CPLazy     p     ) = tilde <> ppCPattern' 6 opts p
+ppCPattern' _ opts (CPRecord   qn rps) = ppQName opts qn
+                                     <+> setSpaced (map (ppCFieldPattern opts) rps) -- TODO
 
 --- pretty print the application of an n-ary constructor.
-ppCPComb :: Options -> QName -> [CPattern] -> Doc
-ppCPComb opts qn ps =
+ppCPComb :: Int -> Options -> QName -> [CPattern] -> Doc
+ppCPComb p opts qn ps =
     case pDocs of
          [cons]                     -> cons
          [l, m, r] |    m == colon
                      && r == nil    -> brackets l
+                   | isInfixId qn   -> parensIf (p > 2) $ l <+> m <+> r
                                        {- assume tupled pattern and therefore avoid additional parenthesis. -}
          (x:_) | x == lparen        -> hsep pDocs
                                        {- surround every non trivial constructor pattern with parenthesis so far. -}
-               | otherwise          -> parens $ hsep pDocs
-    where pDocs = positionIdent opts qn $ map (ppCPattern opts) ps
+               | otherwise          -> parensIf (p > 4) $ hsep pDocs
+    where pDocs = positionIdent opts qn
+                $ map (ppCPattern' p' opts) ps
+          p'    = if isInfixId qn then 2 else 4 -- this assumes the existence of
+                                                -- infix constructors and all of
+                                                -- them having a lower precedence
+                                                -- than prefix constructors.
 
 --- pretty-print a pattern variable (currently the Int is ignored).
 ppCVarIName :: Options -> CVarIName -> Doc
@@ -250,7 +275,10 @@ ppCExpr opts (CVar     pvar) = ppCVarIName opts pvar
 ppCExpr opts (CLit     lit)  = ppCLiteral opts lit
 ppCExpr opts (CSymbol  qn)   = ppQName opts qn
 
-ppCExpr opts (CApply f e) = -- TODO
+-- ppCExpr opts (CApply f e)
+--     | isIfThenElse f = …
+--     | isInfixExp   f = …
+--     | otherwise      =
 ppCExpr opts (CLambda  ps exp) =  backslash <> hsepMap (ppCPattern opts) ps
                               <+> arrow <+> ppCExpr opts exp
 ppCExpr opts (CLetDecl lDecls exp) =  align $ ppCLocalDecls opts let_ lDecls
@@ -326,7 +354,7 @@ getExports opts ts fs = map tDeclToDoc filteredTs ++ map fDeclToDoc filteredFs
           filteredFs = filter (\f -> case f of (CFunc     _ _ Public _ _) -> True
                                                (CmtFunc _ _ _ Public _ _) -> True
                                                _                          -> False) fs
-          ppQName' qn = parensIf (isInfixOp qn) $ ppQName opts qn
+          ppQName' qn = parensIf (isInfixId qn) $ ppQName opts qn
 
 --- pretty-print a QName according to given options (how to qualify).
 ppQName :: Options -> QName -> Doc
@@ -347,25 +375,18 @@ ppQName opts (m, f)
 positionIdent :: Options -> QName -> [Doc] -> [Doc]
 positionIdent opts qn ds
     | null ds        = [prefixQnDoc]
-    | isInfixOp qn   = case ds of [x1, x2] -> [x1, qnDoc, x2]
+    | isInfixId qn   = case ds of [x1, x2] -> [x1, qnDoc, x2]
                                   _        -> prefixQnDoc:ds
     | isTupleCons qn = tupledDs
     | otherwise      = prefixQnDoc:ds
-
---     case ds of []                        -> [prefixQnDoc]
---                [x1, x2] | isInfixOp qn   -> [x1, qnDoc, x2]
---                         | isTupleCons qn -> tupledQnDoc
---                         | otherwise      -> prefixQnDoc:ds
---                _ | isTupleCons qn        -> tupledQnDoc
---                  | otherwise             -> prefixQnDoc:ds
-    where prefixQnDoc = parensIf (isInfixOp qn) qnDoc
+    where prefixQnDoc = parensIf (isInfixId qn) qnDoc
           qnDoc       = ppQName opts qn
           tupledDs = lparen : punctuate comma ds ++ [rparen]
 
 -- Helping function (diagnosis)
---- Check whether an operator is an infix operator
-isInfixOp :: QName -> Bool
-isInfixOp = all (`elem` "~!@#$%^&*+-=<>:?./|\\") . snd
+--- Check whether an operator is an infix identifier.
+isInfixId :: QName -> Bool
+isInfixId = all (`elem` "~!@#$%^&*+-=<>:?./|\\") . snd
 
 --- Check whether an identifier represents a list
 isListCons :: QName -> Bool
