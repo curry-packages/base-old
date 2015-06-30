@@ -166,7 +166,7 @@ ppCRules opts qn = vcatMap (ppCRule opts qn)
 ppCRule :: Options -> QName -> CRule -> Doc
 ppCRule opts qn (CRule ps rhs) = hsep (positionIdent opts qn pDocs)
                              <+> ppCRhs opts equals rhs
-    where pDocs = map (ppCPattern opts) ps
+    where pDocs = map (ppCPattern' 4 opts) ps
 
 --- pretty-print a pattern expression.
 ppCPattern :: Options -> CPattern -> Doc
@@ -191,31 +191,37 @@ ppCPattern' p opts (CPComb qn   ps) = ppCPComb p opts qn ps
 ppCPattern' _ opts (CPAs   pvar p ) = ppCVarIName opts pvar
                                    <> at
                                    <> ppCPattern' 6 opts p
-ppCPattern' p opts (CPFuncComb qn ps ) = parens
-                                       $ ppQName opts qn
-                                     <+> hsepMap (ppCPattern' p opts) ps -- TODO
+ppCPattern' p opts (CPFuncComb qn ps ) =
+    case ps of
+         [p1, p2] | isInfixId qn -> parensIf (p >= 2)
+                                  $ ppCPattern' 2 opts p1
+                                <+> ppQName opts qn
+                                <+> ppCPattern' 2 opts p2
+         _                       -> parensIf (p >= 4)
+                                  $ ppQName opts qn
+                                <+> hsepMap (ppCPattern' 4 opts) ps
 ppCPattern' _ opts (CPLazy     p     ) = tilde <> ppCPattern' 6 opts p
 ppCPattern' _ opts (CPRecord   qn rps) = ppQName opts qn
-                                     <+> setSpaced (map (ppCFieldPattern opts) rps) -- TODO
+                                     <+> setSpaced (map (ppCFieldPattern opts) rps)
 
 --- pretty print the application of an n-ary constructor.
 ppCPComb :: Int -> Options -> QName -> [CPattern] -> Doc
 ppCPComb p opts qn ps =
     case pDocs of
-         [cons]                     -> cons
+         [cons]                    -> cons
          [l, m, r] |    m == colon
-                     && r == nil    -> brackets l
-                   | isInfixId qn   -> parensIf (p > 2) $ l <+> m <+> r
-                                       {- assume tupled pattern and therefore avoid additional parenthesis. -}
-         (x:_) | x == lparen        -> hsep pDocs
-                                       {- surround every non trivial constructor pattern with parenthesis so far. -}
-               | otherwise          -> parensIf (p > 4) $ hsep pDocs
+                     && r == nil   -> brackets l
+                   | isInfixId qn  -> parensIf (p >= 2) $ l <+> m <+> r
+                                      {- assume tupled pattern and therefore
+                                         avoid additional parenthesis. -}
+         (x:_) | x == lparen       -> hsep pDocs
+         _                         -> parensIf (p >= 4) $ hsep pDocs
     where pDocs = positionIdent opts qn
                 $ map (ppCPattern' p' opts) ps
-          p'    = if isInfixId qn then 2 else 4 -- this assumes the existence of
-                                                -- infix constructors and all of
-                                                -- them having a lower precedence
-                                                -- than prefix constructors.
+          p'    = if isInfixId qn then 2 else 4 {- this assumes the existence of
+                                                   infix constructors and all of
+                                                   them having a lower precedence
+                                                   than prefix constructors. -}
 
 --- pretty-print a pattern variable (currently the Int is ignored).
 ppCVarIName :: Options -> CVarIName -> Doc
@@ -228,6 +234,7 @@ ppCLiteral _ (CFloatc f)  = float f
 ppCLiteral _ (CCharc c)   = text $ show c
 ppCLiteral _ (CStringc s) = text $ show s
 
+--- pretty-print a record pattern
 ppCFieldPattern :: Options -> CField CPattern -> Doc
 ppCFieldPattern opts (qn, p) = ppQName opts qn <+> equals <+> ppCPattern opts p
 
@@ -275,7 +282,7 @@ ppCExpr opts (CVar     pvar) = ppCVarIName opts pvar
 ppCExpr opts (CLit     lit)  = ppCLiteral opts lit
 ppCExpr opts (CSymbol  qn)   = ppQName opts qn
 
--- ppCExpr opts (CApply f e)
+ppCExpr opts (CApply f e) = ppCExpr opts f <+> ppCExpr opts e
 --     | isIfThenElse f = …
 --     | isInfixExp   f = …
 --     | otherwise      =
