@@ -34,6 +34,19 @@ options pw iw q m = Options { pageWidth        = pw
                             , qualification    = q
                             , moduleName       = m }
 
+--- precedence of top level (pattern or application) context -- lowest
+tlPrec      :: Int
+tlPrec      = 0
+--- precedence of infix (pattern or application) context
+infAppPrec  :: Int
+infAppPrec  = 1
+--- precedence of standard prefix (pattern or application) context
+prefAppPrec :: Int
+prefAppPrec = 2
+--- precedence of atoms (variables, literals, tuples, lists ...)
+highestPrec :: Int
+highestPrec = 3
+
 defaultOptions :: Options
 defaultOptions = options 80 4 Imports ""
 
@@ -166,43 +179,38 @@ ppCRules opts qn = vcatMap (ppCRule opts qn)
 ppCRule :: Options -> QName -> CRule -> Doc
 ppCRule opts qn (CRule ps rhs) = hsep (positionIdent opts qn pDocs)
                              <+> ppCRhs opts equals rhs
-    where pDocs = map (ppCPattern' 4 opts) ps
+    where pDocs = map (ppCPattern' prefAppPrec opts) ps
 
 --- pretty-print a pattern expression.
 ppCPattern :: Options -> CPattern -> Doc
-ppCPattern = ppCPattern' 0
+ppCPattern = ppCPattern' tlPrec
 
 -- Internal use only: Pretty-print a pattern expression and make use of supplied
 -- precedence context. The supplied number represents the precedence of the
--- enclosing pattern. Higher values mean more precedence, so if the nested pattern
--- has lower precedence than the enclosing pattern, the nested one has to be
--- enclosed in parentheses.
--- Existing precedences (gaps kept intentionally):
--- lowest
---     0: top level
---     2: infix application
---     4: standard prefix application
---     6: atoms like variables, literals, tuples, lists ...
--- highest
+-- enclosing pattern. Higher values mean more precedence, so if the nested
+-- pattern has lower precedence than the enclosing pattern, the nested one has
+-- to be enclosed in parentheses.
 ppCPattern' :: Int -> Options -> CPattern -> Doc
 ppCPattern' _ opts (CPVar  pvar   ) = ppCVarIName opts pvar
 ppCPattern' _ opts (CPLit  lit    ) = ppCLiteral opts lit
 ppCPattern' p opts (CPComb qn   ps) = ppCPComb p opts qn ps
 ppCPattern' _ opts (CPAs   pvar p ) = ppCVarIName opts pvar
                                    <> at
-                                   <> ppCPattern' 6 opts p
+                                   <> ppCPattern' highestPrec opts p
 ppCPattern' p opts (CPFuncComb qn ps ) =
     case ps of
-         [p1, p2] | isInfixId qn -> parensIf (p >= 2)
-                                  $ ppCPattern' 2 opts p1
+         [p1, p2] | isInfixId qn -> parensIf (p >= infAppPrec)
+                                  $ ppCPattern' infAppPrec opts p1
                                 <+> ppQName opts qn
-                                <+> ppCPattern' 2 opts p2
-         _                       -> parensIf (p >= 4)
+                                <+> ppCPattern' infAppPrec opts p2
+         _                       -> parensIf (p >= prefAppPrec)
                                   $ ppQName opts qn
-                                <+> hsepMap (ppCPattern' 4 opts) ps
-ppCPattern' _ opts (CPLazy     p     ) = tilde <> ppCPattern' 6 opts p
+                                <+> hsepMap (ppCPattern' prefAppPrec opts) ps
+ppCPattern' _ opts (CPLazy     p     ) = tilde <> ppCPattern' highestPrec opts p
 ppCPattern' _ opts (CPRecord   qn rps) = ppQName opts qn
-                                     <+> setSpaced (map (ppCFieldPattern opts) rps)
+                                     <+> setSpaced (map (ppCFieldPattern opts)
+                                                        rps
+                                                   )
 
 --- pretty print the application of an n-ary constructor.
 ppCPComb :: Int -> Options -> QName -> [CPattern] -> Doc
@@ -211,17 +219,19 @@ ppCPComb p opts qn ps =
          [cons]                    -> cons
          [l, m, r] |    m == colon
                      && r == nil   -> brackets l
-                   | isInfixId qn  -> parensIf (p >= 2) $ l <+> m <+> r
+                   | isInfixId qn  -> parensIf (p >= infAppPrec) $ l <+> m <+> r
                                       {- assume tupled pattern and therefore
                                          avoid additional parenthesis. -}
          (x:_) | x == lparen       -> hsep pDocs
-         _                         -> parensIf (p >= 4) $ hsep pDocs
+         _                         -> parensIf (p >= prefAppPrec) $ hsep pDocs
     where pDocs = positionIdent opts qn
                 $ map (ppCPattern' p' opts) ps
-          p'    = if isInfixId qn then 2 else 4 {- this assumes the existence of
-                                                   infix constructors and all of
-                                                   them having a lower precedence
-                                                   than prefix constructors. -}
+          p'    = if isInfixId qn
+                     then infAppPrec
+                     else prefAppPrec {- this assumes the existence of infix
+                                         constructors and all of them having a
+                                         lower precedence than any prefix
+                                         constructors. -}
 
 --- pretty-print a pattern variable (currently the Int is ignored).
 ppCVarIName :: Options -> CVarIName -> Doc
@@ -266,48 +276,66 @@ ppCGuardedRhs opts d = align . vcatMap (ppCGuard opts)
 --- pretty-print a `where` block. If the second argument is `text "let"`,
 --- pretty-print a `let` block without `in`.
 ppCLocalDecls :: Options -> Doc -> [CLocalDecl] -> Doc
--- ppCLocalDecls opts d lDecls = d <+> nest 0 (align (vcatMap (ppCLocalDecl opts) lDecls))
 ppCLocalDecls opts d lDecls = d <+> align (vcatMap (ppCLocalDecl opts) lDecls)
 
 --- pretty-print local declarations (the part that follows the `where` keyword).
 ppCLocalDecl :: Options -> CLocalDecl -> Doc
 ppCLocalDecl opts (CLocalFunc fDecl) = ppCFuncDecl opts fDecl
-ppCLocalDecl opts (CLocalPat  p rhs) = ppCPattern opts p <+> ppCRhs opts equals rhs
+ppCLocalDecl opts (CLocalPat  p rhs) = ppCPattern opts p
+                                   <+> ppCRhs opts equals rhs
 ppCLocalDecl opts (CLocalVars pvars)
     = hsep $ punctuate comma $ map (ppCVarIName opts) pvars
 
 --- pretty-print an expression.
 ppCExpr :: Options -> CExpr -> Doc
-ppCExpr opts (CVar     pvar) = ppCVarIName opts pvar
-ppCExpr opts (CLit     lit)  = ppCLiteral opts lit
-ppCExpr opts (CSymbol  qn)   = ppQName opts qn
+ppCExpr = ppCExpr' tlPrec
 
-ppCExpr opts (CApply f e) = ppCExpr opts f <+> ppCExpr opts e
+-- Internal use only: Pretty-print an expression and make use of supplied
+-- precedence context. The supplied number represents the precedence of the
+-- enclosing expression. Higher values mean more precedence, so if the nested
+-- expression has lower precedence than the enclosing expression, the nested one
+-- has to be enclosed in parentheses.
+ppCExpr' :: Int -> Options -> CExpr -> Doc
+ppCExpr' _ opts (CVar     pvar  ) = ppCVarIName opts pvar
+ppCExpr' _ opts (CLit     lit   ) = ppCLiteral opts lit
+ppCExpr' _ opts (CSymbol  qn    ) = ppQName opts qn
+ppCExpr' p opts (CApply   f    e) = ppCExpr opts f <+> ppCExpr opts e -- TODO
 --     | isIfThenElse f = …
 --     | isInfixExp   f = …
---     | otherwise      =
-ppCExpr opts (CLambda  ps exp) =  backslash <> hsepMap (ppCPattern opts) ps
-                              <+> arrow <+> ppCExpr opts exp
-ppCExpr opts (CLetDecl lDecls exp) =  align $ ppCLocalDecls opts let_ lDecls
-                                 <$$> text "in" <+> ppCExpr opts exp
-ppCExpr opts (CDoExpr stms) =  text "do"
-                           <+> align (vcatMap (ppCStatement opts) stms)
-ppCExpr opts (CListComp exp stms) =  brackets $ ppCExpr opts exp
-                                 <+> bar
-                                 <+> fillSep
-                                     (punctuate (comma <> space)
-                                                (map (ppCStatement opts) stms))
-ppCExpr opts (CCase cType exp cases) =  ppCCaseType cType
+--     | otherwise      = …
+ppCExpr' p opts (CLambda ps exp) = parensIf (p > tlPrec)
+                                 $ backslash
+                                <> hsepMap (ppCPattern' prefAppPrec opts) ps
+                               <+> arrow
+                               <+> ppCExpr opts exp
+ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec)
+                                      $ align
+                                      $ ppCLocalDecls opts let_ lDecls
+                                   <$$> text "in"
                                     <+> ppCExpr opts exp
-                                    <+> text "of"
-                                    <+> ppCases opts cases
-ppCExpr opts (CTyped exp tExp) =  ppCExpr opts exp
-                              <+> doubleColon
-                              <+> ppCTypeExpr opts tExp
-ppCExpr opts (CRecConstr qn rFields) =  ppQName opts qn
-                                    <+> ppRecordFields opts rFields
-ppCExpr opts (CRecUpdate exp rFields) =  ppCExpr opts exp
-                                     <+> ppRecordFields opts rFields
+ppCExpr' p opts (CDoExpr stms) = parensIf (p > tlPrec)
+                               $ text "do"
+                             <+> align (vcatMap (ppCStatement opts) stms)
+ppCExpr' _ opts (CListComp exp stms) = brackets
+                                     $ ppCExpr opts exp
+                                   <+> bar
+                                   <+> fillSep (punctuate (comma <> space)
+                                                          (map (ppCStatement opts)
+                                                               stms)
+                                               )
+ppCExpr' p opts (CCase cType exp cases) = parensIf (p > tlPrec)
+                                        $ ppCCaseType cType
+                                      <+> ppCExpr opts exp
+                                      <+> text "of"
+                                      <+> ppCases opts cases
+ppCExpr' p opts (CTyped exp tExp) = parensIf (p > tlPrec)
+                                  $ ppCExpr opts exp
+                                <+> doubleColon
+                                <+> ppCTypeExpr opts tExp
+ppCExpr' p opts (CRecConstr qn rFields) = ppQName opts qn -- TODO
+                                      <+> ppRecordFields opts rFields
+ppCExpr' p opts (CRecUpdate exp rFields) = ppCExpr opts exp -- TODO
+                                       <+> ppRecordFields opts rFields
 
 ppCStatement :: Options -> CStatement -> Doc
 ppCStatement opts (CSExpr exp)     =  ppCExpr opts exp
@@ -354,13 +382,17 @@ getExports opts ts fs = map tDeclToDoc filteredTs ++ map fDeclToDoc filteredFs
           fDeclToDoc (CFunc     qn _ _ _ _) = ppQName' qn
           fDeclToDoc (CmtFunc _ qn _ _ _ _) = ppQName' qn
 
-          filteredTs = filter (\t -> case t of (CType    _ Public _ _) -> True
-                                               (CTypeSyn _ Public _ _) -> True
-                                               (CNewType _ Public _ _) -> True
-                                               _                       -> False) ts
-          filteredFs = filter (\f -> case f of (CFunc     _ _ Public _ _) -> True
-                                               (CmtFunc _ _ _ Public _ _) -> True
-                                               _                          -> False) fs
+          filteredTs = filter (\t -> case t of
+                                          (CType    _ Public _ _) -> True
+                                          (CTypeSyn _ Public _ _) -> True
+                                          (CNewType _ Public _ _) -> True
+                                          _                       -> False)
+                              ts
+          filteredFs = filter (\f -> case f of
+                                          (CFunc     _ _ Public _ _) -> True
+                                          (CmtFunc _ _ _ Public _ _) -> True
+                                          _                          -> False)
+                              fs
           ppQName' qn = parensIf (isInfixId qn) $ ppQName opts qn
 
 --- pretty-print a QName according to given options (how to qualify).
