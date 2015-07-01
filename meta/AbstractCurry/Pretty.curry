@@ -10,12 +10,12 @@ module AbstractCurry.Pretty (Options, Qualification(..), defaultOptions, printCu
 
 import Pretty
 import AbstractCurry
+import Maybe (isJust, fromJust)
 
 data Options = Options { pageWidth        :: Int
                        , indentationWidth :: Int
                        , qualification    :: Qualification
-                       , moduleName       :: String
-                       }
+                       , moduleName       :: String }
 
 data Qualification
     = Full      -- ^ Fully qualify every function, including those of the
@@ -100,8 +100,7 @@ ppCTypeDecl :: Options -> CTypeDecl -> Doc
 ppCTypeDecl opts (CType qn _ tVars cDecls)
     | null cDecls = prefix
     | null tVars  = prefix <+> suffix
-    | otherwise   = prefix <+> ppCTVarINames opts tVars
-                           <+> suffix
+    | otherwise   = prefix <+> ppCTVarINames opts tVars <+> suffix
     where prefix = text "data" <+> ppQName opts qn
           suffix = ppCConsDecls opts cDecls
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
@@ -120,15 +119,17 @@ ppCConsDecls opts cs
 
 --- pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
-ppCConsDecl opts (CCons   qn _ tExps)  =  ppQName opts qn
-                                      <+> hsepMap (ppCTypeExpr opts) tExps
-ppCConsDecl opts (CRecord qn _ fDecls)
-    = ppQName opts qn <+> setSpaced (map (ppCFieldDecl opts) fDecls)
+ppCConsDecl opts (CCons   qn _ tExps) = ppQName opts qn
+                                     <+> hsepMap (ppCTypeExpr opts) tExps
+ppCConsDecl opts (CRecord qn _ fDecls) = ppQName opts qn
+                                     <+> setSpaced (map (ppCFieldDecl opts)
+                                                        fDecls)
 
 --- pretty-print a record field declaration (`field :: type`).
 ppCFieldDecl :: Options -> CFieldDecl -> Doc
-ppCFieldDecl opts (CField qn _ tExp) = ppQName opts qn <+> doubleColon
-                                                       <+> ppCTypeExpr opts tExp
+ppCFieldDecl opts (CField qn _ tExp) = ppQName opts qn
+                                   <+> doubleColon
+                                   <+> ppCTypeExpr opts tExp
 
 --- pretty-print a function declaration.
 ppCFuncDecl :: Options -> CFuncDecl -> Doc
@@ -209,8 +210,7 @@ ppCPattern' p opts (CPFuncComb qn ps ) =
 ppCPattern' _ opts (CPLazy     p     ) = tilde <> ppCPattern' highestPrec opts p
 ppCPattern' _ opts (CPRecord   qn rps) = ppQName opts qn
                                      <+> setSpaced (map (ppCFieldPattern opts)
-                                                        rps
-                                                   )
+                                                        rps)
 
 --- pretty print the application of an n-ary constructor.
 ppCPComb :: Int -> Options -> QName -> [CPattern] -> Doc
@@ -296,13 +296,25 @@ ppCExpr = ppCExpr' tlPrec
 -- expression has lower precedence than the enclosing expression, the nested one
 -- has to be enclosed in parentheses.
 ppCExpr' :: Int -> Options -> CExpr -> Doc
-ppCExpr' _ opts (CVar     pvar  ) = ppCVarIName opts pvar
-ppCExpr' _ opts (CLit     lit   ) = ppCLiteral opts lit
-ppCExpr' _ opts (CSymbol  qn    ) = ppQName opts qn
-ppCExpr' p opts (CApply   f    e) = ppCExpr opts f <+> ppCExpr opts e -- TODO
---     | isIfThenElse f = …
---     | isInfixExp   f = …
---     | otherwise      = …
+ppCExpr' _ opts (CVar     pvar) = ppCVarIName opts pvar
+ppCExpr' _ opts (CLit     lit ) = ppCLiteral opts lit
+ppCExpr' _ opts (CSymbol  qn  ) = ppQName opts qn
+ppCExpr' p opts app@(CApply f exp)
+    | isITE app = parensIf (p > tlPrec)
+                $ let (c, t, e) = fromJust $ extractITE app
+                  in  text "if" <+> align (ppCExpr opts c
+                                      <$$> text "then" <+> ppCExpr opts t
+                                      <$$> text "else" <+> ppCExpr opts e)
+    | isInf app = parensIf (p >= infAppPrec)
+                $ let (op, l, r) = fromJust $ extractInfix app
+                  in  ppCExpr' infAppPrec opts l
+                  <+> ppQName opts op
+                  <+> ppCExpr' infAppPrec opts r
+-- TODO: tuple application
+    | otherwise = parensIf (p >= prefAppPrec)
+                $ ppCExpr opts f <+> ppCExpr' prefAppPrec opts exp
+    where isITE = isJust . extractITE
+          isInf = isJust . extractInfix
 ppCExpr' p opts (CLambda ps exp) = parensIf (p > tlPrec)
                                  $ backslash
                                 <> hsepMap (ppCPattern' prefAppPrec opts) ps
@@ -321,8 +333,7 @@ ppCExpr' _ opts (CListComp exp stms) = brackets
                                    <+> bar
                                    <+> fillSep (punctuate (comma <> space)
                                                           (map (ppCStatement opts)
-                                                               stms)
-                                               )
+                                                               stms))
 ppCExpr' p opts (CCase cType exp cases) = parensIf (p > tlPrec)
                                         $ ppCCaseType cType
                                       <+> ppCExpr opts exp
@@ -338,10 +349,11 @@ ppCExpr' p opts (CRecUpdate exp rFields) = ppCExpr opts exp -- TODO
                                        <+> ppRecordFields opts rFields
 
 ppCStatement :: Options -> CStatement -> Doc
-ppCStatement opts (CSExpr exp)     =  ppCExpr opts exp
-ppCStatement opts (CSPat  pat exp) =  ppCPattern opts pat
-                                  <+> larrow <+> ppCExpr opts exp
-ppCStatement opts (CSLet  lDecls)  = ppCLocalDecls opts let_ lDecls
+ppCStatement opts (CSExpr exp       ) = ppCExpr opts exp
+ppCStatement opts (CSPat  pat    exp) = ppCPattern opts pat
+                                    <+> larrow
+                                    <+> ppCExpr opts exp
+ppCStatement opts (CSLet  lDecls    ) = ppCLocalDecls opts let_ lDecls
 
 --- pretty-print `case`, `fcase` keywords.
 ppCCaseType :: CCaseType -> Doc
@@ -439,6 +451,21 @@ isConsCons (m, i) = m `elem` ["Prelude", ""] && i == ":"
 isTupleCons :: QName -> Bool
 isTupleCons (m, i) = m `elem` ["Prelude", ""] && i == mkTuple (length i)
   where mkTuple n = '(' : replicate (n - 2) ',' ++ ")"
+
+extractITE :: CExpr -> Maybe (CExpr, CExpr, CExpr)
+extractITE e = case e of
+                    (CApply (CApply (CApply (CSymbol ("Prelude","if_then_else"))
+                                            cond)
+                                    tExp)
+                            fExp) -> Just (cond, tExp, fExp)
+                    _             -> Nothing
+
+extractInfix :: CExpr -> Maybe (QName, CExpr, CExpr)
+extractInfix e = case e of
+                      (CApply (CApply (CSymbol s)
+                                      e1)
+                              e2) | isInfixId s -> Just (s, e1, e2)
+                      _                         -> Nothing
 
 -- Helping functions (pretty printing)
 vsepBlankMap :: (a -> Doc) -> [a] -> Doc
