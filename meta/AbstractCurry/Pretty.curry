@@ -310,11 +310,15 @@ ppCExpr' p opts app@(CApply f exp)
                   in  ppCExpr' infAppPrec opts l
                   <+> ppQName opts op
                   <+> ppCExpr' infAppPrec opts r
--- TODO: tuple application
+    | isTup app = let args = fromJust $ extractTuple app
+                  in  hsep $ lparen
+                           : punctuate comma (map (ppCExpr opts) args)
+                          ++ [rparen]
     | otherwise = parensIf (p >= prefAppPrec)
                 $ ppCExpr opts f <+> ppCExpr' prefAppPrec opts exp
     where isITE = isJust . extractITE
           isInf = isJust . extractInfix
+          isTup = isJust . extractTuple
 ppCExpr' p opts (CLambda ps exp) = parensIf (p > tlPrec)
                                  $ backslash
                                 <> hsepMap (ppCPattern' prefAppPrec opts) ps
@@ -452,6 +456,9 @@ isTupleCons :: QName -> Bool
 isTupleCons (m, i) = m `elem` ["Prelude", ""] && i == mkTuple (length i)
   where mkTuple n = '(' : replicate (n - 2) ',' ++ ")"
 
+--- Check if given application tree represents an if then else construct.
+--- If so, return the condition, the "then expression" and the "else expression".
+--- Otherwise, return `Nothing`.
 extractITE :: CExpr -> Maybe (CExpr, CExpr, CExpr)
 extractITE e = case e of
                     (CApply (CApply (CApply (CSymbol ("Prelude","if_then_else"))
@@ -460,12 +467,25 @@ extractITE e = case e of
                             fExp) -> Just (cond, tExp, fExp)
                     _             -> Nothing
 
+--- Check if given application tree represents an infix operator application.
+--- If so, return the operator, its left and its right argument. Otherwise,
+--- return `Nothing`.
 extractInfix :: CExpr -> Maybe (QName, CExpr, CExpr)
 extractInfix e = case e of
                       (CApply (CApply (CSymbol s)
                                       e1)
                               e2) | isInfixId s -> Just (s, e1, e2)
                       _                         -> Nothing
+
+--- Check if given application tree represents a tuple contructor application.
+--- If so, return the constructor and its arguments in a list. Otherwise, return
+--- `Nothing`.
+extractTuple :: CExpr -> Maybe [CExpr]
+extractTuple = extractTuple' []
+    where extractTuple' es exp = case exp of
+                (CApply  f e)                 -> extractTuple' (e:es) f
+                (CSymbol s  ) | isTupleCons s -> Just es
+                _                             -> Nothing
 
 -- Helping functions (pretty printing)
 vsepBlankMap :: (a -> Doc) -> [a] -> Doc
