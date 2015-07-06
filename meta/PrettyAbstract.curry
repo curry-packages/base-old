@@ -357,7 +357,8 @@ localDeclsDoc :: Precs -> String -> [CLocalDecl] -> Doc
 localDeclsDoc pr mod lds
   | null lds  = empty
   | otherwise = line <>  text "where"
-                     <+> align (vsep (punctuate line (map (localDeclDoc pr mod) lds)))
+                     <+> align (vsep (punctuate line
+                                        (map (localDeclDoc pr mod) lds)))
 
 localDeclDoc :: Precs -> String -> CLocalDecl -> Doc
 localDeclDoc pr mod (CLocalFunc    f) =  funcDoc pr mod f
@@ -541,8 +542,11 @@ statementDoc :: Precs -> String -> CStatement -> Doc
 statementDoc pr mod (CSExpr e) = hang 1 $ expDoc False pr Nothing mod e
 statementDoc pr mod (CSPat p e) =
     hang 1 $ patternDoc mod p <+> text "<-" <+> expDoc False pr Nothing mod e
-statementDoc pr mod (CSLet localDecls) =
-    text "let" <+> localDeclsDoc pr mod localDecls
+statementDoc pr mod (CSLet ldecls)
+  | null ldecls  = empty
+  | otherwise    = text "let" <+>
+                   align (vsep (punctuate line
+		                          (map (localDeclDoc pr mod) ldecls)))
 
 branchDoc :: Precs -> String -> (CPattern, CRhs) -> Doc
 branchDoc pr mod (cpat, crhs)
