@@ -4,7 +4,7 @@
 --- This library provides a pretty-printer for AbstractCurry modules.
 ---
 --- @author  Yannik Potdevin
---- @version June 2015
+--- @version July 2015
 --- --------------------------------------------------------------------------
 module AbstractCurry.Pretty (Options, Qualification(..), defaultOptions, printCurryProg) where
 
@@ -59,11 +59,11 @@ printCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 ppCurryProg :: Options -> CurryProg -> Doc
 ppCurryProg opts (CurryProg m ms ts fs os)
     = text "module" <+> ppMName opts' m
-  <$> indent' opts' (ppExports opts' exports <+> where_)
- <$+> ppImports opts' ms
- <$+> vcatMap (ppCOpDecl opts') os
- <$+> vcatMap (ppCTypeDecl opts') ts
- <$+> vsepBlankMap (ppCFuncDecl opts') fs
+   $$ indent' opts' (ppExports opts' exports $$ where_)
+  $+$ ppImports opts' ms
+  $+$ vcatMap (ppCOpDecl opts') os
+  $+$ vcatMap (ppCTypeDecl opts') ts
+  $+$ vsepBlankMap (ppCFuncDecl opts') fs
     where exports = getExports opts' ts fs
           opts'   = opts { moduleName = m }
 
@@ -85,8 +85,8 @@ ppImports opts = vcatMap (\m -> text "import" <+> ppMName opts m)
 --- pretty-print operator precedence declarations.
 ppCOpDecl :: Options -> COpDecl -> Doc
 ppCOpDecl opts (COp qn fix p) = ppCFixity fix
-                             <+> int p
-                             <+> bquotesIf (not $ isInfixId qn) (ppQName opts qn)
+                            <+> int p
+                            <+> bquotesIf (not $ isInfixId qn) (ppQName opts qn)
 
 --- pretty-print the fixity of a function.
 ppCFixity :: CFixity -> Doc
@@ -115,12 +115,15 @@ ppCTypeDecl opts (CNewType qn _ tVars cDecl)
 --- pretty-print a list of constructor declarations, including the `=` sign.
 ppCConsDecls :: Options -> [CConsDecl] -> Doc
 ppCConsDecls opts cs
-    = equals <+> fillEncloseSepSpaced empty empty bar (map (ppCConsDecl opts) cs)
+    = fillEncloseSepSpaced equals empty bar (map (ppCConsDecl opts) cs)
 
 --- pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
-ppCConsDecl opts (CCons   qn _ tExps) = ppQName opts qn
-                                     <+> hsepMap (ppCTypeExpr opts) tExps
+ppCConsDecl opts (CCons   qn _ tExps )
+    = (if null tExps
+          then id
+          else (<+> hsepMap (ppCTypeExpr opts) tExps)
+      ) $ ppQName opts qn
 ppCConsDecl opts (CRecord qn _ fDecls) = ppQName opts qn
                                      <+> setSpaced (map (ppCFieldDecl opts)
                                                         fDecls)
@@ -136,7 +139,7 @@ ppCFuncDecl :: Options -> CFuncDecl -> Doc
 ppCFuncDecl opts (CFunc qn _ _ tExp rs)
     = ppCFuncSignature opts qn tExp <$$> ppCRules opts qn rs
 ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
-    = string cmt <$$> ppCFuncDecl opts (CFunc qn a v tExp rs)
+    = string cmt $$ ppCFuncDecl opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
@@ -172,7 +175,10 @@ ppCTVarIName _ (_, tvar) = text tvar
 
 --- pretty-print a list of function rules, concatenated vertically.
 ppCRules :: Options -> QName -> [CRule] -> Doc
-ppCRules opts qn = vcatMap (ppCRule opts qn)
+ppCRules opts qn rs = case rs of
+                           [] -> parensIf (isInfixId qn) (ppQName opts qn)
+                             <+> text "external"
+                           _  -> vcatMap (ppCRule opts qn) rs
 
 --- pretty-print a rule of a function. Given a function
 --- `f x y = x * y`, then `x y = x * y` is a rule consisting of `x y` as list of
@@ -284,7 +290,7 @@ ppCLocalDecl opts (CLocalFunc fDecl) = ppCFuncDecl opts fDecl
 ppCLocalDecl opts (CLocalPat  p rhs) = ppCPattern opts p
                                    <+> ppCRhs opts equals rhs
 ppCLocalDecl opts (CLocalVars pvars)
-    = hsep $ punctuate comma $ map (ppCVarIName opts) pvars
+    = (<+> text "free") $ hsep $ punctuate comma $ map (ppCVarIName opts) pvars
 
 --- pretty-print an expression.
 ppCExpr :: Options -> CExpr -> Doc
@@ -298,13 +304,13 @@ ppCExpr = ppCExpr' tlPrec
 ppCExpr' :: Int -> Options -> CExpr -> Doc
 ppCExpr' _ opts (CVar     pvar) = ppCVarIName opts pvar
 ppCExpr' _ opts (CLit     lit ) = ppCLiteral opts lit
-ppCExpr' _ opts (CSymbol  qn  ) = ppQName opts qn
+ppCExpr' _ opts (CSymbol  qn  ) = parensIf (isInfixId qn) $ ppQName opts qn -- TODO: Is this too greedy?
 ppCExpr' p opts app@(CApply f exp)
     | isITE app = parensIf (p > tlPrec)
                 $ let (c, t, e) = fromJust $ extractITE app
-                  in  text "if" <+> align (ppCExpr opts c
-                                      <$$> text "then" <+> ppCExpr opts t
-                                      <$$> text "else" <+> ppCExpr opts e)
+                  in  text "if" <+> group (align $ ppCExpr opts c
+                                                $$ text "then" <+> ppCExpr opts t
+                                                $$ text "else" <+> ppCExpr opts e)
     | isInf app = parensIf (p >= infAppPrec)
                 $ let (op, l, r) = fromJust $ extractInfix app
                   in  ppCExpr' infAppPrec opts l
@@ -325,9 +331,10 @@ ppCExpr' p opts (CLambda ps exp) = parensIf (p > tlPrec)
                                <+> arrow
                                <+> ppCExpr opts exp
 ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec)
+                                      $ group
                                       $ align
                                       $ ppCLocalDecls opts let_ lDecls
-                                   <$$> text "in"
+                                     $$ text "in"
                                     <+> ppCExpr opts exp
 ppCExpr' p opts (CDoExpr stms) = parensIf (p > tlPrec)
                                $ text "do"
@@ -347,9 +354,9 @@ ppCExpr' p opts (CTyped exp tExp) = parensIf (p > tlPrec)
                                   $ ppCExpr opts exp
                                 <+> doubleColon
                                 <+> ppCTypeExpr opts tExp
-ppCExpr' p opts (CRecConstr qn rFields) = ppQName opts qn -- TODO
+ppCExpr' _ opts (CRecConstr qn rFields) = ppQName opts qn
                                       <+> ppRecordFields opts rFields
-ppCExpr' p opts (CRecUpdate exp rFields) = ppCExpr opts exp -- TODO
+ppCExpr' p opts (CRecUpdate exp rFields) = ppCExpr' p opts exp
                                        <+> ppRecordFields opts rFields
 
 ppCStatement :: Options -> CStatement -> Doc
