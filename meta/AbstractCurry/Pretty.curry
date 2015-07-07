@@ -59,7 +59,7 @@ printCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 ppCurryProg :: Options -> CurryProg -> Doc
 ppCurryProg opts (CurryProg m ms ts fs os)
     = text "module" <+> ppMName opts' m
-   $$ indent' opts' (ppExports opts' exports $$ where_)
+   $$ indent' opts' (ppExports opts' exports </> where_)
   $+$ ppImports opts' ms
   $+$ vcatMap (ppCOpDecl opts') os
   $+$ vcatMap (ppCTypeDecl opts') ts
@@ -98,32 +98,27 @@ ppCFixity CInfixrOp = text "infixr"
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
 ppCTypeDecl opts (CType qn _ tVars cDecls)
-    | null cDecls = prefix
-    | null tVars  = prefix <+> suffix
-    | otherwise   = prefix <+> ppCTVarINames opts tVars <+> suffix
-    where prefix = text "data" <+> ppQName opts qn
-          suffix = ppCConsDecls opts cDecls
+    = text "data" <+> ppQName opts qn
+ <++> if null cDecls
+         then empty
+         else ppCTVarINames opts tVars <++> ppCConsDecls opts cDecls
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
-    | null tVars = prefix <+> suffix
-    | otherwise  = prefix <+> ppCTVarINames opts tVars <+> suffix
-    where prefix = text "type" <+> ppQName opts qn
-          suffix = equals <+> ppCTypeExpr opts tExp
+    = text "type" <+> ppQName opts qn
+ <++> ppCTVarINames opts tVars
+ <++> equals <+> ppCTypeExpr opts tExp
 ppCTypeDecl opts (CNewType qn _ tVars cDecl)
-    = text "newtype" <+> ppQName opts qn <+> ppCTVarINames opts tVars
-                     <+> equals <+> ppCConsDecl opts cDecl
+    = text "newtype" <+> ppQName opts qn <++> ppCTVarINames opts tVars
+                     <++> equals <+> ppCConsDecl opts cDecl
 
 --- pretty-print a list of constructor declarations, including the `=` sign.
 ppCConsDecls :: Options -> [CConsDecl] -> Doc
 ppCConsDecls opts cs
-    = fillEncloseSepSpaced equals empty bar (map (ppCConsDecl opts) cs)
+    = fillEncloseSepSpaced equals empty (space <> bar) (map (ppCConsDecl opts) cs)
 
 --- pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
-ppCConsDecl opts (CCons   qn _ tExps )
-    = (if null tExps
-          then id
-          else (<+> hsepMap (ppCTypeExpr opts) tExps)
-      ) $ ppQName opts qn
+ppCConsDecl opts (CCons   qn _ tExps ) = ppQName opts qn
+                                    <++> hsepMap (ppCTypeExpr opts) tExps
 ppCConsDecl opts (CRecord qn _ fDecls) = ppQName opts qn
                                      <+> setSpaced (map (ppCFieldDecl opts)
                                                         fDecls)
@@ -143,11 +138,9 @@ ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
-ppCFuncSignature opts qn tExp
-    | isInfixId qn = parens prefix <+> suffix
-    | otherwise    = prefix <+> suffix
-    where prefix = ppQName opts qn
-          suffix = doubleColon <+> ppCTypeExpr opts tExp
+ppCFuncSignature opts qn tExp = parensIf (isInfixId qn) (ppQName opts qn)
+                            <+> doubleColon
+                            <+> ppCTypeExpr opts tExp
 
 --- pretty-print a type expression.
 ppCTypeExpr :: Options -> CTypeExpr -> Doc
@@ -259,15 +252,15 @@ ppCFieldPattern opts (qn, p) = ppQName opts qn <+> equals <+> ppCPattern opts p
 --- and the right hand side -- usually this is one of `=`, `->`.
 ppCRhs :: Options -> Doc -> CRhs -> Doc
 ppCRhs opts d (CSimpleRhs  exp lDecls)
-    | null lDecls = sharedPrefix
-    | otherwise   = sharedPrefix <$$> indent' opts
-                                              (ppCLocalDecls opts where_ lDecls)
-    where sharedPrefix = d <+> ppCExpr opts exp
+    = d <+> ppCExpr opts exp
+   $$ if null lDecls
+         then empty
+         else indent' opts (ppWhereDecl opts lDecls)
 ppCRhs opts d (CGuardedRhs conds lDecls)
-    | null lDecls = sharedPrefix
-    | otherwise   = sharedPrefix <$$> indent' opts
-                                              (ppCLocalDecls opts where_ lDecls)
-    where sharedPrefix = ppCGuardedRhs opts d conds
+    = ppCGuardedRhs opts d conds
+   $$ if null lDecls
+         then empty
+         else indent' opts (ppWhereDecl opts lDecls)
 
 --- pretty-print guard, i.e. the `| cond d exp` part of a right hand side, where
 --- `d` is the relation (as doc) between `cond` and `exp` -- usually this is
@@ -282,7 +275,16 @@ ppCGuardedRhs opts d = align . vcatMap (ppCGuard opts)
 --- pretty-print a `where` block. If the second argument is `text "let"`,
 --- pretty-print a `let` block without `in`.
 ppCLocalDecls :: Options -> Doc -> [CLocalDecl] -> Doc
-ppCLocalDecls opts d lDecls = d <+> align (vcatMap (ppCLocalDecl opts) lDecls)
+ppCLocalDecls opts d = (d <+>) . align . vcatMap (ppCLocalDecl opts)
+
+--- pretty-print
+ppWhereDecl :: Options -> [CLocalDecl] -> Doc
+ppWhereDecl opts = (where_ <$>)
+                 . indent' opts
+                 . vcatMap (ppCLocalDecl opts)
+
+ppLetDecl :: Options -> [CLocalDecl] -> Doc
+ppLetDecl opts = (text "let" <+>) . align . vcatMap (ppCLocalDecl opts)
 
 --- pretty-print local declarations (the part that follows the `where` keyword).
 ppCLocalDecl :: Options -> CLocalDecl -> Doc
@@ -333,8 +335,8 @@ ppCExpr' p opts (CLambda ps exp) = parensIf (p > tlPrec)
 ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec)
                                       $ group
                                       $ align
-                                      $ ppCLocalDecls opts let_ lDecls
-                                     $$ text "in"
+                                      $ ppLetDecl opts lDecls
+                                    <$> text "in"
                                     <+> ppCExpr opts exp
 ppCExpr' p opts (CDoExpr stms) = parensIf (p > tlPrec)
                                $ text "do"
@@ -364,7 +366,7 @@ ppCStatement opts (CSExpr exp       ) = ppCExpr opts exp
 ppCStatement opts (CSPat  pat    exp) = ppCPattern opts pat
                                     <+> larrow
                                     <+> ppCExpr opts exp
-ppCStatement opts (CSLet  lDecls    ) = ppCLocalDecls opts let_ lDecls
+ppCStatement opts (CSLet  lDecls    ) = ppLetDecl opts lDecls
 
 --- pretty-print `case`, `fcase` keywords.
 ppCCaseType :: CCaseType -> Doc
@@ -504,14 +506,20 @@ indent' opts = indent (indentationWidth opts)
 bquotesIf :: Bool -> Doc -> Doc
 bquotesIf b d = if b then bquotes d else d
 
+-- later replaced by library version
+infixl 1 <++>
+(<++>) :: Doc -> Doc -> Doc
+l <++> r
+    | l == empty = r
+    | r == empty = l
+    | otherwise  = l <+> r
+
 larrow :: Doc
 larrow = text "<-"
 
 where_ :: Doc
 where_ = text "where"
 
-let_ :: Doc
-let_ = text "let"
 
 nil :: Doc
 nil = text "[]"
