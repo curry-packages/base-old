@@ -6,16 +6,11 @@
 --- @author  Yannik Potdevin
 --- @version July 2015
 --- --------------------------------------------------------------------------
-module AbstractCurry.Pretty (Options, Qualification(..), defaultOptions, printCurryProg) where
+module AbstractCurry.Pretty where
 
 import Pretty
 import AbstractCurry
 import Maybe (isJust, fromJust)
-
-data Options = Options { pageWidth        :: Int
-                       , indentationWidth :: Int
-                       , qualification    :: Qualification
-                       , moduleName       :: String }
 
 data Qualification
     = Full      -- ^ Fully qualify every function, including those of the
@@ -23,6 +18,11 @@ data Qualification
     | Imports   -- ^ Fully qualify external functions, do not qualify local
                 --   functions and those of Prelude
     | None      -- ^ Do not qualify any function
+
+data Options = Options { pageWidth        :: Int
+                       , indentationWidth :: Int
+                       , qualification    :: Qualification
+                       , moduleName       :: String }
 
 options :: Int              -- ^ page width
         -> Int              -- ^ indentation width
@@ -33,6 +33,9 @@ options pw iw q m = Options { pageWidth        = pw
                             , indentationWidth = iw
                             , qualification    = q
                             , moduleName       = m }
+
+defaultOptions :: Options
+defaultOptions = options 80 4 Full ""
 
 --- precedence of top level (pattern or application) context -- lowest
 tlPrec      :: Int
@@ -46,9 +49,6 @@ prefAppPrec = 2
 --- precedence of atoms (variables, literals, tuples, lists ...)
 highestPrec :: Int
 highestPrec = 3
-
-defaultOptions :: Options
-defaultOptions = options 80 4 Imports ""
 
 printCurryProg :: Options -> CurryProg -> String
 printCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
@@ -84,9 +84,9 @@ ppImports opts = vcatMap (\m -> text "import" <+> ppMName opts m)
 
 --- pretty-print operator precedence declarations.
 ppCOpDecl :: Options -> COpDecl -> Doc
-ppCOpDecl opts (COp qn fix p) = ppCFixity fix
-                            <+> int p
-                            <+> bquotesIf (not $ isInfixId qn) (ppQName opts qn)
+ppCOpDecl _ (COp qn fix p) = ppCFixity fix
+                         <+> int p
+                         <+> bquotesIf (not $ isInfixId qn) (ppName qn)
 
 --- pretty-print the fixity of a function.
 ppCFixity :: CFixity -> Doc
@@ -98,17 +98,18 @@ ppCFixity CInfixrOp = text "infixr"
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
 ppCTypeDecl opts (CType qn _ tVars cDecls)
-    = text "data" <+> ppQName opts qn
+    = text "data" <+> ppName qn
  <++> if null cDecls
          then empty
          else ppCTVarINames opts tVars <++> ppCConsDecls opts cDecls
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
-    = text "type" <+> ppQName opts qn
+    = text "type" <+> ppName qn
  <++> ppCTVarINames opts tVars
  <++> equals <+> ppCTypeExpr opts tExp
 ppCTypeDecl opts (CNewType qn _ tVars cDecl)
-    = text "newtype" <+> ppQName opts qn <++> ppCTVarINames opts tVars
-                     <++> equals <+> ppCConsDecl opts cDecl
+    = text "newtype" <+> ppName qn
+ <++> ppCTVarINames opts tVars
+ <++> equals <+> ppCConsDecl opts cDecl
 
 --- pretty-print a list of constructor declarations, including the `=` sign.
 ppCConsDecls :: Options -> [CConsDecl] -> Doc
@@ -117,15 +118,15 @@ ppCConsDecls opts cs
 
 --- pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
-ppCConsDecl opts (CCons   qn _ tExps ) = ppQName opts qn
+ppCConsDecl opts (CCons   qn _ tExps ) = ppName qn
                                     <++> hsepMap (ppCTypeExpr opts) tExps
-ppCConsDecl opts (CRecord qn _ fDecls) = ppQName opts qn
+ppCConsDecl opts (CRecord qn _ fDecls) = ppName qn
                                      <+> setSpaced (map (ppCFieldDecl opts)
                                                         fDecls)
 
 --- pretty-print a record field declaration (`field :: type`).
 ppCFieldDecl :: Options -> CFieldDecl -> Doc
-ppCFieldDecl opts (CField qn _ tExp) = ppQName opts qn
+ppCFieldDecl opts (CField qn _ tExp) = ppName qn
                                    <+> doubleColon
                                    <+> ppCTypeExpr opts tExp
 
@@ -138,7 +139,7 @@ ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
-ppCFuncSignature opts qn tExp = parensIf (isInfixId qn) (ppQName opts qn)
+ppCFuncSignature opts qn tExp = parensIf (isInfixId qn) (ppName qn)
                             <+> doubleColon
                             <+> ppCTypeExpr opts tExp
 
@@ -169,7 +170,7 @@ ppCTVarIName _ (_, tvar) = text tvar
 --- pretty-print a list of function rules, concatenated vertically.
 ppCRules :: Options -> QName -> [CRule] -> Doc
 ppCRules opts qn rs = case rs of
-                           [] -> parensIf (isInfixId qn) (ppQName opts qn)
+                           [] -> parensIf (isInfixId qn) (ppName qn)
                              <+> text "external"
                            _  -> vcatMap (ppCRule opts qn) rs
 
@@ -177,7 +178,7 @@ ppCRules opts qn rs = case rs of
 --- `f x y = x * y`, then `x y = x * y` is a rule consisting of `x y` as list of
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
-ppCRule opts qn (CRule ps rhs) = hsep (positionIdent opts qn pDocs)
+ppCRule opts qn (CRule ps rhs) = hsep (positionIdent ppName qn pDocs)
                              <+> ppCRhs opts equals rhs
     where pDocs = map (ppCPattern' prefAppPrec opts) ps
 
@@ -211,7 +212,7 @@ ppCPattern' _ opts (CPRecord   qn rps) = ppQName opts qn
                                      <+> setSpaced (map (ppCFieldPattern opts)
                                                         rps)
 
---- pretty print the application of an n-ary constructor.
+-- pretty print the application of an n-ary constructor.
 ppCPComb :: Int -> Options -> QName -> [CPattern] -> Doc
 ppCPComb p opts qn ps =
     case pDocs of
@@ -223,7 +224,7 @@ ppCPComb p opts qn ps =
                                          avoid additional parenthesis. -}
          (x:_) | x == lparen       -> hsep pDocs
          _                         -> parensIf (p >= prefAppPrec) $ hsep pDocs
-    where pDocs = positionIdent opts qn
+    where pDocs = positionIdent (ppQName opts) qn
                 $ map (ppCPattern' p' opts) ps
           p'    = if isInfixId qn
                      then infAppPrec
@@ -420,7 +421,7 @@ getExports opts ts fs = map tDeclToDoc filteredTs ++ map fDeclToDoc filteredFs
                               fs
           ppQName' qn = parensIf (isInfixId qn) $ ppQName opts qn
 
---- pretty-print a QName according to given options (how to qualify).
+--- pretty-print a QName qualified according to given options.
 ppQName :: Options -> QName -> Doc
 ppQName opts (m, f)
     = case qualification opts
@@ -432,19 +433,23 @@ ppQName opts (m, f)
     where preparedFQName = ppMName opts m <> dot <> preparedName
           preparedName   = text f
 
+--- pretty-print a QName non-qualified.
+ppName :: QName -> Doc
+ppName = text . snd
+
 -- Helping functions (sugaring)
---- `positionIdent qn [x1, ..., xn]` will return `[x1, ppQName qn, xn]` if `qn`
+--- `positionIdent f qn [x1, ..., xn]` will return `[x1, f qn, xn]` if `qn`
 --- is an infix identifier and n = 2. If `qn` in the tuple identifier return
---- (simplified) `[(x1,, ..., xn)]`. Otherwise return `[ppQName qn, x1, ..., xn]`.
-positionIdent :: Options -> QName -> [Doc] -> [Doc]
-positionIdent opts qn ds
+--- (simplified) `[(x1,, ..., xn)]`. Otherwise return `[f qn, x1, ..., xn]`.
+positionIdent :: (QName -> Doc) -> QName -> [Doc] -> [Doc]
+positionIdent f qn ds
     | null ds        = [prefixQnDoc]
     | isInfixId qn   = case ds of [x1, x2] -> [x1, qnDoc, x2]
                                   _        -> prefixQnDoc:ds
     | isTupleCons qn = tupledDs
     | otherwise      = prefixQnDoc:ds
     where prefixQnDoc = parensIf (isInfixId qn) qnDoc
-          qnDoc       = ppQName opts qn
+          qnDoc       = f qn
           tupledDs = lparen : punctuate comma ds ++ [rparen]
 
 -- Helping function (diagnosis)
@@ -519,7 +524,6 @@ larrow = text "<-"
 
 where_ :: Doc
 where_ = text "where"
-
 
 nil :: Doc
 nil = text "[]"
