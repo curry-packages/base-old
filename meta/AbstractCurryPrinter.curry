@@ -281,6 +281,7 @@ showExprOpt opts (CRecUpdate expr cfields)
 
 showSymbol :: Options -> QName -> String
 showSymbol (fm, thisModule) (thatModule, symName)
+  | null thatModule              = symName
   | thisModule == thatModule     = symName
   | isJust (lookupFM fm symName) = thatModule ++ "." ++ symName
   | otherwise                    = symName

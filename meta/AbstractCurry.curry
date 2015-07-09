@@ -38,6 +38,8 @@ type MName = String
 --- In AbstractCurry all names are qualified to avoid name clashes.
 --- The first component is the module name and the second component the
 --- unqualified name as it occurs in the source program.
+--- An exception are locally defined names where the module name is
+--- the empty string (to avoid name clashes with a globally defined name).
 type QName = (MName, String)
 
 --- Data type to specify the visibility of various entities.

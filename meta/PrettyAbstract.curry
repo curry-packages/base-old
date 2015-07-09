@@ -191,7 +191,7 @@ qname prog mn@(mod,name)
        then parens (text name)
        else parens (text mod <> dot <> (text name))
   | otherwise
-    = if mod == prog || mod == prelude || not qualifiedNames
+    = if null mod || mod == prog || mod == prelude || not qualifiedNames
        then text name
        else text mod <> dot <> text name
 
