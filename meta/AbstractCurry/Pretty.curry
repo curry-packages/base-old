@@ -58,7 +58,7 @@ printCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 --- the module name given by options with the name encapsulated in CurryProg.
 ppCurryProg :: Options -> CurryProg -> Doc
 ppCurryProg opts (CurryProg m ms ts fs os)
-    = text "module" <+> ppMName opts' m
+    = text "module" <+> ppMName m
    $$ indent' opts' (ppExports opts' exports </> where_)
   $+$ ppImports opts' ms
   $+$ vcatMap (ppCOpDecl opts') os
@@ -67,9 +67,9 @@ ppCurryProg opts (CurryProg m ms ts fs os)
     where exports = getExports opts' ts fs
           opts'   = opts { moduleName = m }
 
---- pretty-print a module name (just a string) according to given options.
-ppMName :: Options -> MName -> Doc
-ppMName _ = text
+--- pretty-print a module name (just a string).
+ppMName :: MName -> Doc
+ppMName = text
 
 --- pretty-print exports, i.e. all type  and function declarations which are
 --- public.
@@ -80,13 +80,13 @@ ppExports _ ds@(_:_) = tupledSpaced ds
 --- pretty-print imports (list of module names) by prepending the word "import"
 --- to the module name.
 ppImports :: Options -> [MName] -> Doc
-ppImports opts = vcatMap (\m -> text "import" <+> ppMName opts m)
+ppImports _ = vcatMap (\m -> text "import" <+> ppMName m)
 
 --- pretty-print operator precedence declarations.
 ppCOpDecl :: Options -> COpDecl -> Doc
 ppCOpDecl _ (COp qn fix p) = ppCFixity fix
                          <+> int p
-                         <+> bquotesIf (not $ isInfixId qn) (ppName qn)
+                         <+> genericPPName (bquotesIf . not . isInfixId) qn
 
 --- pretty-print the fixity of a function.
 ppCFixity :: CFixity -> Doc
@@ -99,9 +99,10 @@ ppCFixity CInfixrOp = text "infixr"
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
 ppCTypeDecl opts (CType qn _ tVars cDecls)
     = text "data" <+> ppName qn
+ <++> ppCTVarINames opts tVars
  <++> if null cDecls
          then empty
-         else ppCTVarINames opts tVars <++> ppCConsDecls opts cDecls
+         else ppCConsDecls opts cDecls
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
     = text "type" <+> ppName qn
  <++> ppCTVarINames opts tVars
@@ -139,7 +140,7 @@ ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
-ppCFuncSignature opts qn tExp = parensIf (isInfixId qn) (ppName qn)
+ppCFuncSignature opts qn tExp = genericPPName parsIfInfix qn
                             <+> doubleColon
                             <+> ppCTypeExpr opts tExp
 
@@ -170,7 +171,7 @@ ppCTVarIName _ (_, tvar) = text tvar
 --- pretty-print a list of function rules, concatenated vertically.
 ppCRules :: Options -> QName -> [CRule] -> Doc
 ppCRules opts qn rs = case rs of
-                           [] -> parensIf (isInfixId qn) (ppName qn)
+                           [] -> genericPPName parsIfInfix qn
                              <+> text "external"
                            _  -> vcatMap (ppCRule opts qn) rs
 
@@ -267,10 +268,10 @@ ppCRhs opts d (CGuardedRhs conds lDecls)
 --- `d` is the relation (as doc) between `cond` and `exp` -- usually this is
 --- one of `=`, `->`.
 ppCGuardedRhs :: Options -> Doc -> [(CExpr, CExpr)] -> Doc
-ppCGuardedRhs opts d = align . vcatMap (ppCGuard opts)
-    where ppCGuard opts (e1, e2) = bar <+> ppCExpr opts e1
-                                       <+> d
-                                       <+> ppCExpr opts e2
+ppCGuardedRhs opts d = align . vcatMap ppCGuard
+    where ppCGuard (e1, e2) = bar <+> ppCExpr opts e1
+                                  <+> d
+                                  <+> ppCExpr opts e2
 
 --- pretty-print local declarations . If the second argument is `text "where"`,
 --- pretty-print a `where` block. If the second argument is `text "let"`,
@@ -307,7 +308,7 @@ ppCExpr = ppCExpr' tlPrec
 ppCExpr' :: Int -> Options -> CExpr -> Doc
 ppCExpr' _ opts (CVar     pvar) = ppCVarIName opts pvar
 ppCExpr' _ opts (CLit     lit ) = ppCLiteral opts lit
-ppCExpr' _ opts (CSymbol  qn  ) = parensIf (isInfixId qn) $ ppQName opts qn -- TODO: Is this too greedy?
+ppCExpr' _ opts (CSymbol  qn  ) = genericPPQName parsIfInfix opts qn
 ppCExpr' p opts app@(CApply f exp)
     | isITE app = parensIf (p > tlPrec)
                 $ let (c, t, e) = fromJust $ extractITE app
@@ -316,23 +317,21 @@ ppCExpr' p opts app@(CApply f exp)
                                                 $$ text "else" <+> ppCExpr opts e)
     | isInf app = parensIf (p >= infAppPrec)
                 $ let (op, l, r) = fromJust $ extractInfix app
-                  in  ppCExpr' infAppPrec opts l
-                  <+> ppQName opts op
-                  <+> ppCExpr' infAppPrec opts r
+                  in  fillSep [ ppCExpr' infAppPrec opts l
+                              , ppQName opts op
+                              , ppCExpr' infAppPrec opts r ]
     | isTup app = let args = fromJust $ extractTuple app
-                  in  hsep $ lparen
-                           : punctuate comma (map (ppCExpr opts) args)
-                          ++ [rparen]
+                  in  tupledSpaced (map (ppCExpr opts) args)
     | otherwise = parensIf (p >= prefAppPrec)
-                $ ppCExpr opts f <+> ppCExpr' prefAppPrec opts exp
+                  {- use fillSep to allow linebreaks in long expressions -}
+                $ fillSep [ ppCExpr opts f, ppCExpr' prefAppPrec opts exp ]
     where isITE = isJust . extractITE
           isInf = isJust . extractInfix
           isTup = isJust . extractTuple
-ppCExpr' p opts (CLambda ps exp) = parensIf (p > tlPrec)
-                                 $ backslash
-                                <> hsepMap (ppCPattern' prefAppPrec opts) ps
-                               <+> arrow
-                               <+> ppCExpr opts exp
+ppCExpr' p opts (CLambda ps exp)
+    = parensIf (p > tlPrec)
+    $ fillSep [ backslash <> hsepMap (ppCPattern' prefAppPrec opts) ps <+> arrow
+              , ppCExpr opts exp ]
 ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec)
                                       $ group
                                       $ align
@@ -419,23 +418,37 @@ getExports opts ts fs = map tDeclToDoc filteredTs ++ map fDeclToDoc filteredFs
                                           (CmtFunc _ _ _ Public _ _) -> True
                                           _                          -> False)
                               fs
-          ppQName' qn = parensIf (isInfixId qn) $ ppQName opts qn
+          ppQName'    = genericPPQName parsIfInfix opts
+
+-- pretty-print a QName qualified according to given options. Use given doc
+-- tranformer to manipulate (f.e. surround with parentheses) the QName, after
+-- it was (maybe) qualified.
+genericPPQName :: (QName -> Doc -> Doc) -> Options -> QName -> Doc
+genericPPQName g opts qn@(m, f)
+    | qnIsBuiltIn       = preparedName
+    | null m            = preparedName -- assume local declaration
+    | otherwise         =
+        case qualification opts of
+             Full    -> preparedFQName
+             Imports -> if m == moduleName opts || m == "Prelude"
+                           then preparedName
+                           else preparedFQName
+             None    -> preparedName
+    where qnIsBuiltIn    = or (map ($ qn) [ isUnitCons , isListCons
+                                          , isTupleCons, isConsCons ])
+          preparedFQName = g qn $ ppMName m <> dot <> text f
+          preparedName   = g qn (text f)
 
 --- pretty-print a QName qualified according to given options.
 ppQName :: Options -> QName -> Doc
-ppQName opts (m, f)
-    = case qualification opts
-           of Full    -> preparedFQName
-              Imports -> if moduleName opts == m || "Prelude" == m
-                            then preparedName
-                            else preparedFQName
-              None    -> preparedName
-    where preparedFQName = ppMName opts m <> dot <> preparedName
-          preparedName   = text f
+ppQName = genericPPQName (flip const)
+
+genericPPName :: (QName -> Doc -> Doc) -> QName -> Doc
+genericPPName f qn = f qn $ text . snd $ qn
 
 --- pretty-print a QName non-qualified.
 ppName :: QName -> Doc
-ppName = text . snd
+ppName = genericPPName (flip const)
 
 -- Helping functions (sugaring)
 --- `positionIdent f qn [x1, ..., xn]` will return `[x1, f qn, xn]` if `qn`
@@ -446,28 +459,32 @@ positionIdent f qn ds
     | null ds        = [prefixQnDoc]
     | isInfixId qn   = case ds of [x1, x2] -> [x1, qnDoc, x2]
                                   _        -> prefixQnDoc:ds
-    | isTupleCons qn = tupledDs
+    | isTupleCons qn = lparen : punctuate comma ds ++ [rparen]
     | otherwise      = prefixQnDoc:ds
     where prefixQnDoc = parensIf (isInfixId qn) qnDoc
           qnDoc       = f qn
-          tupledDs = lparen : punctuate comma ds ++ [rparen]
+--           tupledDs = lparen : punctuate comma ds ++ [rparen]
 
 -- Helping function (diagnosis)
 --- Check whether an operator is an infix identifier.
 isInfixId :: QName -> Bool
 isInfixId = all (`elem` "~!@#$%^&*+-=<>:?./|\\") . snd
 
---- Check whether an identifier represents a list
+--- Check whether an identifier represents the unit constructor
+isUnitCons :: QName -> Bool
+isUnitCons (_, i) = i == "()"
+
+--- Check whether an identifier represents the empty list constructor
 isListCons :: QName -> Bool
-isListCons (m, i) = m `elem` ["Prelude", ""] && i == "[]"
+isListCons (_, i) = i == "[]"
 
 --- Check whether an identifier represents the list constructor `:`
 isConsCons :: QName -> Bool
-isConsCons (m, i) = m `elem` ["Prelude", ""] && i == ":"
+isConsCons (_, i) = i == ":"
 
---- Check whether an identifier represents a tuple
+--- Check whether an identifier represents a tuple constructor
 isTupleCons :: QName -> Bool
-isTupleCons (m, i) = m `elem` ["Prelude", ""] && i == mkTuple (length i)
+isTupleCons (_, i) = i == mkTuple (length i)
   where mkTuple n = '(' : replicate (n - 2) ',' ++ ")"
 
 --- Check if given application tree represents an if then else construct.
@@ -511,13 +528,16 @@ indent' opts = indent (indentationWidth opts)
 bquotesIf :: Bool -> Doc -> Doc
 bquotesIf b d = if b then bquotes d else d
 
+parsIfInfix :: QName -> Doc -> Doc
+parsIfInfix = parensIf . isInfixId
+
 -- later replaced by library version
 infixl 1 <++>
 (<++>) :: Doc -> Doc -> Doc
 l <++> r
-    | l == empty = r
-    | r == empty = l
-    | otherwise  = l <+> r
+    | isEmpty l = r
+    | isEmpty r = l
+    | otherwise = l <+> r
 
 larrow :: Doc
 larrow = text "<-"
