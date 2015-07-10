@@ -14,24 +14,37 @@ TEXDOCDIR := $(DOCDIR)/src/lib
 # the currydoc program:
 CURRYDOC=$(ROOT)/bin/currydoc
 
+# replacement stuff
+# prefix "pre" "dir/file.ext" = "dir/prefile.ext"
+prefix     = $(dir $(2))$(1)$(notdir $(2))
+
 # Curry library files
 LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry))
+# lib names without directory prefix
+LIB_NAMES     = $(basename $(notdir $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
-LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(basename $(notdir $(LIB_CURRY))))
+LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(LIB_NAMES))
 # generated files:
-LIB_FCY   = `echo $(LIB_CURRY:%.curry=.curry/%.fcy) | sed 's|\.curry/meta/|meta/.curry/|g'`
-LIB_ACY   = `echo $(LIB_CURRY:%.curry=.curry/%.acy) | sed 's|\.curry/meta/|meta/.curry/|g'`
-LIB_PL    = `echo $(LIB_CURRY:%.curry=.curry/pakcs/%.pl) | sed 's|\.curry/pakcs/meta/|meta/.curry/pakcs/|g'`
+LIB_FCY   = $(foreach lib, $(LIB_CURRY:.curry=.fcy), $(call prefix,.curry/,$(lib)))
+LIB_ACY   = $(foreach lib, $(LIB_CURRY:.curry=.acy), $(call prefix,.curry/,$(lib)))
+LIB_PL    = $(foreach lib, $(LIB_CURRY:.curry=.pl),  $(call prefix,.curry/pakcs/,$(lib)))
 LIB_HTML  = $(LIB_CURRY:.curry=.html)
 LIB_TEX   = $(LIB_CURRY:.curry=.tex)
 
+ALLLIBS      = AllLibraries
 # Modules not included as regular libraries:
-EXCLUDES  = SearchTree.curry ValueSequence.curry UnsafeSearchTree.curry
+EXCLUDES     = $(ALLLIBS).curry SearchTree.curry ValueSequence.curry UnsafeSearchTree.curry
 # Modules not included in library documentation index page:
 DOCEXCLUDES  = CHRcompiled CPNS HtmlCgi WUIjs
 
 .PHONY: all
-all: fcy acy
+all: $(ALLLIBS).curry fcy acy
+
+# create a program importing all libraries in order to re-compile them
+# so that all auxiliary files are up-to-date
+$(ALLLIBS).curry: $(LIB_CURRY) Makefile
+	rm -f $@
+	for i in $(LIB_NAMES) ; do echo "import $$i" >> $@ ; done
 
 .PHONY: allsources
 allsources:
@@ -40,18 +53,15 @@ allsources:
 ##########################################################################
 # generate the FlatCurry files of all libraries:
 .PHONY: fcy
-fcy:
-	$(MAKE) $(LIB_FCY)
+fcy: $(LIB_FCY)
 
 # generate the AbstractCurry files of all libraries:
 .PHONY: acy
-acy:
-	$(MAKE) $(LIB_ACY)
+acy: $(LIB_ACY)
 
 # generate the compile Prolog target files of all libraries:
 .PHONY: pl
-pl:
-	@$(MAKE) $(LIB_PL)
+pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
 
 # generate all FlatCurry files in subdirectory .curry:
 .curry/%.fcy: %.curry
