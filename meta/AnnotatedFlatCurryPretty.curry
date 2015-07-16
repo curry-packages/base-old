@@ -101,7 +101,7 @@ ppTypeExp = ppTypeExpr 0
 ppTypeExpr :: Int -> TypeExpr -> Doc
 ppTypeExpr _ (TVar           v) = ppTVarIndex v
 ppTypeExpr p (FuncType ty1 ty2) = parensIf (p > 0) $
-  ppTypeExpr 1 ty1 </> arrow <+> ppTypeExp ty2
+  ppTypeExpr 1 ty1 </> rarrow <+> ppTypeExp ty2
 ppTypeExpr p (TCons     qn tys)
   | isListId qn && length tys == 1 = brackets (ppTypeExp (head tys))
   | isTupleId qn                   = tupled   (map ppTypeExp tys)
@@ -212,7 +212,7 @@ ppCaseType Flex  = text "fcase"
 
 --- Pretty print a case branch
 ppBranch :: ABranchExpr _ -> Doc
-ppBranch (ABranch p e) = ppPattern p <+> arrow <+> indent (ppExp e)
+ppBranch (ABranch p e) = ppPattern p <+> rarrow <+> indent (ppExp e)
 
 --- Pretty print a pattern
 ppPattern :: APattern _ -> Doc

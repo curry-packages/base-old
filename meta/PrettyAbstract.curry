@@ -322,7 +322,7 @@ typeExprDoc mod p (CTCons name args)
   | otherwise
     = (if p == 2 then parens else id) $ app (qname mod name) (map (typeExprDoc mod 2) args)
 typeExprDoc mod p typ@(CFuncType _ _)
-  = (if p > 0 then parens else id) $ fillEncloseSep empty empty (space<>arrow<>space)
+  = (if p > 0 then parens else id) $ fillEncloseSep empty empty (space <> rarrow <> space)
      (map (typeExprDoc mod 1) (argTypes typ) ++
       [typeExprDoc mod 0 (resultType typ)])
 
@@ -375,7 +375,7 @@ funcTypeDeclDoc mod name typ
 
 funcTypeDoc :: String -> [CTypeExpr] -> CTypeExpr -> Doc
 funcTypeDoc mod args res
-  = fillEncloseSep doubleColon empty (space<>arrow)
+  = fillEncloseSep doubleColon empty (space <> rarrow)
      ((map ((space<>) . typeExprDoc mod 1) args) ++
       (map ((space<>) . typeExprDoc mod 1) [res]))
 
@@ -498,7 +498,7 @@ expDoc2 amILeft pr mPrec mod (CApply e1 e2)
 expDoc2 _ pr mPrec mod (CLambda ps e)
   = par mPrec $ hang 1 $
      backslash  <+> patternsDoc mod ps
-       <+> arrow <+> expDoc unknown pr Nothing mod e
+       <+> rarrow <+> expDoc unknown pr Nothing mod e
 
 expDoc2 _ pr mPrec mod (CLetDecl bs e)
   = par mPrec $ hang 1 $
@@ -550,7 +550,7 @@ statementDoc pr mod (CSLet ldecls)
 
 branchDoc :: Precs -> String -> (CPattern, CRhs) -> Doc
 branchDoc pr mod (cpat, crhs)
-  = def (patternDoc mod cpat) [] (align (rhsDoc pr mod arrow crhs))
+  = def (patternDoc mod cpat) [] (align (rhsDoc pr mod rarrow crhs))
 
 -- -------------------------------pattern--------------------------------------
 

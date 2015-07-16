@@ -45,7 +45,7 @@ module Pretty (
   -- character documents
   lparen, rparen, langle, rangle, lbrace, rbrace, lbracket, rbracket,
   squote, dquote, semi, colon, comma, space, dot, backslash, equals,
-  arrow, larrow, rarrow, doubleArrow, doubleColon, bar, at, tilde
+  larrow, rarrow, doubleArrow, doubleColon, bar, at, tilde
 
   ) where
 
@@ -843,12 +843,6 @@ backslash = char '\\'
 --- @return a document which contains an equal
 equals :: Doc
 equals = char '='
-
---- The document arrow contains an arrow sign, `"->"`.
---- DEPRECATED: Use `rarrow` instead.
---- @return a document which contains an arrow sign
-arrow :: Doc
-arrow = rarrow
 
 --- The document arrow contains an arrow sign, `"->"`.
 --- @return a document which contains an arrow sign
