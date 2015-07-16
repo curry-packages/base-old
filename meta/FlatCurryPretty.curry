@@ -116,7 +116,7 @@ ppTypeDecls o = vsepBlank . map (ppTypeDecl o)
 --- pretty-print a type declaration
 ppTypeDecl :: Options -> TypeDecl -> Doc
 ppTypeDecl o (Type    qn _ vs cs) = indent o $ (text "data" <+> ppName qn
-  <+> hsep (empty : map ppTVarIndex vs)) <$> ppConsDecls o cs
+  <+> hsep (empty : map ppTVarIndex vs)) $$ ppConsDecls o cs
 ppTypeDecl o (TypeSyn qn _ vs ty) = indent o $ text "type" <+> ppName qn
   <+> hsep (empty : map ppTVarIndex vs) </> equals <+> ppTypeExp o ty
 
@@ -159,7 +159,7 @@ ppFuncDecls o = vsepBlank . map (ppFuncDecl o)
 ppFuncDecl :: Options -> FuncDecl -> Doc
 ppFuncDecl o (Func qn _ _ ty r)
   =  indent o (sep [ppPrefixOp qn, text "::", ppTypeExp o ty])
-  <$> indent o (ppPrefixOp qn <+> ppRule o r)
+  $$ indent o (ppPrefixOp qn <+> ppRule o r)
 
 --- pretty-print a function rule
 ppRule :: Options -> Rule -> Doc
@@ -193,7 +193,7 @@ ppExpr o p (Or     e1 e2) = parensIf (p > 0)
                           $ ppExpr o 1 e1 <+> text "?" <+> ppExpr o 1 e2
 ppExpr o p (Case ct e bs) = parensIf (p > 0) $ indent o
                           $ ppCaseType ct <+> ppExpr o 1 e <+> text "of"
-                            <$> vsep (map (ppBranch o) bs)
+                            $$ vsep (map (ppBranch o) bs)
 ppExpr o p (Typed   e ty) = parensIf (p > 0)
                           $ ppExp o e <+> text "::" <+> ppTypeExp o ty
 

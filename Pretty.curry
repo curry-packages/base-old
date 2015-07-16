@@ -23,7 +23,7 @@ module Pretty (
   nest, hang, align, indent,
 
   -- composition combinators
-  combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>),
+  combine, (<>), (<+>), ($$), (<$+>), (</>), (<$$>), (<//>),
 
   -- list combinators
   compose, hsep, hsepMap, vsep, vsepBlank, vsepMap, fillSep, sep, hcat, hcatMap,
@@ -50,7 +50,7 @@ module Pretty (
 
 import Dequeue as Q
 
-infixl 1 <>, <+>, <$>, </>, <$$>, <//>
+infixl 1 <>, <+>, $$, </>, <$$>, <//>
 
 --- Standard printing with a column length of 80.
 pPrint :: Doc -> String
@@ -65,7 +65,7 @@ deDoc (Doc d) = d
 
 --- The empty document is, indeed, empty. Although empty has no content,
 --- it does have a 'height' of 1 and behaves exactly like `(text "")`
---- (and is therefore not a unit of `<$>`).
+--- (and is therefore not a unit of `$$`).
 --- @return an empty document
 empty :: Doc
 empty = text ""
@@ -136,7 +136,7 @@ group d = Doc (Open . deDoc d . Close)
 --- indentation level increased by `i` (See also `hang`,
 --- `align` and `indent`).
 ---
----     nest 2 (text "hello" <$> text "world") <$> text "!"
+---     nest 2 (text "hello" $$ text "world") $$ text "!"
 ---
 --- outputs as:
 ---
@@ -182,7 +182,7 @@ hang i d = Doc (OpenNest (\ms r w -> (w - r + i) : ms) . deDoc d . CloseNest)
 --- As an example, we will put a document right above another one,
 --- regardless of the current nesting level:
 ---
----     x $$ y  = align (x <$> y)
+---     x $$ y  = align (x $$ y)
 ---     test    = text "hi" <+> (text "nice" $$ text "world")
 ---
 --- which will be layed out as:
@@ -252,13 +252,13 @@ d1 <> d2
 (<+>) :: Doc -> Doc -> Doc
 (<+>) = combine space
 
---- The document `(x <$> y)` concatenates document x and y with a
+--- The document `(x $$ y)` concatenates document x and y with a
 --- `line` in between.
 --- @param x - the first document
 --- @param y - the second document
 --- @return concatenation of x and y with a `line` in between
-(<$>) :: Doc -> Doc -> Doc
-(<$>) = combine line
+($$) :: Doc -> Doc -> Doc
+($$) = combine line
 
 --- The document `(x <$+> y)` concatenates document x and y with a
 --- blank line in between.
@@ -296,7 +296,7 @@ d1 <> d2
 (<//>) = combine softbreak
 
 --- The document (compose f xs) concatenates all documents xs with function f.
---- Function f should be like `(<+>)`, `(<$>)` and so on.
+--- Function f should be like `(<+>)`, `($$)` and so on.
 --- @param f - a combiner function
 --- @param xs - a list of documents
 --- @return concatenation of documents
@@ -322,7 +322,7 @@ hsepMap :: (a -> Doc) -> [a] -> Doc
 hsepMap f = hsep . map f
 
 --- The document `(vsep xs)` concatenates all documents `xs` vertically with
---- `(<$>)`. If a group undoes the line breaks inserted by `vsep`,
+--- `($$)`. If a group undoes the line breaks inserted by `vsep`,
 --- all documents are separated with a `space`.
 ---
 ---     someText = map text (words ("text to lay out"))
@@ -350,7 +350,7 @@ hsepMap f = hsep . map f
 --- @param xs - a list of documents
 --- @return vertical concatenation of documents
 vsep :: [Doc] -> Doc
-vsep = compose (<$>)
+vsep = compose ($$)
 
 --- The document `vsep xs` concatenates all documents `xs` vertically with
 --- `(<$+>)`. If a group undoes the line breaks inserted by `vsepBlank`,
@@ -380,7 +380,7 @@ fillSep = compose (</>)
 
 --- The document (sep xs) concatenates all documents xs either horizontally
 --- with `(<+>)`, if it fits the page, or vertically
---- with `(<$>)`.<br><br>
+--- with `($$)`.<br><br>
 --- `sep xs  = group (vsep xs)`
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents, if it fits the page,

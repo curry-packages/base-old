@@ -80,7 +80,7 @@ ppTypeDecls = compose (<$+>) . map ppTypeDecl
 --- pretty-print a type declaration
 ppTypeDecl :: TypeDecl -> Doc
 ppTypeDecl (Type    qn _ vs cs) = indent $ text "data" <+> ppQName qn
-  <> hsep (empty : map ppTVarIndex vs) <$> ppConsDecls cs
+  <> hsep (empty : map ppTVarIndex vs) $$ ppConsDecls cs
 ppTypeDecl (TypeSyn qn _ vs ty) = indent $ text "type" <+> ppQName qn
   <> hsep (empty : map ppTVarIndex vs) </> equals <+> ppTypeExp ty
 
@@ -123,7 +123,7 @@ ppFuncDecls = compose (<$+>) . map ppFuncDecl
 ppFuncDecl :: AFuncDecl _ -> Doc
 ppFuncDecl (AFunc qn _ _ ty r)
   =   indent (sep [ppPrefixOp qn, text "::", ppTypeExp ty])
-  <$> indent (ppPrefixOp qn <+> ppRule r)
+  $$ indent (ppPrefixOp qn <+> ppRule r)
 
 --- pretty-print a function rule
 ppRule :: ARule _ -> Doc
@@ -156,7 +156,7 @@ ppExpr p (AOr    _   e1 e2) = parensIf (p > 0)
                             $ ppExpr 1 e1 <+> text "?" <+> ppExpr 1 e2
 ppExpr p (ACase  _ ct e bs) = parensIf (p > 0) $ indent
                             $ ppCaseType ct <+> ppExpr 1 e <+> text "of"
-                              <$> vsep (map ppBranch bs)
+                              $$ vsep (map ppBranch bs)
 ppExpr p (ATyped _    e ty) = parensIf (p > 0)
                             $ ppExp e <+> text "::" <+> ppTypeExp ty
 
