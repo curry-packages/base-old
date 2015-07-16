@@ -23,8 +23,7 @@ module Pretty (
   nest, hang, align, indent,
 
   -- composition combinators
-  combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>), ($$), (<++>),
-  ($+$),
+  combine, (<>), (<+>), (<$>), (<$+>), (</>), (<$$>), (<//>),
 
   -- list combinators
   compose, hsep, hsepMap, vsep, vsepBlank, vsepMap, fillSep, sep, hcat, hcatMap,
@@ -215,17 +214,24 @@ align = hang 0
 indent :: Int -> Doc -> Doc
 indent i d = hang i (spaces i <> d)
 
---- The document `(combine x l r)` encloses document `x` between
---- documents `l` and `r` using `(<>)`.
+--- The document `(combine c d1 d2)` combines document `d1` and `d2` with
+--- document `c` in between using `(<>)` with identity empty.
+--- Thus, the following equations hold.
 ---
----     combine x l r   = l <> x <> r
+---     combine c d1    empty == d1
+---     combine c empty d2    == d2
+---     combine c d1    d2    == d1 <> c <> d2 if neither d1 nor d2 are empty
 ---
---- @param x - the middle document
---- @param l - the left document
---- @param r - the right document
---- @return concatenation of l, x and r
+--- @param c - the middle document
+--- @param d1 - the left document
+--- @param d2 - the right document
+--- @return concatenation of d1 and d2 with c in between unless one
+---         of the documents is empty
 combine :: Doc -> Doc -> Doc -> Doc
-combine s d1 d2 = enclose d1 d2 s
+combine c d1 d2
+  | isEmpty d1 = d2
+  | isEmpty d2 = d1
+  | otherwise  = enclose d1 d2 c
 
 --- The document `(x <> y)` concatenates document `x` and document `y`.
 --- It is an associative operation having empty as a left and right unit.
@@ -233,7 +239,10 @@ combine s d1 d2 = enclose d1 d2 s
 --- @param y - the second document
 --- @return concatenation of x and y without seperator
 (<>) :: Doc -> Doc -> Doc
-d1 <> d2 = Doc (deDoc d1 . deDoc d2)
+d1 <> d2
+  | isEmpty d1 = d2
+  | isEmpty d2 = d1
+  | otherwise  = Doc (deDoc d1 . deDoc d2)
 
 --- The document `(x <+> y)` concatenates document `x` and `y` with a
 --- `space` in between.
@@ -258,57 +267,6 @@ d1 <> d2 = Doc (deDoc d1 . deDoc d2)
 --- @return concatenation of x and y with a `line` in between
 (<$+>) :: Doc -> Doc -> Doc
 (<$+>) = combine (line <> linebreak)
-
---- The document (x $$ y) concatenates documents x and y with a `line`
---- in between, just like `<$>`, but with identity empty.
---- Thus, the following equations hold:
----
----     d1    $$ empty == d1
----     empty $$ d2    == d2
----     d1    $$ d2    == d1 <$> d2 if neither d1 nor d2 are empty
----
---- @param x - the first document
---- @param y - the second document
---- @return concatenation of x and y with a `line` in between unless one
----         of the documents is empty
-($$) :: Doc -> Doc -> Doc
-($$) d1 d2 | isEmpty d1 = d2
-           | isEmpty d2 = d1
-           | otherwise  = d1 <$> d2
-
---- The document (x <++> y) concatenates documents x and y with a `space`
---- in between, just like `<+>`, but with identity empty.
---- Thus, the following equations hold:
----
----     d1    <++> empty == d1
----     empty <++> d2    == d2
----     d1    <++> d2    == d1 <+> d2 if neither d1 nor d2 are empty
----
---- @param x - the first document
---- @param y - the second document
---- @return concatenation of x and y with a `space` in between unless one
----         of the documents is empty
-(<++>) :: Doc -> Doc -> Doc
-(<++>) d1 d2 | isEmpty d1 = d2
-             | isEmpty d2 = d1
-             | otherwise  = d1 <+> d2
-
---- The document `(x $+$ y)` concatenates documents `x` and `y` with a
---- blank line in between, just like `<$+>`, but with identity empty.
---- Thus, the following equations hold:
----
----     d1    $+$ empty == d1
----     empty $+$ d2    == d2
----     d1    $+$ d2    == d1 <$+> d2 if neither d1 nor d2 are empty
----
---- @param x - the first document
---- @param y - the second document
---- @return concatenation of x and y with a blank line in between unless one
----         of the documents is empty
-($+$) :: Doc -> Doc -> Doc
-($+$) d1 d2 | isEmpty d1 = d2
-            | isEmpty d2 = d1
-            | otherwise  = d1 <$+> d2
 
 --- The document `(x </> y)` concatenates document `x` and `y` with
 --- a `softline` in between. This effectively puts `x` and `y` either
@@ -395,12 +353,12 @@ vsep :: [Doc] -> Doc
 vsep = compose (<$>)
 
 --- The document `vsep xs` concatenates all documents `xs` vertically with
---- `($+$)`. If a group undoes the line breaks inserted by `vsepBlank`,
+--- `(<$+>)`. If a group undoes the line breaks inserted by `vsepBlank`,
 --- all documents are separated with a `space`.
 --- @param xs - a list of documents
 --- @return vertical concatenation of documents
 vsepBlank :: [Doc] -> Doc
-vsepBlank = compose ($+$)
+vsepBlank = compose (<$+>)
 
 --- The document (vsepMap f xs) generates a list of documents by
 --- applying `f` to all list elements. Then it concatenates these
