@@ -7,12 +7,12 @@
 --- in order to keep the standard prelude more portable.
 ---
 --- @author Michael Hanus
---- @version May 2014
+--- @version July 2015
 --- @category general
 ------------------------------------------------------------------------------
 
 module Findall
-  ( getAllValues, getSomeValue
+  ( getAllValues, getSomeValue, allValues, someValue, allSolutions
   , try, inject, solveAll, once, best
   , findall, findfirst, browse, browseList, unpack
   , rewriteAll, rewriteSome
@@ -36,6 +36,43 @@ getAllValues e = return (findall (=:=e))
 getSomeValue :: a -> IO a
 getSomeValue e = return (findfirst (=:=e))
 
+--- Returns all values of an expression (currently, via an incomplete
+--- depth-first strategy). Conceptually, all values are computed on a copy
+--- of the expression, i.e., the evaluation of the expression does not share
+--- any results. Moreover, the evaluation suspends as long as the expression
+--- contains unbound variables.
+---
+--- Note that this operation is not purely declarative since the ordering
+--- of the computed values depends on the ordering of the program rules.
+allValues :: a -> [a]
+allValues e = findall (\x -> x=:=e)
+
+--- Returns some value for an expression (currently, via an incomplete
+--- depth-first strategy). If the expression has no value, the
+--- computation fails. Conceptually, the value is computed on a copy
+--- of the expression, i.e., the evaluation of the expression does not share
+--- any results. Moreover, the evaluation suspends as long as the expression
+--- contains unbound variables.
+---
+--- Note that this operation is not purely declarative since
+--- the computed value depends on the ordering of the program rules.
+--- Thus, this operation should be used only if the expression
+--- has a single value.
+someValue :: a -> a
+someValue e = findfirst (=:=e)
+
+--- Returns all values of an expression (currently, via an incomplete
+--- depth-first strategy). Conceptually, all values are computed on a copy
+--- of the expression, i.e., the evaluation of the expression does not share
+--- any results. Moreover, the evaluation suspends as long as the expression
+--- contains unbound variables.
+---
+--- Note that this operation is not purely declarative since the ordering
+--- of the computed values depends on the ordering of the program rules.
+allSolutions :: (a->Bool) -> [a]
+allSolutions p = findall (\x -> p x =:= True)
+
+------------------------------------------------------------------------------
 --- Basic search control operator.
 try     :: (a -> Success) -> [a -> Success]
 try external
