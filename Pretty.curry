@@ -5,6 +5,8 @@
 --- [linear-time, bounded implementation](http://www.cs.kent.ac.uk/pubs/2006/2381/index.html)
 ---  by Olaf Chitil.
 --- Note that the implementation of `fill` and `fillBreak` is not linear-time bounded
+--- Support of ANSI escape codes for formatting and colorisation of documents
+--- in text terminals (see https://en.wikipedia.org/wiki/ANSI_escape_code)
 ---
 --- @author Sebastian Fischer, Björn Peemöller, Jan Tikovsky
 --- @version July 2015
@@ -44,7 +46,14 @@ module Pretty (
   -- character documents
   lparen, rparen, langle, rangle, lbrace, rbrace, lbracket, rbracket,
   squote, dquote, semi, colon, comma, space, dot, backslash, equals,
-  larrow, rarrow, doubleArrow, doubleColon, bar, at, tilde
+  larrow, rarrow, doubleArrow, doubleColon, bar, at, tilde,
+
+  -- formatting combinators
+  bold, faint, blinkSlow, blinkRapid, italic, underline, crossout, inverse,
+
+  -- colorisation combinators
+  black, red, green, yellow, blue, magenta, cyan, white,
+  bgBlack, bgRed, bgGreen, bgYellow, bgBlue, bgMagenta, bgCyan, bgWhite
   ) where
 
 import Dequeue as Q
@@ -847,49 +856,330 @@ fillBreak i d = d <> fill'
 --- Compute the width of a given document
 width :: Doc -> Int
 width (Doc d) = width' 0 (d EOD)
-  where width' w EOD             = w
-        width' w (Empty      ts) = width' w ts
-        width' w (Text     s ts) = width' (w + length s) ts
-        width' w (LineBreak     s ts) = width' (w + length s) ts
-        width' w (OpenGroup  ts) = width' w              ts
-        width' w (CloseGroup ts) = width' w              ts
-        width' w (OpenNest _ ts) = width' w              ts
-        width' w (CloseNest  ts) = width' w              ts
+  where width' w EOD               = w
+        width' w (Empty        ts) = width' w ts
+        width' w (Text       s ts) = width' (w + length s) ts
+        width' w (LineBreak  s ts) = width' (w + length s) ts
+        width' w (OpenGroup    ts) = width' w              ts
+        width' w (CloseGroup   ts) = width' w              ts
+        width' w (OpenNest   _ ts) = width' w              ts
+        width' w (CloseNest    ts) = width' w              ts
+        width' w (OpenFormat _ ts) = width' w              ts
+        width' w (CloseFormat  ts) = width' w              ts
+
+-- -----------------------------------------------------------------------------
+-- Formatting combinators
+-- -----------------------------------------------------------------------------
+
+--- The document `(bold d)` displays document `d` with bold text
+--- @param d - a document
+--- @return document d displayed with bold text
+bold :: Doc -> Doc
+bold d = Doc (OpenFormat (SetIntensity Bold) . deDoc d . CloseFormat)
+
+--- The document `(faint d)` displays document `d` with faint text
+--- @param d - a document
+--- @return document d displayed with faint text
+faint :: Doc -> Doc
+faint d = Doc (OpenFormat (SetIntensity Faint) . deDoc d . CloseFormat)
+
+--- The document `(blinkSlow d)` displays document `d` with slowly blinking text
+--- (rarely supported)
+--- @param d - a document
+--- @return document d displayed with slowly blinking text
+blinkSlow :: Doc -> Doc
+blinkSlow d = Doc (OpenFormat (SetBlinkMode Slow) . deDoc d . CloseFormat)
+
+--- The document `(blinkRapid d)` displays document `d` with rapidly blinking
+--- text (rarely supported)
+--- @param d - a document
+--- @return document d displayed with rapidly blinking text
+blinkRapid :: Doc -> Doc
+blinkRapid d = Doc (OpenFormat (SetBlinkMode Rapid) . deDoc d . CloseFormat)
+
+--- The document `(italic d)` displays document `d` with italicized text
+--- (rarely supported)
+--- @param d - a document
+--- @return document d displayed with italicized text
+italic :: Doc -> Doc
+italic d = Doc (OpenFormat (SetItalicized True) . deDoc d . CloseFormat)
+
+--- The document `(underline d)` displays document `d` with underlined text
+--- @param d - a document
+--- @return document d displayed with underlined text
+underline :: Doc -> Doc
+underline d = Doc (OpenFormat (SetUnderlined True) . deDoc d . CloseFormat)
+
+--- The document `(crossout d)` displays document `d` with crossed out text
+--- @param d - a document
+--- @return document d displayed with crossed out text
+crossout :: Doc -> Doc
+crossout d = Doc (OpenFormat (SetCrossedout True) . deDoc d . CloseFormat)
+
+--- The document `(inverse d)` displays document `d` with inversed coloring,
+--- i.e. use text color of `d` as background color and background color of `d`
+--- as text color
+--- @param d - a document
+--- @return document d displayed with inversed coloring
+inverse :: Doc -> Doc
+inverse d = Doc (OpenFormat (InverseColoring True) . deDoc d . CloseFormat)
+
+-- -----------------------------------------------------------------------------
+-- Colorisation combinators
+-- -----------------------------------------------------------------------------
+
+-- foreground colors
+
+--- The document `(black d)` displays document `d` with black text color
+--- @param d - a document
+--- @return document d displayed with black text color
+black :: Doc -> Doc
+black d = Doc (OpenFormat (SetForeground Black) . deDoc d . CloseFormat)
+
+--- The document `(red d)` displays document `d` with red text color
+--- @param d - a document
+--- @return document d displayed with red text color
+red :: Doc -> Doc
+red d = Doc (OpenFormat (SetForeground Red) . deDoc d . CloseFormat)
+
+--- The document `(green d)` displays document `d` with green text color
+--- @param d - a document
+--- @return document d displayed with green text color
+green :: Doc -> Doc
+green d = Doc (OpenFormat (SetForeground Green) . deDoc d . CloseFormat)
+
+--- The document `(yellow d)` displays document `d` with yellow text color
+--- @param d - a document
+--- @return document d displayed with yellow text color
+yellow :: Doc -> Doc
+yellow d = Doc (OpenFormat (SetForeground Yellow) . deDoc d . CloseFormat)
+
+--- The document `(blue d)` displays document `d` with blue text color
+--- @param d - a document
+--- @return document d displayed with blue text color
+blue :: Doc -> Doc
+blue d = Doc (OpenFormat (SetForeground Blue) . deDoc d . CloseFormat)
+
+--- The document `(magenta d)` displays document `d` with magenta text color
+--- @param d - a document
+--- @return document d displayed with magenta text color
+magenta :: Doc -> Doc
+magenta d = Doc (OpenFormat (SetForeground Magenta) . deDoc d . CloseFormat)
+
+--- The document `(cyan d)` displays document `d` with cyan text color
+--- @param d - a document
+--- @return document d displayed with cyan text color
+cyan :: Doc -> Doc
+cyan d = Doc (OpenFormat (SetForeground Cyan) . deDoc d . CloseFormat)
+
+--- The document `(white d)` displays document `d` with white text color
+--- @param d - a document
+--- @return document d displayed with white text color
+white :: Doc -> Doc
+white d = Doc (OpenFormat (SetForeground White) . deDoc d . CloseFormat)
+
+-- background colors
+
+--- The document `(bgBlack d)` displays document `d` with black background color
+--- @param d - a document
+--- @return document d displayed with black background color
+bgBlack :: Doc -> Doc
+bgBlack d = Doc (OpenFormat (SetBackground Black) . deDoc d . CloseFormat)
+
+--- The document `(bgRed d)` displays document `d` with red background color
+--- @param d - a document
+--- @return document d displayed with red background color
+bgRed :: Doc -> Doc
+bgRed d = Doc (OpenFormat (SetBackground Red) . deDoc d . CloseFormat)
+
+--- The document `(bgGreen d)` displays document `d` with green background color
+--- @param d - a document
+--- @return document d displayed with green background color
+bgGreen :: Doc -> Doc
+bgGreen d = Doc (OpenFormat (SetBackground Green) . deDoc d . CloseFormat)
+
+--- The document `(bgYellow d)` displays document `d` with yellow background
+--- color
+--- @param d - a document
+--- @return document d displayed with yellow background color
+bgYellow :: Doc -> Doc
+bgYellow d = Doc (OpenFormat (SetBackground Yellow) . deDoc d . CloseFormat)
+
+--- The document `(bgBlue d)` displays document `d` with blue background color
+--- @param d - a document
+--- @return document d displayed with blue background color
+bgBlue :: Doc -> Doc
+bgBlue d = Doc (OpenFormat (SetBackground Blue) . deDoc d . CloseFormat)
+
+--- The document `(bgMagenta d)` displays document `d` with magenta background
+--- color
+--- @param d - a document
+--- @return document d displayed with magenta background color
+bgMagenta :: Doc -> Doc
+bgMagenta d = Doc (OpenFormat (SetBackground Magenta) . deDoc d . CloseFormat)
+
+--- The document `(bgCyan d)` displays document `d` with cyan background color
+--- @param d - a document
+--- @return document d displayed with cyan background color
+bgCyan :: Doc -> Doc
+bgCyan d = Doc (OpenFormat (SetBackground Cyan) . deDoc d . CloseFormat)
+
+--- The document `(bgWhite d)` displays document `d` with white background color
+--- @param d - a document
+--- @return document d displayed with white background color
+bgWhite :: Doc -> Doc
+bgWhite d = Doc (OpenFormat (SetBackground White) . deDoc d . CloseFormat)
 
 -- -----------------------------------------------------------------------------
 -- Implementation
 -- -----------------------------------------------------------------------------
 
-type Horizontal     = Bool
-type Remaining      = Int
-type Width          = Int
-type Position       = Int
-type StartPosition  = Position
-type EndPosition    = Position
-type Out            = Remaining -> Margins -> String
+type Horizontal      = Bool
+type Remaining       = Int
+type Width           = Int
+type Position        = Int
+type StartPosition   = Position
+type EndPosition     = Position
+type Out             = Remaining -> Margins -> FormatHistory -> String
 
 -- Type of a `group output function`: Takes information whether group content
 -- should be formatted horizontally or vertically and a continuation to output
 -- parts of the document which come after the group
-type OutGroupPrefix = Horizontal -> Out -> Out
-type Margins        = [Int]
+type OutGroupPrefix  = Horizontal -> Out -> Out
+type Margins         = [Int]
 
--- type NestFun        = Margins -> Remaining -> Width -> Margins
+-- A nesting is either an alignment or a relative indentation
+data Nesting         = Align | Inc Int
 
-data Nesting        = Align | Inc Int
+-- text colorisation
+data Color
+  = Black
+  | Red
+  | Green
+  | Yellow
+  | Blue
+  | Magenta
+  | Cyan
+  | White
+  | Default
+
+-- console intensity
+data Intensity       = Faint | Normal | Bold
+
+-- support of blinking text
+data BlinkMode       = Off | Slow | Rapid
+
+-- text formatting statement
+data FormatStm
+  = SetForeground   Color
+  | SetBackground   Color
+  | SetIntensity    Intensity
+  | SetBlinkMode    BlinkMode
+  | SetItalicized   Bool
+  | SetUnderlined   Bool
+  | SetCrossedout   Bool
+  | InverseColoring Bool
+
+type FormatHistory = [FormatStm]
+
+resetFormat :: FormatHistory -> (FormatStm, FormatHistory)
+resetFormat [] = error "Pretty.resetFormat2: illegal format history"
+resetFormat (stm:stms) = case stm of
+  SetForeground   _ -> (SetForeground   (prevFGColor   stms), stms)
+  SetBackground   _ -> (SetBackground   (prevBGColor   stms), stms)
+  SetIntensity    _ -> (SetIntensity    (prevIntensity stms), stms)
+  SetBlinkMode    _ -> (SetBlinkMode    (prevBlinkMode stms), stms)
+  SetItalicized   b -> (SetItalicized   (not              b), stms)
+  SetUnderlined   b -> (SetUnderlined   (not              b), stms)
+  SetCrossedout   b -> (SetCrossedout   (not              b), stms)
+  InverseColoring b -> (InverseColoring (not              b), stms)
+
+-- Find previous foreground color in history
+prevFGColor :: FormatHistory -> Color
+prevFGColor history = case history of
+  []                     -> Default
+  (SetForeground c : _ ) -> c
+  (_               : hs) -> prevFGColor hs
+
+-- Find previous background color in history
+prevBGColor :: FormatHistory -> Color
+prevBGColor history = case history of
+  []                     -> Default
+  (SetBackground c : _ ) -> c
+  (_               : hs) -> prevBGColor hs
+
+-- Find previous text intensity in history
+prevIntensity :: FormatHistory -> Intensity
+prevIntensity history = case history of
+  []                    -> Normal
+  (SetIntensity i : _ ) -> i
+  (_              : hs) -> prevIntensity hs
+
+-- Find previous blinking mode in history
+prevBlinkMode :: FormatHistory -> BlinkMode
+prevBlinkMode history = case history of
+  []                    -> Off
+  (SetBlinkMode b : _ ) -> b
+  (_              : hs) -> prevBlinkMode hs
+
+applyFormat :: FormatStm -> String
+applyFormat (SetForeground   c) = txtMode (colorMode c)
+applyFormat (SetBackground   c) = txtMode (colorMode c + 10)
+applyFormat (SetIntensity    i) = txtMode (intensityMode i)
+applyFormat (SetBlinkMode    b) = txtMode (blinkMode b)
+applyFormat (SetItalicized   b) = txtMode (if b then 3 else 23)
+applyFormat (SetUnderlined   b) = txtMode (if b then 4 else 24)
+applyFormat (SetCrossedout   b) = txtMode (if b then 9 else 29)
+applyFormat (InverseColoring b) = txtMode (if b then 7 else 27)
+
+-- Text mode
+txtMode :: Int -> String
+txtMode m = csiCmd ++ show m ++ "m"
+ where
+  csiCmd :: String
+  csiCmd = '\ESC' : '[' : ""
+
+-- Color mode
+colorMode :: Color -> Int
+colorMode c = case c of
+  Black   -> 30
+  Red     -> 31
+  Green   -> 32
+  Yellow  -> 33
+  Blue    -> 34
+  Magenta -> 35
+  Cyan    -> 36
+  White   -> 37
+  Default -> 39
+
+-- Intensity mode
+intensityMode :: Intensity -> Int
+intensityMode i = case i of
+  Faint  -> 2
+  Normal -> 22
+  Bold   -> 1
+
+-- Blink mode
+blinkMode :: BlinkMode -> Int
+blinkMode b = case b of
+  Off   -> 25
+  Slow  -> 5
+  Rapid -> 6
 
 -- Token sequence. Note that the data type linearizes a document so that
 -- a fragment is usually followed by a remaining document.
 data Tokens
-  = EOD                      -- end of document
-  | Empty             Tokens -- empty document
-  | Text       String Tokens -- string
-  | LineBreak  String Tokens -- linebreak that will be replaced by the separator
-                             -- if the linebreak is undone
-  | OpenGroup         Tokens -- Beginning of a group
-  | CloseGroup        Tokens -- End       of a group
-  | OpenNest  Nesting Tokens -- Beginning of a nesting
-  | CloseNest         Tokens -- End       of a nesting
+  = EOD                         -- end of document
+  | Empty                Tokens -- empty document
+  | Text       String    Tokens -- string
+  | LineBreak  String    Tokens -- linebreak that will be replaced by the
+                                -- separator if the linebreak is undone
+  | OpenGroup            Tokens -- Beginning of a group
+  | CloseGroup           Tokens -- End       of a group
+  | OpenNest   Nesting   Tokens -- Beginning of a nesting
+  | CloseNest            Tokens -- End       of a nesting
+  | OpenFormat FormatStm Tokens -- Beginning of a formatting statement
+  | CloseFormat          Tokens -- End       of a formatting statement
 
 applyNesting :: Nesting -> Width -> Remaining -> Margins -> Margins
 applyNesting Align   w r ms = (w - r) : ms
@@ -903,14 +1193,16 @@ unApplyNesting (_:ms) = ms
 
 addSpaces :: Int -> Tokens -> String
 addSpaces m ts = case ts of
-  LineBreak _ _   -> ""
-  EOD             -> ""
-  Empty       ts' -> addSpaces m ts'
-  OpenGroup   ts' -> addSpaces m ts'
-  CloseGroup  ts' -> addSpaces m ts'
-  OpenNest  _ ts' -> addSpaces m ts'
-  CloseNest   ts' -> addSpaces m ts'
-  Text      _ _   -> replicate m ' '
+  LineBreak  _ _   -> ""
+  EOD              -> ""
+  Empty        ts' -> addSpaces m ts'
+  OpenGroup    ts' -> addSpaces m ts'
+  CloseGroup   ts' -> addSpaces m ts'
+  OpenNest   _ ts' -> addSpaces m ts'
+  CloseNest    ts' -> addSpaces m ts'
+  OpenFormat _ ts' -> addSpaces m ts'
+  CloseFormat  ts' -> addSpaces m ts'
+  Text       _ _   -> replicate m ' '
 
 -- Normalise a token sequence using the following rewriting rules:
 --
@@ -923,15 +1215,17 @@ addSpaces m ts = case ts of
 normalise :: Tokens -> Tokens
 normalise = go id
   where
-  go co EOD              = co EOD
-  go co (Empty       ts) = go co ts
+  go co EOD               = co EOD
+  go co (Empty        ts) = go co ts
   -- there should be no deferred opening brackets
-  go co (OpenGroup   ts) = go (co . open)        ts
-  go co (CloseGroup  ts) = go (co . CloseGroup)  ts
-  go co (LineBreak s ts) = (co . LineBreak s . go id) ts
-  go co (Text      s ts) = Text s     (go co ts)
-  go co (OpenNest  n ts) = OpenNest n (go co ts)
-  go co (CloseNest   ts) = CloseNest  (go co ts)
+  go co (OpenGroup    ts) = go (co . open)        ts
+  go co (CloseGroup   ts) = go (co . CloseGroup)  ts
+  go co (LineBreak  s ts) = (co . LineBreak s . go id) ts
+  go co (Text       s ts) = Text s       (go co ts)
+  go co (OpenNest   n ts) = OpenNest   n (go co ts)
+  go co (CloseNest    ts) = CloseNest    (go co ts)
+  go co (OpenFormat f ts) = OpenFormat f (go co ts)
+  go co (CloseFormat  ts) = CloseFormat  (go co ts)
 
   open t = case t of
     CloseGroup ts -> ts
@@ -949,7 +1243,7 @@ doc2Tokens (Doc d) = normalise (d EOD)
 --- @param d - a document
 --- @return pretty printed document
 pretty :: Width -> Doc -> String
-pretty w d = noGroup (doc2Tokens d) w 1 w [0]
+pretty w d = noGroup (doc2Tokens d) w 1 w [0] []
 
 -- Compute number of visible ASCII characters
 length :: String -> Int
@@ -983,18 +1277,22 @@ length = Prelude.length . filter isVisible
 
 -- noGroup is used when there is currently no deferred group
 noGroup :: Tokens -> Width -> Position -> Out
-noGroup EOD              _ _ _ _  = ""
+noGroup EOD              _ _ _ _  _  = ""
 -- should not occur:
-noGroup (Empty       ts) w p r ms = noGroup ts w p r ms
-noGroup (Text      t ts) w p r ms = t ++ noGroup ts w (p + l) (r - l) ms
+noGroup (Empty       ts) w p r ms fs = noGroup ts w p r ms fs
+noGroup (Text      t ts) w p r ms fs = t ++ noGroup ts w (p + l) (r - l) ms fs
   where l = length t
-noGroup (LineBreak _ ts) w p _ ms = case ms of
+noGroup (LineBreak _ ts) w p _ ms fs = case ms of
   []  -> error "Pretty.noGroup: illegal line"
-  m:_ -> '\n' : addSpaces m ts ++ noGroup  ts w (p + 1) (w - m) ms
-noGroup (OpenGroup   ts) w p r ms = oneGroup ts w p       (p + r) (\_ c -> c) r ms
-noGroup (CloseGroup  ts) w p r ms = noGroup  ts w p       r       ms -- may have been pruned
-noGroup (OpenNest  n ts) w p r ms = noGroup  ts w p       r       (applyNesting n w r ms)
-noGroup (CloseNest   ts) w p r ms = noGroup  ts w p       r       (unApplyNesting ms)
+  m:_ -> '\n' : addSpaces m ts ++      noGroup  ts w (p + 1) (w - m) ms fs
+noGroup (OpenGroup   ts) w p r ms fs = oneGroup ts w p       (p + r) (\_ c -> c) r ms fs
+noGroup (CloseGroup  ts) w p r ms fs = noGroup  ts w p       r       ms fs -- may have been pruned
+noGroup (OpenNest  n ts) w p r ms fs = noGroup  ts w p       r       (applyNesting n w r ms) fs
+noGroup (CloseNest   ts) w p r ms fs = noGroup  ts w p       r       (unApplyNesting ms) fs
+noGroup (OpenFormat f ts) w p r ms fs = applyFormat f ++ noGroup ts w p r ms (f:fs)
+noGroup (CloseFormat  ts) w p r ms fs = applyFormat f ++ noGroup ts w p r ms ofs
+ where
+  (f, ofs) = resetFormat fs 
 
 -- oneGroup is used when there is one deferred group
 -- Whenever the tokens `Text` or `LineBreak` are processed,
@@ -1006,24 +1304,35 @@ oneGroup EOD              _ _ _ _         = error "Pretty.oneGroup: EOD"
 -- should not occur:
 oneGroup (Empty       ts) w p e outGrpPre = oneGroup ts w p e outGrpPre
 oneGroup (Text      s ts) w p e outGrpPre =
-  pruneOne ts w (p + l) e (\h c -> outGrpPre h (outText c))
-  where
+  pruneOne ts w (p + l) e (\h cont -> outGrpPre h (outText cont))
+ where
   l = length s
-  outText c r ms = s ++ c (r - l) ms
+  outText cont r ms fs = s ++ cont (r - l) ms fs
 oneGroup (LineBreak s ts) w p e outGrpPre =
-  pruneOne ts w (p + l) e (\h c -> outGrpPre h (outLine h c))
-  where
+  pruneOne ts w (p + l) e (\h cont -> outGrpPre h (outLine h cont))
+ where
   l = length s
-  outLine _ _ _ []       = error "Pretty.oneGroup.outLine: empty margins"
-  outLine h c r ms@(m:_) = if h then s ++ c (r - l) ms
-                                else '\n' : addSpaces m ts ++ c (w - m) ms
+  outLine _ _    _ []       _  = error "Pretty.oneGroup.outLine: empty margins"
+  outLine h cont r ms@(m:_) fs =
+    if h then s ++ cont (r - l) ms fs
+         else '\n' : addSpaces m ts ++ cont (w - m) ms fs
 oneGroup (OpenGroup   ts) w p e outGrpPre =
-  multiGroup ts w p e outGrpPre Q.empty p (\_ c -> c)
+  multiGroup ts w p e outGrpPre Q.empty p (\_ cont -> cont)
 oneGroup (CloseGroup  ts) w p e outGrpPre = outGrpPre (p <= e) (noGroup ts w p)
 oneGroup (OpenNest  n ts) w p e outGrpPre = oneGroup ts w p e
-  (\h c -> outGrpPre h (\r ms -> c r (applyNesting n w r ms)))
+  (\h cont -> outGrpPre h (\r ms fs -> cont r (applyNesting n w r ms) fs))
 oneGroup (CloseNest   ts) w p e outGrpPre = oneGroup ts w p e
-  (\h c -> outGrpPre h (\r ms -> c r (unApplyNesting ms)))
+  (\h cont -> outGrpPre h (\r ms fs -> cont r (unApplyNesting ms) fs))
+oneGroup (OpenFormat f ts) w p e outGrpPre = oneGroup ts w p e
+  (\h cont -> outGrpPre h (outFormat cont))
+ where
+  outFormat cont r ms fs = applyFormat f ++ cont r ms (f:fs)
+oneGroup (CloseFormat  ts) w p e outGrpPre = oneGroup ts w p e
+  (\h cont -> outGrpPre h (outUnformat cont))
+ where
+  outUnformat cont r ms fs = applyFormat f ++ cont r ms ofs
+   where
+    (f, ofs) = resetFormat fs
 
 -- multiGroup is used when there are at least two deferred groups
 -- Whenever the tokens `Text` or `LineBreak` are processed, i.e. the current position
@@ -1048,34 +1357,46 @@ multiGroup (Empty       ts) w p e outGrpPreOuter qs s  outGrpPreInner
   = multiGroup ts w p e outGrpPreOuter qs s outGrpPreInner
 multiGroup (Text      t ts) w p e outGrpPreOuter qs s  outGrpPreInner
   = pruneMulti ts w (p+l) e outGrpPreOuter qs s
-    (\h c -> outGrpPreInner h (outText c))
-  where
+    (\h cont -> outGrpPreInner h (outText cont))
+ where
   l = length t
-  outText c r ms = t ++ c (r-l) ms
+  outText cont r ms fs = t ++ cont (r-l) ms fs
 multiGroup (LineBreak s ts) w p e outGrpPreOuter qs si outGrpPreInner =
   pruneMulti ts w (p + l) e outGrpPreOuter qs si
-    (\h c -> outGrpPreInner h (outLine h c))
-  where
+    (\h cont -> outGrpPreInner h (outLine h cont))
+ where
   l = length s
-  outLine _ _ _ []       = error "Pretty.multiGroup.outLine: empty margins"
-  outLine h c r ms@(m:_) =
-    if h then s ++ c (r-l) ms else '\n': addSpaces m ts ++ c (w-m) ms
+  outLine _ _    _ []       _  = error "Pretty.multiGroup.outLine: empty margins"
+  outLine h cont r ms@(m:_) fs =
+    if h then s ++ cont (r-l) ms fs else '\n': addSpaces m ts ++ cont (w-m) ms fs
 multiGroup (OpenGroup   ts) w p e outGrpPreOuter qs si outGrpPreInner =
-  multiGroup ts w p e outGrpPreOuter (cons (si,outGrpPreInner) qs) p (\_ c -> c)
+  multiGroup ts w p e outGrpPreOuter (cons (si,outGrpPreInner) qs) p (\_ cont -> cont)
 multiGroup (CloseGroup  ts) w p e outGrpPreOuter qs si outGrpPreInner =
   case matchHead qs of
     Nothing -> oneGroup ts w p e
-                 (\h c -> outGrpPreOuter h
-                            (\ri -> outGrpPreInner (p<=si+ri) c ri))
+                 (\h cont -> outGrpPreOuter h
+                            (\ri -> outGrpPreInner (p<=si+ri) cont ri))
     Just ((s,outGrpPre),qs') ->
       multiGroup ts w p e outGrpPreOuter qs' s
-        (\h c -> outGrpPre h (\ri -> outGrpPreInner (p<=si+ri) c ri))
+        (\h cont -> outGrpPre h (\ri -> outGrpPreInner (p<=si+ri) cont ri))
 multiGroup (OpenNest  n ts) w p e outGrpPreOuter qs si outGrpPreInner =
   multiGroup ts w p e outGrpPreOuter qs si
-    (\h c -> outGrpPreInner h (\r ms -> c r (applyNesting n w r ms)))
+    (\h cont -> outGrpPreInner h (\r ms fs -> cont r (applyNesting n w r ms) fs))
 multiGroup (CloseNest   ts) w p e outGrpPreOuter qs si outGrpPreInner =
   multiGroup ts w p e outGrpPreOuter qs si
-    (\h c -> outGrpPreInner h (\r ms -> c r (unApplyNesting ms)))
+    (\h cont -> outGrpPreInner h (\r ms fs -> cont r (unApplyNesting ms) fs))
+multiGroup (OpenFormat f ts) w p e outGrpPreOuter qs si outGrpPreInner =
+  multiGroup ts w p e outGrpPreOuter qs si
+    (\h cont -> outGrpPreInner h (outFormat cont))
+ where
+  outFormat cont r ms fs = applyFormat f ++ cont r ms (f:fs)
+multiGroup (CloseFormat  ts) w p e outGrpPreOuter qs si outGrpPreInner =
+  multiGroup ts w p e outGrpPreOuter qs si
+    (\h cont -> outGrpPreInner h (outUnformat cont))
+ where
+  outUnformat cont r ms fs = applyFormat f ++ cont r ms ofs
+   where
+    (f, ofs) = resetFormat fs
 
 -- pruneOne checks whether the outermost group (in this case there is only one
 -- group) still fits in the current line. If it doesn't fit, it applies the
