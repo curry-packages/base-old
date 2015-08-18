@@ -4,12 +4,13 @@
 --- This library provides a pretty-printer for AbstractCurry modules.
 ---
 --- @author  Yannik Potdevin
---- @version July 2015
+--- @version August 2015
 --- --------------------------------------------------------------------------
 module AbstractCurry.Pretty where
 
 import Pretty
 import AbstractCurry
+import List (partition)
 import Maybe (isJust, fromJust)
 
 data Qualification
@@ -400,9 +401,11 @@ ppRecordField opts (qn, exp) = ppQName opts qn <+> equals <+> ppCExpr opts exp
 --- qualified names in a list.
 getExports :: Options -> [CTypeDecl] -> [CFuncDecl] -> [Doc]
 getExports opts ts fs = map tDeclToDoc filteredTs ++ map fDeclToDoc filteredFs
-    where tDeclToDoc (CType    qn _ _ _) = ppQName' qn
-          tDeclToDoc (CTypeSyn qn _ _ _) = ppQName' qn
-          tDeclToDoc (CNewType qn _ _ _) = ppQName' qn
+    where tDeclToDoc (CType    qn _ _ cDecls)
+              = ppQName' qn <> ppConsExports cDecls
+          tDeclToDoc (CTypeSyn qn _ _ _     ) = ppQName' qn
+          tDeclToDoc (CNewType qn _ _ cDecl )
+              = ppQName' qn <> ppConsExports [cDecl]
 
           fDeclToDoc (CFunc     qn _ _ _ _) = ppQName' qn
           fDeclToDoc (CmtFunc _ qn _ _ _ _) = ppQName' qn
@@ -418,7 +421,24 @@ getExports opts ts fs = map tDeclToDoc filteredTs ++ map fDeclToDoc filteredFs
                                           (CmtFunc _ _ _ Public _ _) -> True
                                           _                          -> False)
                               fs
-          ppQName'    = genericPPQName parsIfInfix opts
+          ppQName'   = genericPPQName parsIfInfix opts
+
+          ppConsExports :: [CConsDecl] -> Doc
+          ppConsExports cDecls =
+              let (publics, privates) = partition isPublicConsDecl cDecls
+              in  ppConsExports' publics privates
+
+          isPublicConsDecl :: CConsDecl -> Bool
+          isPublicConsDecl cDecl = case cDecl of
+                                        (CCons   _ Public _) -> True
+                                        (CRecord _ Public _) -> True
+                                        _                    -> False
+
+          ppConsExports' :: [CConsDecl] -> [CConsDecl] -> Doc
+          ppConsExports' pubs privs
+              | null pubs  = empty
+              | null privs = parens $ dot <> dot
+              | otherwise  = tupledSpaced $ map (ppCConsDecl opts) pubs
 
 -- pretty-print a QName qualified according to given options. Use given doc
 -- tranformer to manipulate (f.e. surround with parentheses) the QName, after
