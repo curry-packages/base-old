@@ -128,9 +128,9 @@ ppCConsDecl opts (CRecord qn _ fDecls) = ppName qn
 
 --- pretty-print a record field declaration (`field :: type`).
 ppCFieldDecl :: Options -> CFieldDecl -> Doc
-ppCFieldDecl opts (CField qn _ tExp) = ppName qn
-                                   <+> doubleColon
-                                   <+> ppCTypeExpr opts tExp
+ppCFieldDecl opts (CField qn _ tExp) = fillSep [ ppName qn
+                                               , doubleColon
+                                               , ppCTypeExpr opts tExp ]
 
 --- pretty-print a function declaration.
 ppCFuncDecl :: Options -> CFuncDecl -> Doc
@@ -142,22 +142,21 @@ ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
 ppCFuncSignature opts qn tExp = genericPPName parsIfInfix qn
-                            <+> doubleColon
-                            <+> ppCTypeExpr opts tExp
+                            <+> align (doubleColon <+> ppCTypeExpr opts tExp)
 
 --- pretty-print a type expression.
 ppCTypeExpr :: Options -> CTypeExpr -> Doc
-ppCTypeExpr opts (CTVar     tvar)        =  ppCTVarIName opts tvar
+ppCTypeExpr opts (CTVar     tvar)        = ppCTVarIName opts tvar
 ppCTypeExpr opts (CFuncType tExp1 tExp2) =
-    case tExp1 of (CFuncType _ _) -> parens prefix <+> suffix -- `->` is right-associative
-                  _               -> prefix <+> suffix
-    where prefix = ppCTypeExpr opts tExp1
-          suffix = arrow <+> ppCTypeExpr opts tExp2
+    group $ (case tExp1 of
+                  (CFuncType _ _) -> parens
+                  _               -> id    ) (ppCTypeExpr opts tExp1)
+        <$> arrow <+> ppCTypeExpr opts tExp2
 ppCTypeExpr opts (CTCons qn tExps)
     | null tExps     = pqn
     | isListCons qn  = brackets $ head expDocs -- this relies on expDocs being a singleton
     | isTupleCons qn = tupledSpaced expDocs
-    | otherwise      = pqn <+> hsep expDocs
+    | otherwise      = pqn <+> fillSep expDocs
     where pqn     = ppQName opts qn
           expDocs = map (ppCTypeExpr opts) tExps
 
@@ -181,7 +180,7 @@ ppCRules opts qn rs = case rs of
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
 ppCRule opts qn (CRule ps rhs)
-    = group (nest' opts (hsep (positionIdent ppName qn pDocs) <$> pRhs))
+    = group (nest' opts (fillSep (positionIdent ppName qn pDocs) <$> pRhs))
    $$ if null lDecls
          then empty
          else indent' opts $ ppWhereDecl opts lDecls
@@ -207,12 +206,12 @@ ppCPattern' _ opts (CPAs   pvar p ) = ppCVarIName opts pvar
 ppCPattern' p opts (CPFuncComb qn ps ) =
     case ps of
          [p1, p2] | isInfixId qn -> parensIf (p >= infAppPrec)
-                                  $ ppCPattern' infAppPrec opts p1
-                                <+> ppQName opts qn
-                                <+> ppCPattern' infAppPrec opts p2
+                                  $ fillSep [ ppCPattern' infAppPrec opts p1
+                                            , ppQName opts qn
+                                            , ppCPattern' infAppPrec opts p2 ]
          _                       -> parensIf (p >= prefAppPrec)
                                   $ ppQName opts qn
-                                <+> hsepMap (ppCPattern' prefAppPrec opts) ps
+                                <+> fillSepMap (ppCPattern' prefAppPrec opts) ps
 ppCPattern' _ opts (CPLazy     p     ) = tilde <> ppCPattern' highestPrec opts p
 ppCPattern' _ opts (CPRecord   qn rps) = ppQName opts qn
                                      <+> setSpaced (map (ppCFieldPattern opts)
@@ -225,11 +224,12 @@ ppCPComb p opts qn ps =
          [cons]                    -> cons
          [l, m, r] |    m == colon
                      && r == nil   -> brackets l
-                   | isInfixId qn  -> parensIf (p >= infAppPrec) $ l <+> m <+> r
+                   | isInfixId qn  -> parensIf (p >= infAppPrec)
+                                    $ fillSep [l, m, r]
                                       {- assume tupled pattern and therefore
                                          avoid additional parenthesis. -}
-         (x:_) | x == lparen       -> hsep pDocs
-         _                         -> parensIf (p >= prefAppPrec) $ hsep pDocs
+         (x:_) | x == lparen       -> fillSep pDocs
+         _                         -> parensIf (p >= prefAppPrec) $ fillSep pDocs
     where pDocs = positionIdent (ppQName opts) qn
                 $ map (ppCPattern' p' opts) ps
           p'    = if isInfixId qn
@@ -299,8 +299,9 @@ ppCLocalDecls opts d = (d <+>) . align . vcatMap (ppCLocalDecl opts)
 --- pretty-print local declarations (the part that follows the `where` keyword).
 ppCLocalDecl :: Options -> CLocalDecl -> Doc
 ppCLocalDecl opts (CLocalFunc fDecl) = ppCFuncDecl opts fDecl
-ppCLocalDecl opts (CLocalPat  p rhs) = ppCPattern opts p
-                                   <+> ppCRhsWithLocalDecls opts equals rhs
+ppCLocalDecl opts (CLocalPat  p rhs)
+    = fillSep [ ppCPattern opts p
+              , ppCRhsWithLocalDecls opts equals rhs ]
 ppCLocalDecl opts (CLocalVars pvars)
     = (<+> text "free") $ hsep $ punctuate comma $ map (ppCVarIName opts) pvars
 
@@ -310,7 +311,7 @@ ppWhereDecl opts = (where_ <$>)
                  . indent' opts
                  . vcatMap (ppCLocalDecl opts)
 
---- pretty-print a let` block without `in`.
+--- pretty-print a `let` block without `in`.
 ppLetDecl :: Options -> [CLocalDecl] -> Doc
 ppLetDecl opts = ppCLocalDecls opts (text "let")
 
@@ -335,9 +336,9 @@ ppCExpr' p opts app@(CApply f exp)
                                                 $$ text "else" <+> ppCExpr opts e)
     | isInf app = parensIf (p >= infAppPrec)
                 $ let (op, l, r) = fromJust $ extractInfix app
-                  in  fillSep [ ppCExpr' infAppPrec opts l
-                              , ppQName opts op
-                              , ppCExpr' infAppPrec opts r ]
+                  in  group . align $ ppCExpr' infAppPrec opts l
+                                  <$> ppQName opts op
+                                  <+> ppCExpr' infAppPrec opts r
     | isTup app = let args = fromJust $ extractTuple app
                   in  tupledSpaced (map (ppCExpr opts) args)
     | otherwise = parensIf (p >= prefAppPrec)
@@ -348,7 +349,8 @@ ppCExpr' p opts app@(CApply f exp)
           isTup = isJust . extractTuple
 ppCExpr' p opts (CLambda ps exp)
     = parensIf (p > tlPrec)
-    $ fillSep [ backslash <> hsepMap (ppCPattern' prefAppPrec opts) ps <+> arrow
+    $ fillSep [ backslash <> fillSepMap (ppCPattern' prefAppPrec opts) ps
+                         <+> arrow
               , ppCExpr opts exp ]
 ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec)
                                       $ group
@@ -359,17 +361,16 @@ ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec)
 ppCExpr' p opts (CDoExpr stms) = parensIf (p > tlPrec)
                                $ text "do"
                              <+> align (vcatMap (ppCStatement opts) stms)
-ppCExpr' _ opts (CListComp exp stms) = brackets
-                                     $ ppCExpr opts exp
-                                   <+> bar
-                                   <+> fillSep (punctuate (comma <> space)
-                                                          (map (ppCStatement opts)
-                                                               stms))
-ppCExpr' p opts (CCase cType exp cases) = parensIf (p > tlPrec)
-                                        $ ppCCaseType cType
-                                      <+> ppCExpr opts exp
-                                      <+> text "of"
-                                      <+> ppCases opts cases
+ppCExpr' _ opts (CListComp exp stms)
+    = brackets $ ppCExpr opts exp
+             <+> bar
+             <+> fillSep (punctuate (comma <> space) (map (ppCStatement opts)
+                                                          stms))
+ppCExpr' p opts (CCase cType exp cases)
+    = parensIf (p > tlPrec) $ group $ nest' opts ( ppCCaseType cType
+                                               <+> ppCExpr opts exp
+                                               <+> text "of"
+                                               <$> ppCases opts cases)
 ppCExpr' p opts (CTyped exp tExp) = parensIf (p > tlPrec)
                                   $ ppCExpr opts exp
                                 <+> doubleColon
@@ -558,6 +559,9 @@ extractTuple = extractTuple' []
 -- Helping functions (pretty printing)
 vsepBlankMap :: (a -> Doc) -> [a] -> Doc
 vsepBlankMap f = vsepBlank . map f
+
+fillSepMap :: (a -> Doc) -> [a] -> Doc
+fillSepMap f = fillSep . map f
 
 nest' :: Options -> Doc -> Doc
 nest' opts = nest (indentationWidth opts)
