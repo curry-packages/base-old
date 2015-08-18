@@ -36,7 +36,7 @@ options pw iw q m = Options { pageWidth        = pw
                             , moduleName       = m }
 
 defaultOptions :: Options
-defaultOptions = options 80 4 Full ""
+defaultOptions = options 80 4 Imports ""
 
 --- precedence of top level (pattern or application) context -- lowest
 tlPrec      :: Int
@@ -180,9 +180,13 @@ ppCRules opts qn rs = case rs of
 --- `f x y = x * y`, then `x y = x * y` is a rule consisting of `x y` as list of
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
-ppCRule opts qn (CRule ps rhs) = hsep (positionIdent ppName qn pDocs)
-                             <+> ppCRhs opts equals rhs
-    where pDocs = map (ppCPattern' prefAppPrec opts) ps
+ppCRule opts qn (CRule ps rhs)
+    = group (nest' opts (hsep (positionIdent ppName qn pDocs) <$> pRhs))
+   $$ if null lDecls
+         then empty
+         else indent' opts $ ppWhereDecl opts lDecls
+    where pDocs          = map (ppCPattern' prefAppPrec opts) ps
+          (pRhs, lDecls) = ppCRhsWithoutLocalDecls opts equals rhs
 
 --- pretty-print a pattern expression.
 ppCPattern :: Options -> CPattern -> Doc
@@ -253,17 +257,29 @@ ppCFieldPattern opts (qn, p) = ppQName opts qn <+> equals <+> ppCPattern opts p
 --- pretty-print the right hand side of a rule (or case expression), including
 --- the d sign, where `d` is the relation (as doc) between the left hand side
 --- and the right hand side -- usually this is one of `=`, `->`.
-ppCRhs :: Options -> Doc -> CRhs -> Doc
-ppCRhs opts d (CSimpleRhs  exp lDecls)
+--- If the right hand side contains local declarations, they will be pretty
+--- printed too, further indented.
+ppCRhsWithLocalDecls :: Options -> Doc -> CRhs -> Doc
+ppCRhsWithLocalDecls opts d (CSimpleRhs  exp lDecls)
     = d <+> ppCExpr opts exp
    $$ if null lDecls
          then empty
          else indent' opts (ppWhereDecl opts lDecls)
-ppCRhs opts d (CGuardedRhs conds lDecls)
+ppCRhsWithLocalDecls opts d (CGuardedRhs conds lDecls)
     = ppCGuardedRhs opts d conds
    $$ if null lDecls
          then empty
          else indent' opts (ppWhereDecl opts lDecls)
+
+--- Like `ppCRhsWithLocalDecls`, but do not pretty print local declarations.
+--- Instead give callee the choice how to handle the declarations. for example
+--- For example the function `ppCRule` uses this to prevent local declarations
+--- from being further indented.
+ppCRhsWithoutLocalDecls :: Options -> Doc -> CRhs -> (Doc, [CLocalDecl])
+ppCRhsWithoutLocalDecls opts d (CSimpleRhs  exp lDecls)
+    = (d <+> ppCExpr opts exp, lDecls)
+ppCRhsWithoutLocalDecls opts d (CGuardedRhs conds lDecls)
+    = (ppCGuardedRhs opts d conds, lDecls)
 
 --- pretty-print guard, i.e. the `| cond d exp` part of a right hand side, where
 --- `d` is the relation (as doc) between `cond` and `exp` -- usually this is
@@ -280,22 +296,23 @@ ppCGuardedRhs opts d = align . vcatMap ppCGuard
 ppCLocalDecls :: Options -> Doc -> [CLocalDecl] -> Doc
 ppCLocalDecls opts d = (d <+>) . align . vcatMap (ppCLocalDecl opts)
 
---- pretty-print
+--- pretty-print local declarations (the part that follows the `where` keyword).
+ppCLocalDecl :: Options -> CLocalDecl -> Doc
+ppCLocalDecl opts (CLocalFunc fDecl) = ppCFuncDecl opts fDecl
+ppCLocalDecl opts (CLocalPat  p rhs) = ppCPattern opts p
+                                   <+> ppCRhsWithLocalDecls opts equals rhs
+ppCLocalDecl opts (CLocalVars pvars)
+    = (<+> text "free") $ hsep $ punctuate comma $ map (ppCVarIName opts) pvars
+
+--- pretty-print a `where` block, where `where` is above following declarations.
 ppWhereDecl :: Options -> [CLocalDecl] -> Doc
 ppWhereDecl opts = (where_ <$>)
                  . indent' opts
                  . vcatMap (ppCLocalDecl opts)
 
+--- pretty-print a let` block without `in`.
 ppLetDecl :: Options -> [CLocalDecl] -> Doc
-ppLetDecl opts = (text "let" <+>) . align . vcatMap (ppCLocalDecl opts)
-
---- pretty-print local declarations (the part that follows the `where` keyword).
-ppCLocalDecl :: Options -> CLocalDecl -> Doc
-ppCLocalDecl opts (CLocalFunc fDecl) = ppCFuncDecl opts fDecl
-ppCLocalDecl opts (CLocalPat  p rhs) = ppCPattern opts p
-                                   <+> ppCRhs opts equals rhs
-ppCLocalDecl opts (CLocalVars pvars)
-    = (<+> text "free") $ hsep $ punctuate comma $ map (ppCVarIName opts) pvars
+ppLetDecl opts = ppCLocalDecls opts (text "let")
 
 --- pretty-print an expression.
 ppCExpr :: Options -> CExpr -> Doc
@@ -381,7 +398,7 @@ ppCases opts = align . vcatMap (ppCase opts)
 
 --- pretty-print a case expression.
 ppCase :: Options -> (CPattern, CRhs) -> Doc
-ppCase opts (p, rhs) = ppCPattern opts p <+> ppCRhs opts arrow rhs
+ppCase opts (p, rhs) = ppCPattern opts p <+> ppCRhsWithLocalDecls opts arrow rhs
 
 --- pretty-print record field assignments like this:
 ---     { lab1 = exp1, ..., labn expn }
@@ -541,6 +558,9 @@ extractTuple = extractTuple' []
 -- Helping functions (pretty printing)
 vsepBlankMap :: (a -> Doc) -> [a] -> Doc
 vsepBlankMap f = vsepBlank . map f
+
+nest' :: Options -> Doc -> Doc
+nest' opts = nest (indentationWidth opts)
 
 indent' :: Options -> Doc -> Doc
 indent' opts = indent (indentationWidth opts)
