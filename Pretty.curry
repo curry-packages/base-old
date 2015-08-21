@@ -9,7 +9,7 @@
 --- in text terminals (see https://en.wikipedia.org/wiki/ANSI_escape_code)
 ---
 --- @author Sebastian Fischer, Björn Peemöller, Jan Tikovsky
---- @version July 2015
+--- @version August 2015
 --- @category general
 ------------------------------------------------------------------------------
 
@@ -20,12 +20,13 @@ module Pretty (
 
   -- basic document combinators
   empty, isEmpty, text, linesep, line, linebreak, group, softline, softbreak,
+  hardline,
 
   -- alignment combinators
   nest, hang, align, indent,
 
   -- composition combinators
-  combine, (<>), (<+>), ($$), (<$+>), (</>), (<$$>), (<//>),
+  combine, (<>), (<+>), ($$), (<$+$>), (</>), (<$$>), (<//>), (<$!$>),
 
   -- list combinators
   compose, hsep, vsep, vsepBlank, fillSep, sep, hcat,
@@ -58,7 +59,8 @@ module Pretty (
 
 import Dequeue as Q
 
-infixl 1 <>, <+>, $$, </>, <$$>, <//>
+infixl 5 $$, <$$>, </>,  <//>, <$!$>, <$+$>
+infixl 6 <>, <+>
 
 --- Standard printing with a column length of 80.
 pPrint :: Doc -> String
@@ -98,7 +100,13 @@ text s = Doc (Text s)
 --- @return a document which advances to the next line or behaves
 ---         like `(text s)`
 linesep :: String -> Doc
-linesep = Doc . LineBreak
+linesep = Doc . LineBreak . Just
+
+--- The document `hardline` advances to the next line and indents
+--- to the current nesting level. `hardline` cannot be undone by `group`.
+--- @return a document which advances to the next line
+hardline :: Doc
+hardline = Doc (LineBreak Nothing)
 
 --- The document `line` advances to the next line and indents to the current
 --- nesting level. Document `line` behaves like `(text " ")` if the line break
@@ -267,13 +275,13 @@ d1 <> d2
 ($$) :: Doc -> Doc -> Doc
 ($$) = combine line
 
---- The document `(x <$+> y)` concatenates document `x` and `y` with a
+--- The document `(x <$+$> y)` concatenates document `x` and `y` with a
 --- blank line in between with identity `empty`.
 --- @param x - the first document
 --- @param y - the second document
 --- @return concatenation of x and y with a blank line in between
-(<$+>) :: Doc -> Doc -> Doc
-(<$+>) = combine (line <> linebreak)
+(<$+$>) :: Doc -> Doc -> Doc
+(<$+$>) = combine (line <> linebreak)
 
 --- The document `(x </> y)` concatenates document `x` and `y` with
 --- a `softline` in between with identity `empty`.
@@ -302,6 +310,15 @@ d1 <> d2
 --- @return concatenation of x and y with a softbreak in between
 (<//>) :: Doc -> Doc -> Doc
 (<//>) = combine softbreak
+
+--- The document `(x <$!$> y)` concatenates document `x` and `y` with a
+--- `hardline` in between with identity `empty`.
+--- This effectively puts `x` and `y` underneath each other.
+--- @param x - the first document
+--- @param y - the second document
+--- @return concatenation of x and y with a hardline in between
+(<$!$>) :: Doc -> Doc -> Doc
+(<$!$>) = combine hardline
 
 --- The document `(compose f xs)` concatenates all documents `xs`
 --- with function `f`.
@@ -352,12 +369,12 @@ vsep :: [Doc] -> Doc
 vsep = compose ($$)
 
 --- The document `vsep xs` concatenates all documents `xs` vertically with
---- `(<$+>)`. If a group undoes the line breaks inserted by `vsepBlank`,
+--- `(<$+$>)`. If a group undoes the line breaks inserted by `vsepBlank`,
 --- all documents are separated with a `space`.
 --- @param xs - a list of documents
 --- @return vertical concatenation of documents
 vsepBlank :: [Doc] -> Doc
-vsepBlank = compose (<$+>)
+vsepBlank = compose (<$+$>)
 
 --- The document `(fillSep xs)` concatenates documents `xs` horizontally with
 --- `(</>)` as long as its fits the page, than inserts a
@@ -859,7 +876,8 @@ width (Doc d) = width' 0 (d EOD)
   where width' w EOD               = w
         width' w (Empty        ts) = width' w ts
         width' w (Text       s ts) = width' (w + length s) ts
-        width' w (LineBreak  s ts) = width' (w + length s) ts
+        width' w (LineBreak  Nothing ts) = width' w ts
+        width' w (LineBreak  (Just s) ts) = width' (w + length s) ts
         width' w (OpenGroup    ts) = width' w              ts
         width' w (CloseGroup   ts) = width' w              ts
         width' w (OpenNest   _ ts) = width' w              ts
@@ -1172,7 +1190,7 @@ data Tokens
   = EOD                         -- end of document
   | Empty                Tokens -- empty document
   | Text       String    Tokens -- string
-  | LineBreak  String    Tokens -- linebreak that will be replaced by the
+  | LineBreak  (Maybe String) Tokens -- linebreak that will be replaced by the
                                 -- separator if the linebreak is undone
   | OpenGroup            Tokens -- Beginning of a group
   | CloseGroup           Tokens -- End       of a group
@@ -1212,24 +1230,46 @@ addSpaces m ts = case ts of
 --
 -- Rewriting moves `Text` tokens in and out of groups. The set of `lines`
 -- "belonging" to each group, i.e., the set of layouts, is left unchanged.
+-- normalise :: Tokens -> Tokens
+-- normalise = go id
+--   where
+--   go co EOD               = co EOD
+--   go co (Empty        ts) = go co ts
+--   -- there should be no deferred opening brackets
+--   go co (OpenGroup    ts) = go (co . open)        ts
+--   go co (CloseGroup   ts) = go (co . CloseGroup)  ts
+--   go co (LineBreak  s ts) = (co . LineBreak s . go id) ts
+--   go co (Text       s ts) = Text s       (go co ts)
+--   go co (OpenNest   n ts) = OpenNest   n (go co ts)
+--   go co (CloseNest    ts) = CloseNest    (go co ts)
+--   go co (OpenFormat f ts) = OpenFormat f (go co ts)
+--   go co (CloseFormat  ts) = CloseFormat  (go co ts)
+-- 
+--   open t = case t of
+--     CloseGroup ts -> ts
+--     _             -> OpenGroup t
+
 normalise :: Tokens -> Tokens
 normalise = go id
   where
-  go co EOD               = co EOD
-  go co (Empty        ts) = go co ts
+  go co EOD                = co EOD
+  go co (Empty         ts) = go co ts
   -- there should be no deferred opening brackets
-  go co (OpenGroup    ts) = go (co . open)        ts
-  go co (CloseGroup   ts) = go (co . CloseGroup)  ts
-  go co (LineBreak  s ts) = (co . LineBreak s . go id) ts
-  go co (Text       s ts) = Text s       (go co ts)
-  go co (OpenNest   n ts) = OpenNest   n (go co ts)
-  go co (CloseNest    ts) = CloseNest    (go co ts)
-  go co (OpenFormat f ts) = OpenFormat f (go co ts)
-  go co (CloseFormat  ts) = CloseFormat  (go co ts)
+  go co (OpenGroup     ts) = go (co . open)        ts
+  go co (CloseGroup    ts) = go (co . CloseGroup)  ts
+  go co (LineBreak  ms ts) = case ms of
+    Nothing -> LineBreak ms (go co ts)
+    Just _  -> (co . LineBreak ms . go id) ts
+  go co (Text       s  ts) = Text s       (go co ts)
+  go co (OpenNest   n  ts) = OpenNest   n (go co ts)
+  go co (CloseNest     ts) = CloseNest    (go co ts)
+  go co (OpenFormat f  ts) = OpenFormat f (go co ts)
+  go co (CloseFormat   ts) = CloseFormat  (go co ts)
 
   open t = case t of
     CloseGroup ts -> ts
     _             -> OpenGroup t
+
 
 -- Transform a document into a group-closed document by normalising its token
 -- sequence.
@@ -1308,7 +1348,11 @@ oneGroup (Text      s ts) w p e outGrpPre =
  where
   l = length s
   outText cont r ms fs = s ++ cont (r - l) ms fs
-oneGroup (LineBreak s ts) w p e outGrpPre =
+oneGroup (LineBreak Nothing ts) w p _ outGrpPre = outGrpPre False (outLine (noGroup ts w p))
+ where
+  outLine _    _ []       _  = error "Pretty.oneGroup.outLine: empty margins"
+  outLine cont _ ms@(m:_) fs = '\n' : addSpaces m ts ++ cont (w - m) ms fs
+oneGroup (LineBreak (Just s) ts) w p e outGrpPre =
   pruneOne ts w (p + l) e (\h cont -> outGrpPre h (outLine h cont))
  where
   l = length s
@@ -1361,7 +1405,17 @@ multiGroup (Text      t ts) w p e outGrpPreOuter qs s  outGrpPreInner
  where
   l = length t
   outText cont r ms fs = t ++ cont (r-l) ms fs
-multiGroup (LineBreak s ts) w p e outGrpPreOuter qs si outGrpPreInner =
+multiGroup (LineBreak Nothing ts) w p _ outGrpPreOuter qs _ outGrpPreInner 
+  = pruneAll outGrpPreOuter qs
+ where
+  pruneAll outGrpPreOuter' qs' = outGrpPreOuter' False (\r ->
+              (case matchLast qs' of
+                Nothing -> outGrpPreInner False (outLine (noGroup ts w p))
+                Just ((_,outGrpPre),qss) -> pruneAll outGrpPre qss)
+                    r)
+  outLine _    _ []       _  = error "Pretty.oneGroup.outLine: empty margins"
+  outLine cont _ ms@(m:_) fs = '\n' : addSpaces m ts ++ cont (w - m) ms fs
+multiGroup (LineBreak (Just s) ts) w p e outGrpPreOuter qs si outGrpPreInner =
   pruneMulti ts w (p + l) e outGrpPreOuter qs si
     (\h cont -> outGrpPreInner h (outLine h cont))
  where
