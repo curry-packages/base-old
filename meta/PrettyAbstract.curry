@@ -121,10 +121,10 @@ cprogDoc = cprogDocWithPrecedences preludePrecs
 --- @return the document, which represents the <code>prog</code>
 cprogDocWithPrecedences :: Precs -> CurryProg -> Doc
 cprogDocWithPrecedences ps cprog@(CurryProg name imps types funcs ops)
-  = moduleHeaderDoc name cprog (exportedNames name cprog) <$>>
-    impsDoc imps <$>> opsDoc ops <$>>
-    typesDoc name types <$>>
-    funcsDoc (precs ops ++ ps) name funcs $$ empty
+  = moduleHeaderDoc name cprog (exportedNames name cprog) <$+$>
+    impsDoc imps <$+$> opsDoc ops <$+$>
+    typesDoc name types <$+$>
+    funcsDoc (precs ops ++ ps) name funcs $$ text ""
 
 --- generates a list of precedences
 --- @param opDecls - a list of operators
@@ -140,11 +140,6 @@ commaSepList :: [Doc] -> Doc
 commaSepList = fillSep . punctuate comma
 
 -- -------------------------------layout--------------------------------------
-
-(<$>>) :: Doc -> Doc -> Doc
-d1 <$>> d2 | isEmpty d1 = d2
-           | isEmpty d2 = d1
-           | otherwise = d1 $$ line <> d2
 
 def :: Doc -> [CTVarIName] -> Doc -> Doc
 def name params body = block (name <> paramDoc $$ body)
@@ -341,7 +336,7 @@ funcsDoc pr mod funcs = vcat (punctuate line (map (funcDoc pr mod) funcs))
 funcDoc :: Precs -> String -> CFuncDecl -> Doc
 funcDoc pr mod (CFunc name _ _ typ rules) =
   (if hasRec typ then text "--" else empty) <>
-  (if isUntyped typ then empty else funcTypeDeclDoc mod name typ $$ empty) <>
+  (if isUntyped typ then empty else funcTypeDeclDoc mod name typ $$ text "") <>
   vsep (map (ruleDoc pr mod name) rules)
 funcDoc pr mod (CmtFunc cmt name ar vis typ rules) =
   vsep (map (\l->text ("--- "++l)) (lines cmt)) $$

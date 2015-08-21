@@ -15,7 +15,7 @@ import AnnotatedFlatCurry
 
 --- pretty-print a FlatCurry module
 ppProg :: AProg _ -> Doc
-ppProg (AProg m is ts fs os) = compose (<$+>)
+ppProg (AProg m is ts fs os) = compose (<$+$>)
   [ ppHeader    m ts fs
   , ppImports   is
   , ppOpDecls   os
@@ -75,7 +75,7 @@ ppFixity InfixrOp = text "infixr"
 
 --- pretty-print a list of type declarations
 ppTypeDecls :: [TypeDecl] -> Doc
-ppTypeDecls = compose (<$+>) . map ppTypeDecl
+ppTypeDecls = compose (<$+$>) . map ppTypeDecl
 
 --- pretty-print a type declaration
 ppTypeDecl :: TypeDecl -> Doc
@@ -117,7 +117,7 @@ ppTVarIndex i = text $ vars !! i
 
 --- pretty-print a list of function declarations
 ppFuncDecls :: [AFuncDecl _] -> Doc
-ppFuncDecls = compose (<$+>) . map ppFuncDecl
+ppFuncDecls = compose (<$+$>) . map ppFuncDecl
 
 --- pretty-print a function declaration
 ppFuncDecl :: AFuncDecl _ -> Doc
