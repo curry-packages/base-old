@@ -55,6 +55,7 @@ module Pretty (
   -- colorisation combinators
   black, red, green, yellow, blue, magenta, cyan, white,
   bgBlack, bgRed, bgGreen, bgYellow, bgBlue, bgMagenta, bgCyan, bgWhite
+  , inspect
   ) where
 
 import Dequeue as Q
@@ -873,17 +874,17 @@ fillBreak i d = d <> fill'
 --- Compute the width of a given document
 width :: Doc -> Int
 width (Doc d) = width' 0 (d EOD)
-  where width' w EOD               = w
-        width' w (Empty        ts) = width' w ts
-        width' w (Text       s ts) = width' (w + length s) ts
-        width' w (LineBreak  Nothing ts) = width' w ts
-        width' w (LineBreak  (Just s) ts) = width' (w + length s) ts
-        width' w (OpenGroup    ts) = width' w              ts
-        width' w (CloseGroup   ts) = width' w              ts
-        width' w (OpenNest   _ ts) = width' w              ts
-        width' w (CloseNest    ts) = width' w              ts
-        width' w (OpenFormat _ ts) = width' w              ts
-        width' w (CloseFormat  ts) = width' w              ts
+  where width' w EOD                     = w
+        width' w (Empty              ts) = width' w ts
+        width' w (Text             s ts) = width' (w + length s) ts
+        width' w (LineBreak Nothing  ts) = width' w ts
+        width' w (LineBreak (Just s) ts) = width' (w + length s) ts
+        width' w (OpenGroup          ts) = width' w              ts
+        width' w (CloseGroup         ts) = width' w              ts
+        width' w (OpenNest         _ ts) = width' w              ts
+        width' w (CloseNest          ts) = width' w              ts
+        width' w (OpenFormat       _ ts) = width' w              ts
+        width' w (CloseFormat        ts) = width' w              ts
 
 -- -----------------------------------------------------------------------------
 -- Formatting combinators
@@ -1230,25 +1231,6 @@ addSpaces m ts = case ts of
 --
 -- Rewriting moves `Text` tokens in and out of groups. The set of `lines`
 -- "belonging" to each group, i.e., the set of layouts, is left unchanged.
--- normalise :: Tokens -> Tokens
--- normalise = go id
---   where
---   go co EOD               = co EOD
---   go co (Empty        ts) = go co ts
---   -- there should be no deferred opening brackets
---   go co (OpenGroup    ts) = go (co . open)        ts
---   go co (CloseGroup   ts) = go (co . CloseGroup)  ts
---   go co (LineBreak  s ts) = (co . LineBreak s . go id) ts
---   go co (Text       s ts) = Text s       (go co ts)
---   go co (OpenNest   n ts) = OpenNest   n (go co ts)
---   go co (CloseNest    ts) = CloseNest    (go co ts)
---   go co (OpenFormat f ts) = OpenFormat f (go co ts)
---   go co (CloseFormat  ts) = CloseFormat  (go co ts)
--- 
---   open t = case t of
---     CloseGroup ts -> ts
---     _             -> OpenGroup t
-
 normalise :: Tokens -> Tokens
 normalise = go id
   where
@@ -1257,9 +1239,7 @@ normalise = go id
   -- there should be no deferred opening brackets
   go co (OpenGroup     ts) = go (co . open)        ts
   go co (CloseGroup    ts) = go (co . CloseGroup)  ts
-  go co (LineBreak  ms ts) = case ms of
-    Nothing -> LineBreak ms (go co ts)
-    Just _  -> (co . LineBreak ms . go id) ts
+  go co (LineBreak  ms ts) = (co . LineBreak ms . go id) ts
   go co (Text       s  ts) = Text s       (go co ts)
   go co (OpenNest   n  ts) = OpenNest   n (go co ts)
   go co (CloseNest     ts) = CloseNest    (go co ts)
@@ -1269,7 +1249,6 @@ normalise = go id
   open t = case t of
     CloseGroup ts -> ts
     _             -> OpenGroup t
-
 
 -- Transform a document into a group-closed document by normalising its token
 -- sequence.
