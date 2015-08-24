@@ -233,7 +233,9 @@ ppCPComb p opts qn ps =
                                       {- assume tupled pattern and therefore
                                          avoid additional parenthesis. -}
          (x:_) | x == lparen       -> hsep pDocs
-         _                         -> parensIf (p >= prefAppPrec) $ hsep pDocs
+                                      {- assume prefix application -}
+         _                         -> parensIf (p >= prefAppPrec) . group . nest' opts
+                                    $ head pDocs <$> (align $ vsep $ tail pDocs)
     where pDocs = positionIdent (ppQName opts) qn
                 $ map (ppCPattern' p' opts) ps
           p'    = if isInfixId qn
@@ -351,8 +353,8 @@ ppCExpr' p opts app@(CApply f exp)
                                   <+> ppCExpr' infAppPrec opts r
     | isTup app = let args = fromJust $ extractTuple app
                   in  tupledSpaced (map (ppCExpr opts) args)
-    | otherwise = parensIf (p >= prefAppPrec)
-                $ hsep [ ppCExpr opts f, ppCExpr' prefAppPrec opts exp ]
+    | otherwise = parensIf (p >= prefAppPrec) . group . nest' opts
+                $ ppCExpr opts f <$> ppCExpr' prefAppPrec opts exp
     where isITE = isJust . extractITE
           isInf = isJust . extractInfix
           isTup = isJust . extractTuple
@@ -547,11 +549,12 @@ extractITE e = case e of
 --- If so, return the operator, its left and its right argument. Otherwise,
 --- return `Nothing`.
 extractInfix :: CExpr -> Maybe (QName, CExpr, CExpr)
-extractInfix e = case e of
-                      (CApply (CApply (CSymbol s)
-                                      e1)
-                              e2) | isInfixId s -> Just (s, e1, e2)
-                      _                         -> Nothing
+extractInfix e
+    = case e of (CApply (CApply (CSymbol s)
+                                 e1)
+                        e2)
+                    | isInfixId s -> Just (s, e1, e2)
+                _                 -> Nothing
 
 --- Check if given application tree represents a tuple contructor application.
 --- If so, return the constructor and its arguments in a list. Otherwise, return
