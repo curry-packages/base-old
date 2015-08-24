@@ -230,20 +230,20 @@ ppCPComb p opts qn ps =
                      && r == nil   -> brackets l
                    | isInfixId qn  -> parensIf (p >= infAppPrec)
                                     $ hsep [l, m, r]
-                                      {- assume tupled pattern and therefore
-                                         avoid additional parenthesis. -}
+         {- Assume tupled pattern and therefore avoid additional parenthesis. -}
          (x:_) | x == lparen       -> hsep pDocs
-                                      {- assume prefix application -}
+         {- Assume prefix application. -}
          _                         -> parensIf (p >= prefAppPrec) . group . nest' opts
                                     $ head pDocs <$> (align $ vsep $ tail pDocs)
     where pDocs = positionIdent (ppQName opts) qn
                 $ map (ppCPattern' p' opts) ps
           p'    = if isInfixId qn
                      then infAppPrec
-                     else prefAppPrec {- this assumes the existence of infix
-                                         constructors and all of them having a
-                                         lower precedence than any prefix
-                                         constructors. -}
+                     {- This assumes the existence of infix constructors and
+                        all of them having a lower precedence than any prefix
+                        constructors. -}
+                     else prefAppPrec
+
 
 --- pretty-print a pattern variable (currently the Int is ignored).
 ppCVarIName :: Options -> CVarIName -> Doc
@@ -267,10 +267,6 @@ ppCFieldPattern opts (qn, p) = ppQName opts qn <+> equals <+> ppCPattern opts p
 --- printed too, further indented.
 ppCRhsWithLocalDecls :: Options -> Doc -> CRhs -> Doc
 ppCRhsWithLocalDecls opts d (CSimpleRhs  exp lDecls)
---     = d <+> ppCExpr opts exp
---    $$ if null lDecls
---          then empty
---          else indent' opts (ppWhereDecl opts lDecls)
     = group . nest' opts $ d <$> ppCExpr opts exp
    $$ if null lDecls
          then empty
@@ -296,9 +292,6 @@ ppCRhsWithoutLocalDecls opts d (CGuardedRhs conds lDecls)
 --- one of `=`, `->`.
 ppCGuardedRhs :: Options -> Doc -> [(CExpr, CExpr)] -> Doc
 ppCGuardedRhs opts d = align . vvsepMap ppCGuard
---     where ppCGuard (e1, e2) = bar <+> ppCExpr opts e1
---                                   <+> d
---                                   <+> ppCExpr opts e2
     where ppCGuard (e1, e2) = bar <+> ppCExpr opts e1
                                   <+> group (nest' opts (d <$> ppCExpr opts e2))
 
@@ -356,10 +349,9 @@ ppCExpr' p opts app@(CApply f exp)
     |    isITE  f -- mind `f` instead of `app`
       || isCase f = group . nest' opts $ ppCExpr' highestPrec opts f
                                      <$> ppCExpr' prefAppPrec opts exp
-                   {- Assume "simple" application -}
+    {- Assume "simple" application -}
     | otherwise  = parensIf (p >= prefAppPrec) . group . nest' opts
                 $ ppCExpr opts f <$> ppCExpr' prefAppPrec opts exp
---                 $ ppCExpr' prefAppPrec opts f <$> ppCExpr' prefAppPrec opts exp
     where isITE    = isJust . extractITE
           isInf    = isJust . extractInfix
           isTup    = isJust . extractTuple
@@ -516,7 +508,6 @@ positionIdent f qn ds
     | otherwise      = prefixQnDoc:ds
     where prefixQnDoc = parensIf (isInfixId qn) qnDoc
           qnDoc       = f qn
---           tupledDs = lparen : punctuate comma ds ++ [rparen]
 
 -- Helping function (diagnosis)
 --- Check whether an operator is an infix identifier.
