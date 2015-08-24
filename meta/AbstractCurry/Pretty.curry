@@ -352,12 +352,18 @@ ppCExpr' p opts app@(CApply f exp)
                                   <$> ppQName opts op
                                   <+> ppCExpr' infAppPrec opts r
     | isTup app = let args = fromJust $ extractTuple app
-                  in  tupledSpaced (map (ppCExpr opts) args)
-    | otherwise = parensIf (p >= prefAppPrec) . group . nest' opts
+                   in  tupledSpaced (map (ppCExpr opts) args)
+    |    isITE  f -- mind `f` instead of `app`
+      || isCase f = group . nest' opts $ ppCExpr' highestPrec opts f
+                                     <$> ppCExpr' prefAppPrec opts exp
+                   {- Assume "simple" application -}
+    | otherwise  = parensIf (p >= prefAppPrec) . group . nest' opts
                 $ ppCExpr opts f <$> ppCExpr' prefAppPrec opts exp
-    where isITE = isJust . extractITE
-          isInf = isJust . extractInfix
-          isTup = isJust . extractTuple
+--                 $ ppCExpr' prefAppPrec opts f <$> ppCExpr' prefAppPrec opts exp
+    where isITE    = isJust . extractITE
+          isInf    = isJust . extractInfix
+          isTup    = isJust . extractTuple
+          isCase e = case e of (CCase _ _ _) -> True; _ -> False
 ppCExpr' p opts (CLambda ps exp)
     = parensIf (p > tlPrec)
     $ hsep [ backslash <> fillSepMap (ppCPattern' prefAppPrec opts) ps
