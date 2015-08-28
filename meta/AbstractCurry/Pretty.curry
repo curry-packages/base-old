@@ -59,14 +59,13 @@ printCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 --- the module name given by options with the name encapsulated in CurryProg.
 ppCurryProg :: Options -> CurryProg -> Doc
 ppCurryProg opts (CurryProg m ms ts fs os)
-    = text "module" <+> ppMName m
-   $$ indent' opts' (ppExports opts' exports </> where_)
+    = group (nest' opts' $ text "module" <+> ppMName m
+                       <$> ppExports opts' ts fs <+> where_)
   $+$ ppImports opts' ms
   $+$ vcatMap (ppCOpDecl opts') os
   $+$ vcatMap (ppCTypeDecl opts') ts
   $+$ vsepBlankMap (ppCFuncDecl opts') fs
-    where exports = getExports opts' ts fs
-          opts'   = opts { moduleName = m }
+    where opts' = opts { moduleName = m }
 
 --- pretty-print a module name (just a string).
 ppMName :: MName -> Doc
@@ -74,9 +73,51 @@ ppMName = text
 
 --- pretty-print exports, i.e. all type  and function declarations which are
 --- public.
-ppExports :: Options -> [Doc] -> Doc
-ppExports _ []       = empty
-ppExports _ ds@(_:_) = tupledSpaced ds
+--- extract the type and function declarations which are public and gather their
+--- qualified names in a list.
+ppExports :: Options -> [CTypeDecl] -> [CFuncDecl] -> Doc
+ppExports opts ts fs
+    | null pubTs  && null pubFs  = parens empty -- nothing is exported
+    | null privTs && null privFs = empty        -- everything is exported
+    | otherwise                  = tupledSpaced $ map tDeclToDoc pubTs
+                                               ++ map fDeclToDoc pubFs
+    where (pubTs, privTs) = partition isPublicTypeDecl ts
+          (pubFs, privFs) = partition isPublicFuncDecl fs
+
+          isPublicTypeDecl tDecl = case tDecl of
+                                        (CType    _ Public _ _) -> True
+                                        (CTypeSyn _ Public _ _) -> True
+                                        (CNewType _ Public _ _) -> True
+                                        _                       -> False
+
+          isPublicFuncDecl fDecl = case fDecl of
+                                        (CFunc     _ _ Public _ _) -> True
+                                        (CmtFunc _ _ _ Public _ _) -> True
+                                        _                          -> False
+
+          tDeclToDoc (CType    qn _ _ cDecls)
+              = ppQName' qn <> ppConsExports opts cDecls
+          tDeclToDoc (CTypeSyn qn _ _ _     ) = ppQName' qn
+          tDeclToDoc (CNewType qn _ _ cDecl )
+              = ppQName' qn <> ppConsExports opts [cDecl]
+
+          fDeclToDoc (CFunc     qn _ _ _ _) = ppQName' qn
+          fDeclToDoc (CmtFunc _ qn _ _ _ _) = ppQName' qn
+
+          ppQName'   = genericPPQName parsIfInfix opts
+
+-- internal use only
+ppConsExports :: Options -> [CConsDecl] -> Doc
+ppConsExports opts cDecls
+    | null pubCs  = empty
+    | null privCs = parens $ dot <> dot
+    | otherwise   = tupledSpaced $ map (ppCConsDecl opts) pubCs
+    where (pubCs, privCs)    = partition isPublicConsDecl cDecls
+          isPublicConsDecl cDecl = case cDecl of
+                                        (CCons   _ Public _) -> True
+                                        (CRecord _ Public _) -> True
+                                        _                    -> False
+
 
 --- pretty-print imports (list of module names) by prepending the word "import"
 --- to the module name.
@@ -115,9 +156,6 @@ ppCTypeDecl opts (CNewType qn _ tVars cDecl)
 
 --- pretty-print a list of constructor declarations, including the `=` sign.
 ppCConsDecls :: Options -> [CConsDecl] -> Doc
--- ppCConsDecls opts cs
---     = fillEncloseSepSpaced equals empty (space <> bar) (map (ppCConsDecl opts)
---                                                              cs)
 ppCConsDecls opts cDecls
     = group . align $ equals <+> ppCConsDecl opts (head cDecls)
                   <$> vsepMap ((bar <+>) . (ppCConsDecl opts)) (tail cDecls)
@@ -346,16 +384,11 @@ ppCExpr' p opts app@(CApply f exp)
                                   <+> ppCExpr' infAppPrec opts r
     | isTup app = let args = fromJust $ extractTuple app
                    in  tupledSpaced (map (ppCExpr opts) args)
-    |    isITE  f -- mind `f` instead of `app`
-      || isCase f = group . nest' opts $ ppCExpr' highestPrec opts f
-                                     <$> ppCExpr' prefAppPrec opts exp
-    {- Assume "simple" application -}
-    | otherwise  = parensIf (p >= prefAppPrec) . group . nest' opts
-                $ ppCExpr opts f <$> ppCExpr' prefAppPrec opts exp
+    | otherwise = parensIf (p >= prefAppPrec) . group . nest' opts
+                $ ppCExpr' infAppPrec opts f <$> ppCExpr' prefAppPrec opts exp
     where isITE    = isJust . extractITE
           isInf    = isJust . extractInfix
           isTup    = isJust . extractTuple
-          isCase e = case e of (CCase _ _ _) -> True; _ -> False
 ppCExpr' p opts (CLambda ps exp)
     = parensIf (p > tlPrec)
     $ hsep [ backslash <> fillSepMap (ppCPattern' prefAppPrec opts) ps
@@ -421,49 +454,6 @@ ppRecordFields opts = setSpaced . map (ppRecordField opts)
 --- pretty-print a record field assignment (`fieldLabel = exp`).
 ppRecordField :: Options -> CField CExpr -> Doc
 ppRecordField opts (qn, exp) = ppQName opts qn <+> equals <+> ppCExpr opts exp
-
---- extract the type and function declarations which are public and gather their
---- qualified names in a list.
-getExports :: Options -> [CTypeDecl] -> [CFuncDecl] -> [Doc]
-getExports opts ts fs = map tDeclToDoc filteredTs ++ map fDeclToDoc filteredFs
-    where tDeclToDoc (CType    qn _ _ cDecls)
-              = ppQName' qn <> ppConsExports cDecls
-          tDeclToDoc (CTypeSyn qn _ _ _     ) = ppQName' qn
-          tDeclToDoc (CNewType qn _ _ cDecl )
-              = ppQName' qn <> ppConsExports [cDecl]
-
-          fDeclToDoc (CFunc     qn _ _ _ _) = ppQName' qn
-          fDeclToDoc (CmtFunc _ qn _ _ _ _) = ppQName' qn
-
-          filteredTs = filter (\t -> case t of
-                                          (CType    _ Public _ _) -> True
-                                          (CTypeSyn _ Public _ _) -> True
-                                          (CNewType _ Public _ _) -> True
-                                          _                       -> False)
-                              ts
-          filteredFs = filter (\f -> case f of
-                                          (CFunc     _ _ Public _ _) -> True
-                                          (CmtFunc _ _ _ Public _ _) -> True
-                                          _                          -> False)
-                              fs
-          ppQName'   = genericPPQName parsIfInfix opts
-
-          ppConsExports :: [CConsDecl] -> Doc
-          ppConsExports cDecls =
-              let (publics, privates) = partition isPublicConsDecl cDecls
-              in  ppConsExports' publics privates
-
-          isPublicConsDecl :: CConsDecl -> Bool
-          isPublicConsDecl cDecl = case cDecl of
-                                        (CCons   _ Public _) -> True
-                                        (CRecord _ Public _) -> True
-                                        _                    -> False
-
-          ppConsExports' :: [CConsDecl] -> [CConsDecl] -> Doc
-          ppConsExports' pubs privs
-              | null pubs  = empty
-              | null privs = parens $ dot <> dot
-              | otherwise  = tupledSpaced $ map (ppCConsDecl opts) pubs
 
 -- pretty-print a QName qualified according to given options. Use given doc
 -- tranformer to manipulate (f.e. surround with parentheses) the QName, after
