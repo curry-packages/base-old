@@ -377,23 +377,25 @@ ppCExpr' p opts app@(CApply f exp)
           in  text "if" <+> group (align $ ppCExpr opts c
                                        <$> text "then" <+> ppCExpr opts t
                                        <$> text "else" <+> ppCExpr opts e)
+    | isTup app = let args = fromJust $ extractTuple app
+                  in  tupledSpaced (map (ppCExpr opts) args)
+    | isFinLis app = let elems = fromJust $ extractFiniteList app
+                     in  listSpaced (map (ppCExpr opts) elems)
     | isInf app = parensIf (p >= infAppPrec)
                 $ let (op, l, r) = fromJust $ extractInfix app
                   in  group . align $ ppCExpr' infAppPrec opts l
                                   <$> ppQName opts op
                                   <+> ppCExpr' infAppPrec opts r
-    | isTup app = let args = fromJust $ extractTuple app
-                   in  tupledSpaced (map (ppCExpr opts) args)
     | otherwise = parensIf (p >= prefAppPrec) . group . nest' opts
                 $ ppCExpr' infAppPrec opts f <$> ppCExpr' prefAppPrec opts exp
     where isITE    = isJust . extractITE
           isInf    = isJust . extractInfix
           isTup    = isJust . extractTuple
+          isFinLis = isJust . extractFiniteList
 ppCExpr' p opts (CLambda ps exp)
-    = parensIf (p > tlPrec)
-    $ hsep [ backslash <> fillSepMap (ppCPattern' prefAppPrec opts) ps
-                      <+> arrow
-           , ppCExpr opts exp ]
+    = parensIf (p > tlPrec) . group . nest' opts
+    $ backslash <> hsepMap (ppCPattern' prefAppPrec opts) ps
+  <$> arrow <+> ppCExpr opts exp
 ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec) . group . align
                                       $ ppLetDecl opts lDecls
                                     <$> text "in"
@@ -548,10 +550,23 @@ extractInfix e
 --- `Nothing`.
 extractTuple :: CExpr -> Maybe [CExpr]
 extractTuple = extractTuple' []
-    where extractTuple' es exp = case exp of
-                (CApply  f e)                 -> extractTuple' (e:es) f
-                (CSymbol s  ) | isTupleCons s -> Just es
-                _                             -> Nothing
+    where extractTuple' es exp
+            = case exp of
+                   (CApply  f e)                 -> extractTuple' (e:es) f
+                   (CSymbol s  ) | isTupleCons s -> Just es
+                   _                             -> Nothing
+
+--- Check if given application tree represents a finite list `[x1, ..., xn]`.
+--- If so, return the list elements in a list. Otherwise, return `Nothing`.
+extractFiniteList :: CExpr -> Maybe [CExpr]
+extractFiniteList = extractFiniteList' []
+    where extractFiniteList' es exp
+            = case exp of
+                   (CApply (CApply (CSymbol f)
+                                    e)
+                            arg) | isConsCons f -> extractFiniteList' (e:es) arg
+                   (CSymbol s)   | isListCons s -> Just $ reverse es
+                   _                            -> Nothing
 
 -- Helping functions (pretty printing)
 hsepMap :: (a -> Doc) -> [a] -> Doc
