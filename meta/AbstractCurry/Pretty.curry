@@ -20,10 +20,22 @@ data Qualification
                 --   functions and those of Prelude
     | None      -- ^ Do not qualify any function
 
+data LayoutChoice = PreferNestedLayout  -- ^ Prefer
+                                        -- a                      f a
+                                        -- + b      respectively    b
+                                        --   + ...                  c
+                                        -- if an expression does not fit the page
+                  | PreferFilledLayout  -- ^ Prefer
+                                        -- a + b                  f a b
+                                        -- + c + d  respectively  c d
+                                        -- if an expression does not fit the page
+
 data Options = Options { pageWidth        :: Int
                        , indentationWidth :: Int
                        , qualification    :: Qualification
-                       , moduleName       :: String }
+                       , moduleName       :: String
+                       , showLocalSigs    :: Bool -- debugging flag (show signature of local functions or not).
+                       , layoutChoice     :: LayoutChoice }
 
 options :: Int              -- ^ page width
         -> Int              -- ^ indentation width
@@ -33,7 +45,9 @@ options :: Int              -- ^ page width
 options pw iw q m = Options { pageWidth        = pw
                             , indentationWidth = iw
                             , qualification    = q
-                            , moduleName       = m }
+                            , moduleName       = m
+                            , showLocalSigs    = False
+                            , layoutChoice     = PreferNestedLayout }
 
 defaultOptions :: Options
 defaultOptions = options 80 4 Imports ""
@@ -59,12 +73,12 @@ printCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 --- the module name given by options with the name encapsulated in CurryProg.
 ppCurryProg :: Options -> CurryProg -> Doc
 ppCurryProg opts (CurryProg m ms ts fs os)
-    = group (nest' opts' $ text "module" <+> ppMName m
-                       <$> ppExports opts' ts fs <+> where_)
-  $+$ ppImports opts' ms
-  $+$ vcatMap (ppCOpDecl opts') os
-  $+$ vcatMap (ppCTypeDecl opts') ts
-  $+$ vsepBlankMap (ppCFuncDecl opts') fs
+     = ( group . nest' opts'
+       $ text "module" <+> ppMName m $$ ppExports opts' ts fs) </> where_
+ <$+$> ppImports opts' ms
+ <$+$> vcatMap (ppCOpDecl opts') os
+ <$+$> vcatMap (ppCTypeDecl opts') ts
+ <$+$> vsepBlankMap (ppCFuncDecl opts') fs
     where opts' = opts { moduleName = m }
 
 --- pretty-print a module name (just a string).
@@ -104,19 +118,25 @@ ppExports opts ts fs
           fDeclToDoc (CFunc     qn _ _ _ _) = ppQName' qn
           fDeclToDoc (CmtFunc _ qn _ _ _ _) = ppQName' qn
 
-          ppQName'   = genericPPQName parsIfInfix opts
+          ppQName' = genericPPQName parsIfInfix opts
 
 -- internal use only
 ppConsExports :: Options -> [CConsDecl] -> Doc
 ppConsExports opts cDecls
     | null pubCs  = empty
     | null privCs = parens $ dot <> dot
-    | otherwise   = tupledSpaced $ map (ppCConsDecl opts) pubCs
+    | otherwise   = tupledSpaced $ map cDeclToDoc pubCs
     where (pubCs, privCs)    = partition isPublicConsDecl cDecls
-          isPublicConsDecl cDecl = case cDecl of
-                                        (CCons   _ Public _) -> True
-                                        (CRecord _ Public _) -> True
-                                        _                    -> False
+          isPublicConsDecl cDecl
+              = case cDecl of
+                     (CCons   _ Public _) -> True
+                     (CRecord _ Public _) -> True
+                     _                    -> False
+
+          cDeclToDoc (CCons   qn _ _) = ppQName' qn
+          cDeclToDoc (CRecord qn _ _) = ppQName' qn
+
+          ppQName' = genericPPQName parsIfInfix opts
 
 
 --- pretty-print imports (list of module names) by prepending the word "import"
@@ -157,13 +177,13 @@ ppCTypeDecl opts (CNewType qn _ tVars cDecl)
 --- pretty-print a list of constructor declarations, including the `=` sign.
 ppCConsDecls :: Options -> [CConsDecl] -> Doc
 ppCConsDecls opts cDecls
-    = group . align $ equals <+> ppCConsDecl opts (head cDecls)
-                  <$> vsepMap ((bar <+>) . (ppCConsDecl opts)) (tail cDecls)
+    = align . sep $ [equals <+> ppCConsDecl opts (head cDecls)]
+                    ++ map ((bar <+>) . (ppCConsDecl opts)) (tail cDecls)
 
 --- pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
 ppCConsDecl opts (CCons   qn _ tExps ) = ppName qn
-                                    <++> hsepMap (ppCTypeExpr opts) tExps
+                                    <++> hsepMap (ppCTypeExpr' 2 opts) tExps
 ppCConsDecl opts (CRecord qn _ fDecls) = ppName qn
                                      <+> setSpaced (map (ppCFieldDecl opts)
                                                         fDecls)
@@ -176,31 +196,45 @@ ppCFieldDecl opts (CField qn _ tExp) = hsep [ ppName qn
 
 --- pretty-print a function declaration.
 ppCFuncDecl :: Options -> CFuncDecl -> Doc
-ppCFuncDecl opts (CFunc qn _ _ tExp rs)
-    = ppCFuncSignature opts qn tExp <$$> ppCRules opts qn rs
+ppCFuncDecl opts fDecl@(CFunc qn _ _ tExp _)
+--     = ppCFuncSignature opts qn tExp <$!$> ppCFuncDeclWithoutSig opts fDecl
+    = ppCFuncSignature opts qn tExp $$ ppCFuncDeclWithoutSig opts fDecl
 ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
-    = string cmt $$ ppCFuncDecl opts (CFunc qn a v tExp rs)
+    = string cmt <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
+
+--- pretty-print a function declaration without signature.
+ppCFuncDeclWithoutSig :: Options -> CFuncDecl -> Doc
+ppCFuncDeclWithoutSig opts (CFunc qn _ _ _ rs)
+    = ppCRules opts qn rs
+ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs)
+    = string cmt <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
-ppCFuncSignature opts qn tExp = genericPPName parsIfInfix qn
-                            <+> align (doubleColon <+> ppCTypeExpr opts tExp)
+ppCFuncSignature opts qn tExp = group . nest' opts
+                              $ genericPPName parsIfInfix qn
+                             $$ align (doubleColon <+> ppCTypeExpr opts tExp)
 
 --- pretty-print a type expression.
 ppCTypeExpr :: Options -> CTypeExpr -> Doc
-ppCTypeExpr opts (CTVar     tvar)        = ppCTVarIName opts tvar
-ppCTypeExpr opts (CFuncType tExp1 tExp2) =
-    group $ (case tExp1 of
-                  (CFuncType _ _) -> parens
-                  _               -> id    ) (ppCTypeExpr opts tExp1)
-        <$> arrow <+> ppCTypeExpr opts tExp2
-ppCTypeExpr opts (CTCons qn tExps)
-    | null tExps     = pqn
-    | isListCons qn  = brackets $ head expDocs -- this relies on expDocs being a singleton
-    | isTupleCons qn = tupledSpaced expDocs
-    | otherwise      = pqn <+> hsep expDocs
-    where pqn     = ppQName opts qn
-          expDocs = map (ppCTypeExpr opts) tExps
+ppCTypeExpr = ppCTypeExpr' tlPrec
+
+-- Internal use only: Pretty-print a type expression and make use of supplied
+-- precedence context. The supplied number represents the precedence of the
+-- enclosing expression. Higher values mean more precedence, so if the nested
+-- expression has lower precedence than the enclosing expression, the nested one
+-- has to be enclosed in parentheses.
+ppCTypeExpr' :: Int -> Options -> CTypeExpr -> Doc
+ppCTypeExpr' _ opts (CTVar     tvar) = ppCTVarIName opts tvar
+ppCTypeExpr' p opts (CFuncType tExp1 tExp2)
+    = parensIf (p > tlPrec)
+    $ sep [ ppCTypeExpr' 1 opts tExp1, rarrow <+> ppCTypeExpr opts tExp2]
+ppCTypeExpr' p opts (CTCons qn tExps)
+    | null tExps     = ppQName opts qn
+    | isListCons qn  = brackets . (ppCTypeExpr opts) . head $ tExps -- assume singleton
+    | isTupleCons qn = tupledSpaced $ map (ppCTypeExpr opts) tExps
+    | otherwise      = parensIf (p >= 2)
+                     $ ppQName opts qn <+> hsepMap (ppCTypeExpr' 2 opts) tExps
 
 --- pretty-print a list of type variables horizontally separating them by `space`.
 ppCTVarINames :: Options -> [CTVarIName] -> Doc
@@ -222,7 +256,8 @@ ppCRules opts qn rs = case rs of
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
 ppCRule opts qn (CRule ps rhs)
-    = group (nest' opts (hsep (positionIdent ppName qn pDocs) <$> pRhs))
+    = (group . nest' opts $ hsep (positionIdent ppName qn pDocs)
+                         $$ pRhs)
    $$ if null lDecls
          then empty
          else indent' opts $ ppWhereDecl opts lDecls
@@ -271,8 +306,9 @@ ppCPComb p opts qn ps =
          {- Assume tupled pattern and therefore avoid additional parenthesis. -}
          (x:_) | x == lparen       -> hsep pDocs
          {- Assume prefix application. -}
-         _                         -> parensIf (p >= prefAppPrec) . group . nest' opts
-                                    $ head pDocs <$> (align $ vsep $ tail pDocs)
+         _                         -> parensIf (p >= prefAppPrec)
+                                    . group . nest' opts
+                                    $ head pDocs $$ (align .sep $ tail pDocs)
     where pDocs = positionIdent (ppQName opts) qn
                 $ map (ppCPattern' p' opts) ps
           p'    = if isInfixId qn
@@ -305,7 +341,7 @@ ppCFieldPattern opts (qn, p) = ppQName opts qn <+> equals <+> ppCPattern opts p
 --- printed too, further indented.
 ppCRhsWithLocalDecls :: Options -> Doc -> CRhs -> Doc
 ppCRhsWithLocalDecls opts d (CSimpleRhs  exp lDecls)
-    = group . nest' opts $ d <$> ppCExpr opts exp
+    = (group . nest' opts $ d $$ ppCExpr opts exp)
    $$ if null lDecls
          then empty
          else indent' opts (ppWhereDecl opts lDecls)
@@ -330,8 +366,9 @@ ppCRhsWithoutLocalDecls opts d (CGuardedRhs conds lDecls)
 --- one of `=`, `->`.
 ppCGuardedRhs :: Options -> Doc -> [(CExpr, CExpr)] -> Doc
 ppCGuardedRhs opts d = align . vvsepMap ppCGuard
-    where ppCGuard (e1, e2) = bar <+> ppCExpr opts e1
-                                  <+> group (nest' opts (d <$> ppCExpr opts e2))
+    where ppCGuard (e1, e2) = bar <+> (group . nest' opts
+                                     $ ppCExpr opts e1
+                                    $$ d <+> ppCExpr opts e2)
 
 --- pretty-print local declarations . If the second argument is `text "where"`,
 --- pretty-print a `where` block. If the second argument is `text "let"`,
@@ -341,7 +378,10 @@ ppCLocalDecls opts d = (d <+>) . align . vvsepMap (ppCLocalDecl opts)
 
 --- pretty-print local declarations (the part that follows the `where` keyword).
 ppCLocalDecl :: Options -> CLocalDecl -> Doc
-ppCLocalDecl opts (CLocalFunc fDecl) = ppCFuncDecl opts fDecl
+ppCLocalDecl opts (CLocalFunc fDecl)
+    = if showLocalSigs opts
+         then ppCFuncDecl opts fDecl
+         else ppCFuncDeclWithoutSig opts fDecl
 ppCLocalDecl opts (CLocalPat  p rhs)
     = hsep [ ppCPattern opts p, ppCRhsWithLocalDecls opts equals rhs ]
 ppCLocalDecl opts (CLocalVars pvars)
@@ -349,7 +389,7 @@ ppCLocalDecl opts (CLocalVars pvars)
 
 --- pretty-print a `where` block, where `where` is above following declarations.
 ppWhereDecl :: Options -> [CLocalDecl] -> Doc
-ppWhereDecl opts = (where_ <$>)
+ppWhereDecl opts = (where_ $$)
                  . indent' opts
                  . vvsepMap (ppCLocalDecl opts)
 
@@ -375,30 +415,46 @@ ppCExpr' p opts app@(CApply f exp)
         = parensIf (p > tlPrec)
         $ let (c, t, e) = fromJust $ extractITE app
           in  text "if" <+> group (align $ ppCExpr opts c
-                                       <$> text "then" <+> ppCExpr opts t
-                                       <$> text "else" <+> ppCExpr opts e)
+                                        $$ text "then" <+> ppCExpr opts t
+                                        $$ text "else" <+> ppCExpr opts e)
     | isTup app = let args = fromJust $ extractTuple app
                   in  tupledSpaced (map (ppCExpr opts) args)
     | isFinLis app = let elems = fromJust $ extractFiniteList app
                      in  listSpaced (map (ppCExpr opts) elems)
-    | isInf app = parensIf (p >= infAppPrec)
-                $ let (op, l, r) = fromJust $ extractInfix app
-                  in  group . align $ ppCExpr' infAppPrec opts l
-                                  <$> ppQName opts op
-                                  <+> ppCExpr' infAppPrec opts r
-    | otherwise = parensIf (p >= prefAppPrec) . group . nest' opts
-                $ ppCExpr' infAppPrec opts f <$> ppCExpr' prefAppPrec opts exp
+    | isInf app
+        = parensIf (p >= infAppPrec)
+        $ let (op, l, r) = fromJust $ extractInfix app
+--                   in  group . align . nest 1 $ ppCExpr' infAppPrec opts l
+--                                    $$ ppQName opts op
+--                                   <+> ppCExpr' infAppPrec opts r
+          in  (case layoutChoice opts of
+                    PreferNestedLayout -> ppNestedWay
+                    PreferFilledLayout -> ppFilledWay)
+                        (ppCExpr' infAppPrec opts l)
+                        (ppQName opts op)
+                        (ppCExpr' infAppPrec opts r)
+--     | otherwise = parensIf (p >= prefAppPrec) . group . align . nest' opts
+--                 $ ppCExpr' infAppPrec opts f $$ ppCExpr' prefAppPrec opts exp
+    | otherwise = parensIf (p >= prefAppPrec)
+                $ (case layoutChoice opts of
+                        PreferNestedLayout -> ppNestedWay
+                        PreferFilledLayout -> ppFilledWay)
+                            (ppCExpr' infAppPrec opts f)
+                            empty
+                            (ppCExpr' prefAppPrec opts exp)
     where isITE    = isJust . extractITE
           isInf    = isJust . extractInfix
           isTup    = isJust . extractTuple
           isFinLis = isJust . extractFiniteList
+          ppNestedWay l sep r = group . align . nest 1 $ l $$ (sep <++> r)
+          ppFilledWay l sep r = nest 1 $ fillSep [l, sep, r]
 ppCExpr' p opts (CLambda ps exp)
     = parensIf (p > tlPrec) . group . nest' opts
     $ backslash <> hsepMap (ppCPattern' prefAppPrec opts) ps
-  <$> arrow <+> ppCExpr opts exp
+   $$ rarrow <+> ppCExpr opts exp
 ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec) . group . align
                                       $ ppLetDecl opts lDecls
-                                    <$> text "in"
+                                     $$ text "in"
                                     <+> ppCExpr opts exp
 ppCExpr' p opts (CDoExpr stms) = parensIf (p > tlPrec)
                                $ text "do"
@@ -412,7 +468,7 @@ ppCExpr' p opts (CCase cType exp cases)
     = parensIf (p > tlPrec) . group $ nest' opts ( ppCCaseType cType
                                                <+> ppCExpr opts exp
                                                <+> text "of"
-                                               <$> ppCases opts cases)
+                                                $$ ppCases opts cases)
 ppCExpr' p opts (CTyped exp tExp) = parensIf (p > tlPrec)
                                   $ ppCExpr opts exp
                                 <+> doubleColon
@@ -441,7 +497,7 @@ ppCases opts = align . vvsepMap (ppCase opts)
 
 --- pretty-print a case expression.
 ppCase :: Options -> (CPattern, CRhs) -> Doc
-ppCase opts (p, rhs) = ppCPattern opts p <+> ppCRhsWithLocalDecls opts arrow rhs
+ppCase opts (p, rhs) = ppCPattern opts p <+> ppCRhsWithLocalDecls opts rarrow rhs
 
 --- pretty-print record field assignments like this:
 ---     { lab1 = exp1, ..., labn expn }
