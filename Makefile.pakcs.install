@@ -1,7 +1,7 @@
 # directory containing the repository library files:
 LIBTRUNKDIR=$(ROOT)/lib-trunk
 # specific PAKCS libraries:
-PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry CLPFD.curry CLPR.curry \
+PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry CLPFD.curry CLPR.curry CLP/FD.curry \
 	        Database.curry Dynamic.curry Findall.curry \
 		GlobalVariable.curry KeyDB.curry KeyDatabase.curry \
 		PlProfileData.curry Ports.curry 
@@ -16,6 +16,7 @@ CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/meta
+	mkdir -p $(LIBDIR)/CLP
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
@@ -27,6 +28,7 @@ sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp $(LIBTRUNKDIR)/*.prim_c2p .
+	#cp $(LIBTRUNKDIR)/CLP/*.prim_c2p CLP
 
 Prelude.curry: $(LIBTRUNKDIR)/Prelude.curry.$(CURRYSYSTEM)
 	cp $< $@
@@ -47,6 +49,9 @@ CLPFD.curry: $(LIBTRUNKDIR)/CLPFD.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 CLPR.curry: $(LIBTRUNKDIR)/CLPR.curry.$(CURRYSYSTEM)
+	cp $< $@
+
+CLP/FD.curry: $(LIBTRUNKDIR)/CLP/FD.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 Database.curry: $(LIBTRUNKDIR)/Database.curry.$(CURRYSYSTEM)
