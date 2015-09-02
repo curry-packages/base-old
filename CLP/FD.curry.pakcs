@@ -52,7 +52,7 @@ domain min max = genFDVars min max
   genFDVars :: Int -> Int -> [FDExpr]
   genFDVars l u = FDVar l u _ : genFDVars l u
 
--- Represent an integer value as an FD expression.
+--- Represent an integer value as an FD expression.
 fd :: Int -> FDExpr
 fd v = FDInt v
 
@@ -78,19 +78,19 @@ x /=# y = FDRelCon Neq x y
 
 --- "Less than" constraint on FD expressions.
 (<#) :: FDExpr -> FDExpr -> FDConstr
-x <# y = FDRelCon LT x y
+x <# y = FDRelCon Lt x y
 
 --- "Less than or equal" constraint on FD expressions.
 (<=#) :: FDExpr -> FDExpr -> FDConstr
-x <=# y = FDRelCon LEQ x y
+x <=# y = FDRelCon Leq x y
 
 --- "Greater than" constraint on FD expressions.
 (>#) :: FDExpr -> FDExpr -> FDConstr
-x ># y = FDRelCon GT x y
+x ># y = FDRelCon Gt x y
 
 --- "Greater than or equal" constraint on FD expressions.
 (>=#) :: FDExpr -> FDExpr -> FDConstr
-x >=# y = FDRelCon GEQ x y
+x >=# y = FDRelCon Geq x y
 
 --- The always satisfied FD constraint.
 true :: FDConstr
@@ -112,7 +112,13 @@ allC c = andC . map c
 -- Complex constraints.
 
 --- Possible relations between FD values.
-data FDRel = Equ | Neq | LT | LEQ | GT | GEQ
+--- @cons Equ - Equal
+--- @cons Neq - Not equal
+--- @cons Lt  - Less than
+--- @cons Leq - Less than or equal
+--- @cons Gt  - Greater than
+--- @cons Geq - Greater than or equal
+data FDRel = Equ | Neq | Lt | Leq | Gt | Geq
 
 --- "All different" constraint on FD variables.
 --- @param xs - list of FD variables
@@ -125,17 +131,18 @@ allDifferent vs = FDAllDiff vs
 sum :: [FDExpr] -> FDRel -> FDExpr -> FDConstr
 sum vs rel v = FDSum vs rel v
 
---- (scalarProduct cs vs relop v) is satisfied if (sum (cs*vs) relop v)
+--- `(scalarProduct cs vs relop v)` is satisfied if `(sum (cs*vs) relop v)`
 --- is satisfied.
 --- The first argument must be a list of integers. The other arguments are as
---- in <code>sum</code>.
+--- in 'sum'.
 scalarProduct :: [FDExpr] -> [FDExpr] -> FDRel -> FDExpr -> FDConstr
 scalarProduct cs vs rel v = FDScalar cs vs rel v
 
---- (count v vs relop c) is satisfied if (n relop c), where n is the number of
---- elements in the list of FD variables vs that are equal to v, is satisfied.
+--- `(count v vs relop c)` is satisfied if `(n relop c)`,
+--- where `n` is the number of elements in the
+--- list of FD variables `vs` that are equal to `v`, is satisfied.
 --- The first argument must be an integer. The other arguments are as
---- in <code>sum</code>.
+--- in 'sum'.
 count :: FDExpr -> [FDExpr] -> FDRel -> FDExpr -> FDConstr
 count v vs rel c = FDCount v vs rel c
 
@@ -283,10 +290,10 @@ trE (FDBinExp rel fde1 fde2) = (trFDOp rel) (trE fde1) (trE fde2)
 trFDRel :: FDRel -> Int -> Int -> Success
 trFDRel Equ = (C.=#)
 trFDRel Neq = (C./=#)
-trFDRel LT  = (C.<#)
-trFDRel LEQ = (C.<=#)
-trFDRel GT  = (C.>#)
-trFDRel GEQ = (C.>=#)
+trFDRel Lt  = (C.<#)
+trFDRel Leq = (C.<=#)
+trFDRel Gt  = (C.>#)
+trFDRel Geq = (C.>=#)
 
 trFDOp :: FDOp -> Int -> Int -> Int
 trFDOp Plus  = (C.+#)
