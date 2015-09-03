@@ -9,7 +9,7 @@
 --- in text terminals (see https://en.wikipedia.org/wiki/ANSI_escape_code)
 ---
 --- @author Sebastian Fischer, Björn Peemöller, Jan Tikovsky
---- @version August 2015
+--- @version September 2015
 --- @category general
 ------------------------------------------------------------------------------
 
@@ -55,10 +55,9 @@ module Pretty (
   -- colorisation combinators
   black, red, green, yellow, blue, magenta, cyan, white,
   bgBlack, bgRed, bgGreen, bgYellow, bgBlue, bgMagenta, bgCyan, bgWhite
-  , inspect
   ) where
 
-import Dequeue as Q
+import qualified Dequeue as Q (Queue, cons, empty, matchHead, matchLast)
 
 infixl 5 $$, <$$>, </>,  <//>, <$!$>, <$+$>
 infixl 6 <>, <+>
@@ -126,14 +125,14 @@ linebreak :: Doc
 linebreak = linesep ""
 
 --- The document `softline` behaves like `space` if the resulting output
---- fits the page, otherwise it behaves like `line`.<br><br>
+--- fits the page, otherwise it behaves like `line`.
 --- `softline  = group line`
 --- @return a document which behaves like `space` or `line`
 softline :: Doc
 softline = group line
 
 --- The document `softbreak` behaves like `(text "")` if the resulting output
---- fits the page, otherwise it behaves like `line`.<br><br>
+--- fits the page, otherwise it behaves like `line`.
 --- `softbreak  = group linebreak`
 --- @return a document which behaves like `(text "")` or `line`
 softbreak :: Doc
@@ -379,7 +378,7 @@ vsepBlank = compose (<$+$>)
 
 --- The document `(fillSep xs)` concatenates documents `xs` horizontally with
 --- `(</>)` as long as its fits the page, than inserts a
---- `line` and continues doing that for all documents in `xs`.<br><br>
+--- `line` and continues doing that for all documents in `xs`.
 --- `fillSep xs  = foldr (</>) empty xs`
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents
@@ -388,7 +387,7 @@ fillSep = compose (</>)
 
 --- The document `(sep xs)` concatenates all documents `xs` either horizontally
 --- with `(<+>)`, if it fits the page, or vertically
---- with `($$)`.<br><br>
+--- with `($$)`.
 --- `sep xs  = group (vsep xs)`
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents, if it fits the page,
@@ -414,7 +413,6 @@ vcat = compose (<$$>)
 --- The document `(fillCat xs)` concatenates documents `xs` horizontally
 --- with `(<//>)` as long as its fits the page, than inserts a `linebreak`
 --- and continues doing that for all documents in `xs`.
---- <br><br>
 --- `fillCat xs  = foldr (<//>) empty xs`
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents
@@ -423,7 +421,7 @@ fillCat = compose (<//>)
 
 --- The document `(cat xs)` concatenates all documents `xs` either horizontally
 --- with `(<>)`, if it fits the page, or vertically with
---- `(<$$>)`.<br><br>
+--- `(<$$>)`.
 --- `cat xs  = group (vcat xs)`
 --- @param xs - a list of documents
 --- @return horizontal concatenation of documents
@@ -460,7 +458,7 @@ punctuate d ds = go ds
   go (x:xs@(_:_)) = (x <> d) : go xs
 
 --- The document `(encloseSep l r s xs)` concatenates the documents `xs`
---- seperated by `s` and encloses the resulting document by `l` and `r`.<br>
+--- seperated by `s` and encloses the resulting document by `l` and `r`.
 --- The documents are rendered horizontally if that fits the page. Otherwise
 --- they are aligned vertically. All seperators are put in front of the
 --- elements.
@@ -486,8 +484,8 @@ punctuate d ds = go ds
 --- @param xs - a list of documents
 --- @return concatenation of l, xs (with s in between) and r
 encloseSep :: Doc -> Doc -> Doc -> [Doc] -> Doc
-encloseSep l r _ [] = l <> r
-encloseSep l r s (d:ds) = align (enclose l r (cat (d:map (s<>) ds)))
+encloseSep l r _ []     = l <> r
+encloseSep l r s (d:ds) = align (enclose l r (cat (d : map (s <>) ds)))
 
 --- The document `(hEncloseSep l r s xs)` concatenates the documents `xs`
 --- seperated by `s` and encloses the resulting document by `l` and `r`.
@@ -499,8 +497,8 @@ encloseSep l r s (d:ds) = align (enclose l r (cat (d:map (s<>) ds)))
 --- @param xs - a list of documents
 --- @return concatenation of l, xs (with s in between) and r
 hEncloseSep :: Doc -> Doc -> Doc -> [Doc] -> Doc
-hEncloseSep l r _ [] = l <> r
-hEncloseSep l r s (d:ds) = align (enclose l r (hcat (d:map (s<>) ds)))
+hEncloseSep l r _ []     = l <> r
+hEncloseSep l r s (d:ds) = align (enclose l r (hcat (d : map (s <>) ds)))
 
 --- The document `(fillEncloseSep l r s xs)` concatenates the documents `xs`
 --- seperated by `s` and encloses the resulting document by `l` and `r`.
@@ -514,14 +512,8 @@ hEncloseSep l r s (d:ds) = align (enclose l r (hcat (d:map (s<>) ds)))
 --- @param xs - a list of documents
 --- @return concatenation of l, xs (with s in between) and r
 fillEncloseSep :: Doc -> Doc -> Doc -> [Doc] -> Doc
-fillEncloseSep l r _ [] = l <> r
-fillEncloseSep l r s (d:ds)
-  = align (enclose l r (hcat (d:withSoftBreaks (map (s<>) ds))))
- where
-  withSoftBreaks []  = []
-  withSoftBreaks [x] = [group (linebreak <> x)]
-  withSoftBreaks (x:xs@(_:_))
-    = (group (linebreak <> (group (x <> linebreak))) : withSoftBreaks xs)
+fillEncloseSep l r _ []     = l <> r
+fillEncloseSep l r s (d:ds) = align (enclose l r (fillCat (d : map (s <>) ds)))
 
 --- The document `(fillEncloseSepSpaced l r s xs)` concatenates the documents
 --- `xs` seperated by `s` and encloses the resulting document by `l` and `r`.
@@ -593,7 +585,7 @@ semiBracesSpaced :: [Doc] -> Doc
 semiBracesSpaced = fillEncloseSepSpaced lbrace rbrace semi
 
 --- The document `(enclose l r x)` encloses document `x` between
---- documents `l` and `r` using `(<>)`.<br><br>
+--- documents `l` and `r` using `(<>)`.
 --- `enclose l r x   = l <> x <> r`
 --- @param l - the left document
 --- @param r - the right document
@@ -1371,7 +1363,7 @@ oneGroup (CloseFormat  ts) w p e outGrpPre = oneGroup ts w p e
 -- In both cases the function for the innermost group is merged with the
 -- function for the next inner group
 multiGroup :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix
-           -> Queue (StartPosition, OutGroupPrefix)
+           -> Q.Queue (StartPosition, OutGroupPrefix)
            -> StartPosition -> OutGroupPrefix -> Out
 multiGroup EOD              _ _ _ _              _  _  _
   = error "Pretty.multiGroup: EOD"
@@ -1388,7 +1380,7 @@ multiGroup (LineBreak Nothing ts) w p _ outGrpPreOuter qs _ outGrpPreInner
   = pruneAll outGrpPreOuter qs
  where
   pruneAll outGrpPreOuter' qs' = outGrpPreOuter' False (\r ->
-              (case matchLast qs' of
+              (case Q.matchLast qs' of
                 Nothing -> outGrpPreInner False (outLine (noGroup ts w p))
                 Just ((_,outGrpPre),qss) -> pruneAll outGrpPre qss)
                     r)
@@ -1403,9 +1395,9 @@ multiGroup (LineBreak (Just s) ts) w p e outGrpPreOuter qs si outGrpPreInner =
   outLine h cont r ms@(m:_) fs =
     if h then s ++ cont (r-l) ms fs else '\n': addSpaces m ts ++ cont (w-m) ms fs
 multiGroup (OpenGroup   ts) w p e outGrpPreOuter qs si outGrpPreInner =
-  multiGroup ts w p e outGrpPreOuter (cons (si,outGrpPreInner) qs) p (\_ cont -> cont)
+  multiGroup ts w p e outGrpPreOuter (Q.cons (si,outGrpPreInner) qs) p (\_ cont -> cont)
 multiGroup (CloseGroup  ts) w p e outGrpPreOuter qs si outGrpPreInner =
-  case matchHead qs of
+  case Q.matchHead qs of
     Nothing -> oneGroup ts w p e
                  (\h cont -> outGrpPreOuter h
                             (\ri -> outGrpPreInner (p<=si+ri) cont ri))
@@ -1444,12 +1436,12 @@ pruneOne ts w p e outGrpPre | p <= e    = oneGroup ts w p e outGrpPre
 -- applies the corresponding `group output function` (the last queue entry) and
 -- continues checking whether the next outermost group fits
 pruneMulti :: Tokens -> Width -> Position -> EndPosition -> OutGroupPrefix
-              -> Queue (StartPosition, OutGroupPrefix)
+              -> Q.Queue (StartPosition, OutGroupPrefix)
               -> StartPosition -> OutGroupPrefix -> Out
 pruneMulti ts w p e outGrpPreOuter qs si outGrpPreInner
   | p <= e    = multiGroup ts w p e outGrpPreOuter qs si outGrpPreInner
   | otherwise = outGrpPreOuter False (\r ->
-                   (case matchLast qs of
+                   (case Q.matchLast qs of
                       Nothing -> pruneOne ts w p (si+r) outGrpPreInner
                       Just ((s,outGrpPre),qs') ->
                         pruneMulti ts w p (s+r) outGrpPre qs' si outGrpPreInner)
