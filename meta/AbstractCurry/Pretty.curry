@@ -160,19 +160,14 @@ ppCFixity CInfixrOp = text "infixr"
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
 ppCTypeDecl opts (CType qn _ tVars cDecls)
-    = text "data" <+> ppName qn
- <++> ppCTVarINames opts tVars
- <++> if null cDecls
-         then empty
-         else ppCConsDecls opts cDecls
+    = hsep [ text "data", ppName qn, ppCTVarINames opts tVars
+           , if null cDecls then empty else ppCConsDecls opts cDecls]
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
-    = text "type" <+> ppName qn
- <++> ppCTVarINames opts tVars
- <++> equals <+> ppCTypeExpr opts tExp
+    = hsep [ text "type", ppName qn, ppCTVarINames opts tVars
+           , align $ equals <+> ppCTypeExpr opts tExp]
 ppCTypeDecl opts (CNewType qn _ tVars cDecl)
-    = text "newtype" <+> ppName qn
- <++> ppCTVarINames opts tVars
- <++> equals <+> ppCConsDecl opts cDecl
+    = hsep [ text "newtype", ppName qn, ppCTVarINames opts tVars, equals
+           , ppCConsDecl opts cDecl]
 
 --- pretty-print a list of constructor declarations, including the `=` sign.
 ppCConsDecls :: Options -> [CConsDecl] -> Doc
@@ -197,8 +192,7 @@ ppCFieldDecl opts (CField qn _ tExp) = hsep [ ppName qn
 --- pretty-print a function declaration.
 ppCFuncDecl :: Options -> CFuncDecl -> Doc
 ppCFuncDecl opts fDecl@(CFunc qn _ _ tExp _)
---     = ppCFuncSignature opts qn tExp <$!$> ppCFuncDeclWithoutSig opts fDecl
-    = ppCFuncSignature opts qn tExp $$ ppCFuncDeclWithoutSig opts fDecl
+    = ppCFuncSignature opts qn tExp <$!$> ppCFuncDeclWithoutSig opts fDecl
 ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
     = string cmt <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
 
@@ -211,9 +205,10 @@ ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
-ppCFuncSignature opts qn tExp = group . nest' opts
-                              $ genericPPName parsIfInfix qn
-                             $$ align (doubleColon <+> ppCTypeExpr opts tExp)
+ppCFuncSignature opts qn tExp
+    = nest' opts
+    $ sep [ genericPPName parsIfInfix qn
+          , align (doubleColon <+> ppCTypeExpr opts tExp)]
 
 --- pretty-print a type expression.
 ppCTypeExpr :: Options -> CTypeExpr -> Doc
@@ -414,9 +409,9 @@ ppCExpr' p opts app@(CApply f exp)
     | isITE app
         = parensIf (p > tlPrec)
         $ let (c, t, e) = fromJust $ extractITE app
-          in  text "if" <+> group (align $ ppCExpr opts c
-                                        $$ text "then" <+> ppCExpr opts t
-                                        $$ text "else" <+> ppCExpr opts e)
+          in  text "if" <+> (align $ sep [ ppCExpr opts c
+                                         , text "then" <+> ppCExpr opts t
+                                         , text "else" <+> ppCExpr opts e])
     | isTup app = let args = fromJust $ extractTuple app
                   in  tupledSpaced (map (ppCExpr opts) args)
     | isFinLis app = let elems = fromJust $ extractFiniteList app
@@ -424,17 +419,12 @@ ppCExpr' p opts app@(CApply f exp)
     | isInf app
         = parensIf (p >= infAppPrec)
         $ let (op, l, r) = fromJust $ extractInfix app
---                   in  group . align . nest 1 $ ppCExpr' infAppPrec opts l
---                                    $$ ppQName opts op
---                                   <+> ppCExpr' infAppPrec opts r
           in  (case layoutChoice opts of
                     PreferNestedLayout -> ppNestedWay
                     PreferFilledLayout -> ppFilledWay)
                         (ppCExpr' infAppPrec opts l)
                         (ppQName opts op)
                         (ppCExpr' infAppPrec opts r)
---     | otherwise = parensIf (p >= prefAppPrec) . group . align . nest' opts
---                 $ ppCExpr' infAppPrec opts f $$ ppCExpr' prefAppPrec opts exp
     | otherwise = parensIf (p >= prefAppPrec)
                 $ (case layoutChoice opts of
                         PreferNestedLayout -> ppNestedWay
@@ -446,12 +436,14 @@ ppCExpr' p opts app@(CApply f exp)
           isInf    = isJust . extractInfix
           isTup    = isJust . extractTuple
           isFinLis = isJust . extractFiniteList
-          ppNestedWay l sep r = group . align . nest 1 $ l $$ (sep <++> r)
-          ppFilledWay l sep r = nest 1 $ fillSep [l, sep, r]
+--           ppNestedWay l sep r = group . align . nest 1 $ l $$ (sep <++> r)
+          ppNestedWay l sepa r = nest 1 $ sep [l, sepa <++> r]
+          ppFilledWay l sepa r = nest 1 $ fillSep [l, sepa, r]
 ppCExpr' p opts (CLambda ps exp)
-    = parensIf (p > tlPrec) . group . nest' opts
-    $ backslash <> hsepMap (ppCPattern' prefAppPrec opts) ps
-   $$ rarrow <+> ppCExpr opts exp
+    = parensIf (p > tlPrec) . nest' opts
+    $ sep [ backslash <> hsepMap (ppCPattern' prefAppPrec opts) ps
+                     <+> rarrow
+          , ppCExpr opts exp]
 ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec) . group . align
                                       $ ppLetDecl opts lDecls
                                      $$ text "in"
