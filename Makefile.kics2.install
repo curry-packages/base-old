@@ -11,6 +11,7 @@ CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/meta
+	mkdir -p $(LIBDIR)/AbstractCurry
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
@@ -23,10 +24,13 @@ sources:
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp -p $(LIBTRUNKDIR)/*.hs .
 
-%.curry: $(LIBTRUNKDIR)/%.curry
+meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
 	 cp $< $@
 
-meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
+AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
+	cp $< $@
+
+%.curry: $(LIBTRUNKDIR)/%.curry
 	 cp $< $@
 
 index.html: $(LIBTRUNKDIR)/index.html.$(CURRYSYSTEM)

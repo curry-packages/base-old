@@ -1,5 +1,5 @@
-# precompile all modules of the library
-# to avoid recompilation when they are used:
+# Makefile for various compilations of the system libraries,
+# in particular, to generate the documentation
 
 CYMAKEPARAMS = --extended --no-verb --no-warn --no-overlap-warn -i. -imeta
 
@@ -14,22 +14,18 @@ TEXDOCDIR := $(DOCDIR)/src/lib
 # the currydoc program:
 CURRYDOC=$(ROOT)/bin/currydoc
 
-# replacement stuff
-# prefix "pre" "dir/file.ext" = "dir/prefile.ext"
-prefix     = $(dir $(2))$(1)$(notdir $(2))
-
 # Curry library files
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry CLP/*.curry))
+LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry AbstractCurry/*.curry CLP/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(subst meta/,, $(basename $(LIB_CURRY))))
 # lib names included in library documentation page (without directory prefix)
 LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(LIB_NAMES))
-# generated files:
+# Generated files:
 LIB_FCY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.fcy), $(subst .curry/meta,meta/.curry,$(lib)))
 LIB_ACY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.acy), $(subst .curry/meta,meta/.curry,$(lib)))
 LIB_PL    = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs/%.pl), $(subst .curry/pakcs/meta,meta/.curry/pakcs,$(lib)))
-LIB_HTML  = $(foreach lib, $(LIB_CURRY:.curry=.html), $(subst CLP/,CLP.,$(lib)))
-LIB_TEX   = $(foreach lib, $(LIB_CURRY:.curry=.tex), $(subst CLP/,CLP.,$(lib)))
+LIB_HTML  = $(foreach lib, $(LIB_CURRY:.curry=.html), $(if $(findstring meta/,$(lib)),$(lib),$(subst /,.,$(lib))))
+LIB_TEX   = $(foreach lib, $(LIB_CURRY:.curry=.tex), $(if $(findstring meta/,$(lib)),$(lib),$(subst /,.,$(lib))))
 
 ALLLIBS      = AllLibraries
 # Modules not included as regular libraries:
@@ -64,31 +60,22 @@ acy: $(LIB_ACY)
 pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
 
 # generate all FlatCurry files:
-.curry/CLP/%.fcy: CLP/%.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) CLP.$*
-
 .curry/%.fcy: %.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
+	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*)
 
 meta/.curry/%.fcy: meta/%.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
 # generate all AbstractCurry files:
-.curry/CLP/%.acy: CLP/%.curry
-	"$(CYMAKE)" --acy $(CYMAKEPARAMS) CLP.$*
-
 .curry/%.acy: %.curry
-	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
+	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $(subst /,.,$*)
 
 meta/.curry/%.acy: meta/%.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
 
 # generate all Prolog translations:
-.curry/pakcs/CLP/%.pl: .curry/CLP/%.fcy
-	rm -f $@ && "$(PAKCS)" --quiet -c CLP.$*
-
 .curry/pakcs/%.pl: .curry/%.fcy
-	rm -f $@ && "$(PAKCS)" --quiet -c $*
+	rm -f $@ && "$(PAKCS)" --quiet -c $(subst /,.,$*)
 
 meta/.curry/pakcs/%.pl: meta/.curry/%.fcy
 	rm -f $@ && "$(PAKCS)" --quiet -c $*
@@ -112,15 +99,19 @@ htmlindex:
 	"$(CURRYDOC)" --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries:
+meta/%.html: ../meta/%.curry
+	@touch DOINDEX
+	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
+
+AbstractCurry.%.html: ../AbstractCurry/%.curry
+	@touch DOINDEX
+	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" AbstractCurry.$*
+
 CLP.%.html: ../CLP/%.curry
 	@touch DOINDEX
 	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
 
 %.html: ../%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
-
-meta/%.html: ../meta/%.curry
 	@touch DOINDEX
 	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
@@ -137,15 +128,19 @@ texdoc: $(LIB_CURRY)
 	@cd "$(TEXDOCDIR)" && rm -f meta
 
 # generate individual LaTeX documentations for libraries:
+meta/%.tex: $(LIBDIR)/meta/%.curry
+	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
+	touch LAST
+
+AbstractCurry.%.tex: $(LIBDIR)/AbstractCurry/%.curry
+	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$*
+	touch LAST
+
 CLP.%.tex: $(LIBDIR)/CLP/%.curry
 	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$*
 	touch LAST
 
 %.tex: $(LIBDIR)/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
-	touch LAST
-
-meta/%.tex: $(LIBDIR)/meta/%.curry
 	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
 	touch LAST
 
