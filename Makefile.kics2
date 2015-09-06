@@ -136,10 +136,16 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 
 # generate Haskell file in subdirectory .curry/kics2
 .curry/kics2/Curry_Trace_%.hs: %.curry
-	$(COMP) -v0 -i. -imeta --trace-failure $(subst /,.,$*)
+	$(COMP) -v0 -i. -imeta --trace-failure $*
 
 .curry/kics2/Curry_%.hs: %.curry
-	$(COMP) -v0 -i. -imeta $(subst /,.,$*)
+	$(COMP) -v0 -i. -imeta $*
+
+.curry/kics2/AbstractCurry/Curry_Trace_%.hs: AbstractCurry/%.curry
+	$(COMP) -v0 -i. -imeta --trace-failure AbstractCurry.$*
+
+.curry/kics2/AbstractCurry/Curry_%.hs: AbstractCurry/%.curry
+	$(COMP) -v0 -i. -imeta AbstractCurry.$*
 
 meta/.curry/kics2/Curry_Trace_%.hs: meta/%.curry
 	$(COMP) -v0 -i. -imeta --trace-failure meta/$*
