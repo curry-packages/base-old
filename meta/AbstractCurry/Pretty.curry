@@ -13,12 +13,15 @@ import AbstractCurry
 import List (partition)
 import Maybe (isJust, fromJust)
 
+type Collection a = [a]
+
 data Qualification
-    = Full      -- ^ Fully qualify every function, including those of the
-                --   processed module and Prelude
-    | Imports   -- ^ Fully qualify external functions, do not qualify local
-                --   functions and those of Prelude
-    | None      -- ^ Do not qualify any function
+    = Full      -- ^ Fully qualify every identifier, including those of the
+                --   processed module and Prelude.
+    | Imports   -- ^ Fully qualify external identifier, do not qualify local
+                --   identifier and those of Prelude.
+    | OnDemand  -- ^ Fully qualify only identifier which need to be.
+    | None      -- ^ Do not qualify any function.
 
 data LayoutChoice = PreferNestedLayout  -- ^ Prefer
                                         -- a                      f a
@@ -35,22 +38,27 @@ data Options = Options { pageWidth        :: Int
                        , qualification    :: Qualification
                        , moduleName       :: String
                        , showLocalSigs    :: Bool -- debugging flag (show signature of local functions or not).
-                       , layoutChoice     :: LayoutChoice }
+                       , layoutChoice     :: LayoutChoice
+                       , importedTypes    :: Collection QName }
 
 options :: Int              -- ^ page width
         -> Int              -- ^ indentation width
         -> Qualification    -- ^ what names to qualify
         -> MName            -- ^ the name of current module
+        -> Collection QName -- ^ a collection of by the current module imported
+                            --   types -- used for determining how to qualify if
+                            --   Qualification `OnDemand` was chosen.
         -> Options
-options pw iw q m = Options { pageWidth        = pw
-                            , indentationWidth = iw
-                            , qualification    = q
-                            , moduleName       = m
-                            , showLocalSigs    = False
-                            , layoutChoice     = PreferNestedLayout }
+options pw iw q is m = Options { pageWidth        = pw
+                               , indentationWidth = iw
+                               , qualification    = q
+                               , moduleName       = m
+                               , showLocalSigs    = False
+                               , layoutChoice     = PreferNestedLayout
+                               , importedTypes    = is}
 
 defaultOptions :: Options
-defaultOptions = options 80 4 Imports ""
+defaultOptions = options 80 4 Imports "" emptyCol
 
 --- precedence of top level (pattern or application) context -- lowest
 tlPrec      :: Int
@@ -178,7 +186,7 @@ ppCConsDecls opts cDecls
 --- pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
 ppCConsDecl opts (CCons   qn _ tExps ) = ppName qn
-                                    <++> hsepMap (ppCTypeExpr' 2 opts) tExps
+                                     <+> hsepMap (ppCTypeExpr' 2 opts) tExps
 ppCConsDecl opts (CRecord qn _ fDecls) = ppName qn
                                      <+> setSpaced (map (ppCFieldDecl opts)
                                                         fDecls)
@@ -436,7 +444,7 @@ ppCExpr' p opts app@(CApply f exp)
           isInf    = isJust . extractInfix
           isTup    = isJust . extractTuple
           isFinLis = isJust . extractFiniteList
-          ppNestedWay l sepa r = align. nest 1 $ sep [l, sepa <++> r]
+          ppNestedWay l sepa r = align. nest 1 $ sep [l, sepa <+> r]
           ppFilledWay l sepa r = nest 1 $ fillSep [l, sepa, r]
 ppCExpr' p opts (CLambda ps exp)
     = parensIf (p > tlPrec) . nest' opts
@@ -507,9 +515,9 @@ ppRecordField opts (qn, exp) = ppQName opts qn <+> equals <+> ppCExpr opts exp
 -- it was (maybe) qualified.
 genericPPQName :: (QName -> Doc -> Doc) -> Options -> QName -> Doc
 genericPPQName g opts qn@(m, f)
-    | qnIsBuiltIn       = preparedName
-    | null m            = preparedName -- assume local declaration
-    | otherwise         =
+    | qnIsBuiltIn = preparedName
+    | null m      = preparedName -- assume local declaration
+    | otherwise   =
         case qualification opts of
              Full    -> preparedFQName
              Imports -> if m == moduleName opts || m == "Prelude"
@@ -647,18 +655,18 @@ bquotesIf b d = if b then bquotes d else d
 parsIfInfix :: QName -> Doc -> Doc
 parsIfInfix = parensIf . isInfixId
 
-infixl 1 <++>
-(<++>) :: Doc -> Doc -> Doc
-l <++> r
-    | isEmpty l = r
-    | isEmpty r = l
-    | otherwise = l <+> r
-
-larrow :: Doc
-larrow = text "<-"
-
 where_ :: Doc
 where_ = text "where"
 
 nil :: Doc
 nil = text "[]"
+
+-- Helping functions (CRUD functions for Collection)
+emptyCol :: Collection a
+emptyCol = []
+
+elemCol :: a -> Collection a -> Bool
+elemCol = elem
+
+addCol :: a -> Collection a -> Collection a
+addCol = (:)
