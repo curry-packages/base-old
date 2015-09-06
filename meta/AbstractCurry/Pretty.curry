@@ -18,9 +18,9 @@ type Collection a = [a]
 data Qualification
     = Full      -- ^ Fully qualify every identifier, including those of the
                 --   processed module and Prelude.
-    | Imports   -- ^ Fully qualify external identifier, do not qualify local
-                --   identifier and those of Prelude.
-    | OnDemand  -- ^ Fully qualify only identifier which need to be.
+    | Imports   -- ^ Fully qualify external identifiers, do not qualify local
+                --   identifiers and those of Prelude.
+    | OnDemand  -- ^ Fully qualify only identifiers which need to be.
     | None      -- ^ Do not qualify any function.
 
 data LayoutChoice = PreferNestedLayout  -- ^ Prefer
@@ -33,32 +33,40 @@ data LayoutChoice = PreferNestedLayout  -- ^ Prefer
                                         -- + c + d  respectively  c d
                                         -- if an expression does not fit the page
 
-data Options = Options { pageWidth        :: Int
-                       , indentationWidth :: Int
-                       , qualification    :: Qualification
-                       , moduleName       :: String
-                       , showLocalSigs    :: Bool -- debugging flag (show signature of local functions or not).
-                       , layoutChoice     :: LayoutChoice
-                       , importedTypes    :: Collection QName }
+data Options = Options { pageWidth           :: Int
+                       , indentationWidth    :: Int
+                       , qualification       :: Qualification
+                       , moduleName          :: String
+                       , showLocalSigs       :: Bool -- debugging flag (show signature of local functions or not).
+                       , layoutChoice        :: LayoutChoice
+                       , importedTypes       :: Collection QName
+                       , importedIdentifiers :: Collection QName }
 
 options :: Int              -- ^ page width
         -> Int              -- ^ indentation width
         -> Qualification    -- ^ what names to qualify
         -> MName            -- ^ the name of current module
         -> Collection QName -- ^ a collection of by the current module imported
-                            --   types -- used for determining how to qualify if
-                            --   Qualification `OnDemand` was chosen.
+                            --   types (including Prelude types) -- used for
+                            --   determining how to qualify if Qualification
+                            --   `OnDemand` was chosen.
+        -> Collection QName -- ^ a collection of by the current module imported
+                            --   identifiers (including Prelude identifiers,
+                            --   excluding types) -- used for determining how to
+                            --   qualify if Qualification `OnDemand` was chosen.
         -> Options
-options pw iw q is m = Options { pageWidth        = pw
-                               , indentationWidth = iw
-                               , qualification    = q
-                               , moduleName       = m
-                               , showLocalSigs    = False
-                               , layoutChoice     = PreferNestedLayout
-                               , importedTypes    = is}
+options pw iw q m its iis
+    = Options { pageWidth           = pw
+              , indentationWidth    = iw
+              , qualification       = q
+              , moduleName          = m
+              , showLocalSigs       = False
+              , layoutChoice        = PreferNestedLayout
+              , importedTypes       = its
+              , importedIdentifiers = iis }
 
 defaultOptions :: Options
-defaultOptions = options 80 4 Imports "" emptyCol
+defaultOptions = options 80 4 Imports "" emptyCol emptyCol
 
 --- precedence of top level (pattern or application) context -- lowest
 tlPrec      :: Int
@@ -118,15 +126,18 @@ ppExports opts ts fs
                                         _                          -> False
 
           tDeclToDoc (CType    qn _ _ cDecls)
-              = ppQName' qn <> ppConsExports opts cDecls
-          tDeclToDoc (CTypeSyn qn _ _ _     ) = ppQName' qn
+              = ppQTypeIdent' qn <> ppConsExports opts cDecls
+          tDeclToDoc (CTypeSyn qn _ _ _     ) = ppQTypeIdent' qn
           tDeclToDoc (CNewType qn _ _ cDecl )
-              = ppQName' qn <> ppConsExports opts [cDecl]
+              = ppQTypeIdent' qn <> ppConsExports opts [cDecl]
 
-          fDeclToDoc (CFunc     qn _ _ _ _) = ppQName' qn
-          fDeclToDoc (CmtFunc _ qn _ _ _ _) = ppQName' qn
+          fDeclToDoc (CFunc     qn _ _ _ _) = ppQIdent' qn
+          fDeclToDoc (CmtFunc _ qn _ _ _ _) = ppQIdent' qn
 
-          ppQName' = genericPPQName parsIfInfix opts
+          ppQTypeIdent' = genericPPQName (importedTypes opts) parsIfInfix opts
+          ppQIdent'     = genericPPQName (importedIdentifiers opts)
+                                         parsIfInfix
+                                         opts
 
 -- internal use only
 ppConsExports :: Options -> [CConsDecl] -> Doc
@@ -141,10 +152,10 @@ ppConsExports opts cDecls
                      (CRecord _ Public _) -> True
                      _                    -> False
 
-          cDeclToDoc (CCons   qn _ _) = ppQName' qn
-          cDeclToDoc (CRecord qn _ _) = ppQName' qn
+          cDeclToDoc (CCons   qn _ _) = ppQIdent' qn
+          cDeclToDoc (CRecord qn _ _) = ppQIdent' qn
 
-          ppQName' = genericPPQName parsIfInfix opts
+          ppQIdent' = genericPPQName (importedIdentifiers opts) parsIfInfix opts
 
 
 --- pretty-print imports (list of module names) by prepending the word "import"
@@ -168,13 +179,13 @@ ppCFixity CInfixrOp = text "infixr"
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
 ppCTypeDecl opts (CType qn _ tVars cDecls)
-    = hsep [ text "data", ppName qn, ppCTVarINames opts tVars
+    = hsep [ text "data", ppTypeIdent qn, ppCTVarINames opts tVars
            , if null cDecls then empty else ppCConsDecls opts cDecls]
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
-    = hsep [ text "type", ppName qn, ppCTVarINames opts tVars
+    = hsep [ text "type", ppTypeIdent qn, ppCTVarINames opts tVars
            , align $ equals <+> ppCTypeExpr opts tExp]
 ppCTypeDecl opts (CNewType qn _ tVars cDecl)
-    = hsep [ text "newtype", ppName qn, ppCTVarINames opts tVars, equals
+    = hsep [ text "newtype", ppTypeIdent qn, ppCTVarINames opts tVars, equals
            , ppCConsDecl opts cDecl]
 
 --- pretty-print a list of constructor declarations, including the `=` sign.
@@ -185,15 +196,15 @@ ppCConsDecls opts cDecls
 
 --- pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
-ppCConsDecl opts (CCons   qn _ tExps ) = ppName qn
+ppCConsDecl opts (CCons   qn _ tExps ) = ppIdent qn
                                      <+> hsepMap (ppCTypeExpr' 2 opts) tExps
-ppCConsDecl opts (CRecord qn _ fDecls) = ppName qn
+ppCConsDecl opts (CRecord qn _ fDecls) = ppIdent qn
                                      <+> setSpaced (map (ppCFieldDecl opts)
                                                         fDecls)
 
 --- pretty-print a record field declaration (`field :: type`).
 ppCFieldDecl :: Options -> CFieldDecl -> Doc
-ppCFieldDecl opts (CField qn _ tExp) = hsep [ ppName qn
+ppCFieldDecl opts (CField qn _ tExp) = hsep [ ppIdent qn
                                             , doubleColon
                                             , ppCTypeExpr opts tExp ]
 
@@ -233,11 +244,12 @@ ppCTypeExpr' p opts (CFuncType tExp1 tExp2)
     = parensIf (p > tlPrec)
     $ sep [ ppCTypeExpr' 1 opts tExp1, rarrow <+> ppCTypeExpr opts tExp2]
 ppCTypeExpr' p opts (CTCons qn tExps)
-    | null tExps     = ppQName opts qn
+    | null tExps     = ppQTypeIdent opts qn
     | isListCons qn  = brackets . (ppCTypeExpr opts) . head $ tExps -- assume singleton
     | isTupleCons qn = tupledSpaced $ map (ppCTypeExpr opts) tExps
     | otherwise      = parensIf (p >= 2)
-                     $ ppQName opts qn <+> hsepMap (ppCTypeExpr' 2 opts) tExps
+                     $ ppQTypeIdent opts qn
+                   <+> hsepMap (ppCTypeExpr' 2 opts) tExps
 
 --- pretty-print a list of type variables horizontally separating them by `space`.
 ppCTVarINames :: Options -> [CTVarIName] -> Doc
@@ -259,7 +271,7 @@ ppCRules opts qn rs = case rs of
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
 ppCRule opts qn (CRule ps rhs)
-    = (nest' opts $ sep [ hsep (positionIdent ppName qn pDocs)
+    = (nest' opts $ sep [ hsep (positionIdent ppIdent qn pDocs)
                         , pRhs])
    $$ if null lDecls
          then empty
@@ -287,13 +299,13 @@ ppCPattern' p opts (CPFuncComb qn ps ) =
     case ps of
          [p1, p2] | isInfixId qn -> parensIf (p >= infAppPrec)
                                   $ hsep [ ppCPattern' infAppPrec opts p1
-                                         , ppQName opts qn
+                                         , ppQIdent opts qn
                                          , ppCPattern' infAppPrec opts p2 ]
          _                       -> parensIf (p >= prefAppPrec)
-                                  $ ppQName opts qn
+                                  $ ppQIdent opts qn
                                 <+> hsepMap (ppCPattern' prefAppPrec opts) ps
 ppCPattern' _ opts (CPLazy     p     ) = tilde <> ppCPattern' highestPrec opts p
-ppCPattern' _ opts (CPRecord   qn rps) = ppQName opts qn
+ppCPattern' _ opts (CPRecord   qn rps) = ppQIdent opts qn
                                      <+> setSpaced (map (ppCFieldPattern opts)
                                                         rps)
 
@@ -312,7 +324,7 @@ ppCPComb p opts qn ps =
          _                         -> parensIf (p >= prefAppPrec)
                                     . nest' opts
                                     $ sep [head pDocs, align . sep $ tail pDocs]
-    where pDocs = positionIdent (ppQName opts) qn
+    where pDocs = positionIdent (ppQIdent opts) qn
                 $ map (ppCPattern' p' opts) ps
           p'    = if isInfixId qn
                      then infAppPrec
@@ -335,7 +347,7 @@ ppCLiteral _ (CStringc s) = text $ show s
 
 --- pretty-print a record pattern
 ppCFieldPattern :: Options -> CField CPattern -> Doc
-ppCFieldPattern opts (qn, p) = ppQName opts qn <+> equals <+> ppCPattern opts p
+ppCFieldPattern opts (qn, p) = ppQIdent opts qn <+> equals <+> ppCPattern opts p
 
 --- pretty-print the right hand side of a rule (or case expression), including
 --- the d sign, where `d` is the relation (as doc) between the left hand side
@@ -412,7 +424,10 @@ ppCExpr = ppCExpr' tlPrec
 ppCExpr' :: Int -> Options -> CExpr -> Doc
 ppCExpr' _ opts (CVar     pvar) = ppCVarIName opts pvar
 ppCExpr' _ opts (CLit     lit ) = ppCLiteral opts lit
-ppCExpr' _ opts (CSymbol  qn  ) = genericPPQName parsIfInfix opts qn
+ppCExpr' _ opts (CSymbol  qn  ) = genericPPQName (importedIdentifiers opts)
+                                                 parsIfInfix
+                                                 opts
+                                                 qn
 ppCExpr' p opts app@(CApply f exp)
     | isITE app
         = parensIf (p > tlPrec)
@@ -431,7 +446,7 @@ ppCExpr' p opts app@(CApply f exp)
                     PreferNestedLayout -> ppNestedWay
                     PreferFilledLayout -> ppFilledWay)
                         (ppCExpr' infAppPrec opts l)
-                        (ppQName opts op)
+                        (ppQIdent opts op)
                         (ppCExpr' infAppPrec opts r)
     | otherwise = parensIf (p >= prefAppPrec)
                 $ (case layoutChoice opts of
@@ -470,7 +485,7 @@ ppCExpr' p opts (CTyped exp tExp) = parensIf (p > tlPrec)
                                   $ ppCExpr opts exp
                                 <+> doubleColon
                                 <+> ppCTypeExpr opts tExp
-ppCExpr' _ opts (CRecConstr qn rFields) = ppQName opts qn
+ppCExpr' _ opts (CRecConstr qn rFields) = ppQIdent opts qn
                                       <+> ppRecordFields opts rFields
 ppCExpr' p opts (CRecUpdate exp rFields) = ppCExpr' p opts exp
                                        <+> ppRecordFields opts rFields
@@ -508,37 +523,58 @@ ppRecordFields opts = setSpaced . map (ppRecordField opts)
 
 --- pretty-print a record field assignment (`fieldLabel = exp`).
 ppRecordField :: Options -> CField CExpr -> Doc
-ppRecordField opts (qn, exp) = ppQName opts qn <+> equals <+> ppCExpr opts exp
+ppRecordField opts (qn, exp) = ppQIdent opts qn <+> equals <+> ppCExpr opts exp
 
 -- pretty-print a QName qualified according to given options. Use given doc
 -- tranformer to manipulate (f.e. surround with parentheses) the QName, after
--- it was (maybe) qualified.
-genericPPQName :: (QName -> Doc -> Doc) -> Options -> QName -> Doc
-genericPPQName g opts qn@(m, f)
-    | qnIsBuiltIn = preparedName
-    | null m      = preparedName -- assume local declaration
+-- it was (maybe) qualified. The given collection is used to determine if
+-- qualification is needed, if `OnDemand` was chosen.
+genericPPQName :: Collection QName
+               -> (QName -> Doc -> Doc)
+               -> Options
+               -> QName
+               -> Doc
+genericPPQName col g opts qn@(m, f)
+    | qnIsBuiltIn = name
+    | null m      = name -- assume local declaration
     | otherwise   =
         case qualification opts of
-             Full    -> preparedFQName
-             Imports -> if m == moduleName opts || m == "Prelude"
-                           then preparedName
-                           else preparedFQName
-             None    -> preparedName
-    where qnIsBuiltIn    = or (map ($ qn) [ isUnitCons , isListCons
-                                          , isTupleCons, isConsCons ])
-          preparedFQName = g qn $ ppMName m <> dot <> text f
-          preparedName   = g qn (text f)
-
---- pretty-print a QName qualified according to given options.
-ppQName :: Options -> QName -> Doc
-ppQName = genericPPQName (flip const)
+             Full     -> qName
+             Imports  -> if m == moduleName opts || m == "Prelude"
+                            then name
+                            else qName
+             OnDemand -> if m == moduleName opts
+                            then name
+                            else odName -- at this point we know qn is imported
+             None     -> name
+    where qnIsBuiltIn = or (map ($ qn) [ isUnitCons , isListCons
+                                       , isTupleCons, isConsCons ])
+          name   = g qn (text f)
+          qName  = g qn $ ppMName m <> dot <> text f
+          odName = if (sizeCol $ filterCol ((== f) . snd) col) > 1
+                      then qName -- the QName is ambiguous
+                      else name
 
 genericPPName :: (QName -> Doc -> Doc) -> QName -> Doc
 genericPPName f qn = f qn $ text . snd $ qn
 
---- pretty-print a QName non-qualified.
-ppName :: QName -> Doc
-ppName = genericPPName (flip const)
+--- pretty-print an identifier (`QName`) qualified according to given options.
+--- Use `ppQTypeIdent` or `ppTypeIdent` for pretty-printing types.
+ppQIdent :: Options -> QName -> Doc
+ppQIdent opts = genericPPQName (importedIdentifiers opts) (flip const) opts
+
+--- pretty-print an identifier (`QName`) non-qualified.
+--- Use `ppQTypeIdent` or `ppTypeIdent` for pretty-printing types.
+ppIdent :: QName -> Doc
+ppIdent = genericPPName (flip const)
+
+--- pretty-print a type (`QName`) qualified according to given options.
+ppQTypeIdent :: Options -> QName -> Doc
+ppQTypeIdent opts = genericPPQName (importedTypes opts) (flip const) opts
+
+--- pretty-print a type (`QName`) non-qualified.
+ppTypeIdent :: QName -> Doc
+ppTypeIdent = genericPPName (flip const)
 
 -- Helping functions (sugaring)
 --- `positionIdent f qn [x1, ..., xn]` will return `[x1, f qn, xn]` if `qn`
@@ -665,8 +701,14 @@ nil = text "[]"
 emptyCol :: Collection a
 emptyCol = []
 
+addCol :: a -> Collection a -> Collection a
+addCol = (:)
+
 elemCol :: a -> Collection a -> Bool
 elemCol = elem
 
-addCol :: a -> Collection a -> Collection a
-addCol = (:)
+filterCol :: (a -> Bool) -> Collection a -> Collection a
+filterCol = filter
+
+sizeCol :: Collection a -> Int
+sizeCol = length
