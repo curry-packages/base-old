@@ -59,14 +59,15 @@ acy: $(LIB_ACY)
 .PHONY: pl
 pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
 
-# generate all FlatCurry files:
+# generate FlatCurry file in subdirectory .curry:
 .curry/%.fcy: %.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*)
 
+# generate all FlatCurry files in subdirectory meta/.curry:
 meta/.curry/%.fcy: meta/%.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
 
-# generate all AbstractCurry files:
+# generate all AbstractCurry files in subdirectory .curry:
 .curry/%.acy: %.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $(subst /,.,$*)
 
