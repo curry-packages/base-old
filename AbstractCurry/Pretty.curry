@@ -11,7 +11,7 @@ module AbstractCurry.Pretty
 
     , options, defaultOptions
 
-    , printCurryProg
+    , showCProg, prettyCurryProg
 
     , ppMName, ppExports, ppImports
 
@@ -63,7 +63,7 @@ options pw iw q m = Options { pageWidth        = pw
                             , layoutChoice     = PreferNestedLayout }
 
 defaultOptions :: Options
-defaultOptions = options 80 4 Imports ""
+defaultOptions = options 78 2 Imports ""
 
 --- precedence of top level (pattern or application) context -- lowest
 tlPrec      :: Int
@@ -78,8 +78,15 @@ prefAppPrec = 2
 highestPrec :: Int
 highestPrec = 3
 
-printCurryProg :: Options -> CurryProg -> String
-printCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
+--- Shows a pretty formatted version of an abstract Curry Program.
+--- The options for pretty printing are the 'defaultOptions'.
+--- @param prog - a curry prog
+--- @return a string, which represents the input program `prog`
+showCProg :: CurryProg -> String
+showCProg = prettyCurryProg defaultOptions
+
+prettyCurryProg :: Options -> CurryProg -> String
+prettyCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 
 --- pretty-print a CurryProg (the representation of a program, written in curry,
 --- using AbstractCurry) according to given options. This function will overwrite
@@ -155,7 +162,8 @@ ppConsExports opts cDecls
 --- pretty-print imports (list of module names) by prepending the word "import"
 --- to the module name.
 ppImports :: Options -> [MName] -> Doc
-ppImports _ = vcatMap (\m -> text "import" <+> ppMName m)
+ppImports _ imps = vcatMap (\m -> text "import" <+> ppMName m)
+                           (filter (/="Prelude") imps)
 
 --- pretty-print operator precedence declarations.
 ppCOpDecl :: Options -> COpDecl -> Doc
@@ -219,9 +227,13 @@ ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs)
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
 ppCFuncSignature opts qn tExp
+  | isUntyped tExp = empty
+  | otherwise
     = nest' opts
     $ sep [ genericPPName parsIfInfix qn
           , align (doubleColon <+> ppCTypeExpr opts tExp)]
+ where
+  isUntyped te = te == CTCons (pre "untyped") []
 
 --- pretty-print a type expression.
 ppCTypeExpr :: Options -> CTypeExpr -> Doc
