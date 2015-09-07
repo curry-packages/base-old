@@ -163,7 +163,7 @@ ppConsExports opts cDecls
 --- to the module name.
 ppImports :: Options -> [MName] -> Doc
 ppImports _ imps = vcatMap (\m -> text "import" <+> ppMName m)
-                           (filter (/="Prelude") imps)
+                           (filter (/= "Prelude") imps)
 
 --- pretty-print operator precedence declarations.
 ppCOpDecl :: Options -> COpDecl -> Doc
@@ -386,9 +386,8 @@ ppCRhsWithoutLocalDecls opts d (CGuardedRhs conds lDecls)
 --- one of `=`, `->`.
 ppCGuardedRhs :: Options -> Doc -> [(CExpr, CExpr)] -> Doc
 ppCGuardedRhs opts d = align . vvsepMap ppCGuard
-    where ppCGuard (e1, e2) = bar <+> (nest' opts
-                                     $ sep [ ppCExpr opts e1
-                                           , d <+> ppCExpr opts e2])
+    where ppCGuard (e1, e2) = sep [ bar <+> ppCExpr opts e1
+                                  , d   <+> ppCExpr opts e2 ]
 
 --- pretty-print local declarations . If the second argument is `text "where"`,
 --- pretty-print a `where` block. If the second argument is `text "let"`,
