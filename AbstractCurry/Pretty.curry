@@ -119,15 +119,15 @@ ppExports opts ts fs
           (pubFs, privFs) = partition isPublicFuncDecl fs
 
           isPublicTypeDecl tDecl = case tDecl of
-                                        (CType    _ Public _ _) -> True
-                                        (CTypeSyn _ Public _ _) -> True
-                                        (CNewType _ Public _ _) -> True
-                                        _                       -> False
+                                        CType    _ Public _ _ -> True
+                                        CTypeSyn _ Public _ _ -> True
+                                        CNewType _ Public _ _ -> True
+                                        _                     -> False
 
           isPublicFuncDecl fDecl = case fDecl of
-                                        (CFunc     _ _ Public _ _) -> True
-                                        (CmtFunc _ _ _ Public _ _) -> True
-                                        _                          -> False
+                                        CFunc     _ _ Public _ _ -> True
+                                        CmtFunc _ _ _ Public _ _ -> True
+                                        _                        -> False
 
           tDeclToDoc (CType    qn _ _ cDecls)
               = ppQName' qn <> ppConsExports opts cDecls
@@ -149,9 +149,9 @@ ppConsExports opts cDecls
     where (pubCs, privCs)    = partition isPublicConsDecl cDecls
           isPublicConsDecl cDecl
               = case cDecl of
-                     (CCons   _ Public _) -> True
-                     (CRecord _ Public _) -> True
-                     _                    -> False
+                     CCons   _ Public _ -> True
+                     CRecord _ Public _ -> True
+                     _                  -> False
 
           cDeclToDoc (CCons   qn _ _) = ppQName' qn
           cDeclToDoc (CRecord qn _ _) = ppQName' qn
@@ -228,10 +228,9 @@ ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs)
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
 ppCFuncSignature opts qn tExp
   | isUntyped tExp = empty
-  | otherwise
-    = nest' opts
-    $ sep [ genericPPName parsIfInfix qn
-          , align (doubleColon <+> ppCTypeExpr opts tExp)]
+  | otherwise = nest' opts
+              $ sep [ genericPPName parsIfInfix qn
+                    , align $ doubleColon <+> ppCTypeExpr opts tExp]
  where
   isUntyped te = te == CTCons (pre "untyped") []
 
@@ -266,23 +265,25 @@ ppCTVarIName _ (_, tvar) = text tvar
 
 --- pretty-print a list of function rules, concatenated vertically.
 ppCRules :: Options -> QName -> [CRule] -> Doc
-ppCRules opts qn rs = case rs of
-                           [] -> genericPPName parsIfInfix qn
-                             <+> text "external"
-                           _  -> vcatMap (ppCRule opts qn) rs
+ppCRules opts qn rs
+    | null rs   = genericPPName parsIfInfix qn <+> text "external"
+    | otherwise = vcatMap (ppCRule opts qn) rs
 
 --- pretty-print a rule of a function. Given a function
 --- `f x y = x * y`, then `x y = x * y` is a rule consisting of `x y` as list of
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
-ppCRule opts qn (CRule ps rhs)
-    = (nest' opts $ sep [ hsep (positionIdent ppName qn pDocs)
-                        , pRhs])
-   $$ if null lDecls
-         then empty
-         else indent' opts $ ppWhereDecl opts lDecls
+ppCRule opts qn (CRule ps rhs) =
+    (nest' opts $ sep [ hsep (positionIdent ppName qn pDocs)
+                        <+> (case rhs of
+                                  CSimpleRhs  _ _ -> equals
+                                  CGuardedRhs _ _ -> empty )
+                      , pRhs])
+ $$ if null lDecls
+       then empty
+       else indent' opts $ ppWhereDecl opts lDecls
     where pDocs          = map (ppCPattern' prefAppPrec opts) ps
-          (pRhs, lDecls) = ppCRhsWithoutLocalDecls opts equals rhs
+          (pRhs, lDecls) = ppFuncRhs opts rhs
 
 --- pretty-print a pattern expression.
 ppCPattern :: Options -> CPattern -> Doc
@@ -359,27 +360,30 @@ ppCFieldPattern opts (qn, p) = ppQName opts qn <+> equals <+> ppCPattern opts p
 --- and the right hand side -- usually this is one of `=`, `->`.
 --- If the right hand side contains local declarations, they will be pretty
 --- printed too, further indented.
-ppCRhsWithLocalDecls :: Options -> Doc -> CRhs -> Doc
-ppCRhsWithLocalDecls opts d (CSimpleRhs  exp lDecls)
+ppCRhs :: Doc -> Options -> CRhs -> Doc
+ppCRhs d opts (CSimpleRhs  exp lDecls)
     = (nest' opts $ sep [d, ppCExpr opts exp])
    $$ if null lDecls
          then empty
          else indent' opts (ppWhereDecl opts lDecls)
-ppCRhsWithLocalDecls opts d (CGuardedRhs conds lDecls)
+ppCRhs d opts (CGuardedRhs conds lDecls)
     = ppCGuardedRhs opts d conds
    $$ if null lDecls
          then empty
          else indent' opts (ppWhereDecl opts lDecls)
 
---- Like `ppCRhsWithLocalDecls`, but do not pretty print local declarations.
---- Instead give caller the choice how to handle the declarations. for example
---- For example the function `ppCRule` uses this to prevent local declarations
---- from being further indented.
-ppCRhsWithoutLocalDecls :: Options -> Doc -> CRhs -> (Doc, [CLocalDecl])
-ppCRhsWithoutLocalDecls opts d (CSimpleRhs  exp lDecls)
-    = (d <+> ppCExpr opts exp, lDecls)
-ppCRhsWithoutLocalDecls opts d (CGuardedRhs conds lDecls)
-    = (ppCGuardedRhs opts d conds, lDecls)
+--- Like `ppCRhs`, but do not pretty print local declarations.
+--- Instead give caller the choice how to handle the declarations. For example
+--- the function `ppCRule` uses this to prevent local declarationsfrom being
+--- further indented.
+ppFuncRhs :: Options -> CRhs -> (Doc, [CLocalDecl])
+ppFuncRhs opts (CSimpleRhs  exp lDecls)
+    = (ppCExpr opts exp, lDecls)
+ppFuncRhs opts (CGuardedRhs conds lDecls)
+    = (ppCGuardedRhs opts equals conds, lDecls)
+
+ppCaseRhs :: Options -> CRhs -> Doc
+ppCaseRhs = ppCRhs rarrow
 
 --- pretty-print guard, i.e. the `| cond d exp` part of a right hand side, where
 --- `d` is the relation (as doc) between `cond` and `exp` -- usually this is
@@ -402,7 +406,7 @@ ppCLocalDecl opts (CLocalFunc fDecl)
          then ppCFuncDecl opts fDecl
          else ppCFuncDeclWithoutSig opts fDecl
 ppCLocalDecl opts (CLocalPat  p rhs)
-    = hsep [ ppCPattern opts p, ppCRhsWithLocalDecls opts equals rhs ]
+    = hsep [ ppCPattern opts p, ppCRhs equals opts rhs ]
 ppCLocalDecl opts (CLocalVars pvars)
     = (<+> text "free") $ hsep $ punctuate comma $ map (ppCVarIName opts) pvars
 
@@ -510,7 +514,7 @@ ppCases opts = align . vvsepMap (ppCase opts)
 
 --- pretty-print a case expression.
 ppCase :: Options -> (CPattern, CRhs) -> Doc
-ppCase opts (p, rhs) = ppCPattern opts p <+> ppCRhsWithLocalDecls opts rarrow rhs
+ppCase opts (p, rhs) = ppCPattern opts p <+> ppCaseRhs opts rhs
 
 --- pretty-print record field assignments like this:
 ---     { lab1 = exp1, ..., labn expn }
@@ -597,20 +601,20 @@ isTupleCons (_, i) = i == mkTuple (length i)
 --- Otherwise, return `Nothing`.
 extractITE :: CExpr -> Maybe (CExpr, CExpr, CExpr)
 extractITE e = case e of
-                    (CApply (CApply (CApply (CSymbol ("Prelude","if_then_else"))
+                    CApply (CApply (CApply (CSymbol ("Prelude","if_then_else"))
                                             cond)
                                     tExp)
-                            fExp) -> Just (cond, tExp, fExp)
-                    _             -> Nothing
+                            fExp -> Just (cond, tExp, fExp)
+                    _            -> Nothing
 
 --- Check if given application tree represents an infix operator application.
 --- If so, return the operator, its left and its right argument. Otherwise,
 --- return `Nothing`.
 extractInfix :: CExpr -> Maybe (QName, CExpr, CExpr)
 extractInfix e
-    = case e of (CApply (CApply (CSymbol s)
+    = case e of CApply (CApply (CSymbol s)
                                  e1)
-                        e2)
+                        e2
                     | isInfixId s -> Just (s, e1, e2)
                 _                 -> Nothing
 
@@ -621,9 +625,9 @@ extractTuple :: CExpr -> Maybe [CExpr]
 extractTuple = extractTuple' []
     where extractTuple' es exp
             = case exp of
-                   (CApply  f e)                 -> extractTuple' (e:es) f
-                   (CSymbol s  ) | isTupleCons s -> Just es
-                   _                             -> Nothing
+                   CApply  f e                 -> extractTuple' (e:es) f
+                   CSymbol s   | isTupleCons s -> Just es
+                   _                           -> Nothing
 
 --- Check if given application tree represents a finite list `[x1, ..., xn]`.
 --- If so, return the list elements in a list. Otherwise, return `Nothing`.
@@ -631,11 +635,11 @@ extractFiniteList :: CExpr -> Maybe [CExpr]
 extractFiniteList = extractFiniteList' []
     where extractFiniteList' es exp
             = case exp of
-                   (CApply (CApply (CSymbol f)
-                                    e)
-                            arg) | isConsCons f -> extractFiniteList' (e:es) arg
-                   (CSymbol s)   | isListCons s -> Just $ reverse es
-                   _                            -> Nothing
+                   CApply (CApply (CSymbol f)
+                                   e)
+                           arg | isConsCons f -> extractFiniteList' (e:es) arg
+                   CSymbol s   | isListCons s -> Just $ reverse es
+                   _                          -> Nothing
 
 -- Helping functions (pretty printing)
 hsepMap :: (a -> Doc) -> [a] -> Doc
