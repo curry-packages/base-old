@@ -14,7 +14,7 @@ comma     := ,
 empty     :=
 space     := $(empty) $(empty)
 # prefix "pre" "dir/file.ext" = "dir/prefile.ext"
-prefix     = $(dir $(2))$(1)$(notdir $(2))
+prefix     = $(patsubst ./%,%,$(dir $(2))$(1)$(notdir $(2)))
 # comma_sep "a b c" = "a, b, c"
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
