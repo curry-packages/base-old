@@ -183,10 +183,6 @@ cChar x = CLit (CCharc x)
 string2ac :: String -> CExpr
 string2ac s = CLit (CStringc s)
 
---- Tests whether a module name is the prelude.
-isPrelude :: String -> Bool
-isPrelude m = m=="Prelude"
-
 --- Converts an index i into a variable named xi.
 toVar :: Int -> CExpr
 toVar i = CVar (1,"x"++show i)
