@@ -97,7 +97,7 @@ ppCurryProg opts (CurryProg m ms ts fs os)
        $ sep [ text "module" <+> ppMName m, ppExports opts' ts fs]) </> where_
  <$+$> ppImports opts' ms
  <$+$> vcatMap (ppCOpDecl opts') os
- <$+$> vcatMap (ppCTypeDecl opts') ts
+ <$+$> vsepBlankMap (ppCTypeDecl opts') ts
  <$+$> vsepBlankMap (ppCFuncDecl opts') fs
     where opts' = opts { moduleName = m }
 
