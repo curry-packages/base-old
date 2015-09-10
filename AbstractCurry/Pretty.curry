@@ -17,7 +17,7 @@ module AbstractCurry.Pretty
 
     , ppCOpDecl, ppCTypeDecl, ppCFuncDecl, ppCFuncDeclWithoutSig
     , ppCFuncSignature, ppCTypeExpr, ppCPattern, ppCLiteral, ppCExpr
-    , ppCStatement, ppQName, ppName)
+    , ppCStatement, ppQIdent, ppIdent, ppQTypeIdent, ppTypeIdent)
     where
 
 import Pretty
@@ -83,7 +83,7 @@ options pw iw q m its iis
 --- Therefore use these options only with functions like 'prettyCurryProg' or
 --- 'ppCurryProg', because they will overwrite the module name anyway.
 defaultOptions :: Options
-defaultOptions = options 78 2 Imports ""
+defaultOptions = options 78 2 Imports "" emptyCol emptyCol
 
 --- precedence of top level (pattern or application) context -- lowest
 tlPrec      :: Int
@@ -300,7 +300,7 @@ ppCRules opts qn rs
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
 ppCRule opts qn (CRule ps rhs) =
-    (nest' opts $ sep [ hsep (positionIdent ppName qn pDocs)
+    (nest' opts $ sep [ hsep (positionIdent ppIdent qn pDocs)
                         <+> (case rhs of
                                   CSimpleRhs  _ _ -> equals
                                   CGuardedRhs _ _ -> empty )
@@ -724,13 +724,6 @@ bquotesIf b d = if b then bquotes d else d
 
 parsIfInfix :: QName -> Doc -> Doc
 parsIfInfix = parensIf . isInfixId
-
-infixl 1 <++>
-(<++>) :: Doc -> Doc -> Doc
-l <++> r
-    | isEmpty l = r
-    | isEmpty r = l
-    | otherwise = l <+> r
 
 larrow :: Doc
 larrow = text "<-"
