@@ -2,14 +2,13 @@
 --- This library provides some useful operations to write programs
 --- that generate AbstractCurry programs in a more compact and readable way.
 ---
---- @version February 2015
+--- @version September 2015
 --- @category meta
 ------------------------------------------------------------------------
 
-module AbstractCurryGoodies where
+module AbstractCurry.Build where
 
-import AbstractCurry
-import List(union)
+import AbstractCurry.Types
 
 infixr 9 ~>
 
@@ -69,104 +68,6 @@ dateType :: CTypeExpr
 dateType = baseType ("Time", "CalendarTime")
 
 ------------------------------------------------------------------------
--- Goodies to analyze type expressions
-
---- Returns the name of a given type declaration
-typeName :: CTypeDecl -> QName
-typeName (CType    n _ _ _) = n
-typeName (CTypeSyn n _ _ _) = n
-typeName (CNewType n _ _ _) = n
-
---- Returns the visibility of a given type declaration
-typeVis :: CTypeDecl -> CVisibility
-typeVis (CType    _ vis _ _) = vis
-typeVis (CTypeSyn _ vis _ _) = vis
-typeVis (CNewType _ vis _ _) = vis
-
---- Returns the constructors of a given type declaration
-typeCons :: CTypeDecl -> [CConsDecl]
-typeCons (CType    _ _ _ cs) = cs
-typeCons (CTypeSyn _ _ _ _ ) = []
-typeCons (CNewType _ _ _ c ) = [c]
-
---- Returns the name of a given function declaration
-funcName :: CFuncDecl -> QName
-funcName (CFunc     n _ _ _ _) = n
-funcName (CmtFunc _ n _ _ _ _) = n
-
---- Returns the visibility of a given function declaration
-funcVis :: CFuncDecl -> CVisibility
-funcVis (CFunc     _ _ vis _ _) = vis
-funcVis (CmtFunc _ _ _ vis _ _) = vis
-
---- Returns the name of a given constructor declaration
-consName :: CConsDecl -> QName
-consName (CCons   n _ _) = n
-consName (CRecord n _ _) = n
-
---- Returns the visibility of a given constructor declaration
-consVis :: CConsDecl -> CVisibility
-consVis (CCons   _ vis _) = vis
-consVis (CRecord _ vis _) = vis
-
---- Returns true if the type expression is a base type.
-isBaseType :: CTypeExpr -> Bool
-isBaseType texp = case texp of
-  CTCons _ args -> null args
-  _             -> False
-
---- Returns true if the type expression contains type variables.
-isPolyType :: CTypeExpr -> Bool
-isPolyType (CTVar                _) = True
-isPolyType (CFuncType domain range) = isPolyType domain || isPolyType range
-isPolyType (CTCons      _ typelist) = any isPolyType typelist
-
---- Returns true if the type expression is a functional type.
-isFunctionalType :: CTypeExpr -> Bool
-isFunctionalType texp = case texp of
-  CFuncType _ _ -> True
-  _             -> False
-
---- Returns true if the type expression is (IO t).
-isIOType :: CTypeExpr -> Bool
-isIOType texp = case texp of
-  CTCons tc _ -> tc == pre "IO"
-  _           -> False
-
---- Returns true if the type expression is (IO t) with t/=() and
---- t is not functional
-isIOReturnType :: CTypeExpr -> Bool
-isIOReturnType (CTVar            _) = False
-isIOReturnType (CFuncType      _ _) = False
-isIOReturnType (CTCons tc typelist) =
-  tc==pre "IO" && head typelist /= CTCons (pre "()") []
-  && not (isFunctionalType (head typelist))
-  
---- Returns all argument types from a functional type
-argTypes :: CTypeExpr -> [CTypeExpr]
-argTypes (CTVar         _) = []
-argTypes (CTCons      _ _) = []
-argTypes (CFuncType t1 t2) = t1 : argTypes t2
-
---- Return the result type from a (nested) functional type
-resultType :: CTypeExpr -> CTypeExpr
-resultType (CTVar          n) = CTVar n
-resultType (CTCons name args) = CTCons name args
-resultType (CFuncType   _ t2) = resultType t2
-
---- Returns all type variables occurring in a type expression.
-tvarsOfType :: CTypeExpr -> [CTVarIName]
-tvarsOfType (CTVar v) = [v]
-tvarsOfType (CFuncType t1 t2) = tvarsOfType t1 ++ tvarsOfType t2
-tvarsOfType (CTCons _ args) = concatMap tvarsOfType args
-
---- Returns all modules used in the given type.
-modsOfType :: CTypeExpr -> [String]
-modsOfType (CTVar            _) = []
-modsOfType (CFuncType    t1 t2) = modsOfType t1 `union` modsOfType t2
-modsOfType (CTCons (mod,_) tys) = foldr union [mod] $ map modsOfType tys
-
-------------------------------------------------------------------------
 -- Goodies to construct function declarations
 
 --- Constructs a function declaration from a given qualified function name,
@@ -201,7 +102,7 @@ noGuard :: CExpr -> (CExpr, CExpr)
 noGuard e = (CSymbol (pre "success"), e)
 
 ------------------------------------------------------------------------
--- Goodies to construct function expressions and patterns
+-- Goodies to construct expressions and patterns
 
 --- An application of a qualified function name to a list of arguments.
 applyF :: QName -> [CExpr] -> CExpr
@@ -281,14 +182,6 @@ cChar x = CLit (CCharc x)
 --- Converts a string into an AbstractCurry represention of this string.  
 string2ac :: String -> CExpr
 string2ac s = CLit (CStringc s)
-
---- Converts a string into a qualified name of the Prelude.
-pre :: String -> QName
-pre f = ("Prelude", f)
-
---- Tests whether a module name is the prelude.
-isPrelude :: String -> Bool
-isPrelude m = m=="Prelude"
 
 --- Converts an index i into a variable named xi.
 toVar :: Int -> CExpr

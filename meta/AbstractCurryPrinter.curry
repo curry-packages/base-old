@@ -1,5 +1,6 @@
 ------------------------------------------------------------------------------
---- A pretty printer for AbstractCurry programs.
+--- This library contains a pretty printer for AbstractCurry programs
+--- in order to show an AbstractCurry program in standard Curry syntax.
 ---
 --- This library defines a function "showProg" that shows
 --- an AbstractCurry program in standard Curry syntax.
@@ -280,6 +281,7 @@ showExprOpt opts (CRecUpdate expr cfields)
 
 showSymbol :: Options -> QName -> String
 showSymbol (fm, thisModule) (thatModule, symName)
+  | null thatModule              = symName
   | thisModule == thatModule     = symName
   | isJust (lookupFM fm symName) = thatModule ++ "." ++ symName
   | otherwise                    = symName

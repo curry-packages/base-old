@@ -1,6 +1,4 @@
 --- --------------------------------------------------------------------------
---- Pretty printing of AnnotatedFlatCurry (ignoring annotations).
----
 --- This library provides pretty-printers for AnnotatedFlatCurry modules
 --- and all substructures (e.g., expressions). Note that annotations are
 --- ignored for pretty-printing.
@@ -17,7 +15,7 @@ import AnnotatedFlatCurry
 
 --- pretty-print a FlatCurry module
 ppProg :: AProg _ -> Doc
-ppProg (AProg m is ts fs os) = compose (<$+>)
+ppProg (AProg m is ts fs os) = compose (<$+$>)
   [ ppHeader    m ts fs
   , ppImports   is
   , ppOpDecls   os
@@ -77,12 +75,12 @@ ppFixity InfixrOp = text "infixr"
 
 --- pretty-print a list of type declarations
 ppTypeDecls :: [TypeDecl] -> Doc
-ppTypeDecls = compose (<$+>) . map ppTypeDecl
+ppTypeDecls = compose (<$+$>) . map ppTypeDecl
 
 --- pretty-print a type declaration
 ppTypeDecl :: TypeDecl -> Doc
 ppTypeDecl (Type    qn _ vs cs) = indent $ text "data" <+> ppQName qn
-  <> hsep (empty : map ppTVarIndex vs) <$> ppConsDecls cs
+  <> hsep (empty : map ppTVarIndex vs) $$ ppConsDecls cs
 ppTypeDecl (TypeSyn qn _ vs ty) = indent $ text "type" <+> ppQName qn
   <> hsep (empty : map ppTVarIndex vs) </> equals <+> ppTypeExp ty
 
@@ -103,7 +101,7 @@ ppTypeExp = ppTypeExpr 0
 ppTypeExpr :: Int -> TypeExpr -> Doc
 ppTypeExpr _ (TVar           v) = ppTVarIndex v
 ppTypeExpr p (FuncType ty1 ty2) = parensIf (p > 0) $
-  ppTypeExpr 1 ty1 </> arrow <+> ppTypeExp ty2
+  ppTypeExpr 1 ty1 </> rarrow <+> ppTypeExp ty2
 ppTypeExpr p (TCons     qn tys)
   | isListId qn && length tys == 1 = brackets (ppTypeExp (head tys))
   | isTupleId qn                   = tupled   (map ppTypeExp tys)
@@ -119,13 +117,13 @@ ppTVarIndex i = text $ vars !! i
 
 --- pretty-print a list of function declarations
 ppFuncDecls :: [AFuncDecl _] -> Doc
-ppFuncDecls = compose (<$+>) . map ppFuncDecl
+ppFuncDecls = compose (<$+$>) . map ppFuncDecl
 
 --- pretty-print a function declaration
 ppFuncDecl :: AFuncDecl _ -> Doc
 ppFuncDecl (AFunc qn _ _ ty r)
   =   indent (sep [ppPrefixOp qn, text "::", ppTypeExp ty])
-  <$> indent (ppPrefixOp qn <+> ppRule r)
+  $$ indent (ppPrefixOp qn <+> ppRule r)
 
 --- pretty-print a function rule
 ppRule :: ARule _ -> Doc
@@ -158,7 +156,7 @@ ppExpr p (AOr    _   e1 e2) = parensIf (p > 0)
                             $ ppExpr 1 e1 <+> text "?" <+> ppExpr 1 e2
 ppExpr p (ACase  _ ct e bs) = parensIf (p > 0) $ indent
                             $ ppCaseType ct <+> ppExpr 1 e <+> text "of"
-                              <$> vsep (map ppBranch bs)
+                              $$ vsep (map ppBranch bs)
 ppExpr p (ATyped _    e ty) = parensIf (p > 0)
                             $ ppExp e <+> text "::" <+> ppTypeExp ty
 
@@ -214,7 +212,7 @@ ppCaseType Flex  = text "fcase"
 
 --- Pretty print a case branch
 ppBranch :: ABranchExpr _ -> Doc
-ppBranch (ABranch p e) = ppPattern p <+> arrow <+> indent (ppExp e)
+ppBranch (ABranch p e) = ppPattern p <+> rarrow <+> indent (ppExp e)
 
 --- Pretty print a pattern
 ppPattern :: APattern _ -> Doc

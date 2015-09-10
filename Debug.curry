@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
---- Library for debugging operations.
+--- This library contains some useful operation for debugging programs.
 ---
 --- @author Björn Peemöller
 --- @version September 2014
