@@ -280,16 +280,18 @@ ppCRules opts qn rs
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
 ppCRule opts qn (CRule ps rhs) =
-    (nest' opts $ sep [ hsep (positionIdent ppName qn pDocs)
+    (nest' opts $ sep [ ppCPattern opts (CPComb qn ps) {- exploit similarity
+                                                          between left hand side
+                                                          of rule and constructor
+                                                          pattern -}
                         <+> (case rhs of
                                   CSimpleRhs  _ _ -> equals
                                   CGuardedRhs _ _ -> empty )
-                      , pRhs])
+                      , pRhs] )
  $$ if null lDecls
        then empty
        else indent' opts $ ppWhereDecl opts lDecls
-    where pDocs          = map (ppCPattern' prefAppPrec opts) ps
-          (pRhs, lDecls) = ppFuncRhs opts rhs
+    where (pRhs, lDecls) = ppFuncRhs opts rhs
 
 --- pretty-print a pattern expression.
 ppCPattern :: Options -> CPattern -> Doc
@@ -303,10 +305,25 @@ ppCPattern = ppCPattern' tlPrec
 ppCPattern' :: Int -> Options -> CPattern -> Doc
 ppCPattern' _ opts (CPVar  pvar   ) = ppCVarIName opts pvar
 ppCPattern' _ opts (CPLit  lit    ) = ppCLiteral opts lit
-ppCPattern' p opts (CPComb qn   ps) = ppCPComb p opts qn ps
-ppCPattern' _ opts (CPAs   pvar p ) = ppCVarIName opts pvar
-                                   <> at
-                                   <> ppCPattern' highestPrec opts p
+ppCPattern' p opts pat@(CPComb qn   ps)
+    | null ps        = parsIfInfix qn ppQn
+    | isTupleCons qn = tupled . map (ppCPattern opts) $ ps
+    | isFinLis pat   = let ps' = fromJust $ extractFiniteListPattern pat
+                       in  list . map (ppCPattern opts) $ ps'
+    | isInfixId qn   =
+        case ps of [l, r] -> parensIf (p >= infAppPrec)
+                           $ hsep [ ppCPattern' p' opts l, ppQn
+                                  , ppCPattern' p' opts r ]
+                   _      -> prefixApp
+    | otherwise      = prefixApp
+    where ppQn      = ppQName opts qn
+          p'        = if isInfixId qn then infAppPrec else prefAppPrec
+          prefixApp = parensIf (p >= prefAppPrec) . nest' opts
+                    $ sep [ parsIfInfix qn ppQn
+                          , align . sep . map (ppCPattern' p' opts) $ ps ]
+          isFinLis  = isJust . extractFiniteListPattern
+ppCPattern' _ opts (CPAs   pvar p )
+    = hcat [ppCVarIName opts pvar, at, ppCPattern' highestPrec opts p]
 ppCPattern' p opts (CPFuncComb qn ps ) =
     case ps of
          [p1, p2] | isInfixId qn -> parensIf (p >= infAppPrec)
@@ -321,30 +338,43 @@ ppCPattern' _ opts (CPRecord   qn rps) = ppQName opts qn
                                      <+> setSpaced (map (ppCFieldPattern opts)
                                                         rps)
 
--- pretty print the application of an n-ary constructor.
-ppCPComb :: Int -> Options -> QName -> [CPattern] -> Doc
-ppCPComb p opts qn ps =
-    case pDocs of
-         [cons]                    -> cons
-         [l, m, r] |    m == colon
-                     && r == nil   -> brackets l
-                   | isInfixId qn  -> parensIf (p >= infAppPrec)
-                                    $ hsep [l, m, r]
-         {- Assume tupled pattern and therefore avoid additional parenthesis. -}
-         (x:_) | x == lparen       -> hcat pDocs
+-- -- pretty print the application of an n-ary constructor.
+-- ppCPComb :: Int -> Options -> QName -> [CPattern] -> Doc
+-- ppCPComb p opts qn ps =
+--     case pDocs of
+--          [cons]                    -> cons
+--          [l, m, r] |    m == colon
+--                      && r == nil   -> brackets l
+--                    | isInfixId qn  -> parensIf (p >= infAppPrec)
+--                                     $ hsep [l, m, r]
+--          {- Assume tupled pattern and therefore avoid additional parenthesis. -}
+--          (x:_) | x == lparen       -> hcat pDocs
          {- Assume prefix application. -}
-         _                         -> parensIf (p >= prefAppPrec)
-                                    . nest' opts
-                                    $ sep [head pDocs, align . sep $ tail pDocs]
-    where pDocs = positionIdent (ppQName opts) qn
-                $ map (ppCPattern' p' opts) ps
-          p'    = if isInfixId qn
-                     then infAppPrec
-                     {- This assumes the existence of infix constructors and
-                        all of them having a lower precedence than any prefix
-                        constructors. -}
-                     else prefAppPrec
+--          _                         -> parensIf (p >= prefAppPrec)
+--                                     . nest' opts
+--                                     $ sep [head pDocs, align . sep $ tail pDocs]
+--     where pDocs = positionIdent (ppQName opts) qn
+--                 $ map (ppCPattern' p' opts) ps
+--           p'    = if isInfixId qn
+--                      then infAppPrec
+--                      {- This assumes the existence of infix constructors and
+--                         all of them having a lower precedence than any prefix
+--                         constructors. -}
+--                      else prefAppPrec
 
+-- Helping functions (sugaring)
+-- --- `positionIdent f qn [x1, ..., xn]` will return `[x1, f qn, xn]` if `qn`
+-- --- is an infix identifier and n = 2. If `qn` in the tuple identifier return
+-- --- (simplified) `[(x1,, ..., xn)]`. Otherwise return `[f qn, x1, ..., xn]`.
+-- positionIdent :: (QName -> Doc) -> QName -> [Doc] -> [Doc]
+-- positionIdent f qn ds
+-- --     | null ds        = [prefixQnDoc]
+-- --     | isInfixId qn   = case ds of [x1, x2] -> [x1, qnDoc, x2]
+-- --                                   _        -> prefixQnDoc:ds
+-- --     | isTupleCons qn = lparen : punctuate comma ds ++ [rparen]
+-- --     | otherwise      = prefixQnDoc:ds
+-- --     where prefixQnDoc = parensIf (isInfixId qn) qnDoc
+-- --           qnDoc       = f qn
 
 --- pretty-print a pattern variable (currently the Int is ignored).
 ppCVarIName :: Options -> CVarIName -> Doc
@@ -448,7 +478,7 @@ ppCExpr' p opts app@(CApply f exp)
                                          , text "else" <+> ppCExpr opts e])
     | isTup app = let args = fromJust $ extractTuple app
                   in  tupled (map (ppCExpr opts) args)
-    | isFinLis app = let elems = fromJust $ extractFiniteList app
+    | isFinLis app = let elems = fromJust $ extractFiniteListExp app
                      in  list (map (ppCExpr opts) elems)
     | isInf app
         = parensIf (p >= infAppPrec)
@@ -469,7 +499,7 @@ ppCExpr' p opts app@(CApply f exp)
     where isITE    = isJust . extractITE
           isInf    = isJust . extractInfix
           isTup    = isJust . extractTuple
-          isFinLis = isJust . extractFiniteList
+          isFinLis = isJust . extractFiniteListExp
           ppNestedWay l sepa r = align. nest 1 $ sep [l, sepa <++> r]
           ppFilledWay l sepa r = nest 1 $ fillSep [l, sepa, r]
 ppCExpr' p opts (CLambda ps exp)
@@ -489,7 +519,7 @@ ppCExpr' _ opts (CListComp exp stms)
              <+> hsep (punctuate (comma <> space) (map (ppCStatement opts)
                                                         stms))
 ppCExpr' p opts (CCase cType exp cases)
-    = parensIf (p > tlPrec) . nest' opts
+    = parensIf (p > tlPrec) . align . nest' opts
     $ sep [ ppCCaseType cType <+> ppCExpr opts exp <+> text "of"
           , ppCases opts cases]
 ppCExpr' p opts (CTyped exp tExp) = parensIf (p > tlPrec)
@@ -566,20 +596,6 @@ genericPPName f qn = f qn $ text . snd $ qn
 ppName :: QName -> Doc
 ppName = genericPPName (flip const)
 
--- Helping functions (sugaring)
---- `positionIdent f qn [x1, ..., xn]` will return `[x1, f qn, xn]` if `qn`
---- is an infix identifier and n = 2. If `qn` in the tuple identifier return
---- (simplified) `[(x1,, ..., xn)]`. Otherwise return `[f qn, x1, ..., xn]`.
-positionIdent :: (QName -> Doc) -> QName -> [Doc] -> [Doc]
-positionIdent f qn ds
-    | null ds        = [prefixQnDoc]
-    | isInfixId qn   = case ds of [x1, x2] -> [x1, qnDoc, x2]
-                                  _        -> prefixQnDoc:ds
-    | isTupleCons qn = lparen : punctuate comma ds ++ [rparen]
-    | otherwise      = prefixQnDoc:ds
-    where prefixQnDoc = parensIf (isInfixId qn) qnDoc
-          qnDoc       = f qn
-
 -- Helping function (diagnosis)
 --- Check whether an operator is an infix identifier.
 isInfixId :: QName -> Bool
@@ -637,15 +653,27 @@ extractTuple = extractTuple' []
 
 --- Check if given application tree represents a finite list `[x1, ..., xn]`.
 --- If so, return the list elements in a list. Otherwise, return `Nothing`.
-extractFiniteList :: CExpr -> Maybe [CExpr]
-extractFiniteList = extractFiniteList' []
-    where extractFiniteList' es exp
-            = case exp of
-                   CApply (CApply (CSymbol f)
-                                   e)
-                           arg | isConsCons f -> extractFiniteList' (e:es) arg
-                   CSymbol s   | isListCons s -> Just $ reverse es
-                   _                          -> Nothing
+extractFiniteListExp :: CExpr -> Maybe [CExpr]
+extractFiniteListExp = extractFiniteListExp' []
+    where extractFiniteListExp' es exp =
+            case exp of
+                 CApply (CApply (CSymbol f)
+                                 e)
+                         arg | isConsCons f -> extractFiniteListExp' (e:es) arg
+                 CSymbol s   | isListCons s -> Just $ reverse es
+                 _                          -> Nothing
+
+--- Check if given construct pattern represents a finite list `[x1, ..., xn]`.
+--- If so, return the list elements in a list. Otherwise, return `Nothing`.
+extractFiniteListPattern :: CPattern -> Maybe [CPattern]
+extractFiniteListPattern = extractFiniteListPattern' []
+    where extractFiniteListPattern' es pat =
+            case pat of
+                 CPComb qn [e, t] | isConsCons qn
+                                  -> extractFiniteListPattern' (e:es) t
+                 CPComb qn []     | isListCons qn
+                                  -> Just $ reverse es
+                 _                -> Nothing
 
 -- Helping functions (pretty printing)
 hsepMap :: (a -> Doc) -> [a] -> Doc
