@@ -20,7 +20,7 @@ module AbstractCurry.Pretty
     , ppCStatement, ppQName, ppName)
     where
 
-import Pretty
+import Pretty hiding (list, listSpaced, tupled, tupledSpaced, set, setSpaced)
 import AbstractCurry.Types
 import List (partition)
 import Maybe (isJust, fromJust)
@@ -119,8 +119,8 @@ ppExports :: Options -> [CTypeDecl] -> [CFuncDecl] -> Doc
 ppExports opts ts fs
     | null pubTs  && null pubFs  = parens empty -- nothing is exported
     | null privTs && null privFs = empty        -- everything is exported
-    | otherwise                  = tupledSpaced $ map tDeclToDoc pubTs
-                                               ++ map fDeclToDoc pubFs
+    | otherwise                  = filledTupledSpaced $ map tDeclToDoc pubTs
+                                                     ++ map fDeclToDoc pubFs
     where (pubTs, privTs) = partition isPublicTypeDecl ts
           (pubFs, privFs) = partition isPublicFuncDecl fs
 
@@ -151,7 +151,7 @@ ppConsExports :: Options -> [CConsDecl] -> Doc
 ppConsExports opts cDecls
     | null pubCs  = empty
     | null privCs = parens $ dot <> dot
-    | otherwise   = tupled $ map cDeclToDoc pubCs
+    | otherwise   = filledTupled $ map cDeclToDoc pubCs
     where (pubCs, privCs)    = partition isPublicConsDecl cDecls
           isPublicConsDecl cDecl
               = case cDecl of
@@ -206,9 +206,8 @@ ppCConsDecls opts cDecls
 ppCConsDecl :: Options -> CConsDecl -> Doc
 ppCConsDecl opts (CCons   qn _ tExps ) = ppName qn
                                     <++> hsepMap (ppCTypeExpr' 2 opts) tExps
-ppCConsDecl opts (CRecord qn _ fDecls) = ppName qn
-                                     <+> setSpaced (map (ppCFieldDecl opts)
-                                                        fDecls)
+ppCConsDecl opts (CRecord qn _ fDecls) =
+    ppName qn <+> alignedSetSpaced (map (ppCFieldDecl opts) fDecls)
 
 --- pretty-print a record field declaration (`field :: type`).
 ppCFieldDecl :: Options -> CFieldDecl -> Doc
@@ -225,10 +224,10 @@ ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
 
 --- pretty-print a function declaration without signature.
 ppCFuncDeclWithoutSig :: Options -> CFuncDecl -> Doc
-ppCFuncDeclWithoutSig opts (CFunc qn _ _ _ rs)
-    = ppCRules opts qn rs
-ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs)
-    = string cmt <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
+ppCFuncDeclWithoutSig opts (CFunc qn _ _ _ rs) =
+    ppCRules opts qn rs
+ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs) =
+    string cmt <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
@@ -251,13 +250,13 @@ ppCTypeExpr = ppCTypeExpr' tlPrec
 -- has to be enclosed in parentheses.
 ppCTypeExpr' :: Int -> Options -> CTypeExpr -> Doc
 ppCTypeExpr' _ opts (CTVar     tvar) = ppCTVarIName opts tvar
-ppCTypeExpr' p opts (CFuncType tExp1 tExp2)
-    = parensIf (p > tlPrec)
-    $ sep [ ppCTypeExpr' 1 opts tExp1, rarrow <+> ppCTypeExpr opts tExp2]
+ppCTypeExpr' p opts (CFuncType tExp1 tExp2) =
+    parensIf (p > tlPrec)
+  $ sep [ ppCTypeExpr' 1 opts tExp1, rarrow <+> ppCTypeExpr opts tExp2]
 ppCTypeExpr' p opts (CTCons qn tExps)
     | null tExps     = ppQName opts qn
     | isListCons qn  = brackets . (ppCTypeExpr opts) . head $ tExps -- assume singleton
-    | isTupleCons qn = tupled $ map (ppCTypeExpr opts) tExps
+    | isTupleCons qn = alignedTupled $ map (ppCTypeExpr opts) tExps
     | otherwise      = parensIf (p >= 2)
                      $ ppQName opts qn <+> hsepMap (ppCTypeExpr' 2 opts) tExps
 
@@ -307,9 +306,9 @@ ppCPattern' _ opts (CPVar  pvar   ) = ppCVarIName opts pvar
 ppCPattern' _ opts (CPLit  lit    ) = ppCLiteral opts lit
 ppCPattern' p opts pat@(CPComb qn   ps)
     | null ps        = parsIfInfix qn ppQn
-    | isTupleCons qn = tupled . map (ppCPattern opts) $ ps
+    | isTupleCons qn = filledTupled . map (ppCPattern opts) $ ps
     | isFinLis pat   = let ps' = fromJust $ extractFiniteListPattern pat
-                       in  list . map (ppCPattern opts) $ ps'
+                       in  alignedList . map (ppCPattern opts) $ ps'
     | isInfixId qn   =
         case ps of [l, r] -> parensIf (p >= infAppPrec)
                            $ hsep [ ppCPattern' p' opts l, ppQn
@@ -334,47 +333,8 @@ ppCPattern' p opts (CPFuncComb qn ps ) =
                                   $ ppQName opts qn
                                 <+> hsepMap (ppCPattern' prefAppPrec opts) ps
 ppCPattern' _ opts (CPLazy     p     ) = tilde <> ppCPattern' highestPrec opts p
-ppCPattern' _ opts (CPRecord   qn rps) = ppQName opts qn
-                                     <+> setSpaced (map (ppCFieldPattern opts)
-                                                        rps)
-
--- -- pretty print the application of an n-ary constructor.
--- ppCPComb :: Int -> Options -> QName -> [CPattern] -> Doc
--- ppCPComb p opts qn ps =
---     case pDocs of
---          [cons]                    -> cons
---          [l, m, r] |    m == colon
---                      && r == nil   -> brackets l
---                    | isInfixId qn  -> parensIf (p >= infAppPrec)
---                                     $ hsep [l, m, r]
---          {- Assume tupled pattern and therefore avoid additional parenthesis. -}
---          (x:_) | x == lparen       -> hcat pDocs
-         {- Assume prefix application. -}
---          _                         -> parensIf (p >= prefAppPrec)
---                                     . nest' opts
---                                     $ sep [head pDocs, align . sep $ tail pDocs]
---     where pDocs = positionIdent (ppQName opts) qn
---                 $ map (ppCPattern' p' opts) ps
---           p'    = if isInfixId qn
---                      then infAppPrec
---                      {- This assumes the existence of infix constructors and
---                         all of them having a lower precedence than any prefix
---                         constructors. -}
---                      else prefAppPrec
-
--- Helping functions (sugaring)
--- --- `positionIdent f qn [x1, ..., xn]` will return `[x1, f qn, xn]` if `qn`
--- --- is an infix identifier and n = 2. If `qn` in the tuple identifier return
--- --- (simplified) `[(x1,, ..., xn)]`. Otherwise return `[f qn, x1, ..., xn]`.
--- positionIdent :: (QName -> Doc) -> QName -> [Doc] -> [Doc]
--- positionIdent f qn ds
--- --     | null ds        = [prefixQnDoc]
--- --     | isInfixId qn   = case ds of [x1, x2] -> [x1, qnDoc, x2]
--- --                                   _        -> prefixQnDoc:ds
--- --     | isTupleCons qn = lparen : punctuate comma ds ++ [rparen]
--- --     | otherwise      = prefixQnDoc:ds
--- --     where prefixQnDoc = parensIf (isInfixId qn) qnDoc
--- --           qnDoc       = f qn
+ppCPattern' _ opts (CPRecord   qn rps) =
+    ppQName opts qn <+> alignedSetSpaced (map (ppCFieldPattern opts) rps)
 
 --- pretty-print a pattern variable (currently the Int is ignored).
 ppCVarIName :: Options -> CVarIName -> Doc
@@ -477,9 +437,9 @@ ppCExpr' p opts app@(CApply f exp)
                                          , text "then" <+> ppCExpr opts t
                                          , text "else" <+> ppCExpr opts e])
     | isTup app = let args = fromJust $ extractTuple app
-                  in  tupled (map (ppCExpr opts) args)
+                  in  alignedTupled (map (ppCExpr opts) args)
     | isFinLis app = let elems = fromJust $ extractFiniteListExp app
-                     in  list (map (ppCExpr opts) elems)
+                     in  alignedList (map (ppCExpr opts) elems)
     | isInf app
         = parensIf (p >= infAppPrec)
         $ let (op, l, r) = fromJust $ extractInfix app
@@ -560,7 +520,7 @@ ppCase opts (p, rhs) = ppCPattern opts p <+> ppCaseRhs opts rhs
 ---     , labn = expn }
 --- otherwise.
 ppRecordFields :: Options -> [CField CExpr] -> Doc
-ppRecordFields opts = setSpaced . map (ppRecordField opts)
+ppRecordFields opts = alignedSetSpaced . map (ppRecordField opts)
 
 --- pretty-print a record field assignment (`fieldLabel = exp`).
 ppRecordField :: Options -> CField CExpr -> Doc
@@ -696,6 +656,27 @@ vvsepMap f = vvsep . map f
 
 fillSepMap :: (a -> Doc) -> [a] -> Doc
 fillSepMap f = fillSep . map f
+
+encloseSepSpaced :: Doc -> Doc -> Doc -> [Doc] -> Doc
+encloseSepSpaced l r s = encloseSep (l <> space) (space <> r) (s <> space)
+
+-- filledList :: [Doc] -> Doc
+-- filledList = fillEncloseSep lbracket rbracket comma
+
+alignedList :: [Doc] -> Doc
+alignedList = encloseSep lbracket rbracket comma
+
+alignedSetSpaced :: [Doc] -> Doc
+alignedSetSpaced = encloseSepSpaced lbrace rbrace comma
+
+filledTupled :: [Doc] -> Doc
+filledTupled = fillEncloseSep lparen rparen comma
+
+filledTupledSpaced :: [Doc] -> Doc
+filledTupledSpaced = fillEncloseSepSpaced lparen rparen comma
+
+alignedTupled :: [Doc] -> Doc
+alignedTupled = encloseSep lparen rparen comma
 
 nest' :: Options -> Doc -> Doc
 nest' opts = nest (indentationWidth opts)
