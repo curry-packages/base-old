@@ -593,12 +593,12 @@ genericPPName :: (QName -> Doc -> Doc) -> QName -> Doc
 genericPPName f qn = f qn $ text . snd $ qn
 
 --- pretty-print an identifier (`QName`) qualified according to given options.
---- Use `ppQTypeIdent` or `ppTypeIdent` for pretty-printing types.
+--- Use 'ppQTypeIdent' or `ppTypeIdent' for pretty-printing types.
 ppQIdent :: Options -> QName -> Doc
 ppQIdent opts = genericPPQName (importedIdentifiers opts) (flip const) opts
 
 --- pretty-print an identifier (`QName`) non-qualified.
---- Use `ppQTypeIdent` or `ppTypeIdent` for pretty-printing types.
+--- Use 'ppQTypeIdent' or 'ppTypeIdent' for pretty-printing types.
 ppIdent :: QName -> Doc
 ppIdent = genericPPName (flip const)
 
