@@ -13,6 +13,19 @@ import AbstractCurry.Types
 import List(union)
 
 ------------------------------------------------------------------------
+-- Selectors for curry programs
+
+--- Returns the imports (module names) of a given curry program
+imports :: CurryProg -> [MName]
+imports (CurryProg _ ms _ _ _) = ms
+
+types :: CurryProg -> [CTypeDecl]
+types (CurryProg _ _ ts _ _) = ts
+
+functions :: CurryProg -> [CFuncDecl]
+functions (CurryProg _ _ _ fs _) = fs
+
+------------------------------------------------------------------------
 -- Selectors for type expressions
 
 --- Returns the name of a given type declaration
@@ -75,7 +88,7 @@ isIOReturnType (CFuncType      _ _) = False
 isIOReturnType (CTCons tc typelist) =
   tc==pre "IO" && head typelist /= CTCons (pre "()") []
   && not (isFunctionalType (head typelist))
-  
+
 --- Returns all argument types from a functional type
 argTypes :: CTypeExpr -> [CTypeExpr]
 argTypes (CTVar         _) = []
@@ -163,7 +176,7 @@ varsOfStat :: CStatement -> [CVarIName]
 varsOfStat (CSExpr e)  = varsOfExp e
 varsOfStat (CSPat p e) = varsOfPat p ++ varsOfExp e
 varsOfStat (CSLet ld)  = concatMap varsOfLDecl ld
-                             
+
 --- Returns list of all variables occurring in a local declaration.
 --- Each occurrence corresponds to one element, i.e., the list might
 --- contain multiple elements.
@@ -171,7 +184,7 @@ varsOfLDecl :: CLocalDecl -> [CVarIName]
 varsOfLDecl (CLocalFunc f)     = varsOfFDecl f
 varsOfLDecl (CLocalPat p rhs)  = varsOfPat p ++ varsOfRhs rhs
 varsOfLDecl (CLocalVars lvars) = lvars
-                           
+
 --- Returns list of all variables occurring in a function declaration.
 --- Each occurrence corresponds to one element, i.e., the list might
 --- contain multiple elements.
@@ -188,6 +201,6 @@ varsOfRule (CRule pats rhs) = concatMap varsOfPat pats ++ varsOfRhs rhs
 ------------------------------------------------------------------------
 --- Tests whether a module name is the prelude.
 isPrelude :: String -> Bool
-isPrelude m = m=="Prelude"
+isPrelude m = m == "Prelude"
 
 ------------------------------------------------------------------------

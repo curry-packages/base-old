@@ -31,6 +31,14 @@ import ReadShowTerm
 readCurry :: String -> IO CurryProg
 readCurry prog = readCurryWithParseOptions prog (setQuiet True defaultParams)
 
+readCurryWithImports :: String -> IO (Either [String] [CurryProg])
+readCurryWithImports _ = return $ Left ["UnimplementedError"]
+
+readCurryWithImportsInPath :: [String]
+                           -> String
+                           -> IO (Either [String] [CurryProg])
+readCurryWithImportsInPath _ _ = return $ Left ["UnimplementedError"]
+
 --- I/O action which parses a Curry program and returns the corresponding
 --- untyped Abstract Curry program.
 --- Thus, the argument is the file name without suffix ".curry"
