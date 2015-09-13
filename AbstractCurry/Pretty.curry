@@ -21,6 +21,7 @@ module AbstractCurry.Pretty
     where
 
 import Pretty hiding (list, listSpaced, tupled, tupledSpaced, set, setSpaced)
+import AbstractCurry.Select
 import AbstractCurry.Types
 import List (partition)
 import Maybe (isJust, fromJust)
@@ -137,29 +138,14 @@ ppExports opts ts fs
     | null privTs && null privFs = empty        -- everything is exported
     | otherwise                  = filledTupledSpaced $ map tDeclToDoc pubTs
                                                      ++ map fDeclToDoc pubFs
-    where (pubTs, privTs) = partition isPublicTypeDecl ts
-          (pubFs, privFs) = partition isPublicFuncDecl fs
-
-          isPublicTypeDecl tDecl = case tDecl of
-                                        CType    _ Public _ _ -> True
-                                        CTypeSyn _ Public _ _ -> True
-                                        CNewType _ Public _ _ -> True
-                                        _                     -> False
-
-          isPublicFuncDecl fDecl = case fDecl of
-                                        CFunc     _ _ Public _ _ -> True
-                                        CmtFunc _ _ _ Public _ _ -> True
-                                        _                        -> False
-
-          tDeclToDoc (CType    qn _ _ cDecls)
-              = ppQTypeIdent' qn <> ppConsExports opts cDecls
-          tDeclToDoc (CTypeSyn qn _ _ _     ) = ppQTypeIdent' qn
-          tDeclToDoc (CNewType qn _ _ cDecl )
-              = ppQTypeIdent' qn <> ppConsExports opts [cDecl]
-
-          fDeclToDoc (CFunc     qn _ _ _ _) = ppQIdent' qn
-          fDeclToDoc (CmtFunc _ qn _ _ _ _) = ppQIdent' qn
-
+    where (pubTs, privTs)  = partition isPublicTypeDecl ts
+          (pubFs, privFs)  = partition isPublicFuncDecl fs
+          isPublicTypeDecl = (== Public) . typeVis
+          isPublicFuncDecl = (== Public) . funcVis
+          tDeclToDoc       = on2 (<>)
+                                 (ppQTypeIdent' . typeName)
+                                 (ppConsExports opts . typeCons)
+          fDeclToDoc    = ppQIdent' . funcName
           ppQTypeIdent' = genericPPQName (importedTypes opts) parsIfInfix opts
           ppQIdent'     = genericPPQName (importedIdentifiers opts)
                                          parsIfInfix
@@ -171,17 +157,11 @@ ppConsExports opts cDecls
     | null pubCs  = empty
     | null privCs = parens $ dot <> dot
     | otherwise   = filledTupled $ map cDeclToDoc pubCs
-    where (pubCs, privCs)    = partition isPublicConsDecl cDecls
-          isPublicConsDecl cDecl
-              = case cDecl of
-                     CCons   _ Public _ -> True
-                     CRecord _ Public _ -> True
-                     _                  -> False
-
-          cDeclToDoc (CCons   qn _ _) = ppQIdent' qn
-          cDeclToDoc (CRecord qn _ _) = ppQIdent' qn
-
-          ppQIdent' = genericPPQName (importedIdentifiers opts) parsIfInfix opts
+    where (pubCs, privCs)  = partition isPublicConsDecl cDecls
+          isPublicConsDecl = (== Public) . consVis
+          cDeclToDoc       = ppQIdent' . consName
+          ppQIdent'        =
+              genericPPQName (importedIdentifiers opts) parsIfInfix opts
 
 
 --- pretty-print imports (list of module names) by prepending the word "import"
@@ -321,9 +301,9 @@ ppCPattern = ppCPattern' tlPrec
 -- pattern has lower precedence than the enclosing pattern, the nested one has
 -- to be enclosed in parentheses.
 ppCPattern' :: Int -> Options -> CPattern -> Doc
-ppCPattern' _ opts (CPVar  pvar   ) = ppCVarIName opts pvar
-ppCPattern' _ opts (CPLit  lit    ) = ppCLiteral opts lit
-ppCPattern' p opts pat@(CPComb qn   ps)
+ppCPattern' _ opts (CPVar  pvar) = ppCVarIName opts pvar
+ppCPattern' _ opts (CPLit  lit ) = ppCLiteral opts lit
+ppCPattern' p opts pat@(CPComb qn ps)
     | null ps        = parsIfInfix qn ppQn
     | isTupleCons qn = filledTupled . map (ppCPattern opts) $ ps
     | isFinLis pat   = let ps' = fromJust $ extractFiniteListPattern pat
@@ -340,9 +320,9 @@ ppCPattern' p opts pat@(CPComb qn   ps)
                     $ sep [ parsIfInfix qn ppQn
                           , align . sep . map (ppCPattern' p' opts) $ ps ]
           isFinLis  = isJust . extractFiniteListPattern
-ppCPattern' _ opts (CPAs   pvar p )
+ppCPattern' _ opts (CPAs pvar p)
     = hcat [ppCVarIName opts pvar, at, ppCPattern' highestPrec opts p]
-ppCPattern' p opts (CPFuncComb qn ps ) =
+ppCPattern' p opts (CPFuncComb qn ps) =
     case ps of
          [p1, p2] | isInfixId qn -> parensIf (p >= infAppPrec)
                                   $ hsep [ ppCPattern' infAppPrec opts p1
@@ -739,6 +719,10 @@ where_ = text "where"
 
 nil :: Doc
 nil = text "[]"
+
+-- Helping functions (various)
+on2 :: (b -> b -> c) -> (a -> b) -> (a -> b) -> a -> c
+on2 comb f g x = f x `comb` g x
 
 -- Helping functions (CRUD functions for Collection)
 emptyCol :: Collection a
