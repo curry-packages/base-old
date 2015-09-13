@@ -98,13 +98,13 @@ prettyCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 --- using AbstractCurry) according to given options. This function will overwrite
 --- the module name given by options with the name encapsulated in CurryProg.
 ppCurryProg :: Options -> CurryProg -> Doc
-ppCurryProg opts (CurryProg m ms ts fs os)
-     = ( nest' opts'
-       $ sep [ text "module" <+> ppMName m, ppExports opts' ts fs]) </> where_
- <$+$> ppImports opts' ms
- <$+$> vcatMap (ppCOpDecl opts') os
- <$+$> vsepBlankMap (ppCTypeDecl opts') ts
- <$+$> vsepBlankMap (ppCFuncDecl opts') fs
+ppCurryProg opts (CurryProg m ms ts fs os) = vsepBlank
+    [ (nest' opts' $ sep [ text "module" <+> ppMName m, ppExports opts' ts fs])
+       </> where_
+    , ppImports opts' ms
+    , vcatMap (ppCOpDecl opts') os
+    , vsepBlankMap (ppCTypeDecl opts') ts
+    , vsepBlankMap (ppCFuncDecl opts') fs ]
     where opts' = opts { moduleName = m }
 
 --- pretty-print a module name (just a string).
@@ -152,12 +152,12 @@ ppConsExports opts cDecls
     | null pubCs  = empty
     | null privCs = parens $ dot <> dot
     | otherwise   = filledTupled $ map cDeclToDoc pubCs
-    where (pubCs, privCs)    = partition isPublicConsDecl cDecls
-          isPublicConsDecl cDecl
-              = case cDecl of
-                     CCons   _ Public _ -> True
-                     CRecord _ Public _ -> True
-                     _                  -> False
+    where (pubCs, privCs)        = partition isPublicConsDecl cDecls
+          isPublicConsDecl cDecl =
+              case cDecl of
+                   CCons   _ Public _ -> True
+                   CRecord _ Public _ -> True
+                   _                  -> False
 
           cDeclToDoc (CCons   qn _ _) = ppQName' qn
           cDeclToDoc (CRecord qn _ _) = ppQName' qn
@@ -173,9 +173,8 @@ ppImports _ imps = vcatMap (\m -> text "import" <+> ppMName m)
 
 --- pretty-print operator precedence declarations.
 ppCOpDecl :: Options -> COpDecl -> Doc
-ppCOpDecl _ (COp qn fix p) = ppCFixity fix
-                         <+> int p
-                         <+> genericPPName (bquotesIf . not . isInfixId) qn
+ppCOpDecl _ (COp qn fix p) =
+    hsep [ppCFixity fix, int p, genericPPName (bquotesIf . not . isInfixId) qn]
 
 --- pretty-print the fixity of a function.
 ppCFixity :: CFixity -> Doc
@@ -186,21 +185,21 @@ ppCFixity CInfixrOp = text "infixr"
 --- pretty-print type declarations, like `data ... = ...`, `type ... = ...` or
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
-ppCTypeDecl opts (CType qn _ tVars cDecls)
-    = hsep [ text "data", ppName qn, ppCTVarINames opts tVars
-           , if null cDecls then empty else ppCConsDecls opts cDecls]
-ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
-    = hsep [ text "type", ppName qn, ppCTVarINames opts tVars
-           , align $ equals <+> ppCTypeExpr opts tExp]
-ppCTypeDecl opts (CNewType qn _ tVars cDecl)
-    = hsep [ text "newtype", ppName qn, ppCTVarINames opts tVars, equals
-           , ppCConsDecl opts cDecl]
+ppCTypeDecl opts (CType qn _ tVars cDecls) =
+    hsep [ text "data", ppName qn, ppCTVarINames opts tVars
+         , if null cDecls then empty else ppCConsDecls opts cDecls]
+ppCTypeDecl opts (CTypeSyn qn _ tVars tExp) =
+    hsep [ text "type", ppName qn, ppCTVarINames opts tVars
+         , align $ equals <+> ppCTypeExpr opts tExp]
+ppCTypeDecl opts (CNewType qn _ tVars cDecl) =
+    hsep [ text "newtype", ppName qn, ppCTVarINames opts tVars, equals
+         , ppCConsDecl opts cDecl]
 
 --- pretty-print a list of constructor declarations, including the `=` sign.
 ppCConsDecls :: Options -> [CConsDecl] -> Doc
-ppCConsDecls opts cDecls
-    = align . sep $ [equals <+> ppCConsDecl opts (head cDecls)]
-                    ++ map ((bar <+>) . (ppCConsDecl opts)) (tail cDecls)
+ppCConsDecls opts cDecls =
+    align . sep $ [equals <+> ppCConsDecl opts (head cDecls)]
+               ++ map ((bar <+>) . (ppCConsDecl opts)) (tail cDecls)
 
 --- pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
@@ -217,10 +216,10 @@ ppCFieldDecl opts (CField qn _ tExp) = hsep [ ppName qn
 
 --- pretty-print a function declaration.
 ppCFuncDecl :: Options -> CFuncDecl -> Doc
-ppCFuncDecl opts fDecl@(CFunc qn _ _ tExp _)
-    = ppCFuncSignature opts qn tExp <$!$> ppCFuncDeclWithoutSig opts fDecl
-ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs)
-    = string cmt <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
+ppCFuncDecl opts fDecl@(CFunc qn _ _ tExp _) =
+    ppCFuncSignature opts qn tExp <$!$> ppCFuncDeclWithoutSig opts fDecl
+ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs) =
+    string cmt <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function declaration without signature.
 ppCFuncDeclWithoutSig :: Options -> CFuncDecl -> Doc
