@@ -15,13 +15,26 @@ module AbstractCurry.Files where
 
 import AbstractCurry.Types
 import Char         (isSpace)
-import Directory    (doesFileExist)
+import Directory    (doesFileExist, getModificationTime)
 import Distribution
 import FilePath     ((<.>))
 import Maybe        (isNothing)
 import ReadShowTerm
 
 -- ---------------------------------------------------------------------------
+
+--- Read an AbstractCurry file with all its imports.
+--- @param modname - Module name or file name of Curry module
+readCurryWithImports :: String -> IO [CurryProg]
+readCurryWithImports modname = collect [] [modname]
+ where
+  collect _        []     = return []
+  collect imported (m:ms)
+    | m `elem` imported   = collect imported ms
+    | otherwise           = do
+      p@(CurryProg _ is _ _ _) <- readCurry m
+      ps <- collect (m:imported) (ms ++ is)
+      return (p:ps)
 
 --- I/O action which parses a Curry program and returns the corresponding
 --- typed Abstract Curry program.
@@ -31,13 +44,62 @@ import ReadShowTerm
 readCurry :: String -> IO CurryProg
 readCurry prog = readCurryWithParseOptions prog (setQuiet True defaultParams)
 
-readCurryWithImports :: String -> IO (Either [String] [CurryProg])
-readCurryWithImports _ = return $ Left ["UnimplementedError"]
+tryReadCurryWithImports :: String -> IO (Either [String] [CurryProg])
+tryReadCurryWithImports modname = collect [] [modname]
+ where
+  collect _        []     = return (Right [])
+  collect imported (m:ms)
+    | m `elem` imported   = collect imported ms
+    | otherwise           = do
+      eProg <- tryReadCurryFile m
+      case eProg of
+        Left err                          -> return (Left [err])
+        Right prog@(CurryProg _ is _ _ _) -> do
+          results <- collect (m:imported) (ms ++ is)
+          return (either Left (Right . (prog :)) results)
 
-readCurryWithImportsInPath :: [String]
-                           -> String
-                           -> IO (Either [String] [CurryProg])
-readCurryWithImportsInPath _ _ = return $ Left ["UnimplementedError"]
+-- TODO: lookupFileInLoadPath m does not work as expected
+tryReadCurryFile :: String -> IO (Either String CurryProg)
+tryReadCurryFile m = do
+  mbSrc <- lookupFileInLoadPath m
+  case mbSrc of
+    Nothing      -> cancel $ "Source module '" ++ m ++ "' not found"
+    Just srcFile -> do
+      callFrontendWithParams ACY (setQuiet True defaultParams) m
+      mbFn <- lookupFileInLoadPath (abstractCurryFileName m)
+      case mbFn of
+        Nothing -> cancel $ "AbstractCurry module '" ++ m ++ "' not found"
+        Just fn -> do
+          ctime <- getModificationTime srcFile
+          ftime <- getModificationTime fn
+          if ctime > ftime
+            then cancel $ "Source file '" ++ srcFile
+                    ++ "' is newer than AbstractCurry file '" ++ fn ++ "'"
+            else do
+              mbProg <- tryParse fn
+              case mbProg of
+                Left  err -> cancel err
+                Right p   -> return (Right p)
+ where cancel str = return (Left str)
+
+--- Try to parse an AbstractCurry file.
+--- @param fn  - file name of AbstractCurry file
+tryParse :: String -> IO (Either String CurryProg)
+tryParse fn = do
+  exists <- doesFileExist fn
+  if not exists
+    then cancel $ "AbstractCurry file '" ++ fn ++ "' does not exist"
+    else do
+      src <- readFile fn
+      let (line1, lines) = break (=='\n') src
+      if line1 /= "{- "++version++" -}"
+        then cancel $ "Could not parse AbstractCurry file '" ++ fn
+                   ++ "': incompatible versions"
+        else case readsUnqualifiedTerm ["AbstractCurry.Types","Prelude"] lines of
+          [(p,tl)]  | all isSpace tl -> return (Right p)
+          _ -> cancel $ "Could not parse AbstractCurry file '" ++ fn
+                        ++ "': no parse"
+ where cancel str = return (Left str)
 
 --- I/O action which parses a Curry program and returns the corresponding
 --- untyped Abstract Curry program.
