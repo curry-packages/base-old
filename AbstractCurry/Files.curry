@@ -13,29 +13,16 @@
 
 module AbstractCurry.Files where
 
+import AbstractCurry.Select (imports)
 import AbstractCurry.Types
-import Char         (isSpace)
-import Directory    (doesFileExist, getModificationTime)
+import Char                 (isSpace)
+import Directory            (doesFileExist, getModificationTime)
 import Distribution
-import FilePath     ((<.>))
-import Maybe        (isNothing)
+import FilePath             ((<.>))
+import Maybe                (isNothing)
 import ReadShowTerm
 
 -- ---------------------------------------------------------------------------
-
---- Read an AbstractCurry file with all its imports.
---- @param modname - Module name or file name of Curry module
-readCurryWithImports :: String -> IO [CurryProg]
-readCurryWithImports modname = collect [] [modname]
- where
-  collect _        []     = return []
-  collect imported (m:ms)
-    | m `elem` imported   = collect imported ms
-    | otherwise           = do
-      p@(CurryProg _ is _ _ _) <- readCurry m
-      ps <- collect (m:imported) (ms ++ is)
-      return (p:ps)
-
 --- I/O action which parses a Curry program and returns the corresponding
 --- typed Abstract Curry program.
 --- Thus, the argument is the file name without suffix ".curry"
@@ -43,6 +30,20 @@ readCurryWithImports modname = collect [] [modname]
 --- program.
 readCurry :: String -> IO CurryProg
 readCurry prog = readCurryWithParseOptions prog (setQuiet True defaultParams)
+
+--- Read an AbstractCurry file with all its imports.
+--- @param modname - Module name or file name of Curry module
+--- @return a list of curry programs, having the AbstractCurry file as head.
+readCurryWithImports :: String -> IO [CurryProg]
+readCurryWithImports modname = collect [] [modname]
+ where
+  collect _        []     = return []
+  collect imported (m:ms)
+    | m `elem` imported   = collect imported ms
+    | otherwise           = do
+      p <- readCurry m
+      ps <- collect (m:imported) (ms ++ imports p)
+      return (p:ps)
 
 tryReadCurryWithImports :: String -> IO (Either [String] [CurryProg])
 tryReadCurryWithImports modname = collect [] [modname]

@@ -7,7 +7,21 @@
 --- @category meta
 ------------------------------------------------------------------------
 
-module AbstractCurry.Select where
+module AbstractCurry.Select
+    ( imports, functions, types, publicFuncNames, publicConsNames
+    , publicTypeNames
+
+    , typeName, typeVis, typeCons
+    , consName, consVis
+    , isBaseType, isPolyType, isFunctionalType, isIOType, isIOReturnType
+    , argTypes, resultType, tvarsOfType, modsOfType
+
+    , funcName, funcVis
+
+    , varsOfPat, varsOfExp, varsOfRhs, varsOfStat, varsOfLDecl
+    , varsOfFDecl, varsOfRule
+
+    , isPrelude) where
 
 import AbstractCurry.Types
 import List(union)
@@ -15,15 +29,33 @@ import List(union)
 ------------------------------------------------------------------------
 -- Selectors for curry programs
 
---- Returns the imports (module names) of a given curry program
+--- Returns the imports (module names) of a given curry program.
 imports :: CurryProg -> [MName]
 imports (CurryProg _ ms _ _ _) = ms
 
+--- Returns the function declarations of a given curry program.
+functions :: CurryProg -> [CFuncDecl]
+functions (CurryProg _ _ _ fs _) = fs
+
+--- Returns the type declarations of a given curry program.
 types :: CurryProg -> [CTypeDecl]
 types (CurryProg _ _ ts _ _) = ts
 
-functions :: CurryProg -> [CFuncDecl]
-functions (CurryProg _ _ _ fs _) = fs
+--- Returns the names of all visible functions in given curry program.
+publicFuncNames :: CurryProg -> [QName]
+publicFuncNames = map funcName . filter ((== Public) . funcVis) . functions
+
+--- Returns the names of all visible constructors in given curry program.
+publicConsNames :: CurryProg -> [QName]
+publicConsNames = map consName
+                . filter ((== Public) . consVis)
+                . concatMap typeCons
+                . filter ((== Public) . typeVis)
+                . types
+
+--- Returns the names of all visible types in given curry program.
+publicTypeNames :: CurryProg -> [QName]
+publicTypeNames = map typeName . filter ((== Public) . typeVis) . types
 
 ------------------------------------------------------------------------
 -- Selectors for type expressions
@@ -40,18 +72,18 @@ typeVis (CType    _ vis _ _) = vis
 typeVis (CTypeSyn _ vis _ _) = vis
 typeVis (CNewType _ vis _ _) = vis
 
---- Returns the constructors of a given type declaration
+--- Returns the constructors of a given type declaration.
 typeCons :: CTypeDecl -> [CConsDecl]
 typeCons (CType    _ _ _ cs) = cs
 typeCons (CTypeSyn _ _ _ _ ) = []
 typeCons (CNewType _ _ _ c ) = [c]
 
---- Returns the name of a given constructor declaration
+--- Returns the name of a given constructor declaration.
 consName :: CConsDecl -> QName
 consName (CCons   n _ _) = n
 consName (CRecord n _ _) = n
 
---- Returns the visibility of a given constructor declaration
+--- Returns the visibility of a given constructor declaration.
 consVis :: CConsDecl -> CVisibility
 consVis (CCons   _ vis _) = vis
 consVis (CRecord _ vis _) = vis
