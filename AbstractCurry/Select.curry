@@ -8,8 +8,8 @@
 ------------------------------------------------------------------------
 
 module AbstractCurry.Select
-    ( imports, functions, types, publicFuncNames, publicConsNames
-    , publicTypeNames
+    ( imports, functions, constructors, types, publicFuncNames
+    , publicConsNames, publicTypeNames
 
     , typeName, typeVis, typeCons
     , consName, consVis
@@ -37,6 +37,10 @@ imports (CurryProg _ ms _ _ _) = ms
 functions :: CurryProg -> [CFuncDecl]
 functions (CurryProg _ _ _ fs _) = fs
 
+--- Returns all constructors of given curry program.
+constructors :: CurryProg -> [CConsDecl]
+constructors (CurryProg _ _ ts _ _) = concatMap typeCons ts
+
 --- Returns the type declarations of a given curry program.
 types :: CurryProg -> [CTypeDecl]
 types (CurryProg _ _ ts _ _) = ts
@@ -49,9 +53,7 @@ publicFuncNames = map funcName . filter ((== Public) . funcVis) . functions
 publicConsNames :: CurryProg -> [QName]
 publicConsNames = map consName
                 . filter ((== Public) . consVis)
-                . concatMap typeCons
-                . filter ((== Public) . typeVis)
-                . types
+                . constructors
 
 --- Returns the names of all visible types in given curry program.
 publicTypeNames :: CurryProg -> [QName]

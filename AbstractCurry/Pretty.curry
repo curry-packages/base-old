@@ -56,48 +56,82 @@ data Options = Options
     , showLocalSigs     :: Bool             -- ^ debugging flag (show signature
                                             --   of local functions or not).
     , layoutChoice      :: LayoutChoice
-    , importedTypes     :: Collection QName -- ^ a collection of by the current
-                                            --   module imported types (including
-                                            --   Prelude types) -- used for
-                                            --   determining how to qualify if
+    , visibleTypes      :: Collection QName -- ^ a collection of all to this
+                                            --   module visible types (i.e. all
+                                            --   imported [prelude too] and self
+                                            --   defined types) -- used to
+                                            --   determine how to qualify if
                                             --   Qualification`OnDemand` was
                                             --   chosen.
-    , importedFunctions :: Collection QName -- ^ a collection of by the current
-                                            --   module imported functions and
-                                            --   constructors (including those
-                                            --   of Prelude) -- used
-                                            --   for determining how to qualify
-                                            --   if Qualification `OnDemand` was
+    , visibleFunctions  :: Collection QName -- ^ a collection of all to this
+                                            --   module visible functions and
+                                            --   constructors (i.e. all imported
+                                            --   [prelude too] and self
+                                            --   defined ones) -- used to
+                                            --   determine how to qualify if
+                                            --   Qualification `OnDemand` was
                                             --   chosen.
     }
+
+--- The default options specify a pagewith of 78 characters, 2 spaces for
+--- indentation, qualification for all imports, no module name and no related
+--- modules. Therefore use these options only with functions like
+--- 'prettyCurryProg' or 'ppCurryProg', because they will overwrite the module
+--- name anyway. Also avoid setting on demand qualification, because no
+--- information about related modules is given is given.
+defaultOptions :: Options
+defaultOptions = options 78 2 Imports "" []
 
 options :: Int              -- ^ page width
         -> Int              -- ^ indentation width
         -> Qualification    -- ^ what names to qualify
         -> MName            -- ^ the name of current module
-        -> [CurryProg]      -- ^ all modules imported by the current module
-                            --   (including prelude)
+        -> [CurryProg]      -- ^
+                            --   the
         -> Options
-options pw iw q m progs
-    = Options { pageWidth         = pw
-              , indentationWidth  = iw
-              , qualification     = q
-              , moduleName        = m
-              , showLocalSigs     = False
-              , layoutChoice      = PreferNestedLayout
-              , importedTypes     = its
-              , importedFunctions = ifs }
-    where its          = fromList $ collect publicTypeNames
-          ifs          = fromList $ collect publicFuncNames
-                                 ++ collect publicConsNames
-          collect proj = foldr union [] $ map proj progs
+--- @param pw - the page width to use
+--- @param iw - the indentation width to use
+--- @param q - the qualification method to use
+--- @param m - the name of the current module
+--- @param rels - A list of all to the current module related modules, i.e. the
+---               current module itself and all its imports (including prelude).
+---               The current module must be the head of that list.
+--- @return options with the desired behavior
+options pw iw q m rels =
+    let o = Options { pageWidth        = pw
+                    , indentationWidth = iw
+                    , qualification    = q
+                    , moduleName       = m
+                    , showLocalSigs    = False
+                    , layoutChoice     = PreferNestedLayout
+                    , visibleTypes     = []
+                    , visibleFunctions = [] }
+    in  setRelatedMods rels o
 
---- The default options specify a pagewith of 78 characters, 2 spaces for
---- indentation, on demand qualification, no module name and no imports.
---- Therefore use these options only with functions like 'prettyCurryProg' or
---- 'ppCurryProg', because they will overwrite the module name anyway.
-defaultOptions :: Options
-defaultOptions = options 78 2 OnDemand "" []
+setPageWith :: Int -> Options -> Options
+setPageWith pw o = o { pageWidth = pw }
+
+setIndentWith :: Int -> Options -> Options
+setIndentWith iw o = o { indentationWidth = iw }
+
+setQualification :: Qualification -> Options -> Options
+setQualification q o = o { qualification = q }
+
+setModName :: MName -> Options -> Options
+setModName m o = o { moduleName = m }
+
+--- See 'options' to read a specification of "related modules".
+setRelatedMods :: [CurryProg] -> Options -> Options
+setRelatedMods [] o = o
+setRelatedMods (currentMod:imports) o =
+    o { visibleTypes = vts, visibleFunctions = vfs }
+    where vts = fromList $ map typeName (types currentMod)
+                        ++ collect publicTypeNames
+          vfs = fromList $ concat [ map funcName $ functions currentMod
+                                  , collect publicFuncNames
+                                  , map consName $ constructors currentMod
+                                  , collect publicConsNames ]
+          collect proj = foldr union [] $ map proj imports
 
 --- precedence of top level (pattern or application) context -- lowest
 tlPrec      :: Int
@@ -159,8 +193,8 @@ ppExports opts ts fs
                                  (ppQType' . typeName)
                                  (ppConsExports opts . typeCons)
           fDeclToDoc = ppQFunc' . funcName
-          ppQType'   = genericPPQName (importedTypes opts) parsIfInfix opts
-          ppQFunc'   = genericPPQName (importedFunctions opts)
+          ppQType'   = genericPPQName (visibleTypes opts) parsIfInfix opts
+          ppQFunc'   = genericPPQName (visibleFunctions opts)
                                       parsIfInfix
                                       opts
 
@@ -174,7 +208,7 @@ ppConsExports opts cDecls
           isPublicConsDecl = (== Public) . consVis
           cDeclToDoc       = ppQFunc' . consName
           ppQFunc'         =
-              genericPPQName (importedFunctions opts) parsIfInfix opts
+              genericPPQName (visibleFunctions opts) parsIfInfix opts
 
 
 --- pretty-print imports (list of module names) by prepending the word "import"
@@ -434,7 +468,7 @@ ppCExpr = ppCExpr' tlPrec
 ppCExpr' :: Int -> Options -> CExpr -> Doc
 ppCExpr' _ opts (CVar     pvar) = ppCVarIName opts pvar
 ppCExpr' _ opts (CLit     lit ) = ppCLiteral opts lit
-ppCExpr' _ opts (CSymbol  qn  ) = genericPPQName (importedFunctions opts)
+ppCExpr' _ opts (CSymbol  qn  ) = genericPPQName (visibleFunctions opts)
                                                  parsIfInfix
                                                  opts
                                                  qn
@@ -569,7 +603,7 @@ genericPPName f qn = f qn $ text . snd $ qn
 --- pretty-print a function name or constructor name qualified according to
 --- given options. Use 'ppQType' or 'ppType' for pretty-printing type names.
 ppQFunc :: Options -> QName -> Doc
-ppQFunc opts = genericPPQName (importedFunctions opts) (flip const) opts
+ppQFunc opts = genericPPQName (visibleFunctions opts) (flip const) opts
 
 --- pretty-print a function name or constructor name non-qualified.
 --- Use 'ppQType' or 'ppType' for pretty-printing type names.
@@ -578,7 +612,7 @@ ppFunc = genericPPName (flip const)
 
 --- pretty-print a type (`QName`) qualified according to given options.
 ppQType :: Options -> QName -> Doc
-ppQType opts = genericPPQName (importedTypes opts) (flip const) opts
+ppQType opts = genericPPQName (visibleTypes opts) (flip const) opts
 
 --- pretty-print a type (`QName`) non-qualified.
 ppType :: QName -> Doc
