@@ -167,7 +167,7 @@ listPattern (p:ps) = CPComb (pre ":") [p, listPattern ps]
 
 --- Converts a string into a pattern representing this string.
 stringPattern :: String -> CPattern
-stringPattern = listPattern . map (CPLit . CCharc)
+stringPattern = CPLit . CStringc
 
 --- Converts a list of AbstractCurry expressions into an
 --- AbstractCurry representation of this list.
