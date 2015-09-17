@@ -10,6 +10,7 @@ module AbstractCurry.Pretty
     ( Qualification(..), Options
 
     , options, defaultOptions
+    , setPageWith, setIndentWith, setQualification, setModName
 
     , showCProg, prettyCurryProg, ppCurryProg
 
@@ -73,15 +74,19 @@ options pw iw q m = Options { pageWidth        = pw
                             , showLocalSigs    = False
                             , layoutChoice     = PreferNestedLayout }
 
+--- Sets the page width of the pretty printer options.
 setPageWith :: Int -> Options -> Options
 setPageWith pw o = o { pageWidth = pw }
 
+--- Sets the indentation width of the pretty printer options.
 setIndentWith :: Int -> Options -> Options
 setIndentWith iw o = o { indentationWidth = iw }
 
+--- Sets the qualification method to be used by the pretty printer.
 setQualification :: Qualification -> Options -> Options
 setQualification q o = o { qualification = q }
 
+--- Sets the name of the current module in the pretty printer options.
 setModName :: MName -> Options -> Options
 setModName m o = o { moduleName = m }
 
