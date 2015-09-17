@@ -316,33 +316,29 @@ ppCPattern' :: Int -> Options -> CPattern -> Doc
 ppCPattern' _ opts (CPVar  pvar) = ppCVarIName opts pvar
 ppCPattern' _ opts (CPLit  lit ) = ppCLiteral opts lit
 ppCPattern' p opts pat@(CPComb qn ps)
-    | null ps        = parsIfInfix qn ppQn
+    | null ps        = parsIfInfix qn qnDoc
+    | isApp qn       = parensIf (p >= prefAppPrec)
+                     $ ppCPattern' infAppPrec opts (ps !! 0)
+                   <+> ppCPattern' prefAppPrec opts (ps !! 1)
     | isTupleCons qn = filledTupled . map (ppCPattern opts) $ ps
     | isFinLis pat   = let ps' = fromJust $ extractFiniteListPattern pat
                        in  alignedList . map (ppCPattern opts) $ ps'
     | isInfixId qn   =
         case ps of [l, r] -> parensIf (p >= infAppPrec)
-                           $ hsep [ ppCPattern' p' opts l, ppQn
+                           $ hsep [ ppCPattern' p' opts l, qnDoc
                                   , ppCPattern' p' opts r ]
                    _      -> prefixApp
     | otherwise      = prefixApp
-    where ppQn      = ppQFunc opts qn
+    where qnDoc     = ppQFunc opts qn
+          isApp     = (== ("Prelude", "apply"))
           p'        = if isInfixId qn then infAppPrec else prefAppPrec
           prefixApp = parensIf (p >= prefAppPrec) . nest' opts
-                    $ sep [ parsIfInfix qn ppQn
+                    $ sep [ parsIfInfix qn qnDoc
                           , align . sep . map (ppCPattern' p' opts) $ ps ]
           isFinLis  = isJust . extractFiniteListPattern
 ppCPattern' _ opts (CPAs pvar p)
     = hcat [ppCVarIName opts pvar, at, ppCPattern' highestPrec opts p]
-ppCPattern' p opts (CPFuncComb qn ps) =
-    case ps of
-         [p1, p2] | isInfixId qn -> parensIf (p >= infAppPrec)
-                                  $ hsep [ ppCPattern' infAppPrec opts p1
-                                         , ppQFunc opts qn
-                                         , ppCPattern' infAppPrec opts p2 ]
-         _                       -> parensIf (p >= prefAppPrec)
-                                  $ ppQFunc opts qn
-                                <+> hsepMap (ppCPattern' prefAppPrec opts) ps
+ppCPattern' p opts (CPFuncComb qn ps) = ppCPattern' p opts (CPComb qn ps)
 ppCPattern' _ opts (CPLazy     p     ) = tilde <> ppCPattern' highestPrec opts p
 ppCPattern' _ opts (CPRecord   qn rps) =
     ppQFunc opts qn <+> alignedSetSpaced (map (ppCFieldPattern opts) rps)
