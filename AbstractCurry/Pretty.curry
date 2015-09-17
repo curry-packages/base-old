@@ -7,7 +7,7 @@
 --- @version September 2015
 --- --------------------------------------------------------------------------
 module AbstractCurry.Pretty
-    ( Qualification(..), Options(..)
+    ( Qualification(..), Options
 
     , options, defaultOptions
 
@@ -51,11 +51,21 @@ data Options = Options { pageWidth        :: Int
                        , showLocalSigs    :: Bool -- debugging flag (show signature of local functions or not).
                        , layoutChoice     :: LayoutChoice }
 
-options :: Int              -- ^ page width
-        -> Int              -- ^ indentation width
-        -> Qualification    -- ^ what names to qualify
-        -> MName            -- ^ the name of current module
-        -> Options
+--- `defaultOptions = options 78 2 Imports ""`
+--- Therefore use these options only with functions like 'prettyCurryProg' or
+--- 'ppCurryProg', because they will overwrite the module name anyway.
+defaultOptions :: Options
+defaultOptions = options 78 2 Imports ""
+
+--- @param pw - the page width to use
+--- @param iw - the indentation width to use
+--- @param q - the qualification method to use
+--- @param m - the name of the current module
+--- @param rels - A list of all to the current module related modules, i.e. the
+---               current module itself and all its imports (including prelude).
+---               The current module must be the head of that list.
+--- @return options with the desired behavior
+options :: Int -> Int -> Qualification -> MName -> Options
 options pw iw q m = Options { pageWidth        = pw
                             , indentationWidth = iw
                             , qualification    = q
@@ -63,12 +73,17 @@ options pw iw q m = Options { pageWidth        = pw
                             , showLocalSigs    = False
                             , layoutChoice     = PreferNestedLayout }
 
---- The default options specify a pagewith of 78 characters, 2 spaces for
---- indentation, every import will be qualified and an empty module name.
---- Therefore use these options only with functions like 'prettyCurryProg' or
---- 'ppCurryProg', because they will overwrite the module name anyway.
-defaultOptions :: Options
-defaultOptions = options 78 2 Imports ""
+setPageWith :: Int -> Options -> Options
+setPageWith pw o = o { pageWidth = pw }
+
+setIndentWith :: Int -> Options -> Options
+setIndentWith iw o = o { indentationWidth = iw }
+
+setQualification :: Qualification -> Options -> Options
+setQualification q o = o { qualification = q }
+
+setModName :: MName -> Options -> Options
+setModName m o = o { moduleName = m }
 
 --- precedence of top level (pattern or application) context -- lowest
 tlPrec      :: Int
@@ -198,7 +213,7 @@ ppCFuncDecl :: Options -> CFuncDecl -> Doc
 ppCFuncDecl opts fDecl@(CFunc qn _ _ tExp _) =
     ppCFuncSignature opts qn tExp <$!$> ppCFuncDeclWithoutSig opts fDecl
 ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs) =
-    vsep (map (\l->text ("--- "++l)) (lines cmt))
+    vsepMap (text . ("--- " ++)) (lines cmt)
     <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function declaration without signature.
@@ -206,7 +221,7 @@ ppCFuncDeclWithoutSig :: Options -> CFuncDecl -> Doc
 ppCFuncDeclWithoutSig opts (CFunc qn _ _ _ rs) =
     ppCRules opts qn rs
 ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs) =
-    vsep (map (\l->text ("--- "++l)) (lines cmt))
+    vsepMap (text . ("--- " ++)) (lines cmt)
     <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
