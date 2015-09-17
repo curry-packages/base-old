@@ -7,7 +7,7 @@
 --- @version September 2015
 --- --------------------------------------------------------------------------
 module AbstractCurry.Pretty
-    ( Qualification(..), Options
+    ( Qualification(..), Options(..)
 
     , options, defaultOptions
 
@@ -198,14 +198,16 @@ ppCFuncDecl :: Options -> CFuncDecl -> Doc
 ppCFuncDecl opts fDecl@(CFunc qn _ _ tExp _) =
     ppCFuncSignature opts qn tExp <$!$> ppCFuncDeclWithoutSig opts fDecl
 ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs) =
-    string cmt <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
+    vsep (map (\l->text ("--- "++l)) (lines cmt))
+    <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function declaration without signature.
 ppCFuncDeclWithoutSig :: Options -> CFuncDecl -> Doc
 ppCFuncDeclWithoutSig opts (CFunc qn _ _ _ rs) =
     ppCRules opts qn rs
 ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs) =
-    string cmt <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
+    vsep (map (\l->text ("--- "++l)) (lines cmt))
+    <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
