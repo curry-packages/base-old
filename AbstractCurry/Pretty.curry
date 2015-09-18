@@ -1,5 +1,5 @@
 --- --------------------------------------------------------------------------
---- Pretty printing of AbstractCurry.
+--- Pretty-printing of AbstractCurry.
 ---
 --- This library provides a pretty-printer for AbstractCurry modules.
 ---
@@ -24,6 +24,7 @@ import Pretty hiding        ( list, listSpaced, tupled, tupledSpaced, set
                             , setSpaced )
 import AbstractCurry.Select
 import AbstractCurry.Types
+import Function             (on)
 import List                 (partition, union)
 import Maybe                (isJust, fromJust)
 
@@ -53,42 +54,31 @@ data Options = Options
     , indentationWidth  :: Int
     , qualification     :: Qualification
     , moduleName        :: String
-    , showLocalSigs     :: Bool             -- ^ debugging flag (show signature
-                                            --   of local functions or not).
+    {- Debugging flag (show signature of local functions or not). -}
+    , showLocalSigs     :: Bool
     , layoutChoice      :: LayoutChoice
-    , visibleTypes      :: Collection QName -- ^ a collection of all to this
-                                            --   module visible types (i.e. all
-                                            --   imported [prelude too] and self
-                                            --   defined types) -- used to
-                                            --   determine how to qualify if
-                                            --   Qualification`OnDemand` was
-                                            --   chosen.
-    , visibleFunctions  :: Collection QName -- ^ a collection of all to this
-                                            --   module visible functions and
-                                            --   constructors (i.e. all imported
-                                            --   [prelude too] and self
-                                            --   defined ones) -- used to
-                                            --   determine how to qualify if
-                                            --   Qualification `OnDemand` was
-                                            --   chosen.
+    {- A collection of all to this module visible types (i.e. all imported
+       [prelude too] and self defined types) -- used to determine how to qualify,
+       if Qualification`OnDemand` was chosen. -}
+    , visibleTypes      :: Collection QName
+    {- A collection of all to this module visible functions and constructors
+       (i.e. all imported [prelude too] and self defined ones) -- used to
+       determine how to qualify, if Qualification `OnDemand` was chosen. -}
+    , visibleFunctions  :: Collection QName
+    {- A collection of currently visible (depending on context) variables.
+       Used to determine how to qualify, if Qualification `OnDemand` was chosen.
+    -}
+    , visibleVariables  :: Collection CVarIName
     }
 
---- The default options specify a pagewith of 78 characters, 2 spaces for
---- indentation, qualification for all imports, no module name and no related
---- modules. Therefore use these options only with functions like
+--- `defaultOptions = options 78 2 Imports "" []`.
+--- Therefore use these options only with functions like
 --- 'prettyCurryProg' or 'ppCurryProg', because they will overwrite the module
 --- name anyway. Also avoid setting on demand qualification, because no
---- information about related modules is given is given.
+--- information about related modules is given.
 defaultOptions :: Options
 defaultOptions = options 78 2 Imports "" []
 
-options :: Int              -- ^ page width
-        -> Int              -- ^ indentation width
-        -> Qualification    -- ^ what names to qualify
-        -> MName            -- ^ the name of current module
-        -> [CurryProg]      -- ^
-                            --   the
-        -> Options
 --- @param pw - the page width to use
 --- @param iw - the indentation width to use
 --- @param q - the qualification method to use
@@ -97,6 +87,12 @@ options :: Int              -- ^ page width
 ---               current module itself and all its imports (including prelude).
 ---               The current module must be the head of that list.
 --- @return options with the desired behavior
+options :: Int
+        -> Int
+        -> Qualification
+        -> MName
+        -> [CurryProg]
+        -> Options
 options pw iw q m rels =
     let o = Options { pageWidth        = pw
                     , indentationWidth = iw
@@ -147,7 +143,7 @@ highestPrec :: Int
 highestPrec = 3
 
 --- Shows a pretty formatted version of an abstract Curry Program.
---- The options for pretty printing are the 'defaultOptions'.
+--- The options for pretty-printing are the 'defaultOptions'.
 --- @param prog - a curry prog
 --- @return a string, which represents the input program `prog`
 showCProg :: CurryProg -> String
@@ -189,14 +185,10 @@ ppExports opts ts fs
           (pubFs, privFs)  = partition isPublicFuncDecl fs
           isPublicTypeDecl = (== Public) . typeVis
           isPublicFuncDecl = (== Public) . funcVis
-          tDeclToDoc       = on2 (<>)
-                                 (ppQType' . typeName)
+          tDeclToDoc       = on' (<>)
+                                 (ppQTypeParsIfInfix opts . typeName)
                                  (ppConsExports opts . typeCons)
-          fDeclToDoc = ppQFunc' . funcName
-          ppQType'   = genericPPQName (visibleTypes opts) parsIfInfix opts
-          ppQFunc'   = genericPPQName (visibleFunctions opts)
-                                      parsIfInfix
-                                      opts
+          fDeclToDoc = ppQFuncParsIfInfix opts . funcName
 
 -- internal use only
 ppConsExports :: Options -> [CConsDecl] -> Doc
@@ -206,9 +198,7 @@ ppConsExports opts cDecls
     | otherwise   = filledTupled $ map cDeclToDoc pubCs
     where (pubCs, privCs)  = partition isPublicConsDecl cDecls
           isPublicConsDecl = (== Public) . consVis
-          cDeclToDoc       = ppQFunc' . consName
-          ppQFunc'         =
-              genericPPQName (visibleFunctions opts) parsIfInfix opts
+          cDeclToDoc       = ppQFuncParsIfInfix opts . consName
 
 
 --- pretty-print imports (list of module names) by prepending the word "import"
@@ -269,8 +259,9 @@ ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs) =
 
 --- pretty-print a function declaration without signature.
 ppCFuncDeclWithoutSig :: Options -> CFuncDecl -> Doc
-ppCFuncDeclWithoutSig opts (CFunc qn _ _ _ rs) =
-    ppCRules opts qn rs
+ppCFuncDeclWithoutSig opts fDecl@(CFunc qn _ _ _ rs) =
+    ppCRules funcDeclOpts qn rs
+    where funcDeclOpts = addFuncNamesToOpts (funcNamesOfFDecl fDecl) opts
 ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs) =
     string cmt <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
 
@@ -334,8 +325,13 @@ ppCRule opts qn (CRule ps rhs) =
                       , pRhs ] )
  $$ if null lDecls
        then empty
-       else indent' opts $ ppWhereDecl opts lDecls
-    where (pRhs, lDecls) = ppFuncRhs opts rhs
+       else indent' opts $ ppWhereDecl whereOpts lDecls
+    where (pRhs, lDecls) = ppFuncRhs rhsOpts rhs
+          whereOpts      = addVarsToOpts (concatMap varsOfPat ps) opts
+          rhsOpts        = addVarsAndFuncNamesToOpts
+                                (concatMap varsOfLDecl lDecls)
+                                (concatMap funcNamesOfLDecl lDecls)
+                                whereOpts
 
 --- pretty-print a pattern expression.
 ppCPattern :: Options -> CPattern -> Doc
@@ -398,22 +394,27 @@ ppCFieldPattern opts (qn, p) = ppQFunc opts qn <+> equals <+> ppCPattern opts p
 --- If the right hand side contains local declarations, they will be pretty
 --- printed too, further indented.
 ppCRhs :: Doc -> Options -> CRhs -> Doc
-ppCRhs d opts (CSimpleRhs  exp lDecls) =
-    (nest' opts $ sep [d, ppCExpr opts exp])
-  $$ if null lDecls
-        then empty
-        else indent' opts (ppWhereDecl opts lDecls)
-ppCRhs d opts (CGuardedRhs conds lDecls) =
-    ppCGuardedRhs opts d conds
-  $$ if null lDecls
-        then empty
-        else indent' opts (ppWhereDecl opts lDecls)
+ppCRhs d opts rhs = case rhs of
+        CSimpleRhs  exp   lDecls ->
+            (nest' opts $ sep [d, ppCExpr (expAndGuardOpts lDecls) exp])
+         $$ maybePPlDecls lDecls
+        CGuardedRhs conds lDecls ->
+            ppCGuardedRhs (expAndGuardOpts lDecls) d conds
+         $$ maybePPlDecls lDecls
+    where expAndGuardOpts ls = addVarsAndFuncNamesToOpts
+                                (concatMap varsOfLDecl ls)
+                                (concatMap funcNamesOfLDecl ls)
+                                opts
+          maybePPlDecls ls   = if null ls
+                                  then empty
+                                  else indent' opts (ppWhereDecl opts ls)
 
---- Like 'ppCRhs', but do not pretty print local declarations.
+--- Like 'ppCRhs', but do not pretty-print local declarations.
 --- Instead give caller the choice how to handle the declarations. For example
 --- the function 'ppCRule' uses this to prevent local declarationsfrom being
 --- further indented.
 ppFuncRhs :: Options -> CRhs -> (Doc, [CLocalDecl])
+{- No further enrichment of options necessary -- it was done in 'ppCRule' -}
 ppFuncRhs opts (CSimpleRhs  exp lDecls) = (ppCExpr opts exp, lDecls)
 ppFuncRhs opts (CGuardedRhs conds lDecls) =
     (ppCGuardedRhs opts equals conds, lDecls)
@@ -433,7 +434,12 @@ ppCGuardedRhs opts d = align . vvsepMap ppCGuard
 --- pretty-print a `where` block. If the second argument is `text "let"`,
 --- pretty-print a `let` block without `in`.
 ppCLocalDecls :: Options -> Doc -> [CLocalDecl] -> Doc
-ppCLocalDecls opts d = (d <+>) . align . vvsepMap (ppCLocalDecl opts)
+ppCLocalDecls opts d lDecls =
+    (d <+>) . align . vvsepMap (ppCLocalDecl lDeclOpts) $ lDecls
+    where lDeclOpts = addVarsAndFuncNamesToOpts
+                        (concatMap varsOfLDecl lDecls)
+                        (concatMap funcNamesOfLDecl lDecls)
+                        opts
 
 --- pretty-print local declarations (the part that follows the `where` keyword).
 ppCLocalDecl :: Options -> CLocalDecl -> Doc
@@ -442,17 +448,24 @@ ppCLocalDecl opts (CLocalFunc fDecl) =
        then ppCFuncDecl opts fDecl
        else ppCFuncDeclWithoutSig opts fDecl
 ppCLocalDecl opts (CLocalPat  p rhs) =
-    hsep [ ppCPattern opts p, ppCRhs equals opts rhs ]
+    hsep [ ppCPattern opts p, ppCRhs equals rhsOpts rhs ]
+    where rhsOpts = addVarsToOpts (varsOfPat p) opts
 ppCLocalDecl opts (CLocalVars pvars) =
     (<+> text "free") $ hsep $ punctuate comma $ map (ppCVarIName opts) pvars
 
---- pretty-print a `where` block, where `where` is above following declarations.
+--- pretty-print a `where` block, in which the word `where` stands alone in a
+--- single line, above the following declarations.
 ppWhereDecl :: Options -> [CLocalDecl] -> Doc
-ppWhereDecl opts = (where_ $$)
-                 . indent' opts
-                 . vvsepMap (ppCLocalDecl opts)
+ppWhereDecl opts lDecls = (where_ $$)
+                        . indent' opts
+                        . vvsepMap (ppCLocalDecl lDeclOpts) $ lDecls
+    where lDeclOpts = addVarsAndFuncNamesToOpts
+                        (concatMap varsOfLDecl lDecls)
+                        (concatMap funcNamesOfLDecl lDecls)
+                        opts
 
---- pretty-print a `let` block without `in`.
+--- pretty-print a `let` block without `in`. In contrast to 'ppWhereDecl', the
+--- word `let` is in the same line as the first local declaration.
 ppLetDecl :: Options -> [CLocalDecl] -> Doc
 ppLetDecl opts = ppCLocalDecls opts (text "let")
 
@@ -468,10 +481,7 @@ ppCExpr = ppCExpr' tlPrec
 ppCExpr' :: Int -> Options -> CExpr -> Doc
 ppCExpr' _ opts (CVar     pvar) = ppCVarIName opts pvar
 ppCExpr' _ opts (CLit     lit ) = ppCLiteral opts lit
-ppCExpr' _ opts (CSymbol  qn  ) = genericPPQName (visibleFunctions opts)
-                                                 parsIfInfix
-                                                 opts
-                                                 qn
+ppCExpr' _ opts (CSymbol  qn  ) = ppQFuncParsIfInfix opts qn
 ppCExpr' p opts app@(CApply f exp)
     | isITE app
         = parensIf (p > tlPrec)
@@ -567,16 +577,24 @@ ppRecordFields opts = alignedSetSpaced . map (ppRecordField opts)
 ppRecordField :: Options -> CField CExpr -> Doc
 ppRecordField opts (qn, exp) = ppQFunc opts qn <+> equals <+> ppCExpr opts exp
 
--- pretty-print a QName qualified according to given options. Use given doc
--- tranformer to manipulate (f.e. surround with parentheses) the QName, after
--- it was (maybe) qualified. The given collection is used to determine if
--- qualification is needed, if `OnDemand` was chosen.
+--- pretty-print a QName qualified according to given options.
+--- @param visNames - Depending on call, this is the namespace of visible types
+---                   or of visible functions. Used to determine if `qn` is
+---                   ambiguous, in case the qualification method 'OnDemand' was
+---                   chosen
+--- @param visVars - The in current context visible variables.
+--- @param g - A doc tranformer used to manipulate (f.e. surround with
+---            parentheses) the QName, after it was (maybe) qualified.
+--- @param opts - The options to use.
+--- @param qn - The `QName` to pretty-print.
+--- @return A pretty-printed `QName`, maybe qualified (depending on settings).
 genericPPQName :: Collection QName
+               -> Collection CVarIName
                -> (QName -> Doc -> Doc)
                -> Options
                -> QName
                -> Doc
-genericPPQName col g opts qn@(m, f)
+genericPPQName visNames visVars g opts qn@(m, f)
     | qnIsBuiltIn = name
     | null m      = name -- assume local declaration
     | otherwise   =
@@ -591,11 +609,16 @@ genericPPQName col g opts qn@(m, f)
              None     -> name
     where qnIsBuiltIn = or (map ($ qn) [ isUnitCons , isListCons
                                        , isTupleCons, isConsCons ])
-          name   = g qn (text f)
-          qName  = g qn $ ppMName m <> dot <> text f
-          odName = if (sizeCol $ filterCol ((== f) . snd) col) > 1
-                      then qName -- the QName is ambiguous
-                      else name
+          name        = g qn (text f)
+          qName       = g qn $ ppMName m <> dot <> text f
+          odName      = if isShadowed qn || isAmbiguous qn
+                           then qName
+                           else name
+          isAmbiguous n = anyCol (on' (&&) (diffMod n) (sameName n)) visNames
+          isShadowed n  = anyCol (sameName n) visVars
+          diffMod       = (/=) `on` fst
+          sameName      :: (a, c) -> (b, c) -> Bool
+          sameName      = \(_,x) (_,y) -> x == y
 
 genericPPName :: (QName -> Doc -> Doc) -> QName -> Doc
 genericPPName f qn = f qn $ text . snd $ qn
@@ -603,7 +626,18 @@ genericPPName f qn = f qn $ text . snd $ qn
 --- pretty-print a function name or constructor name qualified according to
 --- given options. Use 'ppQType' or 'ppType' for pretty-printing type names.
 ppQFunc :: Options -> QName -> Doc
-ppQFunc opts = genericPPQName (visibleFunctions opts) (flip const) opts
+ppQFunc opts = genericPPQName (visibleFunctions opts)
+                              (visibleVariables opts)
+                              (flip const)
+                              opts
+
+--- Like 'ppQFunc', but surround name with parentheses if it is an infix
+--- identifier.
+ppQFuncParsIfInfix :: Options -> QName -> Doc
+ppQFuncParsIfInfix opts = genericPPQName (visibleFunctions opts)
+                                         (visibleVariables opts)
+                                         parsIfInfix
+                                         opts
 
 --- pretty-print a function name or constructor name non-qualified.
 --- Use 'ppQType' or 'ppType' for pretty-printing type names.
@@ -612,7 +646,13 @@ ppFunc = genericPPName (flip const)
 
 --- pretty-print a type (`QName`) qualified according to given options.
 ppQType :: Options -> QName -> Doc
-ppQType opts = genericPPQName (visibleTypes opts) (flip const) opts
+ppQType opts = genericPPQName (visibleTypes opts) emptyCol (flip const) opts
+
+--- Like 'ppQType', but surround name with parentheses if it is an infix
+--- identifier.
+ppQTypeParsIfInfix :: Options -> QName -> Doc
+ppQTypeParsIfInfix opts =
+    genericPPQName (visibleTypes opts) emptyCol parsIfInfix opts
 
 --- pretty-print a type (`QName`) non-qualified.
 ppType :: QName -> Doc
@@ -697,7 +737,7 @@ extractFiniteListPattern = extractFiniteListPattern' []
                                   -> Just $ reverse es
                  _                -> Nothing
 
--- Helping functions (pretty printing)
+-- Helping functions (pretty-printing)
 hsepMap :: (a -> Doc) -> [a] -> Doc
 hsepMap f = hsep . map f
 
@@ -762,24 +802,42 @@ nil :: Doc
 nil = text "[]"
 
 -- Helping functions (various)
-on2 :: (b -> b -> c) -> (a -> b) -> (a -> b) -> a -> c
-on2 comb f g x = f x `comb` g x
+on' :: (b -> b -> c) -> (a -> b) -> (a -> b) -> a -> c
+on' comb f g x = f x `comb` g x
 
 -- Helping functions (CRUD functions for Collection)
 emptyCol :: Collection a
 emptyCol = []
 
-addCol :: a -> Collection a -> Collection a
-addCol = (:)
+-- addCol :: a -> Collection a -> Collection a
+-- addCol = (:)
 
-elemCol :: a -> Collection a -> Bool
-elemCol = elem
+appendCol :: Collection a -> Collection a -> Collection a
+appendCol = (++)
 
-filterCol :: (a -> Bool) -> Collection a -> Collection a
-filterCol = filter
+-- elemCol :: a -> Collection a -> Bool
+-- elemCol = elem
 
-sizeCol :: Collection a -> Int
-sizeCol = length
+anyCol :: (a -> Bool) -> Collection a -> Bool
+anyCol = any
+
+-- filterCol :: (a -> Bool) -> Collection a -> Collection a
+-- filterCol = filter
+--
+-- sizeCol :: Collection a -> Int
+-- sizeCol = length
 
 fromList :: [a] -> Collection a
 fromList = id
+
+-- Helping functions (management of visible names)
+addVarsToOpts :: [CVarIName] -> Options -> Options
+addVarsToOpts vs o =
+    o { visibleVariables = fromList vs `appendCol` (visibleVariables o) }
+
+addFuncNamesToOpts :: [QName] -> Options -> Options
+addFuncNamesToOpts ns o =
+    o { visibleFunctions = fromList ns `appendCol` (visibleFunctions o) }
+
+addVarsAndFuncNamesToOpts :: [CVarIName] -> [QName] -> Options -> Options
+addVarsAndFuncNamesToOpts vs ns = addVarsToOpts vs . addFuncNamesToOpts ns

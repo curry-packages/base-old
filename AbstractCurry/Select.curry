@@ -7,21 +7,21 @@
 --- @category meta
 ------------------------------------------------------------------------
 
-module AbstractCurry.Select
-    ( imports, functions, constructors, types, publicFuncNames
-    , publicConsNames, publicTypeNames
-
-    , typeName, typeVis, typeCons
-    , consName, consVis
-    , isBaseType, isPolyType, isFunctionalType, isIOType, isIOReturnType
-    , argTypes, resultType, tvarsOfType, modsOfType
-
-    , funcName, funcVis
-
-    , varsOfPat, varsOfExp, varsOfRhs, varsOfStat, varsOfLDecl
-    , varsOfFDecl, varsOfRule
-
-    , isPrelude) where
+module AbstractCurry.Select where
+--     ( imports, functions, constructors, types, publicFuncNames
+--     , publicConsNames, publicTypeNames
+--
+--     , typeName, typeVis, typeCons
+--     , consName, consVis
+--     , isBaseType, isPolyType, isFunctionalType, isIOType, isIOReturnType
+--     , argTypes, resultType, tvarsOfType, modsOfType
+--
+--     , funcName, funcVis
+--
+--     , varsOfPat, varsOfExp, varsOfRhs, varsOfStat, varsOfLDecl
+--     , varsOfFDecl, varsOfRule
+--
+--     , isPrelude) where
 
 import AbstractCurry.Types
 import List(union)
@@ -179,18 +179,18 @@ varsOfPat (CPRecord _ recpats) = concatMap (varsOfPat . snd) recpats
 --- Each occurrence corresponds to one element, i.e., the list might
 --- contain multiple elements.
 varsOfExp :: CExpr -> [CVarIName]
-varsOfExp (CVar v)             = [v]
-varsOfExp (CLit _)             = []
-varsOfExp (CSymbol _)          = []
-varsOfExp (CApply e1 e2)       = varsOfExp e1 ++ varsOfExp e2
-varsOfExp (CLambda pl le)      = concatMap varsOfPat pl ++ varsOfExp le
-varsOfExp (CLetDecl ld le)     = concatMap varsOfLDecl ld ++ varsOfExp le
-varsOfExp (CDoExpr sl)         = concatMap varsOfStat sl
-varsOfExp (CListComp le sl)    = varsOfExp le ++ concatMap varsOfStat sl
-varsOfExp (CCase _ ce bl)      =
+varsOfExp (CVar v)            = [v]
+varsOfExp (CLit _)            = []
+varsOfExp (CSymbol _)         = []
+varsOfExp (CApply e1 e2)      = varsOfExp e1 ++ varsOfExp e2
+varsOfExp (CLambda pl le)     = concatMap varsOfPat pl ++ varsOfExp le
+varsOfExp (CLetDecl ld le)    = concatMap varsOfLDecl ld ++ varsOfExp le
+varsOfExp (CDoExpr sl)        = concatMap varsOfStat sl
+varsOfExp (CListComp le sl)   = varsOfExp le ++ concatMap varsOfStat sl
+varsOfExp (CCase _ ce bl)     =
   varsOfExp ce ++ concatMap (\ (p,rhs) -> varsOfPat p ++ varsOfRhs rhs) bl
-varsOfExp (CTyped te _)        = varsOfExp te
-varsOfExp (CRecConstr _ upds)  = concatMap (varsOfExp . snd) upds
+varsOfExp (CTyped te _)       = varsOfExp te
+varsOfExp (CRecConstr _ upds) = concatMap (varsOfExp . snd) upds
 varsOfExp (CRecUpdate e upds) = varsOfExp e ++ concatMap (varsOfExp . snd) upds
 
 --- Returns list of all variables occurring in a right-hand side.
@@ -231,6 +231,18 @@ varsOfFDecl (CmtFunc _ _ _ _ _ r) = concatMap varsOfRule r
 --- contain multiple elements.
 varsOfRule :: CRule -> [CVarIName]
 varsOfRule (CRule pats rhs) = concatMap varsOfPat pats ++ varsOfRhs rhs
+
+
+
+funcNamesOfLDecl :: CLocalDecl -> [QName]
+funcNamesOfLDecl lDecl =
+    case lDecl of (CLocalFunc f) -> funcNamesOfFDecl f
+                  _              -> []
+
+funcNamesOfFDecl :: CFuncDecl -> [QName]
+funcNamesOfFDecl (CFunc     qn _ _ _ _) = [qn]
+funcNamesOfFDecl (CmtFunc _ qn _ _ _ _) = [qn]
+
 
 ------------------------------------------------------------------------
 --- Tests whether a module name is the prelude.
