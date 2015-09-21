@@ -22,10 +22,10 @@ module AbstractCurry.Pretty
 
 import Pretty hiding        ( list, listSpaced, tupled, tupledSpaced, set
                             , setSpaced )
-import AbstractCurry.Select
+import AbstractCurry.Select hiding (varsOfLDecl, varsOfFDecl, varsOfStat)
 import AbstractCurry.Types
 import Function             (on)
-import List                 (partition, union)
+import List                 (partition, union, scanl, last)
 import Maybe                (isJust, fromJust)
 
 type Collection a = [a]
@@ -328,10 +328,11 @@ ppCRule opts qn (CRule ps rhs) =
        else indent' opts $ ppWhereDecl whereOpts lDecls
     where (pRhs, lDecls) = ppFuncRhs rhsOpts rhs
           whereOpts      = addVarsToOpts (concatMap varsOfPat ps) opts
-          rhsOpts        = addVarsAndFuncNamesToOpts
-                                (concatMap varsOfLDecl lDecls)
-                                (concatMap funcNamesOfLDecl lDecls)
-                                whereOpts
+          rhsOpts        = last $ optsWithIncreasingNamespaces
+                                    varsOfLDecl
+                                    funcNamesOfLDecl
+                                    lDecls
+                                    whereOpts
 
 --- pretty-print a pattern expression.
 ppCPattern :: Options -> CPattern -> Doc
@@ -401,10 +402,11 @@ ppCRhs d opts rhs = case rhs of
         CGuardedRhs conds lDecls ->
             ppCGuardedRhs (expAndGuardOpts lDecls) d conds
          $$ maybePPlDecls lDecls
-    where expAndGuardOpts ls = addVarsAndFuncNamesToOpts
-                                (concatMap varsOfLDecl ls)
-                                (concatMap funcNamesOfLDecl ls)
-                                opts
+    where expAndGuardOpts ls = last $ optsWithIncreasingNamespaces
+                                        varsOfLDecl
+                                        funcNamesOfLDecl
+                                        ls
+                                        opts
           maybePPlDecls ls   = if null ls
                                   then empty
                                   else indent' opts (ppWhereDecl opts ls)
@@ -436,10 +438,11 @@ ppCGuardedRhs opts d = align . vvsepMap ppCGuard
 ppCLocalDecls :: Options -> Doc -> [CLocalDecl] -> Doc
 ppCLocalDecls opts d lDecls =
     (d <+>) . align . vvsepMap (ppCLocalDecl lDeclOpts) $ lDecls
-    where lDeclOpts = addVarsAndFuncNamesToOpts
-                        (concatMap varsOfLDecl lDecls)
-                        (concatMap funcNamesOfLDecl lDecls)
-                        opts
+    where lDeclOpts = last $ optsWithIncreasingNamespaces
+                                varsOfLDecl
+                                funcNamesOfLDecl
+                                lDecls
+                                opts
 
 --- pretty-print local declarations (the part that follows the `where` keyword).
 ppCLocalDecl :: Options -> CLocalDecl -> Doc
@@ -459,10 +462,11 @@ ppWhereDecl :: Options -> [CLocalDecl] -> Doc
 ppWhereDecl opts lDecls = (where_ $$)
                         . indent' opts
                         . vvsepMap (ppCLocalDecl lDeclOpts) $ lDecls
-    where lDeclOpts = addVarsAndFuncNamesToOpts
-                        (concatMap varsOfLDecl lDecls)
-                        (concatMap funcNamesOfLDecl lDecls)
-                        opts
+    where lDeclOpts = last $ optsWithIncreasingNamespaces
+                                varsOfLDecl
+                                funcNamesOfLDecl
+                                lDecls
+                                opts
 
 --- pretty-print a `let` block without `in`. In contrast to 'ppWhereDecl', the
 --- word `let` is in the same line as the first local declaration.
@@ -519,17 +523,36 @@ ppCExpr' p opts (CLambda ps exp) =
     parensIf (p > tlPrec) . nest' opts
   $ sep [ backslash <> hsepMap (ppCPattern' prefAppPrec opts) ps
                    <+> rarrow
-        , ppCExpr opts exp]
-ppCExpr' p opts (CLetDecl lDecls exp) = parensIf (p > tlPrec) . align
-                                      $ sep [ ppLetDecl opts lDecls
-                                            , text "in" <+> ppCExpr opts exp]
-ppCExpr' p opts (CDoExpr stms) = parensIf (p > tlPrec)
-                               $ text "do"
-                             <+> align (vvsepMap (ppCStatement opts) stms)
+        , ppCExpr expOpts exp]
+    where expOpts = addVarsToOpts (concatMap varsOfPat ps) opts
+ppCExpr' p opts (CLetDecl lDecls exp) =
+    parensIf (p > tlPrec) . align
+    {- 'ppLetDecl' itself ensures the correct handling of opts -}
+  $ sep [ ppLetDecl opts lDecls, text "in" <+> ppCExpr expOpts exp]
+    where expOpts = last $ optsWithIncreasingNamespaces
+                            varsOfLDecl
+                            funcNamesOfLDecl
+                            lDecls
+                            opts
+ppCExpr' p opts (CDoExpr stms) =
+    parensIf (p > tlPrec)
+  $ text "do" <+> align (vvsep $ zipWith ppCStatement statOptsList stms)
+    where statOptsList = optsWithIncreasingNamespaces
+                            varsOfStat
+                            funcNamesOfStat
+                            stms
+                            opts
 ppCExpr' _ opts (CListComp exp stms) =
-    brackets $ hsep [ ppCExpr opts exp, bar
-                    , hsep (punctuate (comma <> space)
-                                      (map (ppCStatement opts) stms) ) ]
+    brackets $ hsep [ ppCExpr expOpts exp, bar
+                    , hsep $ punctuate (comma <> space)
+                                       (zipWith ppCStatement statOptsList stms)]
+    where expOpts      = last statOptsList
+          statOptsList = optsWithIncreasingNamespaces
+                            varsOfStat
+                            funcNamesOfStat
+                            stms
+                            opts
+
 ppCExpr' p opts (CCase cType exp cases) =
     parensIf (p > tlPrec) . align . nest' opts
   $ sep [ ppCCaseType cType <+> ppCExpr opts exp <+> text "of"
@@ -561,7 +584,8 @@ ppCases opts = align . vvsepMap (ppCase opts)
 
 --- pretty-print a case expression.
 ppCase :: Options -> (CPattern, CRhs) -> Doc
-ppCase opts (p, rhs) = ppCPattern opts p <+> ppCaseRhs opts rhs
+ppCase opts (p, rhs) = ppCPattern opts p <+> ppCaseRhs rhsOpts rhs
+    where rhsOpts = addVarsToOpts (varsOfPat p) opts
 
 --- pretty-print record field assignments like this:
 ---     { lab1 = exp1, ..., labn expn }
@@ -833,11 +857,59 @@ fromList = id
 -- Helping functions (management of visible names)
 addVarsToOpts :: [CVarIName] -> Options -> Options
 addVarsToOpts vs o =
-    o { visibleVariables = fromList vs `appendCol` (visibleVariables o) }
+    o { visibleVariables = fromList vs `appendCol` visibleVariables o }
 
 addFuncNamesToOpts :: [QName] -> Options -> Options
 addFuncNamesToOpts ns o =
-    o { visibleFunctions = fromList ns `appendCol` (visibleFunctions o) }
+    o { visibleFunctions = fromList ns `appendCol` visibleFunctions o }
 
 addVarsAndFuncNamesToOpts :: [CVarIName] -> [QName] -> Options -> Options
 addVarsAndFuncNamesToOpts vs ns = addVarsToOpts vs . addFuncNamesToOpts ns
+
+--- Generates a list of options with increasing numbers of visible variables
+--- and function names. Resulting lists are useful to match the scopes of
+--- do expressions and list comprehensions, where latter statements see previous
+--- variables and functions names, but prior elements do not see subsequent
+--- variables and function names.
+--- Note that `last $ optsWithIncreasingNamespaces varsOf funcNamesOf xs opts`
+--- are options which contain all variables and function names of xs.
+--- @param varsOf - a projection function
+--- @param funcNamesOf - a projection function
+--- @xs - a list [x1, x2, ...] of elements to which the projection functions
+---       will be applied
+--- @param opts - root options
+--- @return a list `[opts0, opts1, opts2, ...]`, where
+---         `opts == opts0`,
+---         `opts1 == opts0` plus vars and funcNames of `x1`,
+---         `opts2 == opts1` plus vars and funcNames of `x2`,
+---         ...
+optsWithIncreasingNamespaces :: (a -> [CVarIName])
+                             -> (a -> [QName])
+                             -> [a]
+                             -> Options
+                             -> [Options]
+optsWithIncreasingNamespaces varsOf funcNamesOf xs opts =
+    scanl (flip . uncurry $ addVarsAndFuncNamesToOpts) opts varsAndFuncNamesOfXs
+    where varsAndFuncNamesOfXs = map varsOf xs `zip` map funcNamesOf xs
+
+-- Helping function (description needed)
+--- In contrast to `AbstractCurry.Select.varsOfLDecl`, this function does not
+--- include variables of right hand sides.
+varsOfLDecl :: CLocalDecl -> [CVarIName]
+varsOfLDecl (CLocalFunc f      ) = varsOfFDecl f
+varsOfLDecl (CLocalPat  p     _) = varsOfPat p
+varsOfLDecl (CLocalVars lvars  ) = lvars
+
+--- In contrast to `AbstractCurry.Select.varsOfFDecl`, this function does not
+--- include variables of right hand sides.
+varsOfFDecl :: CFuncDecl -> [CVarIName]
+varsOfFDecl (CFunc     _ _ _ _ r) = concatMap varsOfRule r
+varsOfFDecl (CmtFunc _ _ _ _ _ r) = concatMap varsOfRule r
+    where varsOfRule (CRule pats _) = concatMap varsOfPat pats
+
+--- In contrast to `AbstractCurry.Select.varsOfStat`, this function does not
+--- include variables of right hand sides.
+varsOfStat :: CStatement -> [CVarIName]
+varsOfStat (CSExpr _   ) = []
+varsOfStat (CSPat  p  _) = varsOfPat p
+varsOfStat (CSLet  ld  ) = concatMap varsOfLDecl ld

@@ -236,13 +236,17 @@ varsOfRule (CRule pats rhs) = concatMap varsOfPat pats ++ varsOfRhs rhs
 
 funcNamesOfLDecl :: CLocalDecl -> [QName]
 funcNamesOfLDecl lDecl =
-    case lDecl of (CLocalFunc f) -> funcNamesOfFDecl f
-                  _              -> []
+    case lDecl of CLocalFunc f -> funcNamesOfFDecl f
+                  _            -> []
 
 funcNamesOfFDecl :: CFuncDecl -> [QName]
 funcNamesOfFDecl (CFunc     qn _ _ _ _) = [qn]
 funcNamesOfFDecl (CmtFunc _ qn _ _ _ _) = [qn]
 
+funcNamesOfStat :: CStatement -> [QName]
+funcNamesOfStat stms =
+    case stms of CSLet ld -> concatMap funcNamesOfLDecl ld
+                 _        -> []
 
 ------------------------------------------------------------------------
 --- Tests whether a module name is the prelude.
