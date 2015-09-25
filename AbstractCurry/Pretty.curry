@@ -100,8 +100,9 @@ options pw iw q m rels =
                     , moduleName       = m
                     , showLocalSigs    = False
                     , layoutChoice     = PreferNestedLayout
-                    , visibleTypes     = []
-                    , visibleFunctions = [] }
+                    , visibleTypes     = emptyCol
+                    , visibleFunctions = emptyCol
+                    , visibleVariables = emptyCol }
     in  setRelatedMods rels o
 
 setPageWith :: Int -> Options -> Options
@@ -638,11 +639,11 @@ genericPPQName visNames visVars g opts qn@(m, f)
           odName      = if isShadowed qn || isAmbiguous qn
                            then qName
                            else name
-          isAmbiguous n = anyCol (on' (&&) (diffMod n) (sameName n)) visNames
+          isAmbiguous n = anyCol (on' (&&) (sameName n) (diffMod n)) visNames
           isShadowed n  = anyCol (sameName n) visVars
-          diffMod       = (/=) `on` fst
           sameName      :: (a, c) -> (b, c) -> Bool
           sameName      = \(_,x) (_,y) -> x == y
+          diffMod       = (/=) `on` fst
 
 genericPPName :: (QName -> Doc -> Doc) -> QName -> Doc
 genericPPName f qn = f qn $ text . snd $ qn

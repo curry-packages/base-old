@@ -39,7 +39,7 @@ functions (CurryProg _ _ _ fs _) = fs
 
 --- Returns all constructors of given curry program.
 constructors :: CurryProg -> [CConsDecl]
-constructors (CurryProg _ _ ts _ _) = concatMap typeCons ts
+constructors = concatMap typeCons . types
 
 --- Returns the type declarations of a given curry program.
 types :: CurryProg -> [CTypeDecl]
