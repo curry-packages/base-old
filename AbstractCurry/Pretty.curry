@@ -228,13 +228,13 @@ ppCFixity CInfixrOp = text "infixr"
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
 ppCTypeDecl opts (CType qn _ tVars cDecls)
-    = hsep [ text "data", ppName qn, ppCTVarINames opts tVars
+    = hsep [ text "data", ppType qn, ppCTVarINames opts tVars
            , if null cDecls then empty else ppCConsDecls opts cDecls]
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
-    = hsep [ text "type", ppName qn, ppCTVarINames opts tVars
+    = hsep [ text "type", ppType qn, ppCTVarINames opts tVars
            , align $ equals <+> ppCTypeExpr opts tExp]
 ppCTypeDecl opts (CNewType qn _ tVars cDecl)
-    = hsep [ text "newtype", ppName qn, ppCTVarINames opts tVars, equals
+    = hsep [ text "newtype", ppType qn, ppCTVarINames opts tVars, equals
            , ppCConsDecl opts cDecl]
 
 --- pretty-print a list of constructor declarations, including the `=` sign.
