@@ -10,6 +10,7 @@ module AbstractCurry.Pretty
     ( Qualification(..), Options
 
     , options, defaultOptions
+    , setPageWith, setIndentWith, setQualification, setModName
 
     , showCProg, prettyCurryProg, ppCurryProg
 
@@ -105,15 +106,19 @@ options pw iw q m rels =
                     , visibleVariables = emptyCol }
     in  setRelatedMods rels o
 
+--- Sets the page width of the pretty printer options.
 setPageWith :: Int -> Options -> Options
 setPageWith pw o = o { pageWidth = pw }
 
+--- Sets the indentation width of the pretty printer options.
 setIndentWith :: Int -> Options -> Options
 setIndentWith iw o = o { indentationWidth = iw }
 
+--- Sets the qualification method to be used by the pretty printer.
 setQualification :: Qualification -> Options -> Options
 setQualification q o = o { qualification = q }
 
+--- Sets the name of the current module in the pretty printer options.
 setModName :: MName -> Options -> Options
 setModName m o = o { moduleName = m }
 
@@ -223,13 +228,13 @@ ppCFixity CInfixrOp = text "infixr"
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
 ppCTypeDecl opts (CType qn _ tVars cDecls)
-    = hsep [ text "data", ppType qn, ppCTVarINames opts tVars
+    = hsep [ text "data", ppName qn, ppCTVarINames opts tVars
            , if null cDecls then empty else ppCConsDecls opts cDecls]
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
-    = hsep [ text "type", ppType qn, ppCTVarINames opts tVars
+    = hsep [ text "type", ppName qn, ppCTVarINames opts tVars
            , align $ equals <+> ppCTypeExpr opts tExp]
 ppCTypeDecl opts (CNewType qn _ tVars cDecl)
-    = hsep [ text "newtype", ppType qn, ppCTVarINames opts tVars, equals
+    = hsep [ text "newtype", ppName qn, ppCTVarINames opts tVars, equals
            , ppCConsDecl opts cDecl]
 
 --- pretty-print a list of constructor declarations, including the `=` sign.
@@ -256,7 +261,8 @@ ppCFuncDecl :: Options -> CFuncDecl -> Doc
 ppCFuncDecl opts fDecl@(CFunc qn _ _ tExp _) =
     ppCFuncSignature opts qn tExp <$!$> ppCFuncDeclWithoutSig opts fDecl
 ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs) =
-    string cmt <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
+    vsepMap (text . ("--- " ++)) (lines cmt)
+    <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function declaration without signature.
 ppCFuncDeclWithoutSig :: Options -> CFuncDecl -> Doc
@@ -264,7 +270,8 @@ ppCFuncDeclWithoutSig opts fDecl@(CFunc qn _ _ _ rs) =
     ppCRules funcDeclOpts qn rs
     where funcDeclOpts = addFuncNamesToOpts (funcNamesOfFDecl fDecl) opts
 ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs) =
-    string cmt <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
+    vsepMap (text . ("--- " ++)) (lines cmt)
+    <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
 
 --- pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
