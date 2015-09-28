@@ -64,7 +64,7 @@ install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(LIB_
 # so that all auxiliary files (.nda, .hs, ...) are up-to-date
 $(ALLLIBS).curry: $(LIB_CURRY) Makefile
 	rm -f $@
-	for i in $(LIB_NAMES) ; do echo "import $$i" >> $@ ; done
+	for i in $(filter-out Prelude, $(LIB_NAMES)) ; do echo "import $$i" >> $@ ; done
 
 .PHONY: allsources
 allsources:

@@ -40,7 +40,7 @@ all: $(ALLLIBS).curry fcy acy
 # so that all auxiliary files are up-to-date
 $(ALLLIBS).curry: $(LIB_CURRY) Makefile
 	rm -f $@
-	for i in $(LIB_NAMES) ; do echo "import $$i" >> $@ ; done
+	for i in $(filter-out Prelude, $(LIB_NAMES)) ; do echo "import $$i" >> $@ ; done
 
 .PHONY: allsources
 allsources:
