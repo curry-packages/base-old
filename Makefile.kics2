@@ -19,7 +19,7 @@ prefix     = $(patsubst ./%,%,$(dir $(2))$(1)$(notdir $(2)))
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
 # Curry library files
-LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry AbstractCurry/*.curry))
+LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry AbstractCurry/*.curry Database/CDBI/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(subst meta/,, $(basename $(LIB_CURRY))))
 # lib names included in library documentation page (without directory prefix)
@@ -147,6 +147,12 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 .curry/kics2/AbstractCurry/Curry_%.hs: AbstractCurry/%.curry
 	$(COMP) -v0 -i. -imeta AbstractCurry.$*
 
+.curry/kics2/Database/CDBI/Curry_Trace_%.hs: Database/CDBI/%.curry
+	$(COMP) -v0 -i. -imeta --trace-failure Database/CDBI.$*
+
+.curry/kics2/Database/CDBI/Curry_%.hs: Database/CDBI/%.curry
+	$(COMP) -v0 -i. -imeta Database/CDBI.$*
+
 meta/.curry/kics2/Curry_Trace_%.hs: meta/%.curry
 	$(COMP) -v0 -i. -imeta --trace-failure meta/$*
 
@@ -184,6 +190,9 @@ doc: $(LIB_CURRY)
 $(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" AbstractCurry.$*
 
+$(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
+
 $(LIBDOCDIR)/%.html: %.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
@@ -202,6 +211,9 @@ texdoc: $(LIB_CURRY)
 # generate individual LaTeX documentations for libraries
 $(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$*
+
+$(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
 
 $(TEXDOCDIR)/%.tex: %.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
