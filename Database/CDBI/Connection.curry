@@ -16,7 +16,7 @@ module Database.CDBI.Connection(
     runInTransaction, fail, ok, (>+), (>+=), executeRaw, execute, select, 
     executeMultipleTimes, getColumnNames, valueToString,
     -- Connections
-    connectSQLite, disconnect, begin, commit, rollback) where
+    connectSQLite, disconnect, begin, commit, rollback, runWithDB) where
 
 import ReadShowTerm ( readsQTerm )
 import Char ( isDigit )
@@ -212,6 +212,17 @@ commit conn@(SQLiteConnection _) = writeConnection "commit;" conn
 rollback :: Connection -> IO ()
 rollback conn@(SQLiteConnection _) = writeConnection "rollback;" conn
 
+--- Executes an action dependent on a connection on a database
+--- by connecting and disconnecting to the datebase.
+--- @param str - name of the database (e.g. "database.db")
+--- @param action - an action parameterized over a database connection
+--- @return the result of the action
+runWithDB :: String -> (Connection -> IO a) -> IO a
+runWithDB dbname dbaction = do
+  conn <- connectSQLite dbname
+  result <- dbaction conn
+  disconnect conn
+  return result
 
 -- -----------------------------------------------------------------------------
 -- Executing SQL statements

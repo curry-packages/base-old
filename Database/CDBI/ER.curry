@@ -15,7 +15,7 @@ module Database.CDBI.ER (
     getColumnFiveTuple,
     --CDBIConnection
     DBAction, Connection, Result, runInTransaction, (>+), (>+=),
-    begin, commit, rollback, connectSQLite, disconnect,
+    begin, commit, rollback, connectSQLite, disconnect, runWithDB,
     -- Datatypes
     EntityDescription, Value, ColumnDescription,
     Join, SetOp(..), Specifier(..), Table,
