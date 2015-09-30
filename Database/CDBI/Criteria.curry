@@ -414,7 +414,7 @@ trCondition (HOr conds) = intercalate " or " (map trCondition conds)
 trCondition (Con cons) = trConstraint cons
 trCondition (Neg cond) = "(not "++ (trCondition cond)++")"
 trCondition (Fun fun spec cons) = "("++fun ++ "("++trSpecifier spec ++constr
-  where ("(("++constr) = trConstraint cons 
+  where ('(':'(':constr) = trConstraint cons 
 
 
 -- Translate a Constraint to a string in a sql-query
@@ -452,10 +452,15 @@ trValue (Col (Column _ c) n) = trColumn c n
 
 -- Translate "Table.Column" to "nTable.Colum" where n is the Integer-Parameter
 trColumn :: String -> Int -> String
+trColumn ('"':table_column) n =
+  if n==0 then '"' : table_column
+          else '"' : show n ++ table_column
+{-
 trColumn ("\"" ++ table ++ "\"." ++ column) n =
     case n of
         0 -> "\"" ++ table ++ "\"." ++ column
         m -> "\"" ++ (show m) ++ table ++ "\"." ++ column
+-}
 
 paren :: String -> String
 paren s = '(' : s ++ ")"

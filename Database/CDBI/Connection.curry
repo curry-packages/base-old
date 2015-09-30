@@ -156,10 +156,11 @@ execute query values conn =
 --- execution fails the rest wont be executed.
 executeMultipleTimes :: String -> [[SQLValue]] -> DBAction ()
 executeMultipleTimes query values conn = do
-  result <- foldl (\res row -> (res >>= (\x -> (case x of
-                                                  Right _ -> execute query row conn
-                                                  error      -> return error))))
-                  (return (Right _)) values
+  result <- foldl (\res row -> (res >>= \x -> case x of
+                                               Right _ -> execute query row conn
+                                               error   -> return error))
+                  (return (Right ()))
+		  values
   return result
 
 

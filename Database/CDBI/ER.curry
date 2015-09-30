@@ -364,7 +364,7 @@ updateEntry ent ed conn = do
 --- Same as updateEntry but for combined Data
 updateEntryCombined :: a -> CombinedDescription a -> DBAction ()
 updateEntryCombined ent (CD desc _ f2 _) conn = foldIO update 
-                                                       (Right _) 
+                                                       (Right ()) 
                                                        (zip desc (f2 ent))
   where
     update :: Result () -> ((Table, Int, [SQLType]), [SQLValue]) -> IO (Result ())
