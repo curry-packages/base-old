@@ -184,11 +184,14 @@ ppMName = text
 ppExports :: Options -> [CTypeDecl] -> [CFuncDecl] -> Doc
 ppExports opts ts fs
     | null pubTs  && null pubFs  = parens empty -- nothing is exported
-    | null privTs && null privFs = empty        -- everything is exported
+    | null privTs && null privFs
+                  && null privCs = empty        -- everything is exported
     | otherwise                  = filledTupledSpaced $ map tDeclToDoc pubTs
                                                      ++ map fDeclToDoc pubFs
     where (pubTs, privTs)  = partition isPublicTypeDecl ts
           (pubFs, privFs)  = partition isPublicFuncDecl fs
+          privCs           = filter ((== Private) . consVis)
+                           . concatMap typeCons $ ts
           isPublicTypeDecl = (== Public) . typeVis
           isPublicFuncDecl = (== Public) . funcVis
           tDeclToDoc       = on' (<>)
