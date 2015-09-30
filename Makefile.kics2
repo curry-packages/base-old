@@ -31,8 +31,8 @@ LIB_HS       = $(foreach lib, $(LIB_CURRY:.curry=.hs), $(subst .curry/kics2/meta
 LIB_HS_TRACE = $(foreach lib, $(LIB_CURRY:.curry=.hs), $(subst .curry/kics2/meta,meta/.curry/kics2, .curry/kics2/$(call prefix,Curry_Trace_,$(lib))))
 LIB_HTML     = $(foreach lib, $(LIB_CURRY:.curry=.html), $(LIBDOCDIR)/$(if $(findstring meta/,$(lib)),$(lib),$(subst /,.,$(lib))))
 LIB_TEX      = $(foreach lib, $(LIB_CURRY:.curry=.tex), $(TEXDOCDIR)/$(if $(findstring meta/,$(lib)),$(lib),$(subst /,.,$(lib))))
-HS_LIB_NAMES       = $(call comma_sep,$(foreach lib,$(LIB_NAMES),$(if $(findstring .,$(lib)),$(subst .,.Curry_,$(lib)),Curry_$(lib))))
-HS_LIB_TRACE_NAMES = $(call comma_sep,$(foreach lib,$(LIB_NAMES),$(if $(findstring .,$(lib)),$(subst .,.Curry_Trace_,$(lib)),Curry_Trace_$(lib))))
+HS_LIB_NAMES       = $(call comma_sep,$(foreach lib,$(LIB_NAMES),$(if $(findstring .,$(lib)),$(basename $(lib)).Curry_$(subst .,,$(suffix $(lib))),Curry_$(lib))))
+HS_LIB_TRACE_NAMES = $(call comma_sep,$(foreach lib,$(LIB_NAMES),$(if $(findstring .,$(lib)),$(basename $(lib)).Curry_Trace_$(subst .,,$(suffix $(lib))),Curry_Trace_$(lib))))
 
 ALLLIBS       = AllLibraries
 MAINGOAL      = Curry_Main_Goal.curry
@@ -148,10 +148,10 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 	$(COMP) -v0 -i. -imeta AbstractCurry.$*
 
 .curry/kics2/Database/CDBI/Curry_Trace_%.hs: Database/CDBI/%.curry
-	$(COMP) -v0 -i. -imeta --trace-failure Database/CDBI.$*
+	$(COMP) -v0 -i. -imeta --trace-failure Database.CDBI.$*
 
 .curry/kics2/Database/CDBI/Curry_%.hs: Database/CDBI/%.curry
-	$(COMP) -v0 -i. -imeta Database/CDBI.$*
+	$(COMP) -v0 -i. -imeta Database.CDBI.$*
 
 meta/.curry/kics2/Curry_Trace_%.hs: meta/%.curry
 	$(COMP) -v0 -i. -imeta --trace-failure meta/$*
