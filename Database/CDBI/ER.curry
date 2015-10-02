@@ -13,8 +13,9 @@ module Database.CDBI.ER (
     saveEntryCombined, updateEntry, updateEntryCombined, 
     getColumn, getColumnTuple, getColumnTriple, getColumnFourTuple, 
     getColumnFiveTuple,
-    --CDBIConnection
-    DBAction, Connection, Result, runInTransaction, (>+), (>+=),
+    --CDBI.Connection
+    DBAction, Connection, SQLResult, printSQLResults,
+    runInTransaction, (>+), (>+=),
     begin, commit, rollback, connectSQLite, disconnect, runWithDB,
     -- Datatypes
     EntityDescription, Value, ColumnDescription,
@@ -27,7 +28,7 @@ module Database.CDBI.ER (
     sum, avg, minV, maxV, none, count, 
     singleCol, tupleCol, tripleCol, fourCol, fiveCol,   
     int, float, char, string, bool, date, col, colNum, colVal,
-    -- Criteria
+    -- CDBI.Criteria
     Criteria(..), emptyCriteria, Constraint(Exists, Or, And, Not, None),
     isNull, isNotNull, equal, (.=.), notEqual, (./=.), greaterThan, (.>.),
     lessThan, (.<.), greaterThanEqual, (.>=.), lessThanEqual, (.<=.), like,
@@ -302,7 +303,8 @@ saveEntryCombined ent (CD desc _ _ f3) conn = foldIO save
                                                      (Right _) 
                                                      (zip desc (f3 ent))
   where
-    save :: Result () -> ((Table, Int, [SQLType]), [SQLValue]) -> IO (Result ())
+    save :: SQLResult () -> ((Table, Int, [SQLType]), [SQLValue])
+         -> IO (SQLResult ())
     save res ((table, _, types), vals) = do
       case res of
         Left err -> return (Left err)
@@ -367,7 +369,8 @@ updateEntryCombined ent (CD desc _ f2 _) conn = foldIO update
                                                        (Right ()) 
                                                        (zip desc (f2 ent))
   where
-    update :: Result () -> ((Table, Int, [SQLType]), [SQLValue]) -> IO (Result ())
+    update :: SQLResult () -> ((Table, Int, [SQLType]), [SQLValue])
+           -> IO (SQLResult ())
     update res ((table, _, _), values) = do
       case res of
         Left err -> return (Left err)

@@ -6,17 +6,19 @@
 --- the conversion to standard SQL-Queries is provided.
 ---
 --- @author Mike Tallarek
---- @version 0.1
+--- @version 0.2
 --- @category general
 --- ----------------------------------------------------------------------------
-module Database.CDBI.Connection( 
-    -- Basis types
-    SQLValue(..), SQLType(..),Result, DBAction, Error (..), ErrorKind (..), Connection (..),
+module Database.CDBI.Connection
+  ( -- Basis types and operations
+    SQLValue(..), SQLType(..), SQLResult, printSQLResults
+  , DBAction, DBError (..), DBErrorKind (..), Connection (..)
     -- DBActions
-    runInTransaction, fail, ok, (>+), (>+=), executeRaw, execute, select, 
-    executeMultipleTimes, getColumnNames, valueToString,
+  , runInTransaction, fail, ok, (>+), (>+=), executeRaw, execute, select
+  , executeMultipleTimes, getColumnNames, valueToString
     -- Connections
-    connectSQLite, disconnect, begin, commit, rollback, runWithDB) where
+  , connectSQLite, disconnect, begin, commit, rollback, runWithDB
+  ) where
 
 import ReadShowTerm ( readsQTerm )
 import Char ( isDigit )
@@ -31,18 +33,15 @@ import List   ( isInfixOf, isPrefixOf )
 -- Datatypes 
 -- -----------------------------------------------------------------------------
 
---- A DBAction takes a connection and returns an `IO (Result a)`.
-type DBAction a = Connection -> IO (Result a)
+--- The result of SQL-related actions. It is either a `DBError` or some value.
+type SQLResult a = Either DBError a
 
---- `Result`s are either an `Error` or a value.
-type Result a = Either Error a
-
---- `Error`s are composed of an ErrorKind` and a `String`
+--- `DBError`s are composed of an `DBErrorKind` and a `String`
 --- describing the error more explicitly.
-data Error = Error ErrorKind String
+data DBError = DBError DBErrorKind String
 
 --- The different kinds of errors.
-data ErrorKind
+data DBErrorKind
   = TableDoesNotExist
   | ParameterError
   | ConstraintViolation
@@ -50,6 +49,12 @@ data ErrorKind
   | NoLineError
   | LockedDBError
   | UnknownError
+
+--- Print an 'SQLResult' list, i.e., print either the 'DBError'
+--- or the list of result elements.
+printSQLResults :: SQLResult [_] -> IO ()
+printSQLResults (Left  err) = putStrLn $ show err
+printSQLResults (Right res) = mapIO_ print res
 
 --- Data type for SQL values, used during the communication with the database.
 data SQLValue
@@ -72,6 +77,9 @@ data SQLType
   | SQLTypeBool
   | SQLTypeDate
   
+--- A DBAction takes a connection and returns an `IO (SQLResult a)`.
+type DBAction a = Connection -> IO (SQLResult a)
+
 -- -----------------------------------------------------------------------------
 -- Database actions with types
 -- -----------------------------------------------------------------------------
@@ -111,7 +119,7 @@ runInTransaction act conn = do
 
       
 --- Failing action.
-fail :: Error -> DBAction a
+fail :: DBError -> DBAction a
 fail err _ = return (Left err)
 
 --- Successful action.
@@ -272,7 +280,7 @@ parseLines conn@(SQLiteConnection _) = do
       parseLinesUntil val conn
 
 --- `getRandom` requests a random number from a SQLite-database.
-getRandom :: IO (Result String)
+getRandom :: IO (SQLResult String)
 getRandom = do
   conn <- connectSQLite ""
   writeConnection "select hex(randomblob(8));" conn
@@ -284,10 +292,10 @@ getRandom = do
 --- The parameters are inserted in the order in which they are supplied.
 --- Will throw error if the number of placeholders isn't equal to the length
 --- of the list
-insertParams :: String -> [String] -> Result String
+insertParams :: String -> [String] -> SQLResult String
 insertParams qu xs = if (length xs == (countPlaceholder qu)) 
                        then (Right (insertParams' qu xs))
-                       else (Left  (Error ParameterError 
+                       else (Left  (DBError ParameterError 
                                           "Amount of placeholders not equal to length of placeholder-list"))
 
   where 
@@ -313,7 +321,7 @@ parseLinesUntil stop conn@(SQLiteConnection _) = next
     value <- readConnection conn
    -- putStrLn $ show value
     case value of
-      Left (Error NoLineError "") -> do
+      Left (DBError NoLineError "") -> do
             rest <- next
             case rest of
               Left err -> fail err conn
@@ -334,13 +342,13 @@ readConnection :: DBAction String
 readConnection conn@(SQLiteConnection _) = do check `liftIO` readRawConnection conn
   where
   --- Ensure that a line read from a database connection represents a value.
-  check :: String -> Result String
-  check str | null str                             = Left (Error NoLineError "")
-            | "Error" `isPrefixOf` str             = Left (Error (getErrorKindSQLite str) str)
+  check :: String -> SQLResult String
+  check str | null str                             = Left (DBError NoLineError "")
+            | "Error" `isPrefixOf` str             = Left (DBError (getErrorKindSQLite str) str)
             | '=' `elem` str                       = Right (getValue str)
             | "automatic index on" `isInfixOf` str = Right "index"
             | otherwise
-            = Left (Error (getErrorKindSQLite str) str)
+            = Left (DBError (getErrorKindSQLite str) str)
             
   --- Get the value from a line with a '='
   getValue :: String -> String
@@ -353,7 +361,7 @@ readConnection conn@(SQLiteConnection _) = do check `liftIO` readRawConnection c
                                      in val
 
 --- Identify the error kind.
-getErrorKindSQLite :: String -> ErrorKind
+getErrorKindSQLite :: String -> DBErrorKind
 getErrorKindSQLite str
     | "Error: UNIQUE constraint" `isPrefixOf` str = ConstraintViolation
     | "no such table"            `isInfixOf`  str = TableDoesNotExist
@@ -371,6 +379,7 @@ getErrorKindSQLite str
 valuesToString :: [SQLValue] -> [String]
 valuesToString xs = map valueToString xs
 
+valueToString :: SQLValue -> String
 valueToString x = replaceEmptyString $
   case x of
     SQLString a            -> "'" ++ doubleApostrophes a ++ "'"
@@ -391,13 +400,13 @@ replaceEmptyString str = case str of
 -- Every list of Strings in the first parameter represents a data-type
 -- of multiple values
 -- The list of SQLTypes tells the function what kind of SQLValues should be parsed
-convertValues :: [[String]] -> [SQLType] -> Result [[SQLValue]]
+convertValues :: [[String]] -> [SQLType] -> SQLResult [[SQLValue]]
 convertValues (s:str) types =
   if((length s) == (length types))
     then Right (map (\x -> map convertValuesHelp (zip x types)) (s:str))
     else if  ((length s) == 0)
            then Right []
-           else Left (Error ParameterError "Number of returned Parameters and Types not equal")
+           else Left (DBError ParameterError "Number of returned Parameters and Types not equal")
 
 convertValuesHelp :: (String,SQLType) -> SQLValue
 convertValuesHelp ([], SQLTypeString) = SQLNull
