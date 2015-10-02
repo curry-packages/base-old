@@ -7,10 +7,10 @@
 --- @version October 2015
 --- --------------------------------------------------------------------------
 module AbstractCurry.Pretty
-    ( Qualification(..), Options
+    ( Qualification(..), Options, LayoutChoice(..)
 
     , options, defaultOptions
-    , setPageWith, setIndentWith, setQualification, setModName
+    , setPageWith, setIndentWith, setQualification, setModName, setLayoutChoice
 
     , showCProg, prettyCurryProg, ppCurryProg
 
@@ -39,7 +39,6 @@ data Qualification
     | OnDemand  -- ^ Fully qualify only identifiers which need to be.
     | None      -- ^ Do not qualify any function.
 
-{- Experimental Feature-}
 data LayoutChoice = PreferNestedLayout  -- ^ Prefer
                                         -- a                      f a
                                         -- + b      respectively    b
