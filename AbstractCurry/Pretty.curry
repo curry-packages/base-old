@@ -394,7 +394,9 @@ ppCLiteral :: Options -> CLiteral -> Doc
 ppCLiteral _ (CIntc i)    = int i
 ppCLiteral _ (CFloatc f)  = float f
 ppCLiteral _ (CCharc c)   = text $ show c
-ppCLiteral _ (CStringc s) = text $ show s
+ppCLiteral _ (CStringc s)
+    | null s    = text "\"\"" -- necessary for pakcs
+    | otherwise = text $ show s
 
 --- pretty-print a record pattern
 ppCFieldPattern :: Options -> CField CPattern -> Doc
