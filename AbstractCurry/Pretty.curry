@@ -4,7 +4,7 @@
 --- This library provides a pretty-printer for AbstractCurry modules.
 ---
 --- @author  Yannik Potdevin
---- @version September 2015
+--- @version October 2015
 --- --------------------------------------------------------------------------
 module AbstractCurry.Pretty
     ( Qualification(..), Options
@@ -122,7 +122,12 @@ setQualification q o = o { qualification = q }
 setModName :: MName -> Options -> Options
 setModName m o = o { moduleName = m }
 
---- See 'options' to read a specification of "related modules".
+--- Sets the preferred layout in the pretty printer options.
+setLayoutChoice :: LayoutChoice -> Options -> Options
+setLayoutChoice lc o = o { layoutChoice = lc }
+
+--- Sets the related modules in the pretty printer options. See 'options' to
+--- read a specification of "related modules".
 setRelatedMods :: [CurryProg] -> Options -> Options
 setRelatedMods [] o = o
 setRelatedMods (currentMod:imports) o =
@@ -376,7 +381,10 @@ ppCPattern' p opts pat@(CPComb qn ps)
           p'        = if isInfixId qn then infAppPrec else prefAppPrec
           prefixApp = parensIf (p >= prefAppPrec) . nest' opts
                     $ sep [ parsIfInfix qn qnDoc
-                          , align . sep . map (ppCPattern' p' opts) $ ps ]
+                          , align . (case layoutChoice opts of
+                                          PreferFilledLayout -> fillSep
+                                          PreferNestedLayout -> sep)
+                                  . map (ppCPattern' p' opts) $ ps ]
           isFinLis  = isJust . extractFiniteListPattern
 ppCPattern' _ opts (CPAs pvar p)
     = hcat [ppCVarIName opts pvar, at, ppCPattern' highestPrec opts p]
