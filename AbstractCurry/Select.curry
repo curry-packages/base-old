@@ -232,21 +232,34 @@ varsOfFDecl (CmtFunc _ _ _ _ _ r) = concatMap varsOfRule r
 varsOfRule :: CRule -> [CVarIName]
 varsOfRule (CRule pats rhs) = concatMap varsOfPat pats ++ varsOfRhs rhs
 
+------------------------------------------------------------------------
+-- Operations to compute the function names declared in functions, local
+-- declarations and statements:
 
-
+--- @return The declared function name of given local declaration in a list.
 funcNamesOfLDecl :: CLocalDecl -> [QName]
 funcNamesOfLDecl lDecl =
     case lDecl of CLocalFunc f -> funcNamesOfFDecl f
                   _            -> []
 
+--- @return The declared function name of given function declaration in a list.
 funcNamesOfFDecl :: CFuncDecl -> [QName]
 funcNamesOfFDecl (CFunc     qn _ _ _ _) = [qn]
 funcNamesOfFDecl (CmtFunc _ qn _ _ _ _) = [qn]
 
+--- @return The declared function names of given statement in a list.
 funcNamesOfStat :: CStatement -> [QName]
 funcNamesOfStat stms =
     case stms of CSLet ld -> concatMap funcNamesOfLDecl ld
                  _        -> []
+
+------------------------------------------------------------------------
+-- Selectors for rules expressions
+
+--- @return The local declarations of given rule.
+ldeclsOfRule :: CRule -> [CLocalDecl]
+ldeclsOfRule (CRule _ (CSimpleRhs  _ lDecls)) = lDecls
+ldeclsOfRule (CRule _ (CGuardedRhs _ lDecls)) = lDecls
 
 ------------------------------------------------------------------------
 --- Tests whether a module name is the prelude.

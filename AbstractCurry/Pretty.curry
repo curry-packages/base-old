@@ -325,7 +325,7 @@ ppCRules opts qn rs
 --- `f x y = x * y`, then `x y = x * y` is a rule consisting of `x y` as list of
 --- patterns and `x * y` as right hand side.
 ppCRule :: Options -> QName -> CRule -> Doc
-ppCRule opts qn (CRule ps rhs) =
+ppCRule opts qn rule@(CRule ps rhs) =
     (nest' opts $ sep [ ppCPattern opts (CPComb qn ps) {- exploit similarity
                                                           between left hand side
                                                           of rule and constructor
@@ -333,17 +333,17 @@ ppCRule opts qn (CRule ps rhs) =
                         <+> (case rhs of
                                   CSimpleRhs  _ _ -> equals
                                   CGuardedRhs _ _ -> empty )
-                      , pRhs ] )
+                      , ppFuncRhs rhsOpts rhs ] )
  $$ if null lDecls
        then empty
        else indent' opts $ ppWhereDecl whereOpts lDecls
-    where (pRhs, lDecls) = ppFuncRhs rhsOpts rhs
-          whereOpts      = addVarsToOpts (concatMap varsOfPat ps) opts
-          rhsOpts        = last $ optsWithIncreasingNamespaces
-                                    varsOfLDecl
-                                    funcNamesOfLDecl
-                                    lDecls
-                                    whereOpts
+    where lDecls    = ldeclsOfRule rule
+          whereOpts = addVarsToOpts (concatMap varsOfPat ps) opts
+          rhsOpts   = last $ optsWithIncreasingNamespaces
+                                varsOfLDecl
+                                funcNamesOfLDecl
+                                lDecls
+                                whereOpts
 
 --- pretty-print a pattern expression.
 ppCPattern :: Options -> CPattern -> Doc
@@ -428,11 +428,10 @@ ppCRhs d opts rhs = case rhs of
 --- Instead give caller the choice how to handle the declarations. For example
 --- the function 'ppCRule' uses this to prevent local declarationsfrom being
 --- further indented.
-ppFuncRhs :: Options -> CRhs -> (Doc, [CLocalDecl])
+ppFuncRhs :: Options -> CRhs -> Doc
 {- No further enrichment of options necessary -- it was done in 'ppCRule' -}
-ppFuncRhs opts (CSimpleRhs  exp lDecls) = (ppCExpr opts exp, lDecls)
-ppFuncRhs opts (CGuardedRhs conds lDecls) =
-    (ppCGuardedRhs opts equals conds, lDecls)
+ppFuncRhs opts (CSimpleRhs  exp _)   = ppCExpr opts exp
+ppFuncRhs opts (CGuardedRhs conds _) = ppCGuardedRhs opts equals conds
 
 ppCaseRhs :: Options -> CRhs -> Doc
 ppCaseRhs = ppCRhs rarrow
@@ -846,23 +845,11 @@ on' comb f g x = f x `comb` g x
 emptyCol :: Collection a
 emptyCol = []
 
--- addCol :: a -> Collection a -> Collection a
--- addCol = (:)
-
 appendCol :: Collection a -> Collection a -> Collection a
 appendCol = (++)
 
--- elemCol :: a -> Collection a -> Bool
--- elemCol = elem
-
 anyCol :: (a -> Bool) -> Collection a -> Bool
 anyCol = any
-
--- filterCol :: (a -> Bool) -> Collection a -> Collection a
--- filterCol = filter
---
--- sizeCol :: Collection a -> Int
--- sizeCol = length
 
 fromList :: [a] -> Collection a
 fromList = id
@@ -905,7 +892,7 @@ optsWithIncreasingNamespaces varsOf funcNamesOf xs opts =
     scanl (flip . uncurry $ addVarsAndFuncNamesToOpts) opts varsAndFuncNamesOfXs
     where varsAndFuncNamesOfXs = map varsOf xs `zip` map funcNamesOf xs
 
--- Helping function (description needed)
+-- Helping function (gather variables occurring in argument)
 --- In contrast to `AbstractCurry.Select.varsOfLDecl`, this function does not
 --- include variables of right hand sides.
 varsOfLDecl :: CLocalDecl -> [CVarIName]
