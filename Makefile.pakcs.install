@@ -18,6 +18,7 @@ install:
 	mkdir -p $(LIBDIR)/meta
 	mkdir -p $(LIBDIR)/AbstractCurry
 	mkdir -p $(LIBDIR)/CLP
+	mkdir -p $(LIBDIR)/Database/CDBI
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
@@ -101,6 +102,9 @@ meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
 	cp $< $@
 
 AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
+	cp $< $@
+
+Database/CDBI/%.curry: $(LIBTRUNKDIR)/Database/CDBI/%.curry
 	cp $< $@
 
 %.curry: $(LIBTRUNKDIR)/%.curry

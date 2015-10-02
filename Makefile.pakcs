@@ -15,7 +15,7 @@ TEXDOCDIR := $(DOCDIR)/src/lib
 CURRYDOC=$(ROOT)/bin/currydoc
 
 # Curry library files
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry AbstractCurry/*.curry CLP/*.curry))
+LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry AbstractCurry/*.curry CLP/*.curry Database/CDBI/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(subst meta/,, $(basename $(LIB_CURRY))))
 # lib names included in library documentation page (without directory prefix)
@@ -40,7 +40,7 @@ all: $(ALLLIBS).curry fcy acy
 # so that all auxiliary files are up-to-date
 $(ALLLIBS).curry: $(LIB_CURRY) Makefile
 	rm -f $@
-	for i in $(LIB_NAMES) ; do echo "import $$i" >> $@ ; done
+	for i in $(filter-out Prelude, $(LIB_NAMES)) ; do echo "import $$i" >> $@ ; done
 
 .PHONY: allsources
 allsources:
@@ -112,6 +112,10 @@ CLP.%.html: ../CLP/%.curry
 	@touch DOINDEX
 	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
 
+Database.CDBI.%.html: ../Database/CDBI/%.curry
+	@touch DOINDEX
+	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
+
 %.html: ../%.curry
 	@touch DOINDEX
 	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
@@ -139,6 +143,10 @@ AbstractCurry.%.tex: $(LIBDIR)/AbstractCurry/%.curry
 
 CLP.%.tex: $(LIBDIR)/CLP/%.curry
 	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$*
+	touch LAST
+
+Database.CDBI.%.tex: $(LIBDIR)/Database/CDBI/%.curry
+	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
 	touch LAST
 
 %.tex: $(LIBDIR)/%.curry

@@ -30,9 +30,9 @@ module Pretty (
 
   -- list combinators
   compose, hsep, vsep, vsepBlank, fillSep, sep, hcat,
-  vcat, fillCat, cat, punctuate, encloseSep, hEncloseSep, fillEncloseSep,
-  fillEncloseSepSpaced, list, listSpaced, set, setSpaced, tupled, tupledSpaced,
-  semiBraces, semiBracesSpaced,
+  vcat, fillCat, cat, punctuate, encloseSep, encloseSepSpaced, hEncloseSep,
+  fillEncloseSep, fillEncloseSepSpaced, list, listSpaced, set, setSpaced,
+  tupled, tupledSpaced, semiBraces, semiBracesSpaced,
 
   -- bracketing combinators
   enclose, squotes, dquotes, bquotes, parens,
@@ -41,7 +41,7 @@ module Pretty (
   -- fillers
   fill, fillBreak,
 
-  -- primitve type documents
+  -- primitive type documents
   char, string, int, float,
 
   -- character documents
@@ -487,6 +487,22 @@ encloseSep :: Doc -> Doc -> Doc -> [Doc] -> Doc
 encloseSep l r _ []     = l <> r
 encloseSep l r s (d:ds) = align (enclose l r (cat (d : map (s <>) ds)))
 
+--- The document `(encloseSepSpaced l r s xs)` concatenates the documents `xs`
+--- seperated by `s` and encloses the resulting document by `l` and `r`.
+--- In addition, after each occurrence of `s`, after `l`, and before `r`,
+--- a `space` is inserted.
+--- The documents are rendered horizontally if that fits the page. Otherwise
+--- they are aligned vertically. All seperators are put in front of the
+--- elements.
+---
+--- @param l  - left document
+--- @param r  - right document
+--- @param s  - a document as seperator
+--- @param xs - a list of documents
+--- @return concatenation of l, xs (with s in between) and r
+encloseSepSpaced :: Doc -> Doc -> Doc -> [Doc] -> Doc
+encloseSepSpaced l r s = encloseSep (l <> space) (space <> r) (s <> space)
+
 --- The document `(hEncloseSep l r s xs)` concatenates the documents `xs`
 --- seperated by `s` and encloses the resulting document by `l` and `r`.
 ---
@@ -539,11 +555,11 @@ fillEncloseSepSpaced l r s =
 --- @param xs - a list of documents
 --- @return comma seperated documents xs and enclosed in square brackets
 list :: [Doc] -> Doc
-list = fillEncloseSep lbracket rbracket comma
+list = encloseSep lbracket rbracket comma
 
 --- Spaced version of `list`
 listSpaced :: [Doc] -> Doc
-listSpaced = fillEncloseSepSpaced lbracket rbracket comma
+listSpaced = encloseSepSpaced lbracket rbracket comma
 
 --- The document `(set xs)` comma seperates the documents `xs` and encloses
 --- them in braces. The documents are rendered horizontally if
@@ -552,11 +568,11 @@ listSpaced = fillEncloseSepSpaced lbracket rbracket comma
 --- @param xs - a list of documents
 --- @return comma seperated documents xs and enclosed in braces
 set :: [Doc] -> Doc
-set = fillEncloseSep lbrace rbrace comma
+set = encloseSep lbrace rbrace comma
 
 --- Spaced version of `set`
 setSpaced :: [Doc] -> Doc
-setSpaced = fillEncloseSepSpaced lbrace rbrace comma
+setSpaced = encloseSepSpaced lbrace rbrace comma
 
 --- The document `(tupled xs)` comma seperates the documents `xs` and encloses
 --- them in parenthesis. The documents are rendered horizontally if that fits
@@ -565,11 +581,11 @@ setSpaced = fillEncloseSepSpaced lbrace rbrace comma
 --- @param xs - a list of documents
 --- @return comma seperated documents xs and enclosed in parenthesis
 tupled :: [Doc] -> Doc
-tupled = fillEncloseSep lparen rparen comma
+tupled = encloseSep lparen rparen comma
 
 --- Spaced version of `tupled`
 tupledSpaced :: [Doc] -> Doc
-tupledSpaced = fillEncloseSepSpaced lparen rparen comma
+tupledSpaced = encloseSepSpaced lparen rparen comma
 
 --- The document `(semiBraces xs)` seperates the documents `xs` with semi colons
 --- and encloses them in braces. The documents are rendered horizontally
@@ -578,11 +594,11 @@ tupledSpaced = fillEncloseSepSpaced lparen rparen comma
 --- @param xs - a list of documents
 --- @return documents xs seperated with semi colons and enclosed in braces
 semiBraces :: [Doc] -> Doc
-semiBraces = fillEncloseSep lbrace rbrace semi
+semiBraces = encloseSep lbrace rbrace semi
 
 --- Spaced version of `semiBraces`
 semiBracesSpaced :: [Doc] -> Doc
-semiBracesSpaced = fillEncloseSepSpaced lbrace rbrace semi
+semiBracesSpaced = encloseSepSpaced lbrace rbrace semi
 
 --- The document `(enclose l r x)` encloses document `x` between
 --- documents `l` and `r` using `(<>)`.
