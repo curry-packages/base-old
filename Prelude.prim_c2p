@@ -97,10 +97,6 @@
   <library>prim_standard</library>
   <entry>prim_ifVar[raw]</entry>
  </primitive>
- <primitive name="success" arity="0">
-  <library>prim_standard</library>
-  <entry>prim_success</entry>
- </primitive>
  <primitive name="&amp;" arity="2">
   <library>prim_standard</library>
   <entry>prim_concurrent_and[raw]</entry>

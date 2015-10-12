@@ -585,7 +585,7 @@ prim_negateFloat external
 
 
 -- Constraints
-data Success -- = Success
+type Success = Bool
 
 --- The equational constraint.
 --- (e1 =:= e2) is satisfiable if both sides e1 and e2 can be
@@ -603,7 +603,7 @@ x === y | x =:= y = True
 
 --- The always satisfiable constraint.
 success :: Success
-success external
+success = True
 
 --- Concurrent conjunction on constraints.
 --- An expression like (c1 & c2) is evaluated by evaluating

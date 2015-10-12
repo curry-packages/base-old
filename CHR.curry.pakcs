@@ -465,7 +465,7 @@ chrPrologPrimDefinition (qcname,carity) =
     (showCName ("prim_"++snd qcname))
     (map PlVar (map (\i->"X"++show i) [1..carity] ++ ["R"]))
     [PlLit (showQName qcname) (map (\i->PlVar ("X"++show i)) [1..carity]),
-     PlLit "=" [PlVar "R", PlAtom "Prelude.success"]]
+     PlLit "=" [PlVar "R", PlAtom "Prelude.True"]]
 
 
 -- show Curry module as interface to CHR solver implemented in Prolog:
