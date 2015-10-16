@@ -46,28 +46,6 @@ instance Curry (PrimData a) where
   (=?=) = error "(==) is undefined for primitive data"
   (<?=) = error "(<=) is undefined for primitive data"
 
--- BEGIN GENERATED FROM PrimTypes.curry
-instance Curry C_Success where
-  (=?=) (Choice_C_Success cd i x y) z d cs = narrow cd i (((x =?= z) d) cs) (((y =?= z) d) cs)
-  (=?=) (Choices_C_Success cd i xs) y d cs = narrows cs cd i (\x -> ((x =?= y) d) cs) xs
-  (=?=) (Guard_C_Success cd c e) y d cs = guardCons cd c (((e =?= y) d) (addCs c cs))
-  (=?=) (Fail_C_Success cd info) _ _ _ = failCons cd info
-  (=?=) z (Choice_C_Success cd i x y) d cs = narrow cd i (((z =?= x) d) cs) (((z =?= y) d) cs)
-  (=?=) y (Choices_C_Success cd i xs) d cs = narrows cs cd i (\x -> ((y =?= x) d) cs) xs
-  (=?=) y (Guard_C_Success cd c e) d cs = guardCons cd c (((y =?= e) d) (addCs c cs))
-  (=?=) _ (Fail_C_Success cd info) _ _ = failCons cd info
-  (=?=) C_Success C_Success d cs = C_True
-  (<?=) (Choice_C_Success cd i x y) z d cs = narrow cd i (((x <?= z) d) cs) (((y <?= z) d) cs)
-  (<?=) (Choices_C_Success cd i xs) y d cs = narrows cs cd i (\x -> ((x <?= y) d) cs) xs
-  (<?=) (Guard_C_Success cd c e) y d cs = guardCons cd c (((e <?= y) d) (addCs c cs))
-  (<?=) (Fail_C_Success cd info) _ _ _ = failCons cd info
-  (<?=) z (Choice_C_Success cd i x y) d cs = narrow cd i (((z <?= x) d) cs) (((z <?= y) d) cs)
-  (<?=) y (Choices_C_Success cd i xs) d cs = narrows cs cd i (\x -> ((y <?= x) d) cs) xs
-  (<?=) y (Guard_C_Success cd c e) d cs = guardCons cd c (((y <?= e) d) (addCs c cs))
-  (<?=) _ (Fail_C_Success cd info) _ _ = failCons cd info
-  (<?=) C_Success C_Success d cs = C_True
--- END GENERATED FROM PrimTypes.curry
-
 instance (Curry t0, Curry t1) => Curry (Func t0 t1) where
   (=?=) = error "(==) is undefined for functions"
   (<?=) = error "(<=) is undefined for functions"
@@ -148,16 +126,16 @@ instance NormalForm C_Int where
   searchNF _ _ x = error ("Prelude.Int.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Int where
-  (=.=) (C_Int      x1) (C_Int      y1) cd _  = if isTrue# (x1 ==# y1) then C_Success else Fail_C_Success cd defFailInfo
+  (=.=) (C_Int      x1) (C_Int      y1) cd _  = if isTrue# (x1 ==# y1) then C_True else Fail_C_Bool cd defFailInfo
   (=.=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =:= y1) cd cs
   (=.=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =:= (primint2curryint y1)) cd cs
   (=.=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =:= y1) cd cs
-  (=.=) _               _               cd _  = Fail_C_Success cd defFailInfo
-  (=.<=) (C_Int      x1) (C_Int      y1) cd _ = if isTrue# (x1 ==# y1) then C_Success else Fail_C_Success cd defFailInfo
+  (=.=) _               _               cd _  = Fail_C_Bool cd defFailInfo
+  (=.<=) (C_Int      x1) (C_Int      y1) cd _ = if isTrue# (x1 ==# y1) then C_True else Fail_C_Bool cd defFailInfo
   (=.<=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =:<= y1) cd cs
   (=.<=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =:<= (primint2curryint y1)) cd cs
   (=.<=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =:<= y1) cd cs
-  (=.<=) _ _ cd _= Fail_C_Success cd defFailInfo
+  (=.<=) _ _ cd _= Fail_C_Bool cd defFailInfo
   bind cd i (C_Int      x2) = (i :=: ChooseN 0 1) : bind cd (leftID i) (primint2curryint x2)
   bind cd i (C_CurryInt x2) = (i :=: ChooseN 0 1) : bind cd (leftID i) x2
   bind cd i (Choice_C_Int d j l r) = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
@@ -283,8 +261,8 @@ instance NormalForm C_Float where
   searchNF _ _ x = error ("Prelude.Float.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Float where
-  (=.=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_Success else Fail_C_Success cd defFailInfo
-  (=.<=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_Success else Fail_C_Success cd defFailInfo
+  (=.=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_True else Fail_C_Bool cd defFailInfo
+  (=.<=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_True else Fail_C_Bool cd defFailInfo
   bind cd i (Choice_C_Float d j l r) = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
   bind cd i (Choices_C_Float d j@(FreeID _ _) xs) = bindOrNarrow cd i d j xs
   bind cd i (Choices_C_Float d j@(NarrowedID _ _) xs) = [(ConstraintChoices d j (map (bind cd i) xs))]
@@ -412,18 +390,18 @@ instance NormalForm C_Char where
   searchNF _ _ x = error ("Prelude.Char.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Char where
-  (=.=) (C_Char       x1) (C_Char      x2) cd _ | isTrue# (x1 `eqChar#` x2) = C_Success
-                                                | otherwise                 = Fail_C_Success cd defFailInfo
+  (=.=) (C_Char       x1) (C_Char      x2) cd _ | isTrue# (x1 `eqChar#` x2) = C_True
+                                                | otherwise                 = Fail_C_Bool cd defFailInfo
   (=.=) (C_Char       x1) (CurryChar x2)   cd cs = (primChar2CurryChar x1 =:= x2) cd cs
   (=.=) (CurryChar  x1) (C_Char      x2)   cd cs = (x1 =:= primChar2CurryChar x2) cd cs
   (=.=) (CurryChar x1)    (CurryChar   x2) cd cs = (x1 =:= x2) cd cs
-  (=.=) _                 _                cd _  = Fail_C_Success cd  defFailInfo
-  (=.<=) (C_Char       x1) (C_Char      x2) cd _ | isTrue# (x1 `eqChar#` x2) = C_Success
-                                                 | otherwise                 = Fail_C_Success cd defFailInfo
+  (=.=) _                 _                cd _  = Fail_C_Bool cd  defFailInfo
+  (=.<=) (C_Char       x1) (C_Char      x2) cd _ | isTrue# (x1 `eqChar#` x2) = C_True
+                                                 | otherwise                 = Fail_C_Bool cd defFailInfo
   (=.<=) (C_Char       x1) (CurryChar x2)   cd cs = (primChar2CurryChar x1 =:<= x2) cd cs
   (=.<=) (CurryChar  x1) (C_Char      x2)   cd cs = (x1 =:<= primChar2CurryChar x2) cd cs
   (=.<=) (CurryChar x1)    (CurryChar   x2) cd cs = (x1 =:<= x2) cd cs
-  (=.<=) _                 _                cd _  = Fail_C_Success cd defFailInfo
+  (=.<=) _                 _                cd _  = Fail_C_Bool cd defFailInfo
   bind cd i (C_Char    x) = (i :=: ChooseN 0 1) : bind cd (leftID i) (primChar2CurryChar x)
   bind cd i (CurryChar x) = (i :=: ChooseN 0 1) : bind cd (leftID i) x
   bind cd i (Choice_C_Char d j l r) = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
@@ -594,22 +572,19 @@ external_d_OP_eq_eq  = (=?=)
 external_d_OP_lt_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Bool
 external_d_OP_lt_eq = (<?=)
 
-external_d_OP_eq_colon_eq :: Unifiable a => a -> a -> Cover -> ConstStore -> C_Success
+external_d_OP_eq_colon_eq :: Unifiable a => a -> a -> Cover -> ConstStore -> C_Bool
 external_d_OP_eq_colon_eq = (=:=)
 
-external_d_OP_eq_colon_lt_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Success
+external_d_OP_eq_colon_lt_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Bool
 external_d_OP_eq_colon_lt_eq = (=:<=)
 
 external_d_C_failed :: NonDet a => Cover -> ConstStore -> a
 external_d_C_failed cd _ = failCons cd (customFail "Call to function `failed'")
 
-external_d_C_success :: Cover -> ConstStore -> C_Success
-external_d_C_success _ _ = C_Success
-
-external_d_C_cond :: Curry a => C_Success -> a -> Cover -> ConstStore -> a
+external_d_C_cond :: Curry a => C_Bool -> a -> Cover -> ConstStore -> a
 external_d_C_cond succ a cd cs = ((\_ _ _ -> a) `d_OP_dollar_hash` succ) cd cs
 
-external_d_OP_amp :: C_Success -> C_Success -> Cover -> ConstStore -> C_Success
+external_d_OP_amp :: C_Bool -> C_Bool -> Cover -> ConstStore -> C_Bool
 external_d_OP_amp = (&)
 
 external_d_C_ensureNotFree :: Curry a => a -> Cover -> ConstStore -> a

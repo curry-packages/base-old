@@ -61,10 +61,10 @@ instance NormalForm (C_Global a) where
 
 instance Unifiable (C_Global a) where
   (=.=) (C_Global_Temp ref1) (C_Global_Temp ref2) _ _
-    | ref1 == ref2 = C_Success
+    | ref1 == ref2 = C_True
   (=.=) (C_Global_Pers f1) (C_Global_Pers f2) _ _
-    | f1 == f2  = C_Success
-  (=.=) _ _ cd _ = Fail_C_Success cd defFailInfo
+    | f1 == f2  = C_True
+  (=.=) _ _ cd _ = Fail_C_Bool cd defFailInfo
   (=.<=) = (=.=)
   bind cd i (Choice_C_Global d j l r) 
     = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
