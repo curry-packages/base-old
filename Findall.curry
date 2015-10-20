@@ -69,7 +69,7 @@ someValue = ST.someValueWith ST.dfsStrategy
 --- Note that this operation is not purely declarative since the ordering
 --- of the computed values depends on the ordering of the program rules.
 allSolutions :: (a->Bool) -> [a]
-allSolutions p = allValues (let x free in p x &&> x)
+allSolutions p = allValues (let x free in p x &> x)
 
 --- Returns some values satisfying a predicate, i.e., some argument such that
 --- the predicate applied to the argument can be evaluated to `True`
@@ -81,6 +81,6 @@ allSolutions p = allValues (let x free in p x &&> x)
 --- Thus, this operation should be used only if the
 --- predicate has a single solution.
 someSolution :: (a->Bool) -> a
-someSolution p = someValue (let x free in p x &&> x)
+someSolution p = someValue (let x free in p x &> x)
 
 ------------------------------------------------------------------------------
