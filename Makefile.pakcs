@@ -1,7 +1,7 @@
 # Makefile for various compilations of the system libraries,
 # in particular, to generate the documentation
 
-CYMAKEPARAMS = --extended --no-verb --no-warn --no-overlap-warn -i. -imeta
+CYMAKEPARAMS = --extended -Wnone -i. -imeta
 
 PAKCS=$(ROOT)/bin/pakcs
 
@@ -159,8 +159,7 @@ Database.CDBI.%.tex: $(LIBDIR)/Database/CDBI/%.curry
 clean:
 	rm -f "$(LIBDOCDIR)"/*
 	rm -f "$(TEXDOCDIR)"/*
-	../bin/cleancurry
-	cd meta && ../../bin/cleancurry
+	rm -fr .curry meta/.curry
 
 # clean all generated Prolog files
 .PHONY: cleanpl

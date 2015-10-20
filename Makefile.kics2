@@ -1,7 +1,7 @@
 # Makefile for various compilations of the system libraries,
 # in particular, to generate the documentation
 
-CYMAKEPARAMS = --extended --no-verb --no-warn --no-overlap-warn -i. -imeta
+CYMAKEPARAMS = --extended -Wnone -i. -imeta
 
 # directory for HTML documentation files
 # LIBDOCDIR = $(DOCDIR)/html
@@ -89,8 +89,7 @@ cleanall:
 	rm -rf dist
 	rm -f $(CABAL_FILE)
 	rm -f $(CABAL_TRACE_FILE)
-	$(CLEANCURRY)
-	cd meta && $(CLEANCURRY)
+	rm -fr .curry meta/.curry
 
 $(CABAL_FILE): ../Makefile Makefile
 	echo "Name:           $(PACKAGE)"                             > $@
