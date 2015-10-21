@@ -73,7 +73,7 @@ d1 <> d2 = Prod d1 d2
 d |> b = Cond d b
 
 --- Restrict a dynamic with a constraint.
-(|&>) :: Dynamic -> Success -> Dynamic
+(|&>) :: Dynamic -> Bool -> Dynamic
 d |&> c = d |> (c &> True)
 
 --- Asserts new facts (without free variables!) about dynamic predicates.
@@ -98,7 +98,7 @@ retract (Cond d b) = if b then retract d else return True
 --- Returns the knowledge at a particular point of time about dynamic
 --- predicates. If other processes made changes to persistent predicates,
 --- these changes are read and made visible to the currently running program.
-getKnowledge :: IO (Dynamic -> Success)
+getKnowledge :: IO (Dynamic -> Bool)
 getKnowledge = do
   known <- getDynamicKnowledge
   return (knownAll known)
@@ -228,7 +228,7 @@ prim_retractFact external
 -- Returns the knowledge at a particular point of time about all dynamic
 -- predicates. If other processes made changes to persistent predicates,
 -- these changes are read and made visible to the currently running program.
-getDynamicKnowledge :: IO (Dynamic -> Success)
+getDynamicKnowledge :: IO (Dynamic -> Bool)
 getDynamicKnowledge external
 
 -- To implement transactions: lock persistent files, load newest version,
@@ -245,8 +245,8 @@ prim_commitTransaction :: Int -> IO ()
 prim_commitTransaction external
 
 -- ...to implement getKnowledge:
-isKnownAtTime :: Int -> Dynamic -> Success
+isKnownAtTime :: Int -> Dynamic -> Bool
 isKnownAtTime t dyn = (prim_isKnownAtTime $# t) $!! dyn
 
-prim_isKnownAtTime :: Int -> Dynamic -> Success
+prim_isKnownAtTime :: Int -> Dynamic -> Bool
 prim_isKnownAtTime external

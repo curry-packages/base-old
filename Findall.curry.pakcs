@@ -92,14 +92,14 @@ someSolution p = findfirst (\x -> p x =:= True)
 
 ------------------------------------------------------------------------------
 --- Basic search control operator.
-try     :: (a -> Success) -> [a -> Success]
+try     :: (a -> Bool) -> [a -> Bool]
 try external
 
 --- Inject operator which adds the application of the unary
 --- procedure p to the search variable to the search goal
 --- taken from Oz. p x comes before g x to enable a test+generate
 --- form in a sequential implementation.
-inject  :: (a -> Success) -> (a -> Success) -> (a -> Success)
+inject  :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
 inject g p = \x -> p x & g x
 
 --- Computes all solutions via a a depth-first strategy.
@@ -115,7 +115,7 @@ inject g p = \x -> p x & g x
 -- The following solveAll algorithm is faster.
 -- For comparison we have solveAll2, which implements the above algorithm.
 
-solveAll     :: (a -> Success) -> [a -> Success]
+solveAll     :: (a -> Bool) -> [a -> Bool]
 solveAll g = evalall (try g)
   where
     evalall []      = []
@@ -130,7 +130,7 @@ solveAll g = evalall (try g)
     evalall3 (c:d:e) b  = evalall3 (try c) (d:e ++b)
 
 
-solveAll2  :: (a -> Success) -> [a -> Success]
+solveAll2  :: (a -> Bool) -> [a -> Bool]
 solveAll2 g = evalResult (try g)
         where
           evalResult []      = []
@@ -139,7 +139,7 @@ solveAll2 g = evalResult (try g)
 
 
 --- Gets the first solution via a depth-first strategy.
-once :: (a -> Success) -> (a -> Success)
+once :: (a -> Bool) -> (a -> Bool)
 once g = head (solveAll g)
 
 
@@ -147,7 +147,7 @@ once g = head (solveAll g)
 --- a specified operator that can always take a decision which
 --- of two solutions is better.
 --- In general, the comparison operation should be rigid in its arguments!
-best           :: (a -> Success) -> (a -> a -> Bool) -> [a -> Success]
+best           :: (a -> Bool) -> (a -> a -> Bool) -> [a -> Bool]
 best g cmp = bestHelp [] (try g) []
  where
    bestHelp [] []     curbest = curbest
@@ -170,28 +170,28 @@ best g cmp = bestHelp [] (try g) []
 --- Gets all solutions via a depth-first strategy and unpack
 --- the values from the lambda-abstractions.
 --- Similar to Prolog's findall.
-findall :: (a -> Success) -> [a]
+findall :: (a -> Bool) -> [a]
 findall g = map unpack (solveAll g)
 
 
 --- Gets the first solution via a depth-first strategy
 --- and unpack the values from the search goals.
-findfirst :: (a -> Success) -> a
+findfirst :: (a -> Bool) -> a
 findfirst g = head (findall g)
 
 --- Shows the solution of a solved constraint.
-browse  :: (_ -> Success) -> IO ()
+browse  :: (_ -> Bool) -> IO ()
 browse g = putStr (show (unpack g))
 
 --- Unpacks solutions from a list of lambda abstractions and write
 --- them to the screen.
-browseList :: [_ -> Success] -> IO ()
+browseList :: [_ -> Bool] -> IO ()
 browseList []     = done
 browseList (g:gs) = browse g >> putChar '\n' >> browseList gs
 
 
 --- Unpacks a solution's value from a (solved) search goal.
-unpack  :: (a -> Success) -> a
+unpack  :: (a -> Bool) -> a
 unpack g | g x = x where x free
 
 --- Gets all values computable by term rewriting.

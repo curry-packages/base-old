@@ -267,8 +267,8 @@ allEFDVars e = case e of
   FDInt _          -> []
   FDBinExp _ e1 e2 -> allEFDVars e1 ++ allEFDVars e2
 
-trC :: FDConstr -> Success
-trC FDTrue = success
+trC :: FDConstr -> Bool
+trC FDTrue = True
 trC (FDRelCon rel fde1 fde2) = (trFDRel rel) (trE fde1) (trE fde2)
 trC (FDAnd fde1 fde2) = trC fde1 & trC fde2
 trC (FDAllDiff fdvars) = C.allDifferent (map getFDVal fdvars)
@@ -287,7 +287,7 @@ trE (FDVar _ _ v) = v
 trE (FDInt i) = i
 trE (FDBinExp rel fde1 fde2) = (trFDOp rel) (trE fde1) (trE fde2)
 
-trFDRel :: FDRel -> Int -> Int -> Success
+trFDRel :: FDRel -> Int -> Int -> Bool
 trFDRel Equ = (C.=#)
 trFDRel Neq = (C./=#)
 trFDRel Lt  = (C.<#)

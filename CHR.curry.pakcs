@@ -21,7 +21,7 @@ module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
            (.=.), (./=.), (.<=.), (.>=.), (.>.), (.<.),
            nonvar, ground, anyPrim,
            solveCHR, runCHR, runCHRwithTrace,
-           compileCHR, chr2success
+           compileCHR, chr2curry
           ) where
 
 import Findall(rewriteSome)
@@ -181,7 +181,7 @@ data PrimConstraint a = Eq a a -- equality
                       | Compare (a -> a -> Bool) a a -- ordering constraint
                       | Ground a -- ground value
                       | Nonvar a -- not an unbound variable
-                      | AnyPrim (() -> Success) -- user-defined primitive
+                      | AnyPrim (() -> Bool) -- user-defined primitive
 
 --- Transforms a primitive constraint into a CHR goal.
 primToGoal :: PrimConstraint dom -> Goal dom chr
@@ -220,11 +220,11 @@ nonvar :: dom -> Goal dom chr
 nonvar x = primToGoal (Nonvar x)
 
 --- Embed user-defined primitive constraint.
-anyPrim :: (() -> Success) -> Goal dom chr
+anyPrim :: (() -> Bool) -> Goal dom chr
 anyPrim cf = primToGoal (AnyPrim cf)
 
 -- Evaluate primitive constraints.
-evalPrimCHR :: PrimConstraint _ -> Success
+evalPrimCHR :: PrimConstraint _ -> Bool
 evalPrimCHR (Eq x y)          = x=:=y
 evalPrimCHR (Neq x y)         = (x==y) =:= False
 evalPrimCHR Fail              = failed
@@ -243,13 +243,13 @@ evalPrimCHR (AnyPrim cf)      = cf ()
 --- a constraint solver in Curry. If user-defined CHR constraints remain
 --- after applying all CHR rules, a warning showing the residual
 --- constraints is issued.
-solveCHR :: [[dom] -> CHR dom chr] -> Goal dom chr -> Success
+solveCHR :: [[dom] -> CHR dom chr] -> Goal dom chr -> Bool
 solveCHR prules goal =
   let residual = runCHR prules goal
    in if null residual
-      then success
+      then True
       else trace ("WARNING: residual CHR constraints: "++show residual++"\n")
-                 success
+                 True
 
 ------------------------------------------------------------------------
 -- The structure and operations for the history of the interpreter.
@@ -475,7 +475,7 @@ showCHRModule orgmod chrmod opdecls constraints = unlines $
   ["module "++chrmod++exports++" where","",
   -- import original modules so that their code is available for
   -- evaluating primitive (Curry-defined) constraints
-   "import qualified CHR(chr2success)",
+   "import qualified CHR(chr2curry)",
    "import CHRcompiled",
    "import qualified "++orgmod,""] ++
   map showOpDecl chropdecls ++ [""] ++
@@ -506,7 +506,7 @@ showCurryConstraint (((_,cname),carity),ctype) =
     showCName ("prim_"++cname) ++
     concatMap (\i->" $!! x"++show i++")") [1..carity] ++ "\n\n" ++
   showCName ("prim_"++cname) ++ " :: " ++
-            concatMap (++" -> ") cargtypes ++ "Success\n" ++
+            concatMap (++" -> ") cargtypes ++ "Bool\n" ++
   showCName ("prim_"++cname) ++ " external\n"
  where
    resultType arity tp =
@@ -576,7 +576,7 @@ compileRule getftype chrs (Rule _ rhs) =
                 then plit
                 else if isCHRType (getftype qf)
                      then let PlLit pn pargs = plit
-                           in PlLit "eval" [PlStruct "CHR.chr2success"
+                           in PlLit "eval" [PlStruct "CHR.chr2curry"
                                                      [PlStruct pn pargs]]
                      else error ("Operation '"++snd qf++
                                  "' is not a CHR constraint!")
@@ -685,9 +685,9 @@ chrMod = "CHR"
 --- Transforms a primitive CHR constraint into a Curry constraint.
 --- Used in the generated CHR(Prolog) code to evaluated primitive
 --- constraints.
-chr2success :: CHR.Goal dom chr -> Success
-chr2success (CHR.Goal c) = case c of
+chr2curry :: CHR.Goal dom chr -> Bool
+chr2curry (CHR.Goal c) = case c of
   [CHR.PrimCHR pc] -> CHR.evalPrimCHR pc
-  _                -> error "CHRcompiled.chr2success: unexpected argument!"
+  _                -> error "CHRcompiled.chr2curry: unexpected argument!"
 
 ----------------------------------------------------------------------

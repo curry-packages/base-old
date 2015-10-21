@@ -43,13 +43,13 @@ getOneValue x = do
 --- of the constraint does not share any results. Moreover, this
 --- evaluation suspends if the constraints contain unbound variables.
 --- Similar to Prolog's findall.
-getAllSolutions :: (a->Success) -> IO [a]
+getAllSolutions :: (a->Bool) -> IO [a]
 getAllSolutions c = getAllValues (let x free in (x,c x)) >>= return . map fst
 
 --- Gets one solution to a constraint (currently, via an incomplete
 --- left-to-right strategy). Returns Nothing if the search space
 --- is finitely failed.
-getOneSolution :: (a->Success) -> IO (Maybe a)
+getOneSolution :: (a->Bool) -> IO (Maybe a)
 getOneSolution c = do
   sols <- getAllSolutions c
   return (if null sols then Nothing else Just (head sols))
@@ -58,17 +58,17 @@ getOneSolution c = do
 --- @param x - an expression (a generator evaluable to various values)
 --- @param c - a constraint that should not be satisfied
 --- @return A list of all values of e such that (c e) is not provable
-getAllFailures :: a -> (a->Success) -> IO [a]
+getAllFailures :: a -> (a->Bool) -> IO [a]
 getAllFailures generator test =
  do xs <- getAllValues generator
     failures <- mapIO (naf test) xs
     return $ concat failures
 
 -- (naf c x) returns [x] if (c x) fails, and [] otherwise.
-naf :: (a -> Success) -> a -> IO [a]
+naf :: (a -> Bool) -> a -> IO [a]
 naf c x = getOneSolution (lambda c x) >>= returner x
 
-lambda :: (a -> Success) -> a -> () -> Success
+lambda :: (a -> Bool) -> a -> () -> Bool
 lambda c x _ = c x
 
 returner :: a -> Maybe b -> IO [a]

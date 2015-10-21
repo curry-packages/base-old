@@ -42,7 +42,7 @@ infixl 1 `seqStrActions`
 data Assertion a = AssertTrue      String Bool
                  | AssertEqual     String a a
                  | AssertValues    String a [a]
-                 | AssertSolutions String (a->Success) [a]
+                 | AssertSolutions String (a->Bool) [a]
                  | AssertIO        String (IO a) a
                  | AssertEqualIO   String (IO a) (IO a)
 
@@ -64,7 +64,7 @@ assertValues s x y = AssertValues s x y
 --- `(assertSolutions s c vs)` asserts (with name `s`) that constraint
 --- abstraction `c` has the multiset of solutions `vs`.
 --- The solutions of `c` are compared with the elements in `vs` w.r.t. `==`.
-assertSolutions :: String -> (a->Success) -> [a] -> Assertion a
+assertSolutions :: String -> (a->Bool) -> [a] -> Assertion a
 assertSolutions s x y = AssertSolutions s x y
 
 --- `(assertIO s a r)` asserts (with name `s`) that I/O action `a`
@@ -157,7 +157,7 @@ checkAssertValues name call results = do
                 "Expected values: "++show results++"\n",False)
 
 -- Checks all solutions of a constraint abstraction.
-checkAssertSolutions :: String -> (a->Success) -> [a] -> IO (String,Bool)
+checkAssertSolutions :: String -> (a->Bool) -> [a] -> IO (String,Bool)
 checkAssertSolutions name constr results = do
   rs <- getAllSolutions constr
   if null (rs \\ results) && null (results \\ rs)

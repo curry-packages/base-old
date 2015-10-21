@@ -83,7 +83,7 @@ data ConsDecl = Cons QName Int Visibility [TypeExpr]
 --- or a type constructor application.
 ---
 --- Note: the names of the predefined type constructors are
---- "Int", "Float", "Bool", "Char", "IO", "Success",
+--- "Int", "Float", "Bool", "Char", "IO",
 --- "()" (unit type), "(,...,)" (tuple types), "[]" (list type)
 data TypeExpr
   = TVar TVarIndex                 -- type variable
@@ -175,14 +175,14 @@ data CombType = FuncCall | ConsCall | FuncPartCall Int | ConsPartCall Int
 --- `cond` where the first argument is the condition (a constraint).
 --- For instance, the rule
 ---
----     equal2 x | x=:=2 = success
+---     equal2 x | x=:=2 = True
 ---
 --- is represented as
 ---
 ---     (Rule [0]
 ---           (Comb FuncCall ("Prelude","cond")
 ---                 [Comb FuncCall ("Prelude","=:=") [Var 0, Lit (Intc 2)],
----                  Comb FuncCall ("Prelude","success") []]))
+---                  Comb FuncCall ("Prelude","True") []]))
 ---
 --- @cons Var - variable (represented by unique index)
 --- @cons Lit - literal (Int/Float/Char constant)

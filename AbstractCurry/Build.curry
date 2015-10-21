@@ -90,16 +90,16 @@ simpleRule pats rhs = CRule pats (CSimpleRhs rhs [])
 --- Constructs a rule with a possibly guarded right-hand side
 --- and local declarations.
 --- A simple right-hand side is constructed if there is only one
---- `success` condition.
+--- `True` condition.
 guardedRule :: [CPattern] -> [(CExpr,CExpr)] -> [CLocalDecl] -> CRule
 guardedRule pats gs ldecls
-  | length gs == 1 && fst (head gs) == CSymbol (pre "success")
+  | length gs == 1 && fst (head gs) == CSymbol (pre "True")
               = CRule pats (CSimpleRhs (snd (head gs)) ldecls)
   | otherwise = CRule pats (CGuardedRhs gs ldecls)
 
 --- Constructs a guarded expression with the trivial guard.
 noGuard :: CExpr -> (CExpr, CExpr)
-noGuard e = (CSymbol (pre "success"), e)
+noGuard e = (CSymbol (pre "True"), e)
 
 ------------------------------------------------------------------------
 -- Goodies to construct expressions and patterns

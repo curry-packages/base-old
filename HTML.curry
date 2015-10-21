@@ -1247,7 +1247,7 @@ computeFormInStateAndEnv url cgikey fparams state scriptkey hformact cenv =
     seq (isList htmlstring) done -- to ensure to catch all failures here
     return (nstate, cookiestring++htmlstring)
 
-  isList [] = success
+  isList [] = True
   isList (_:xs) = isList xs
 
 formWithMultipleHandlers :: HtmlForm -> Bool

@@ -23,7 +23,7 @@ infixr 4 /\
 --- we use a phantom type to parameterize goals over CHR constraints.
 --- The argument of the goal is the constraint implementing the goal
 --- with the compiled CHR(Prolog) program.
-data Goal _ = Goal Success
+data Goal _ = Goal Bool
 
 --- Conjunction of CHR goals.
 (/\) :: Goal chr -> Goal chr -> Goal chr 
@@ -31,7 +31,7 @@ data Goal _ = Goal Success
 
 --- The always satisfiable CHR constraint.
 true :: Goal _
-true = Goal success
+true = Goal True
 
 --- The always failing constraint.
 fail :: Goal _
@@ -49,13 +49,13 @@ allCHR fc = andCHR . map fc
 --- Evaluate a given CHR goal and embed this as a constraint in Curry.
 --- Note: due to limitations of the CHR(Prolog) implementation,
 --- no warning is issued if residual constraints remain after the evaluation.
-solveCHR :: Goal chr -> Success
+solveCHR :: Goal chr -> Bool
 solveCHR (Goal g) | g = warnSuspendedConstraints True
 
 --- Primitive operation that issues a warning if there are some
 --- suspended constraints in the CHR constraint store.
 --- If the argument is true, then all suspended constraints are shown,
 --- otherwise only the first one.
-warnSuspendedConstraints :: Bool -> Success
+warnSuspendedConstraints :: Bool -> Bool
 warnSuspendedConstraints external
 

@@ -98,7 +98,7 @@ data CFieldDecl = CField QName CVisibility CTypeExpr
 --- or a type constructor application.
 ---
 --- Note: the names of the predefined type constructors are
----       "Int", "Float", "Bool", "Char", "IO", "Success",
+---       "Int", "Float", "Bool", "Char", "IO",
 ---       "()" (unit type), "(,...,)" (tuple types), "[]" (list type)
 data CTypeExpr
   = CTVar CTVarIName               -- type variable

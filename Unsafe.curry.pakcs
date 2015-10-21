@@ -31,16 +31,16 @@ trace s x = unsafePerformIO (hPutStrLn stderr s >> return x)
 
 --- Spawns a constraint and returns the second argument.
 --- This function can be considered as defined by
---- "<code>spawnConstraint c x | c = x</code>".
+--- `spawnConstraint c x | c = x`.
 --- However, the evaluation of the constraint and the right-hand side
 --- are performed concurrently, i.e., a suspension of the constraint
 --- does not imply a blocking of the right-hand side and the
 --- right-hand side might be evaluated before the constraint is successfully
 --- solved.
 --- Thus, a computation might return a result even if some of the
---- spawned constraints are suspended (use the PAKCS/Curry2Prolog option
---- "<code>+suspend</code>" to show such suspended goals).
-spawnConstraint :: Success -> a -> a
+--- spawned constraints are suspended (use the PAKCS option
+--- `+suspend` to show such suspended goals).
+spawnConstraint :: Bool -> a -> a
 spawnConstraint external
 
 --- Tests whether the first argument evaluates to a currently unbound
