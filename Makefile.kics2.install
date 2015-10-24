@@ -12,6 +12,7 @@ install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/meta
 	mkdir -p $(LIBDIR)/AbstractCurry
+	mkdir -p $(LIBDIR)/FlatCurry/Annotated
 	mkdir -p $(LIBDIR)/Database/CDBI
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
@@ -29,6 +30,12 @@ meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
 	 cp $< $@
 
 AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
+	cp $< $@
+
+FlatCurry/Annotated/%.curry: $(LIBTRUNKDIR)/FlatCurry/Annotated/%.curry
+	cp $< $@
+
+FlatCurry/%.curry: $(LIBTRUNKDIR)/FlatCurry/%.curry
 	cp $< $@
 
 Database/CDBI/%.curry: $(LIBTRUNKDIR)/Database/CDBI/%.curry

@@ -15,7 +15,7 @@ TEXDOCDIR := $(DOCDIR)/src/lib
 CURRYDOC=$(ROOT)/bin/currydoc
 
 # Curry library files
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry AbstractCurry/*.curry CLP/*.curry Database/CDBI/*.curry))
+LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry CLP/*.curry Database/CDBI/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(subst meta/,, $(basename $(LIB_CURRY))))
 # lib names included in library documentation page (without directory prefix)
@@ -24,8 +24,8 @@ LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(LIB_NAMES))
 LIB_FCY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.fcy), $(subst .curry/meta,meta/.curry,$(lib)))
 LIB_ACY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.acy), $(subst .curry/meta,meta/.curry,$(lib)))
 LIB_PL    = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs/%.pl), $(subst .curry/pakcs/meta,meta/.curry/pakcs,$(lib)))
-LIB_HTML  = $(foreach lib, $(LIB_CURRY:.curry=.html), $(if $(findstring meta/,$(lib)),$(lib),$(subst /,.,$(lib))))
-LIB_TEX   = $(foreach lib, $(LIB_CURRY:.curry=.tex), $(if $(findstring meta/,$(lib)),$(lib),$(subst /,.,$(lib))))
+LIB_HTML  = $(foreach lib, $(LIB_CURRY:.curry=.html), $(LIBDOCDIR)/$(if $(findstring meta/,$(lib)),$(subst meta/,,$(lib)),$(subst /,.,$(lib))))
+LIB_TEX   = $(foreach lib, $(LIB_CURRY:.curry=.tex),  $(TEXDOCDIR)/$(if $(findstring meta/,$(lib)),$(subst meta/,,$(lib)),$(subst /,.,$(lib))))
 
 ALLLIBS      = AllLibraries
 # Modules not included as regular libraries:
@@ -85,40 +85,41 @@ meta/.curry/pakcs/%.pl: meta/.curry/%.fcy
 # create HTML documentation files for system libraries
 ##############################################################################
 
+INDEXHTML    = $(LIBDOCDIR)/index.html
+HTMLEXCLUDES = $(INDEXHTML) $(foreach file, findex.html cindex.html PAKCS_libs.html, $(LIBDOCDIR)/$(file))
+
 .PHONY: doc
 doc: $(LIB_CURRY)
 	@mkdir -p "$(LIBDOCDIR)"
-	@cd "$(LIBDOCDIR)" && rm -f meta DOINDEX && ln -s . meta
-	@cd "$(LIBDOCDIR)" && $(MAKE) -f ../Makefile $(LIB_HTML)
-	@if [ -f "$(LIBDOCDIR)/DOINDEX" ] ; then $(MAKE) htmlindex ; fi
-	@cd "$(LIBDOCDIR)" && rm -f meta DOINDEX
+	@$(MAKE) $(LIB_HTML)
+	@$(MAKE) $(INDEXHTML)
 
-.PHONY: htmlindex
-htmlindex:
+$(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	@echo "Generating index pages for Curry libraries:"
 	@echo $(LIB_DOCNAMES)
 	"$(CURRYDOC)" --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
-# generate individual documentations for libraries:
-meta/%.html: ../meta/%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
+# generate individual documentations for libraries
+$(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" AbstractCurry.$*
 
-AbstractCurry.%.html: ../AbstractCurry/%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" AbstractCurry.$*
+$(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.Annotated.$*
 
-CLP.%.html: ../CLP/%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
+$(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.$*
 
-Database.CDBI.%.html: ../Database/CDBI/%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
+$(LIBDOCDIR)/CLP.%.html: CLP/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
 
-%.html: ../%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
+$(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
+
+$(LIBDOCDIR)/%.html: meta/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
+
+$(LIBDOCDIR)/%.html: %.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
@@ -127,31 +128,29 @@ Database.CDBI.%.html: ../Database/CDBI/%.curry
 .PHONY: texdoc
 texdoc: $(LIB_CURRY)
 	@mkdir -p "$(TEXDOCDIR)"
-	@if [ ! -f "$(TEXDOCDIR)/LAST" ] ; then touch "$(TEXDOCDIR)/LAST" ; fi
-	@cd "$(TEXDOCDIR)" && rm -f meta && ln -s . meta
-	@cd "$(TEXDOCDIR)" && $(MAKE) -f $(ROOT)/lib/Makefile $(LIB_TEX)
-	@cd "$(TEXDOCDIR)" && rm -f meta
+	$(MAKE) $(LIB_TEX)
 
-# generate individual LaTeX documentations for libraries:
-meta/%.tex: $(LIBDIR)/meta/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
-	touch LAST
+# generate individual LaTeX documentations for libraries
+$(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$*
 
-AbstractCurry.%.tex: $(LIBDIR)/AbstractCurry/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$*
-	touch LAST
+$(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.Annotated.$*
 
-CLP.%.tex: $(LIBDIR)/CLP/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$*
-	touch LAST
+$(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.$*
 
-Database.CDBI.%.tex: $(LIBDIR)/Database/CDBI/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
-	touch LAST
+$(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$*
 
-%.tex: $(LIBDIR)/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
-	touch LAST
+$(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
+
+$(TEXDOCDIR)/%.tex: meta/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
+
+$(TEXDOCDIR)/%.tex: %.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
 
 
 # clean all generated files

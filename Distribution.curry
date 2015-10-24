@@ -4,7 +4,7 @@
 --- compiler version, load paths, front end.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version November 2014
+--- @version October 2015
 --- @category general
 --------------------------------------------------------------------------------
 
@@ -16,7 +16,6 @@ module Distribution (
   rcFileName,rcFileContents,getRcVar,getRcVars,
 
   joinModuleIdentifiers, splitModuleIdentifiers, splitModuleFileName,
-  inCurrySubdirModule,
 
   findFileInLoadPath,lookupFileInLoadPath,
   readFirstFileInLoadPath,getLoadPath,getLoadPathForFile,
@@ -181,12 +180,6 @@ inCurrySubdir :: FilePath -> FilePath
 inCurrySubdir filename =
   let (base,file) = splitFileName filename
    in base </> currySubdir </> modNameToPath file
-
---- Transforms a file name by adding the currySubDir to the file name.
---- This version respects hierarchical module names.
-inCurrySubdirModule :: ModuleIdent -> FilePath -> FilePath
-inCurrySubdirModule m fn = let (dirP, modP) = splitModuleFileName m fn
-                           in  dirP </> currySubdir </> modP
 
 --- Transforms a directory name into the name of the corresponding
 --- sub directory containing auxiliary files.

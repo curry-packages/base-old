@@ -19,7 +19,7 @@ prefix     = $(patsubst ./%,%,$(dir $(2))$(1)$(notdir $(2)))
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
 # Curry library files
-LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry AbstractCurry/*.curry Database/CDBI/*.curry))
+LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry Database/CDBI/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(subst meta/,, $(basename $(LIB_CURRY))))
 # lib names included in library documentation page (without directory prefix)
@@ -146,6 +146,18 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 .curry/kics2/AbstractCurry/Curry_%.hs: AbstractCurry/%.curry
 	$(COMP) -v0 -i. -imeta AbstractCurry.$*
 
+.curry/kics2/FlatCurry/Annotated/Curry_Trace_%.hs: FlatCurry/Annotated/%.curry
+	$(COMP) -v0 -i. -imeta --trace-failure FlatCurry.Annotated.$*
+
+.curry/kics2/FlatCurry/Annotated/Curry_%.hs: FlatCurry/Annotated/%.curry
+	$(COMP) -v0 -i. -imeta FlatCurry.Annotated.$*
+
+.curry/kics2/FlatCurry/Curry_Trace_%.hs: FlatCurry/%.curry
+	$(COMP) -v0 -i. -imeta --trace-failure FlatCurry.$*
+
+.curry/kics2/FlatCurry/Curry_%.hs: FlatCurry/%.curry
+	$(COMP) -v0 -i. -imeta FlatCurry.$*
+
 .curry/kics2/Database/CDBI/Curry_Trace_%.hs: Database/CDBI/%.curry
 	$(COMP) -v0 -i. -imeta --trace-failure Database.CDBI.$*
 
@@ -177,10 +189,16 @@ meta/.curry/%.acy: meta/%.curry
 # create HTML documentation files for system libraries
 ##############################################################################
 
+INDEXHTML    = $(LIBDOCDIR)/index.html
+HTMLEXCLUDES = $(INDEXHTML) $(foreach file, findex.html cindex.html KiCS2_libs.html, $(LIBDOCDIR)/$(file))
+
 .PHONY: doc
 doc: $(LIB_CURRY)
-	mkdir -p "$(LIBDOCDIR)"
-	$(MAKE) $(LIB_HTML)
+	@mkdir -p "$(LIBDOCDIR)"
+	@$(MAKE) $(LIB_HTML)
+	@$(MAKE) $(INDEXHTML)
+
+$(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	@echo "Generating index pages for Curry libraries:"
 	@echo $(LIB_DOCNAMES)
 	"$(CURRYDOC)" --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
@@ -188,6 +206,12 @@ doc: $(LIB_CURRY)
 # generate individual documentations for libraries
 $(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" AbstractCurry.$*
+
+$(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.Annotated.$*
+
+$(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.$*
 
 $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
@@ -204,12 +228,18 @@ $(LIBDOCDIR)/%.html: meta/%.curry
 
 .PHONY: texdoc
 texdoc: $(LIB_CURRY)
-	mkdir -p "$(TEXDOCDIR)"
+	@mkdir -p "$(TEXDOCDIR)"
 	$(MAKE) $(LIB_TEX)
 
 # generate individual LaTeX documentations for libraries
 $(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$*
+
+$(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.Annotated.$*
+
+$(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.$*
 
 $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
