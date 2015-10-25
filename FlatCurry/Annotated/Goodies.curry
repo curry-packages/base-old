@@ -16,7 +16,7 @@
 --- @category meta
 --------------------------------------------------------------------------------
 
-module FlatCurry.Annotated.Select where
+module FlatCurry.Annotated.Goodies where
 
 import FlatCurry.Annotated.Types
 import qualified FlatCurry.Types as FC
