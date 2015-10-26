@@ -209,14 +209,12 @@ getSysLibPath = case curryCompiler of
 --- Adds a directory name to a file by looking up the current load path.
 --- An error message is delivered if there is no such file.
 lookupFileInLoadPath :: String -> IO (Maybe String)
-lookupFileInLoadPath fn =
-  getLoadPathForFile fn >>= lookupFileInPath (takeFileName fn) [""]
+lookupFileInLoadPath fn = getLoadPathForFile fn >>= lookupFileInPath fn [""]
 
 --- Adds a directory name to a file by looking up the current load path.
 --- An error message is delivered if there is no such file.
 findFileInLoadPath :: String -> IO String
-findFileInLoadPath fn =
-  getLoadPathForFile fn >>= getFileInPath (takeFileName fn) [""]
+findFileInLoadPath fn = getLoadPathForFile fn >>= getFileInPath fn [""]
 
 --- Returns the contents of the file found first in the current load path.
 --- An error message is delivered if there is no such file.
