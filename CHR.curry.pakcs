@@ -30,9 +30,10 @@ import Unsafe -- for tracing
 import SetRBT
 import List
 import Char
-import FlatCurry
-import FlatCurryGoodies
-import FlatCurryShow(showCurryType)
+import FlatCurry.Types
+import FlatCurry.Files
+import FlatCurry.Goodies
+import FlatCurry.Show(showCurryType)
 import XML
 import Prolog
 
