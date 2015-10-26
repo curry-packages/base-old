@@ -223,6 +223,8 @@ readFirstFileInLoadPath fn = findFileInLoadPath fn >>= readFile
 
 --- Returns the current path (list of directory names) that is
 --- used for loading modules.
+---
+--- Deprecated operation!
 getLoadPath :: IO [String]
 getLoadPath = getLoadPathForFile "xxx"
 
@@ -232,6 +234,8 @@ getLoadPath = getLoadPathForFile "xxx"
 --- no such prefix) is the first element of the load path and the
 --- remaining elements are determined by the environment variable
 --- CURRYRPATH and the entry "libraries" of the system's rc file.
+---
+--- Deprecated operation! Use 'getLoadPathForModule'!
 getLoadPathForFile :: String -> IO [String]
 getLoadPathForFile file = do
   syslib <- getSysLibPath

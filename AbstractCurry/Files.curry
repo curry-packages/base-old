@@ -7,7 +7,7 @@
 --- extension `.acy` in the subdirectory `.curry`
 ---
 --- @author Michael Hanus, Björn Peemöller
---- @version September 2015
+--- @version October 2015
 --- @category meta
 -- ---------------------------------------------------------------------------
 
@@ -18,7 +18,8 @@ import AbstractCurry.Types
 import Char                 (isSpace)
 import Directory            (doesFileExist, getModificationTime)
 import Distribution
-import FilePath             ((<.>))
+import FileGoodies          (getFileInPath)
+import FilePath             (takeFileName, (</>), (<.>))
 import Maybe                (isNothing)
 import ReadShowTerm
 
@@ -59,13 +60,12 @@ tryReadCurryWithImports modname = collect [] [modname]
           results <- collect (m:imported) (ms ++ is)
           return (either Left (Right . (prog :)) results)
 
--- TODO: lookupFileInLoadPath m does not work as expected
 tryReadCurryFile :: String -> IO (Either String CurryProg)
 tryReadCurryFile m = do
-  mbSrc <- lookupFileInLoadPath m
+  mbSrc <- lookupModuleSourceInLoadPath m
   case mbSrc of
     Nothing      -> cancel $ "Source module '" ++ m ++ "' not found"
-    Just srcFile -> do
+    Just (_,srcFile) -> do
       callFrontendWithParams ACY (setQuiet True defaultParams) m
       mbFn <- lookupFileInLoadPath (abstractCurryFileName m)
       case mbFn of
@@ -120,24 +120,33 @@ readUntypedCurry prog =
 
 readCurryWithParseOptions :: String -> FrontendParams -> IO CurryProg
 readCurryWithParseOptions progname options = do
-  mbmoddir <- lookupModuleSourceInLoadPath progname
-                >>= return . maybe Nothing (Just . fst)
-  unless (isNothing mbmoddir) $
-    callFrontendWithParams ACY options progname
-  filename <- findFileInLoadPath (abstractCurryFileName progname)
-  readAbstractCurryFile filename
+  let modname = takeFileName progname
+  mbsrc <- lookupModuleSourceInLoadPath progname
+  case mbsrc of
+    Nothing -> do -- no source file, try to find AbstractCurry file in load path:
+      loadpath <- getLoadPathForModule progname
+      filename <- getFileInPath (abstractCurryFileName modname) [""] loadpath
+      readAbstractCurryFile filename
+    Just (dir,_) -> do
+      callFrontendWithParams ACY options progname
+      readAbstractCurryFile (abstractCurryFileName (dir </> modname))
 
 --- I/O action which reads an untyped Curry program from a file (with extension
 --- ".uacy") with respect to some parser options. For more details
 --- see function 'readCurryWithParseOptions'
 readUntypedCurryWithParseOptions :: String -> FrontendParams -> IO CurryProg
 readUntypedCurryWithParseOptions progname options = do
-  mbmoddir <- lookupModuleSourceInLoadPath progname
-                >>= return . maybe Nothing (Just . fst)
-  unless (isNothing mbmoddir) $
-    callFrontendWithParams UACY options progname
-  filename <- findFileInLoadPath (untypedAbstractCurryFileName progname)
-  readAbstractCurryFile filename
+  let modname = takeFileName progname
+  mbsrc <- lookupModuleSourceInLoadPath progname
+  case mbsrc of
+    Nothing -> do -- no source file, try to find AbstractCurry file in load path:
+      loadpath <- getLoadPathForModule progname
+      filename <- getFileInPath (untypedAbstractCurryFileName modname) [""]
+                                loadpath
+      readAbstractCurryFile filename
+    Just (dir,_) -> do
+      callFrontendWithParams UACY options progname
+      readAbstractCurryFile (untypedAbstractCurryFileName (dir </> modname))
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the

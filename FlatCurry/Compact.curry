@@ -18,12 +18,13 @@ import FlatCurry.Files
 import SetRBT
 import TableRBT
 import Maybe
-import List(nub,union)
+import List             (nub, union)
 import FileGoodies
+import FilePath         (takeFileName, (</>))
 import Directory
-import Sort(cmpString,leqString)
+import Sort             (cmpString, leqString)
 import XML
-import Distribution(getLoadPathForFile)
+import Distribution     (lookupModuleSourceInLoadPath, stripCurrySuffix)
 
 infix 0 `requires`
 
@@ -486,36 +487,26 @@ leqQName (m1,n1) (m2,n2) = let cm = cmpString m1 m2
 readCurrentFlatCurry :: String -> IO Prog
 readCurrentFlatCurry modname = do
   putStr (modname++"...")
-  progname <- findSourceFileInLoadPath modname
-  fcyexists <- doesFileExist (flatCurryFileName progname)
-  if not fcyexists
-   then readFlatCurry progname >>= processPrimitives progname
-   else do
-     ctime <- getSourceModificationTime progname
-     ftime <- getModificationTime (flatCurryFileName progname)
-     if ctime>ftime
-      then readFlatCurry progname >>= processPrimitives progname
-      else readFlatCurryFile (flatCurryFileName progname)
-            >>= processPrimitives progname
-
-getSourceModificationTime progname = do
-  lexists <- doesFileExist (progname++".lcurry")
-  if lexists then getModificationTime (progname++".lcurry")
-             else getModificationTime (progname++".curry")
-
--- add a directory name for a Curry source file by looking up the
--- current load path (CURRYPATH):
-findSourceFileInLoadPath modname = do
-  loadpath <- getLoadPathForFile modname
-  mbfname <- lookupFileInPath (baseName modname) [".lcurry",".curry"] loadpath
-  maybe (error ("Curry file for module \""++modname++"\" not found!"))
-        (return . stripSuffix)
-        mbfname
+  mbsrc <- lookupModuleSourceInLoadPath modname
+  case mbsrc of
+    Nothing -> error ("Curry file for module \""++modname++"\" not found!")
+    Just (moddir,progname) -> do
+      let fcyname = flatCurryFileName (moddir </> takeFileName modname)
+      fcyexists <- doesFileExist fcyname
+      if not fcyexists
+       then readFlatCurry modname >>= processPrimitives progname
+       else do
+         ctime <- getModificationTime progname
+         ftime <- getModificationTime fcyname
+         if ctime>ftime
+          then readFlatCurry progname >>= processPrimitives progname
+          else readFlatCurryFile fcyname >>= processPrimitives progname
 
 -- read primitive specification and transform FlatCurry program accordingly:
 processPrimitives :: String -> Prog -> IO Prog
 processPrimitives progname prog = do
-  pspecs <- readPrimSpec (moduleName prog) (progname++".prim_c2p")
+  pspecs <- readPrimSpec (moduleName prog)
+                         (stripCurrySuffix progname ++ ".prim_c2p")
   return (mergePrimSpecIntoModule pspecs prog)
 
 mergePrimSpecIntoModule trans (Prog name imps types funcs ops) =

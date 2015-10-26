@@ -14,9 +14,10 @@ import Directory       (doesFileExist)
 import Distribution    ( FrontendParams, FrontendTarget (..), defaultParams
                        , setQuiet, inCurrySubdir, stripCurrySuffix
                        , callFrontend, callFrontendWithParams
-                       , lookupModuleSourceInLoadPath, findFileInLoadPath
+                       , lookupModuleSourceInLoadPath, getLoadPathForModule
                        )
-import FilePath        ((<.>))
+import FileGoodies     (getFileInPath)
+import FilePath        (takeFileName, (</>), (<.>))
 import FlatCurry.Types
 import Maybe           (isNothing)
 import ReadShowTerm    (readUnqualifiedTerm, showTerm)
@@ -42,12 +43,16 @@ readFlatCurry progfile =
 --- @param options - parameters passed to the front end
 readFlatCurryWithParseOptions :: String -> FrontendParams -> IO Prog
 readFlatCurryWithParseOptions progname options = do
-  mbmoddir <- lookupModuleSourceInLoadPath progname
-                >>= return . maybe Nothing (Just . fst)
-  unless (isNothing mbmoddir) $
-    callFrontendWithParams FCY options progname
-  filename <- findFileInLoadPath (flatCurryFileName progname)
-  readFlatCurryFile filename
+  mbsrc <- lookupModuleSourceInLoadPath progname
+  case mbsrc of
+    Nothing -> do -- no source file, try to find FlatCurry file in load path:
+      loadpath <- getLoadPathForModule progname
+      filename <- getFileInPath (flatCurryFileName (takeFileName progname)) [""]
+                                loadpath
+      readFlatCurryFile filename
+    Just (dir,_) -> do
+      callFrontendWithParams FCY options progname
+      readFlatCurryFile (flatCurryFileName (dir </> takeFileName progname))
 
 --- Transforms a name of a Curry program (with or without suffix ".curry"
 --- or ".lcurry") into the name of the file containing the
@@ -90,12 +95,16 @@ readFlatCurryFile filename = do
 --- interface of this module.
 readFlatCurryInt :: String -> IO Prog
 readFlatCurryInt progname = do
-  mbmoddir <- lookupModuleSourceInLoadPath progname
-                >>= return . maybe Nothing (Just . fst)
-  unless (isNothing mbmoddir) $
-    callFrontend FINT progname
-  filename <- findFileInLoadPath (flatCurryIntName progname)
-  readFlatCurryFile filename
+  mbsrc <- lookupModuleSourceInLoadPath progname
+  case mbsrc of
+    Nothing -> do -- no source file, try to find FlatCurry file in load path:
+      loadpath <- getLoadPathForModule progname
+      filename <- getFileInPath (flatCurryIntName (takeFileName progname)) [""]
+                                loadpath
+      readFlatCurryFile filename
+    Just (dir,_) -> do
+      callFrontend FINT progname
+      readFlatCurryFile (flatCurryIntName (dir </> takeFileName progname))
 
 --- Writes a FlatCurry program into a file in ".fcy" format.
 --- The first argument must be the name of the target file
