@@ -1,7 +1,7 @@
 # Makefile for various compilations of the system libraries,
 # in particular, to generate the documentation
 
-CYMAKEPARAMS = --extended -Wnone -i. -imeta
+CYMAKEPARAMS = --extended -Wnone -i.
 
 # directory for HTML documentation files
 # LIBDOCDIR = $(DOCDIR)/html
@@ -21,16 +21,16 @@ comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 # Curry library files
 LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry Database/CDBI/*.curry))
 # lib names without directory prefix
-LIB_NAMES     = $(subst /,., $(subst meta/,, $(basename $(LIB_CURRY))))
+LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
 LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(LIB_NAMES))
 # Generated files
-LIB_FCY      = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.fcy), $(subst .curry/meta,meta/.curry,$(lib)))
-LIB_ACY      = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.acy), $(subst .curry/meta,meta/.curry,$(lib)))
-LIB_HS       = $(foreach lib, $(LIB_CURRY:.curry=.hs), $(subst .curry/kics2/meta,meta/.curry/kics2, .curry/kics2/$(call prefix,Curry_,$(lib))))
-LIB_HS_TRACE = $(foreach lib, $(LIB_CURRY:.curry=.hs), $(subst .curry/kics2/meta,meta/.curry/kics2, .curry/kics2/$(call prefix,Curry_Trace_,$(lib))))
-LIB_HTML     = $(foreach lib, $(LIB_CURRY:.curry=.html), $(LIBDOCDIR)/$(if $(findstring meta/,$(lib)),$(lib),$(subst /,.,$(lib))))
-LIB_TEX      = $(foreach lib, $(LIB_CURRY:.curry=.tex), $(TEXDOCDIR)/$(if $(findstring meta/,$(lib)),$(lib),$(subst /,.,$(lib))))
+LIB_FCY      = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.fcy), $(lib))
+LIB_ACY      = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.acy), $(lib))
+LIB_HS       = $(foreach lib, $(LIB_CURRY:.curry=.hs), .curry/kics2/$(call prefix,Curry_,$(lib)))
+LIB_HS_TRACE = $(foreach lib, $(LIB_CURRY:.curry=.hs), .curry/kics2/$(call prefix,Curry_Trace_,$(lib)))
+LIB_HTML     = $(foreach lib, $(LIB_CURRY:.curry=.html), $(LIBDOCDIR)/$(subst /,.,$(lib)))
+LIB_TEX      = $(foreach lib, $(LIB_CURRY:.curry=.tex),  $(TEXDOCDIR)/$(subst /,.,$(lib)))
 HS_LIB_NAMES       = $(call comma_sep,$(foreach lib,$(LIB_NAMES),$(if $(findstring .,$(lib)),$(basename $(lib)).Curry_$(subst .,,$(suffix $(lib))),Curry_$(lib))))
 HS_LIB_TRACE_NAMES = $(call comma_sep,$(foreach lib,$(LIB_NAMES),$(if $(findstring .,$(lib)),$(basename $(lib)).Curry_Trace_$(subst .,,$(suffix $(lib))),Curry_Trace_$(lib))))
 
@@ -79,7 +79,6 @@ unregister:
 .PHONY:
 clean:
 	-cd .curry/kics2      && rm -f *.hi *.o
-	-cd meta/.curry/kics2 && rm -f *.hi *.o
 
 # clean all generated files
 .PHONY: cleanall
@@ -89,7 +88,7 @@ cleanall:
 	rm -rf dist
 	rm -f $(CABAL_FILE)
 	rm -f $(CABAL_TRACE_FILE)
-	rm -fr .curry meta/.curry
+	rm -fr .curry
 
 $(CABAL_FILE): ../Makefile Makefile
 	echo "Name:           $(PACKAGE)"                             > $@
@@ -110,7 +109,7 @@ $(CABAL_FILE): ../Makefile Makefile
 	echo "  else"                                                >> $@
 	echo "    Build-Depends: unix"                               >> $@
 	echo "  Exposed-modules: $(HS_LIB_NAMES)"                    >> $@
-	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2" >> $@
+	echo "  hs-source-dirs: ./.curry/kics2"                      >> $@
 
 $(CABAL_TRACE_FILE): ../Makefile Makefile
 	echo "Name:           $(PACKAGE_TRACE)"                          > $@
@@ -131,59 +130,46 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 	echo "  else"                                                   >> $@
 	echo "    Build-Depends: unix"                                  >> $@
 	echo "  Exposed-modules: $(HS_LIB_TRACE_NAMES)"                 >> $@
-	echo "  hs-source-dirs: ./.curry/kics2, ./meta/.curry/kics2"    >> $@
+	echo "  hs-source-dirs: ./.curry/kics2"                         >> $@
 
 # generate Haskell file in subdirectory .curry/kics2
 .curry/kics2/Curry_Trace_%.hs: %.curry
-	$(COMP) -v0 -i. -imeta --trace-failure $*
+	$(COMP) -v0 -i. --trace-failure $*
 
 .curry/kics2/Curry_%.hs: %.curry
-	$(COMP) -v0 -i. -imeta $*
+	$(COMP) -v0 -i. $*
 
 .curry/kics2/AbstractCurry/Curry_Trace_%.hs: AbstractCurry/%.curry
-	$(COMP) -v0 -i. -imeta --trace-failure AbstractCurry.$*
+	$(COMP) -v0 -i. --trace-failure AbstractCurry.$*
 
 .curry/kics2/AbstractCurry/Curry_%.hs: AbstractCurry/%.curry
-	$(COMP) -v0 -i. -imeta AbstractCurry.$*
+	$(COMP) -v0 -i. AbstractCurry.$*
 
 .curry/kics2/FlatCurry/Annotated/Curry_Trace_%.hs: FlatCurry/Annotated/%.curry
-	$(COMP) -v0 -i. -imeta --trace-failure FlatCurry.Annotated.$*
+	$(COMP) -v0 -i. --trace-failure FlatCurry.Annotated.$*
 
 .curry/kics2/FlatCurry/Annotated/Curry_%.hs: FlatCurry/Annotated/%.curry
-	$(COMP) -v0 -i. -imeta FlatCurry.Annotated.$*
+	$(COMP) -v0 -i. FlatCurry.Annotated.$*
 
 .curry/kics2/FlatCurry/Curry_Trace_%.hs: FlatCurry/%.curry
-	$(COMP) -v0 -i. -imeta --trace-failure FlatCurry.$*
+	$(COMP) -v0 -i. --trace-failure FlatCurry.$*
 
 .curry/kics2/FlatCurry/Curry_%.hs: FlatCurry/%.curry
-	$(COMP) -v0 -i. -imeta FlatCurry.$*
+	$(COMP) -v0 -i. FlatCurry.$*
 
 .curry/kics2/Database/CDBI/Curry_Trace_%.hs: Database/CDBI/%.curry
-	$(COMP) -v0 -i. -imeta --trace-failure Database.CDBI.$*
+	$(COMP) -v0 -i. --trace-failure Database.CDBI.$*
 
 .curry/kics2/Database/CDBI/Curry_%.hs: Database/CDBI/%.curry
-	$(COMP) -v0 -i. -imeta Database.CDBI.$*
-
-meta/.curry/kics2/Curry_Trace_%.hs: meta/%.curry
-	$(COMP) -v0 -i. -imeta --trace-failure meta/$*
-
-meta/.curry/kics2/Curry_%.hs: meta/%.curry
-	$(COMP) -v0 -i. -imeta meta/$*
+	$(COMP) -v0 -i. Database.CDBI.$*
 
 # generate FlatCurry file in subdirectory .curry:
 .curry/%.fcy: %.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*)
 
-# generate all FlatCurry files in subdirectory meta/.curry:
-meta/.curry/%.fcy: meta/%.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
-
 # generate all AbstractCurry files in subdirectory .curry:
 .curry/%.acy: %.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $(subst /,.,$*)
-
-meta/.curry/%.acy: meta/%.curry
-	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
 
 ##############################################################################
 # create HTML documentation files for system libraries
@@ -219,9 +205,6 @@ $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 $(LIBDOCDIR)/%.html: %.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
-$(LIBDOCDIR)/%.html: meta/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
-
 ##############################################################################
 # create LaTeX documentation files for system libraries
 ##############################################################################
@@ -245,7 +228,4 @@ $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
 
 $(TEXDOCDIR)/%.tex: %.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
-
-$(TEXDOCDIR)/%.tex: meta/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*

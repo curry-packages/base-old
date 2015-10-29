@@ -15,7 +15,6 @@ CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	mkdir -p $(LIBDIR)/meta
 	mkdir -p $(LIBDIR)/AbstractCurry
 	mkdir -p $(LIBDIR)/FlatCurry/Annotated
 	mkdir -p $(LIBDIR)/CLP
@@ -97,9 +96,6 @@ SetFunctions.curry: $(LIBTRUNKDIR)/SetFunctions.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 Unsafe.curry: $(LIBTRUNKDIR)/Unsafe.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
 	cp $< $@
 
 AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry

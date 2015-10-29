@@ -10,7 +10,6 @@ CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	mkdir -p $(LIBDIR)/meta
 	mkdir -p $(LIBDIR)/AbstractCurry
 	mkdir -p $(LIBDIR)/FlatCurry/Annotated
 	mkdir -p $(LIBDIR)/Database/CDBI
@@ -25,9 +24,6 @@ sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp -p $(LIBTRUNKDIR)/*.hs .
-
-meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
-	 cp $< $@
 
 AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
 	cp $< $@

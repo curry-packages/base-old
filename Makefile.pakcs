@@ -1,7 +1,7 @@
 # Makefile for various compilations of the system libraries,
 # in particular, to generate the documentation
 
-CYMAKEPARAMS = --extended -Wnone -i. -imeta
+CYMAKEPARAMS = --extended -Wnone -i.
 
 PAKCS=$(ROOT)/bin/pakcs
 
@@ -17,15 +17,15 @@ CURRYDOC=$(ROOT)/bin/currydoc
 # Curry library files
 LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry CLP/*.curry Database/CDBI/*.curry))
 # lib names without directory prefix
-LIB_NAMES     = $(subst /,., $(subst meta/,, $(basename $(LIB_CURRY))))
+LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
 LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(LIB_NAMES))
 # Generated files:
-LIB_FCY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.fcy), $(subst .curry/meta,meta/.curry,$(lib)))
-LIB_ACY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.acy), $(subst .curry/meta,meta/.curry,$(lib)))
-LIB_PL    = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs/%.pl), $(subst .curry/pakcs/meta,meta/.curry/pakcs,$(lib)))
-LIB_HTML  = $(foreach lib, $(LIB_CURRY:.curry=.html), $(LIBDOCDIR)/$(if $(findstring meta/,$(lib)),$(subst meta/,,$(lib)),$(subst /,.,$(lib))))
-LIB_TEX   = $(foreach lib, $(LIB_CURRY:.curry=.tex),  $(TEXDOCDIR)/$(if $(findstring meta/,$(lib)),$(subst meta/,,$(lib)),$(subst /,.,$(lib))))
+LIB_FCY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.fcy), $(lib))
+LIB_ACY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.acy), $(lib))
+LIB_PL    = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs/%.pl), $(lib))
+LIB_HTML  = $(foreach lib, $(LIB_CURRY:.curry=.html), $(LIBDOCDIR)/$(subst /,.,$(lib)))
+LIB_TEX   = $(foreach lib, $(LIB_CURRY:.curry=.tex),  $(TEXDOCDIR)/$(subst /,.,$(lib)))
 
 ALLLIBS      = AllLibraries
 # Modules not included as regular libraries:
@@ -63,23 +63,13 @@ pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
 .curry/%.fcy: %.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*)
 
-# generate all FlatCurry files in subdirectory meta/.curry:
-meta/.curry/%.fcy: meta/%.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
-
 # generate all AbstractCurry files in subdirectory .curry:
 .curry/%.acy: %.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $(subst /,.,$*)
 
-meta/.curry/%.acy: meta/%.curry
-	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
-
 # generate all Prolog translations:
 .curry/pakcs/%.pl: .curry/%.fcy
 	rm -f $@ && "$(PAKCS)" --quiet -c $(subst /,.,$*)
-
-meta/.curry/pakcs/%.pl: meta/.curry/%.fcy
-	rm -f $@ && "$(PAKCS)" --quiet -c $*
 
 ##############################################################################
 # create HTML documentation files for system libraries
@@ -115,9 +105,6 @@ $(LIBDOCDIR)/CLP.%.html: CLP/%.curry
 $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
 
-$(LIBDOCDIR)/%.html: meta/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
-
 $(LIBDOCDIR)/%.html: %.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
@@ -146,9 +133,6 @@ $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
 $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
 
-$(TEXDOCDIR)/%.tex: meta/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
-
 $(TEXDOCDIR)/%.tex: %.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
 
@@ -158,10 +142,9 @@ $(TEXDOCDIR)/%.tex: %.curry
 clean:
 	rm -f "$(LIBDOCDIR)"/*
 	rm -f "$(TEXDOCDIR)"/*
-	rm -fr .curry meta/.curry
+	rm -fr .curry
 
 # clean all generated Prolog files
 .PHONY: cleanpl
 cleanpl:
-	rm -f .curry/pakcs/*.pl .curry/pakcs/*.po meta/.curry/pakcs/*.pl meta/.curry/pakcs/*.po \
-	      *.pl *.po meta/*.pl meta/*.po
+	rm -f .curry/pakcs/*.pl .curry/pakcs/*.po
