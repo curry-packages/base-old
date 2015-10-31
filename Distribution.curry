@@ -4,7 +4,7 @@
 --- compiler version, load paths, front end.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version November 2014
+--- @version October 2015
 --- @category general
 --------------------------------------------------------------------------------
 
@@ -201,9 +201,9 @@ addCurrySubdir dir = dir </> currySubdir
 --- system libraries.
 getSysLibPath :: IO [String]
 getSysLibPath = case curryCompiler of
-  "pakcs" -> return [installDir </> "lib", installDir </> "lib" </> "meta"]
+  "pakcs" -> return [installDir </> "lib"]
   "kics"  -> return [installDir </> "src" </> "lib"]
-  "kics2" -> return [installDir </> "lib", installDir </> "lib" </> "meta"]
+  "kics2" -> return [installDir </> "lib"]
   _       -> error "Distribution.getSysLibPath: unknown curryCompiler"
 
 --- Adds a directory name to a file by looking up the current load path.
