@@ -16,7 +16,7 @@ import Distribution    ( FrontendParams, FrontendTarget (..), defaultParams
                        , callFrontend, callFrontendWithParams
                        , lookupModuleSourceInLoadPath, getLoadPathForModule
                        )
-import FileGoodies     (getFileInPath)
+import FileGoodies     (getFileInPath, lookupFileInPath)
 import FilePath        (takeFileName, (</>), (<.>))
 import FlatCurry.Types
 import Maybe           (isNothing)
@@ -111,5 +111,19 @@ readFlatCurryInt progname = do
 --- (with suffix ".fcy").
 writeFCY :: String -> Prog -> IO ()
 writeFCY file prog = writeFile file (showTerm prog)
+
+--- Returns the name of the FlatCurry file of a module in the load path,
+--- if this file exists.
+lookupFlatCurryFileInLoadPath :: String -> IO (Maybe String)
+lookupFlatCurryFileInLoadPath modname =
+  getLoadPathForModule modname >>=
+  lookupFileInPath (flatCurryFileName modname) [""]
+
+--- Returns the name of the FlatCurry file of a module in the load path,
+--- if this file exists.
+getFlatCurryFileInLoadPath :: String -> IO String
+getFlatCurryFileInLoadPath modname =
+  getLoadPathForModule modname >>=
+  getFileInPath (flatCurryFileName modname) [""]
 
 -----------------------------------------------------------------------

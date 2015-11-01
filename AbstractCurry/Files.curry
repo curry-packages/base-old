@@ -18,7 +18,7 @@ import AbstractCurry.Types
 import Char                 (isSpace)
 import Directory            (doesFileExist, getModificationTime)
 import Distribution
-import FileGoodies          (getFileInPath)
+import FileGoodies          (getFileInPath, lookupFileInPath)
 import FilePath             (takeFileName, (</>), (<.>))
 import Maybe                (isNothing)
 import ReadShowTerm
@@ -67,7 +67,8 @@ tryReadCurryFile m = do
     Nothing      -> cancel $ "Source module '" ++ m ++ "' not found"
     Just (_,srcFile) -> do
       callFrontendWithParams ACY (setQuiet True defaultParams) m
-      mbFn <- lookupFileInLoadPath (abstractCurryFileName m)
+      mbFn <- getLoadPathForModule m >>=
+              lookupFileInPath (abstractCurryFileName m) [""]
       case mbFn of
         Nothing -> cancel $ "AbstractCurry module '" ++ m ++ "' not found"
         Just fn -> do

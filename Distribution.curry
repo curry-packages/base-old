@@ -18,8 +18,10 @@ module Distribution (
   joinModuleIdentifiers, splitModuleIdentifiers, splitModuleFileName,
   inCurrySubdirModule,
 
-  findFileInLoadPath,lookupFileInLoadPath,
-  readFirstFileInLoadPath,getLoadPath,getLoadPathForFile,
+  -- deprecated operations are not exported:
+  -- findFileInLoadPath,lookupFileInLoadPath,
+  -- readFirstFileInLoadPath,getLoadPath,getLoadPathForFile,
+
   getLoadPathForModule, lookupModuleSourceInLoadPath,
 
   FrontendTarget(..),
