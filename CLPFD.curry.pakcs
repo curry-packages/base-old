@@ -299,6 +299,9 @@ prim_labeling external
 --- @cons Assumptions x - The variable x is unified with the number of choices
 ---                       made by the selected enumeration strategy when a solution
 ---                       is found.
+--- @cons RandomVariable x - Label variables with random integer values
+---                          where `x` is a seed value for the random numbers
+---                          (only supported by SWI-Prolog).
 
 data LabelingOption = LeftMost
                     | FirstFail
@@ -314,6 +317,7 @@ data LabelingOption = LeftMost
                     | Minimize Int
                     | Maximize Int
                     | Assumptions Int
+                    | RandomVariable Int
 
 
 -- end of library CLPFD
