@@ -178,9 +178,12 @@ count v vs rel c = FDCount v vs rel c
 --- @cons Assumptions x - The variable x is unified with the number of choices
 ---                       made by the selected enumeration strategy when
 ---                       a solution is found.
---- @cons RandomVariable x - Label variables with random integer values
----                          where `x` is a seed value for the random numbers.
+--- @cons RandomVariable x - Select a random variable for instantiation
+---                          where `x` is a seed value for the random numbers
 ---                          (only supported by SWI-Prolog).
+--- @cons RandomValue x - Label variables with random integer values
+---                       where `x` is a seed value for the random numbers
+---                       (only supported by SWI-Prolog).
 
 
 data Option = LeftMost
@@ -198,6 +201,7 @@ data Option = LeftMost
             | Maximize Int
             | Assumptions Int
             | RandomVariable Int
+            | RandomValue Int
 
 ------------------------------------------------------------------------
 -- Abstract types to represent FD constraints as data.
@@ -323,6 +327,7 @@ trO option = case option of
   Maximize n  	       -> C.Maximize n	
   Assumptions n        -> C.Assumptions n	
   RandomVariable n     -> C.RandomVariable n
+  RandomValue n        -> C.RandomValue n
   _                    -> error $ "Unknown option: " ++ show option
 
 ------------------------------------------------------------------------
