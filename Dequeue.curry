@@ -3,7 +3,7 @@
 --- ends in constant amortized time.
 ---
 --- @author Bernd Brassel, Olaf Chitil, Michael Hanus, Sebastian Fischer,
----         Björn Peemöller
+---         Bjoern Peemoeller
 --- @version January 2015
 --- @category algorithm
 ------------------------------------------------------------------------------

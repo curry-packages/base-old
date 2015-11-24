@@ -1,7 +1,7 @@
 --- ----------------------------------------------------------------------------
 --- Library with some useful operations for the `Either` data type.
 ---
---- @author   Björn Peemöller
+--- @author   Bjoern Peemoeller
 --- @version  March 2015
 --- @category general
 --- ----------------------------------------------------------------------------

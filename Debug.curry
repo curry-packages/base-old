@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --- This library contains some useful operation for debugging programs.
 ---
---- @author Björn Peemöller
+--- @author Bjoern Peemoeller
 --- @version September 2014
 --- @category general
 ------------------------------------------------------------------------------

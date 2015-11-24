@@ -8,7 +8,7 @@
 --- Support of ANSI escape codes for formatting and colorisation of documents
 --- in text terminals (see https://en.wikipedia.org/wiki/ANSI_escape_code)
 ---
---- @author Sebastian Fischer, Björn Peemöller, Jan Tikovsky
+--- @author Sebastian Fischer, Bjoern Peemoeller, Jan Tikovsky
 --- @version September 2015
 --- @category general
 ------------------------------------------------------------------------------

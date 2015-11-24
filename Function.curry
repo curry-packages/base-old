@@ -1,7 +1,7 @@
 --- ----------------------------------------------------------------------------
 --- This module provides some utility functions for function application.
 ---
---- @author Björn Peemöller
+--- @author Bjoern Peemoeller
 --- @version July 2013
 --- @category general
 --- ----------------------------------------------------------------------------

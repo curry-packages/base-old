@@ -8,7 +8,7 @@
 --- For more information about the abstract syntax tree of `FlatCurry`,
 --- see the documentation of the respective module.
 ---
---- @author  Jonas Oberschweiber, Björn Peemöller, Michael Hanus
+--- @author  Jonas Oberschweiber, Bjoern Peemoeller, Michael Hanus
 --- @version July 2013
 --- @category meta
 ------------------------------------------------------------------------------

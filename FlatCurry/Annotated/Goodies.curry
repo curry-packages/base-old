@@ -11,7 +11,7 @@
 --- part of such transformations - descend in fairly complex term structures -
 --- is abstracted away, which hopefully makes the code more clear and brief.
 ---
---- @author Sebastian Fischer, Björn Peemöller
+--- @author Sebastian Fischer, Bjoern Peemoeller
 --- @version October 2015
 --- @category meta
 --------------------------------------------------------------------------------

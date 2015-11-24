@@ -1,7 +1,7 @@
 --- ----------------------------------------------------------------------------
 --- Library with some useful functions on the `Maybe` datatype.
 ---
---- @author Frank Huch, Bernd Brassel, Björn Peemöller
+--- @author Frank Huch, Bernd Brassel, Bjoern Peemoeller
 --- @version October 2014
 --- @category general
 --- ----------------------------------------------------------------------------

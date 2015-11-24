@@ -2,7 +2,7 @@
 --- This library provides pretty-printers for FlatCurry modules
 --- and all substructures (e.g., expressions).
 ---
---- @author  Björn Peemöller
+--- @author  Bjoern Peemoeller
 --- @version June 2015
 --- @category meta
 --- --------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 --- This library defines operations to read a FlatCurry programs or interfaces
 --- together with all its imported modules in the current load path.
 ---
---- @author Michael Hanus, Björn Peemöller
+--- @author Michael Hanus, Bjoern Peemoeller
 --- @version May 2015
 --- @category meta
 ------------------------------------------------------------------------------

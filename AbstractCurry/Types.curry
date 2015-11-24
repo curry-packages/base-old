@@ -9,7 +9,7 @@
 --- Assumption: an abstract Curry program is stored in file with
 --- extension .acy
 ---
---- @author Michael Hanus, Björn Peemöller
+--- @author Michael Hanus, Bjoern Peemoeller
 --- @version September 2015
 --- @category meta
 -- ---------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 --- and all substructures (e.g., expressions). Note that annotations are
 --- ignored for pretty-printing.
 ---
---- @author  Björn Peemöller
+--- @author  Bjoern Peemoeller
 --- @version October 2015
 --- @category meta
 --- --------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 --- This library provides a type and combinators for show functions using
 --- functional lists.
 ---
---- @author  Björn Peemöller
+--- @author  Bjoern Peemoeller
 --- @version March 2015
 --- @category general
 --------------------------------------------------------------------------------
