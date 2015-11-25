@@ -596,7 +596,7 @@ ppCCaseType :: CCaseType -> Doc
 ppCCaseType CRigid = text "case"
 ppCCaseType CFlex  = text "fcase"
 
---- pretty-print a list of case expressions, i.e. the `p1 -> e1`, …, `pn -> en`,
+--- pretty-print a list of case expressions, i.e. the `p1 -> e1`,...,`pn -> en`,
 --- transitions, vertically aligned.
 ppCases :: Options -> [(CPattern, CRhs)] -> Doc
 ppCases opts = align . vvsepMap (ppCase opts)
@@ -610,7 +610,7 @@ ppCase opts (p, rhs) = ppCPattern opts p <+> ppCaseRhs rhsOpts rhs
 ---     { lab1 = exp1, ..., labn expn }
 --- if it fits the page, or
 ---     { lab1 = exp1
----     , …
+---     , ...
 ---     , labn = expn }
 --- otherwise.
 ppRecordFields :: Options -> [CField CExpr] -> Doc
