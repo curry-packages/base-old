@@ -15,7 +15,7 @@ TEXDOCDIR := $(DOCDIR)/src/lib
 CURRYDOC=$(ROOT)/bin/currydoc
 
 # Curry library files
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry CLP/*.curry Database/CDBI/*.curry))
+LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry CLP/*.curry Database/CDBI/*.curry Rewriting/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
@@ -45,6 +45,18 @@ $(ALLLIBS).curry: $(LIB_CURRY) Makefile
 .PHONY: allsources
 allsources:
 	@echo $(LIB_CURRY)
+
+# clean all generated files
+.PHONY: clean
+clean:
+	rm -f "$(LIBDOCDIR)"/*
+	rm -f "$(TEXDOCDIR)"/*
+	rm -fr .curry
+
+# clean all generated Prolog files
+.PHONY: cleanpl
+cleanpl:
+	rm -f .curry/pakcs/*.pl .curry/pakcs/*.po
 
 ##########################################################################
 # generate the FlatCurry files of all libraries:
@@ -105,6 +117,9 @@ $(LIBDOCDIR)/CLP.%.html: CLP/%.curry
 $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
 
+$(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Rewriting.$*
+
 $(LIBDOCDIR)/%.html: %.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
@@ -133,18 +148,9 @@ $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
 $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
 
+$(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Rewriting.$*
+
 $(TEXDOCDIR)/%.tex: %.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
 
-
-# clean all generated files
-.PHONY: clean
-clean:
-	rm -f "$(LIBDOCDIR)"/*
-	rm -f "$(TEXDOCDIR)"/*
-	rm -fr .curry
-
-# clean all generated Prolog files
-.PHONY: cleanpl
-cleanpl:
-	rm -f .curry/pakcs/*.pl .curry/pakcs/*.po

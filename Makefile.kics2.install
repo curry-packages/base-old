@@ -13,6 +13,7 @@ install:
 	mkdir -p $(LIBDIR)/AbstractCurry
 	mkdir -p $(LIBDIR)/FlatCurry/Annotated
 	mkdir -p $(LIBDIR)/Database/CDBI
+	mkdir -p $(LIBDIR)/Rewriting
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
@@ -37,8 +38,11 @@ FlatCurry/%.curry: $(LIBTRUNKDIR)/FlatCurry/%.curry
 Database/CDBI/%.curry: $(LIBTRUNKDIR)/Database/CDBI/%.curry
 	cp $< $@
 
+Rewriting/%.curry: $(LIBTRUNKDIR)/Rewriting/%.curry
+	cp $< $@
+
 %.curry: $(LIBTRUNKDIR)/%.curry
-	 cp $< $@
+	cp $< $@
 
 index.html: $(LIBTRUNKDIR)/index.html.$(CURRYSYSTEM)
 	 cp $< $@
