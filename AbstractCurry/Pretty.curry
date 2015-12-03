@@ -514,8 +514,12 @@ ppCExpr' p opts app@(CApply f exp)
                                          , text "else" <+> ppCExpr opts e])
     | isTup app = let args = fromJust $ extractTuple app
                   in  alignedTupled (map (ppCExpr opts) args)
-    | isFinLis app = let elems = fromJust $ extractFiniteListExp app
-                     in  filledList (map (ppCExpr opts) elems)
+    | isFinLis app =
+      let elems = fromJust $ extractFiniteListExp app
+      in  (case layoutChoice opts of
+             PreferNestedLayout -> alignedList
+             PreferFilledLayout -> filledList )
+            (map (ppCExpr opts) elems)
     | isInf app
         = parensIf (p >= infAppPrec)
         $ let (op, l, r) = fromJust $ extractInfix app
