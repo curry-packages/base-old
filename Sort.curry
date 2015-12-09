@@ -3,16 +3,30 @@
 --- characters, strings, and lists.
 ---
 --- @author Michael Hanus
---- @version February 2004
+--- @version December 2015
 --- @category algorithm
 ------------------------------------------------------------------------------
 
-module Sort(quickSort,mergeSort,
-            cmpChar, cmpList, cmpString,
-            leqChar, leqCharIgnoreCase,leqList,
-            leqString,leqStringIgnoreCase,leqLexGerman) where
+module Sort( sort, insertionSort, quickSort, mergeSort
+           , cmpChar, cmpList, cmpString
+           , leqChar, leqCharIgnoreCase, leqList
+           , leqString, leqStringIgnoreCase, leqLexGerman
+           ) where
 
 import Char
+
+--- The preferred sorting operation: mergeSort
+sort :: (a -> a -> Bool) -> [a] -> [a]
+sort = mergeSort
+
+--- Insertion sort.
+insertionSort  :: (a -> a -> Bool) -> [a] -> [a]
+insertionSort _ [] = []
+insertionSort leq (x:xs) = insert (insertionSort leq xs)
+ where
+  insert [] = [x]
+  insert zs@(y:ys) | leq x y   = x : zs
+                   | otherwise = y : insert ys
 
 --- Quicksort.
 quickSort :: (a -> a -> Bool) -> [a] -> [a]
