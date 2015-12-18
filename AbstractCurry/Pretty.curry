@@ -4,7 +4,7 @@
 --- This library provides a pretty-printer for AbstractCurry modules.
 ---
 --- @author  Yannik Potdevin
---- @version October 2015
+--- @version December 2015
 --- --------------------------------------------------------------------------
 module AbstractCurry.Pretty
     ( Qualification(..), Options, LayoutChoice(..)
@@ -74,7 +74,8 @@ data Options = Options
 --- `defaultOptions = options 78 2 Imports "" []`.
 --- Therefore use these options only with functions like
 --- 'prettyCurryProg' or 'ppCurryProg', because they will overwrite the module
---- name anyway. Also avoid setting on demand qualification, because no
+--- name anyway.
+--- Important (!): Avoid setting `OnDemand` qualification, because no
 --- information about related modules is given.
 defaultOptions :: Options
 defaultOptions = options 78 2 Imports "" []
@@ -86,6 +87,8 @@ defaultOptions = options 78 2 Imports "" []
 --- @param rels - A list of all to the current module related modules, i.e. the
 ---               current module itself and all its imports (including prelude).
 ---               The current module must be the head of that list.
+---               This list is important if you want to use `OnDemand`
+---               qualification.
 --- @return options with the desired behavior
 options :: Int
         -> Int
@@ -93,17 +96,22 @@ options :: Int
         -> MName
         -> [CurryProg]
         -> Options
-options pw iw q m rels =
-    let o = Options { pageWidth        = pw
-                    , indentationWidth = iw
-                    , qualification    = q
-                    , moduleName       = m
-                    , showLocalSigs    = False
-                    , layoutChoice     = PreferNestedLayout
-                    , visibleTypes     = emptyCol
-                    , visibleFunctions = emptyCol
-                    , visibleVariables = emptyCol }
-    in  setRelatedMods rels o
+options pw iw q m rels
+    | q == OnDemand && null rels
+    = error $
+      unwords [ "AbstractCurry.Pretty:"
+              , "Cannot use `OnDemand` qualification with no related modules."]
+    | otherwise
+    = let o = Options { pageWidth        = pw
+                      , indentationWidth = iw
+                      , qualification    = q
+                      , moduleName       = m
+                      , showLocalSigs    = False
+                      , layoutChoice     = PreferNestedLayout
+                      , visibleTypes     = emptyCol
+                      , visibleFunctions = emptyCol
+                      , visibleVariables = emptyCol }
+      in  setRelatedMods rels o
 
 --- Sets the page width of the pretty printer options.
 setPageWith :: Int -> Options -> Options
@@ -114,6 +122,8 @@ setIndentWith :: Int -> Options -> Options
 setIndentWith iw o = o { indentationWidth = iw }
 
 --- Sets the qualification method to be used by the pretty printer.
+--- Do not set to `OnDemand`, if you cannot guarantee that related modules are
+--- also set.
 setQualification :: Qualification -> Options -> Options
 setQualification q o = o { qualification = q }
 
@@ -153,7 +163,8 @@ highestPrec :: Int
 highestPrec = 3
 
 --- Shows a pretty formatted version of an abstract Curry Program.
---- The options for pretty-printing are the 'defaultOptions'.
+--- The options for pretty-printing are the 'defaultOptions' (and therefore the
+--- restrictions mentioned there apply here too).
 --- @param prog - a curry prog
 --- @return a string, which represents the input program `prog`
 showCProg :: CurryProg -> String
@@ -526,16 +537,16 @@ ppCExpr' p opts app@(CApply f exp)
           in  (case layoutChoice opts of
                     PreferNestedLayout -> ppNestedWay
                     PreferFilledLayout -> ppFilledWay)
-                        (ppCExpr' infAppPrec opts l)
-                        (ppQFunc opts op)
-                        (ppCExpr' infAppPrec opts r)
+                (ppCExpr' infAppPrec opts l)
+                (ppQFunc opts op)
+                (ppCExpr' infAppPrec opts r)
     | otherwise = parensIf (p >= prefAppPrec)
                 $ (case layoutChoice opts of
                         PreferNestedLayout -> ppNestedWay
                         PreferFilledLayout -> ppFilledWay)
-                            (ppCExpr' infAppPrec opts f)
-                            empty
-                            (ppCExpr' prefAppPrec opts exp)
+                    (ppCExpr' infAppPrec opts f)
+                    empty
+                    (ppCExpr' prefAppPrec opts exp)
     where isITE    = isJust . extractITE
           isInf    = isJust . extractInfix
           isTup    = isJust . extractTuple
