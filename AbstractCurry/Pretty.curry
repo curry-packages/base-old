@@ -89,6 +89,8 @@ defaultOptions = options 78 2 Imports "" []
 ---               The current module must be the head of that list.
 ---               This list is important if you want to use `OnDemand`
 ---               qualification.
+---               Use 'AbstractCurry.Files.readCurryWithImports' to generate
+---               this list.
 --- @return options with the desired behavior
 options :: Int
         -> Int
