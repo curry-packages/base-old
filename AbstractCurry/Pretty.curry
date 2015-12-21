@@ -7,10 +7,13 @@
 --- @version December 2015
 --- --------------------------------------------------------------------------
 module AbstractCurry.Pretty
-    ( Qualification(..), Options, LayoutChoice(..)
+    ( Qualification, Options, LayoutChoice(..)
 
-    , options, defaultOptions
-    , setPageWith, setIndentWith, setQualification, setModName, setLayoutChoice
+    , defaultOptions
+    , setPageWith, setIndentWith
+    , setNoQualification, setFullQualification, setImportQualification
+    , setOnDemandQualification
+    , setModName, setLayoutChoice
 
     , showCProg, prettyCurryProg, ppCurryProg
 
@@ -39,6 +42,12 @@ data Qualification
     | OnDemand  -- ^ Fully qualify only identifiers which need to be.
     | None      -- ^ Do not qualify any function.
 
+--- The choice for a generally preferred layout.
+--- @cons PreferNestedLayout - prefer a layout where the arguments of
+---                            long expressions are vertically aligned
+--- @cons PreferFilledLayout - prefer a layout where the arguments of
+---                            long expressions are filled as long as possible
+---                            into one line
 data LayoutChoice = PreferNestedLayout  -- ^ Prefer
                                         -- a                      f a
                                         -- + b      respectively    b
@@ -71,49 +80,28 @@ data Options = Options
     , visibleVariables  :: Collection CVarIName
     }
 
---- `defaultOptions = options 78 2 Imports "" []`.
---- Therefore use these options only with functions like
---- 'prettyCurryProg' or 'ppCurryProg', because they will overwrite the module
---- name anyway.
---- Important (!): Avoid setting `OnDemand` qualification, because no
---- information about related modules is given.
+--- The default options to pretty print a module. These are:
+--- * page width: 78 characters
+--- * indentation width: 2 characters
+--- * qualification method: qualify all imported names (except prelude names)
+--- * layout choice: prefer nested layout (see 'LayoutChoice')
+--- These options can be changed by corresponding setters
+--- ('setPageWith', 'setIndentWith', `set...Qualification`, 'setLayoutChoice').
+---
+--- Note: If these default options are used for pretty-print operations
+--- other than 'prettyCurryProg' or 'ppCurryProg', then one has to set
+--- the current module name explicitly by 'setModName'!
 defaultOptions :: Options
-defaultOptions = options 78 2 Imports "" []
-
---- @param pw - the page width to use
---- @param iw - the indentation width to use
---- @param q - the qualification method to use
---- @param m - the name of the current module
---- @param rels - A list of all to the current module related modules, i.e. the
----               current module itself and all its imports (including prelude).
----               The current module must be the head of that list.
----               This list is important if you want to use `OnDemand`
----               qualification.
----               Use 'AbstractCurry.Files.readCurryWithImports' to generate
----               this list.
---- @return options with the desired behavior
-options :: Int
-        -> Int
-        -> Qualification
-        -> MName
-        -> [CurryProg]
-        -> Options
-options pw iw q m rels
-    | q == OnDemand && null rels
-    = error $
-      unwords [ "AbstractCurry.Pretty:"
-              , "Cannot use `OnDemand` qualification with no related modules."]
-    | otherwise
-    = let o = Options { pageWidth        = pw
-                      , indentationWidth = iw
-                      , qualification    = q
-                      , moduleName       = m
-                      , showLocalSigs    = False
-                      , layoutChoice     = PreferNestedLayout
-                      , visibleTypes     = emptyCol
-                      , visibleFunctions = emptyCol
-                      , visibleVariables = emptyCol }
-      in  setRelatedMods rels o
+defaultOptions =
+  Options { pageWidth        = 78
+          , indentationWidth = 2
+          , qualification    = Imports
+          , moduleName       = ""
+          , showLocalSigs    = False
+          , layoutChoice     = PreferNestedLayout
+          , visibleTypes     = emptyCol
+          , visibleFunctions = emptyCol
+          , visibleVariables = emptyCol }
 
 --- Sets the page width of the pretty printer options.
 setPageWith :: Int -> Options -> Options
@@ -123,11 +111,42 @@ setPageWith pw o = o { pageWidth = pw }
 setIndentWith :: Int -> Options -> Options
 setIndentWith iw o = o { indentationWidth = iw }
 
---- Sets the qualification method to be used by the pretty printer.
---- Do not set to `OnDemand`, if you cannot guarantee that related modules are
---- also set.
-setQualification :: Qualification -> Options -> Options
-setQualification q o = o { qualification = q }
+--- Sets the qualification method to be used to print identifiers to
+--- "import qualification" (which is the default).
+--- In this case, all identifiers imported from other modules (except
+--- for the identifiers of the prelude) are fully qualified.
+setImportQualification :: Options -> Options
+setImportQualification o = o { qualification = Imports }
+
+--- Sets the qualification method to be used to print identifiers to
+--- "unqualified".
+--- In this case, no identifiers is printed with its module qualifier.
+--- This might lead to name conflicts or unintended references
+--- if some identifiers in the pretty-printed module are in conflict
+--- with imported identifiers.
+setNoQualification :: Options -> Options
+setNoQualification o = o { qualification = None }
+
+--- Sets the qualification method to be used to print identifiers to
+--- "fully qualified".
+--- In this case, every identifiers, including those of the processed module
+--- and the prelude, are fully qualified.
+setFullQualification :: Options -> Options
+setFullQualification o = o { qualification = Full }
+
+--- Sets the qualification method to be used to print identifiers to
+--- "qualification on demand".
+--- In this case, an identifier is qualified only if it is necessary
+--- to avoid a name conflict, e.g., if a local identifier has the same
+--- names as an imported identifier. Since it is necessary to know
+--- the names of all identifiers defined in the current module (to be pretty
+--- printed) and imported from other modules, the first argument
+--- is the list of modules consisting of the current module and
+--- all imported modules (including the prelude).
+--- The current module must always be the head of this list.
+setOnDemandQualification :: [CurryProg] -> Options -> Options
+setOnDemandQualification mods o =
+  setRelatedMods mods (o { qualification = OnDemand })
 
 --- Sets the name of the current module in the pretty printer options.
 setModName :: MName -> Options -> Options
