@@ -3,6 +3,7 @@
 ---
 --- @author Bjoern Peemoeller
 --- @version September 2014
+--- @category meta
 --- ----------------------------------------------------------------------------
 module FlatCurry.Annotated.TypeSubst where
 

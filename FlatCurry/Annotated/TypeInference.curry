@@ -38,6 +38,7 @@
 ---
 --- @author  Jonas Oberschweiber, Bjoern Peemoeller, Michael Hanus
 --- @version November 2015
+--- @category meta
 ------------------------------------------------------------------------------
 
 module FlatCurry.Annotated.TypeInference
