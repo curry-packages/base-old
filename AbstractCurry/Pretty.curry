@@ -5,7 +5,9 @@
 ---
 --- @author  Yannik Potdevin
 --- @version December 2015
+--- @category meta
 --- --------------------------------------------------------------------------
+
 module AbstractCurry.Pretty
     ( Qualification, Options, LayoutChoice(..)
 

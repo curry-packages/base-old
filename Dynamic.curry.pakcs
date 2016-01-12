@@ -26,7 +26,7 @@
 ---
 --- @author Michael Hanus
 --- @version August 2011
---- @category general
+--- @category database
 ------------------------------------------------------------------------------
 
 module Dynamic(Dynamic,(<>),(|>),(|&>),dynamic,persistent,

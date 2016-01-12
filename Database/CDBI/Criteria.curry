@@ -4,7 +4,7 @@
 ---
 --- @author Mike Tallarek, Julia Krone
 --- @version 0.2
---- @category general
+--- @category database
 --- ----------------------------------------------------------------------------
 module Database.CDBI.Criteria (
        Criteria(..), Constraint(..), ColVal(..), GroupBy,

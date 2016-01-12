@@ -5,7 +5,7 @@
 --- @author Julia Krone
 ---
 --- @version 0.1
---- @category general
+--- @category database
 --- ----------------------------------------------------------------
 
 module Database.CDBI.QueryTypes(

@@ -4,7 +4,7 @@
 --- @author Mike Tallarek, extensions by Julia Krone
 ---
 --- @version 0.2
---- @category general
+--- @category database
 --- ----------------------------------------------------------------------------
 module Database.CDBI.ER (
     -- Database Functions

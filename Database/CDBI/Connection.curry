@@ -7,7 +7,7 @@
 ---
 --- @author Mike Tallarek
 --- @version 0.2
---- @category general
+--- @category database
 --- ----------------------------------------------------------------------------
 module Database.CDBI.Connection
   ( -- Basis types and operations

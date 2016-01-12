@@ -3,7 +3,7 @@
 --- @author Mike Tallarek, changes by Julia Krone
 ---
 --- @version 0.2
---- @category general
+--- @category database
 --- ----------------------------------------------------------------------------
 module Database.CDBI.Description where
 
