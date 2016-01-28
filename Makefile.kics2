@@ -19,7 +19,7 @@ prefix     = $(patsubst ./%,%,$(dir $(2))$(1)$(notdir $(2)))
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
 # Curry library files
-LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry Database/CDBI/*.curry Rewriting/*.curry))
+LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry Database/CDBI/*.curry Rewriting/*.curry Test/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
@@ -163,6 +163,12 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 .curry/kics2/Database/CDBI/Curry_%.hs: Database/CDBI/%.curry
 	$(COMP) -v0 -i. Database.CDBI.$*
 
+.curry/kics2/Test/Curry_Trace_%.hs: Test/%.curry
+	$(COMP) -v0 -i. --trace-failure Test.$*
+
+.curry/kics2/Test/Curry_%.hs: Test/%.curry
+	$(COMP) -v0 -i. Test.$*
+
 # generate FlatCurry file in subdirectory .curry:
 .curry/%.fcy: %.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*)
@@ -208,7 +214,10 @@ $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 $(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Rewriting.$*
 
-$(LIBDOCDIR)/%.html: %.curry
+$(LIBDOCDIR)/Test.%.html: Test/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Test.$*
+
+$$(LIBDOCDIR)/%.html: %.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
 ##############################################################################
@@ -238,6 +247,9 @@ $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 
 $(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Rewriting.$*
+
+$(TEXDOCDIR)/Test.%.tex: Test/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Test.$*
 
 $(TEXDOCDIR)/%.tex: %.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*

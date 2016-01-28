@@ -2,7 +2,7 @@
 --- This library provides some useful operations to write programs
 --- that generate AbstractCurry programs in a more compact and readable way.
 ---
---- @version September 2015
+--- @version January 2016
 --- @category meta
 ------------------------------------------------------------------------
 
@@ -58,6 +58,10 @@ floatType = baseType (pre "Float")
 --- The type expression of the Bool type.
 boolType :: CTypeExpr
 boolType = baseType (pre "Bool")
+
+--- The type expression of the Char type.
+charType :: CTypeExpr
+charType = baseType (pre "Char")
 
 --- The type expression of the unit type.
 unitType :: CTypeExpr

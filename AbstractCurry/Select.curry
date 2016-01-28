@@ -3,12 +3,12 @@
 --- in AbstractCurry programs, i.e., it provides a collection of
 --- selector functions for AbstractCurry.
 ---
---- @version September 2015
+--- @version January 2016
 --- @category meta
 ------------------------------------------------------------------------
 
 module AbstractCurry.Select where
---     ( imports, functions, constructors, types, publicFuncNames
+--     ( progName, imports, functions, constructors, types, publicFuncNames
 --     , publicConsNames, publicTypeNames
 --
 --     , typeName, typeVis, typeCons
@@ -16,7 +16,7 @@ module AbstractCurry.Select where
 --     , isBaseType, isPolyType, isFunctionalType, isIOType, isIOReturnType
 --     , argTypes, resultType, tvarsOfType, modsOfType
 --
---     , funcName, funcVis
+--     , funcName, funcArity, funcVis, funcType
 --
 --     , varsOfPat, varsOfExp, varsOfRhs, varsOfStat, varsOfLDecl
 --     , varsOfFDecl, varsOfRule
@@ -29,33 +29,37 @@ import List(union)
 ------------------------------------------------------------------------
 -- Selectors for curry programs
 
---- Returns the imports (module names) of a given curry program.
+-- Returns the name of a given Curry program.
+progName :: CurryProg -> String
+progName (CurryProg modname _ _ _ _) = modname
+
+--- Returns the imports (module names) of a given Curry program.
 imports :: CurryProg -> [MName]
 imports (CurryProg _ ms _ _ _) = ms
 
---- Returns the function declarations of a given curry program.
+--- Returns the function declarations of a given Curry program.
 functions :: CurryProg -> [CFuncDecl]
 functions (CurryProg _ _ _ fs _) = fs
 
---- Returns all constructors of given curry program.
+--- Returns all constructors of given Curry program.
 constructors :: CurryProg -> [CConsDecl]
 constructors = concatMap typeCons . types
 
---- Returns the type declarations of a given curry program.
+--- Returns the type declarations of a given Curry program.
 types :: CurryProg -> [CTypeDecl]
 types (CurryProg _ _ ts _ _) = ts
 
---- Returns the names of all visible functions in given curry program.
+--- Returns the names of all visible functions in given Curry program.
 publicFuncNames :: CurryProg -> [QName]
 publicFuncNames = map funcName . filter ((== Public) . funcVis) . functions
 
---- Returns the names of all visible constructors in given curry program.
+--- Returns the names of all visible constructors in given Curry program.
 publicConsNames :: CurryProg -> [QName]
 publicConsNames = map consName
                 . filter ((== Public) . consVis)
                 . constructors
 
---- Returns the names of all visible types in given curry program.
+--- Returns the names of all visible types in given Curry program.
 publicTypeNames :: CurryProg -> [QName]
 publicTypeNames = map typeName . filter ((== Public) . typeVis) . types
 
@@ -150,15 +154,25 @@ modsOfType (CTCons (mod,_) tys) = foldr union [mod] $ map modsOfType tys
 ------------------------------------------------------------------------
 -- Selectors for function definitions
 
---- Returns the name of a given function declaration
+--- Returns the name of a given function declaration.
 funcName :: CFuncDecl -> QName
 funcName (CFunc     n _ _ _ _) = n
 funcName (CmtFunc _ n _ _ _ _) = n
 
---- Returns the visibility of a given function declaration
+-- Returns the visibility of a given function declaration.
+funcArity :: CFuncDecl -> Int
+funcArity (CFunc     _ a _ _ _) = a
+funcArity (CmtFunc _ _ a _ _ _) = a
+
+--- Returns the visibility of a given function declaration.
 funcVis :: CFuncDecl -> CVisibility
 funcVis (CFunc     _ _ vis _ _) = vis
 funcVis (CmtFunc _ _ _ vis _ _) = vis
+
+--- Returns the type of a given function declaration.
+funcType :: CFuncDecl -> CTypeExpr
+funcType (CFunc     _ _ _ texp _) = texp
+funcType (CmtFunc _ _ _ _ texp _) = texp
 
 ------------------------------------------------------------------------
 -- Operations to compute the variables occurring in a pattern or expression:
