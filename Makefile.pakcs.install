@@ -20,6 +20,7 @@ install:
 	mkdir -p $(LIBDIR)/CLP
 	mkdir -p $(LIBDIR)/Database/CDBI
 	mkdir -p $(LIBDIR)/Rewriting
+	mkdir -p $(LIBDIR)/Test
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
@@ -99,6 +100,9 @@ SetFunctions.curry: $(LIBTRUNKDIR)/SetFunctions.curry.$(CURRYSYSTEM)
 Unsafe.curry: $(LIBTRUNKDIR)/Unsafe.curry.$(CURRYSYSTEM)
 	cp $< $@
 
+Test/EasyCheck.curry: $(LIBTRUNKDIR)/Test/EasyCheck.curry.$(CURRYSYSTEM)
+	cp $< $@
+
 AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
 	cp $< $@
 
@@ -112,6 +116,9 @@ Database/CDBI/%.curry: $(LIBTRUNKDIR)/Database/CDBI/%.curry
 	cp $< $@
 
 Rewriting/%.curry: $(LIBTRUNKDIR)/Rewriting/%.curry
+	cp $< $@
+
+Test/%.curry: $(LIBTRUNKDIR)/Test/%.curry
 	cp $< $@
 
 %.curry: $(LIBTRUNKDIR)/%.curry

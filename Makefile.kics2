@@ -217,7 +217,7 @@ $(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
 $(LIBDOCDIR)/Test.%.html: Test/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Test.$*
 
-$$(LIBDOCDIR)/%.html: %.curry
+$(LIBDOCDIR)/%.html: %.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
 ##############################################################################
