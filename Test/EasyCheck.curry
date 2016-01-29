@@ -1,6 +1,8 @@
 module Test.EasyCheck (
 
   -- test specification:
+  PropIO, yields, sameAs,
+
   Test, Prop, (==>), for,
 
   test, is, isAlways, isEventually, prop, uniquely, always, eventually,
@@ -16,22 +18,42 @@ module Test.EasyCheck (
 
   valuesOf, Result(..), result,
 
-  easyCheck', easyCheck1', easyCheck2', easyCheck3', easyCheck4', easyCheck5'
+  easyCheck', easyCheck1', easyCheck2', easyCheck3', easyCheck4', easyCheck5',
 
+  -- internal operations used by by the CurryCheck tool
+  execAssertIO, execPropWithMsg, execProps
   ) where
 
-import List       ( delete, nub, group, intersperse, (\\) )
-import Sort       ( leqList, leqString, mergeSort )
-import Random     ( nextInt )
-import SearchTree ( someSearchTree )
-
+import AllSolutions ( getAllValues )
+import Distribution ( curryCompiler )
+import IO           ( hFlush, stdout )
+import List         ( delete, nub, group, intersperse, (\\) )
+import Maybe        ( catMaybes )
+import Random       ( nextInt )
+import SearchTree   ( someSearchTree )
 import SearchTreeTraversal
+import Sort         ( leqList, leqString, mergeSort )
 
 infix  4 `isSameSet`, `isSubsetOf`, `isSameMSet`
 infix  1 `is`, `isAlways`, `isEventually`, -=-, #, <~>, ~>, <~, <=>, `trivial`
+infix  1 `yields`, `sameAs`
 infixr 0 ==>
 
 
+-------------------------------------------------------------------------
+--- Type of IO assertions.
+data PropIO = PropIO (String -> IO (Maybe String))
+
+-- IO tests
+-- the IO operation yields a specified result
+yields :: IO a -> a -> PropIO
+yields act r = PropIO (execIOTest act (return r))
+
+-- two IO operations yield the same result
+sameAs :: IO a -> IO a -> PropIO
+sameAs a1 a2 = PropIO (execIOTest a1 a2)
+
+-------------------------------------------------------------------------
 data Test = Test Result [String] [String]
 
 data Result = Undef | Ok | Falsified [String] | Ambigious [Bool] [String]
@@ -106,9 +128,12 @@ xs `subset` ys = null (xs\\ys)
   | x `elem` ys        = xs `isSameMSet` (delete x ys)
   | otherwise          = False
 
+--- A conditional property is tested if the condition evaluates to `True`.
 (==>) :: Bool -> Prop -> Prop
-True  ==> p = p
-False ==> _ = [notest]
+cond ==> p =
+  if True `elem` valuesOf cond
+  then p
+  else [notest]
 
 forAll :: (b -> Prop) -> a -> (a -> b) -> Prop
 forAll c x f
@@ -164,6 +189,7 @@ verboseCheck = check verbose
 suc :: (a -> Prop) -> (b -> a) -> Prop
 suc n = forAll n unknown
 
+easyCheck0, verboseCheck0 :: String -> Prop -> IO Bool
 easyCheck0 = easyCheck
 verboseCheck0 = verboseCheck
 
@@ -304,3 +330,66 @@ valuesOf
   -- = rndLevelDiag 0 . someSearchTree . (id$##)
    = rndLevelDiagFlat 5 0 . someSearchTree . (id$##)
   -- = allValuesB . someSearchTree . (id$##)
+
+-------------------------------------------------------------------------
+-- Internal  operation used by currycheck to check an IO assertion
+execAssertIO :: PropIO -> String -> IO (Maybe String)
+execAssertIO p msg = catchNDIO msg $
+  case p of PropIO propio -> propio msg
+
+execIOTest :: IO a -> IO a -> String -> IO (Maybe String)
+execIOTest act1 act2 msg =
+   catch (do putStr (msg++": ") >> hFlush stdout
+             r1 <- act1
+             r2 <- act2
+             if r1 == r2 then putStrLn "OK" >>  return Nothing
+                         else putStrLn "FAILED!" >> return (Just msg)
+         )
+         (\err -> do putStrLn $ "EXECUTION FAILURE:\n" ++ showError err
+                     return (Just msg)
+         )
+
+-- Execute I/O action for assertion checking and report any failure
+-- or non-determinism.
+catchNDIO :: String -> IO (Maybe String) -> IO (Maybe String)
+catchNDIO msg testact =
+  if curryCompiler == "kics2"
+  then -- specific handling for KiCS2 since it might report non-det errors
+       -- even if there is only one result value, e.g., in functional patterns
+       getAllValues testact >>= checkIOActions
+  else catch testact
+             (\e -> putStrLn (msg++": EXECUTION FAILURE: "++showError e) >>
+                    return (Just msg))
+ where
+  checkIOActions results
+    | null results
+     = putStrLn (msg++": FAILURE: computation failed") >> return (Just msg)
+    | not (null (tail results))
+     = putStrLn (msg++": FAILURE: computation is non-deterministic") >>
+       return (Just msg)
+    | otherwise = head results
+
+--- Safely executes a property, i.e., catch all exceptions that might occur.
+execPropWithMsg :: String -> IO Bool -> IO (Maybe String)
+execPropWithMsg msg execprop = catchNDIO msg $ do
+  b <- catch execprop
+             (\e -> putStrLn (msg ++ ": EXECUTION FAILURE:\n" ++ showError e)
+                    >> return False)
+  return (if b then Nothing else Just msg)
+
+-- Runs a sequence of tests and
+-- yields a new exit status based on the succesfully executed tests.
+execProps :: [IO (Maybe String)] -> IO Int
+execProps props = do
+  propresults <- sequenceIO props
+  let failedmsgs = catMaybes propresults
+  if null failedmsgs
+   then return 0
+   else do putStrLn $ line ++
+                      "\nFAILURE OCCURRED IN SOME TESTS:\n" ++
+                      unlines failedmsgs ++ line
+           return 1
+ where
+   line = take 78 (repeat '=')
+
+-------------------------------------------------------------------------
