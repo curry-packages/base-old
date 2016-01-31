@@ -342,8 +342,10 @@ execIOTest act1 act2 msg =
    catch (do putStr (msg++": ") >> hFlush stdout
              r1 <- act1
              r2 <- act2
-             if r1 == r2 then putStrLn "OK" >>  return Nothing
-                         else putStrLn "FAILED!" >> return (Just msg)
+             if r1 == r2
+               then putStrLn "OK" >>  return Nothing
+               else do putStrLn $ "FAILED!\nResults: " ++ show (r1,r2)
+                       return (Just msg)
          )
          (\err -> do putStrLn $ "EXECUTION FAILURE:\n" ++ showError err
                      return (Just msg)
