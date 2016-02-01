@@ -132,6 +132,7 @@ date :: ClockTime -> Value ClockTime
 date = Val . SQLDate
 
 --- Constructor for Values of ID-types
+--- Should just be used internally!
 idVal :: Int -> Value _
 idVal i = Val (SQLInt i)
 
@@ -437,13 +438,13 @@ trConstraint (Exists table n cs) =
   (asTable table n) ++ " " ++ (trCriteria (Criteria cs Nothing)) ++ "))"
 
 trRelOp :: RelOp -> String
-trRelOp Eq   = "=="
-trRelOp Neq  = "<>"
-trRelOp Lt   = "<"
-trRelOp Lte  = "<="
-trRelOp Gt   = ">"
-trRelOp Gte  = ">="
-trRelOp Like = "like"
+trRelOp Eq   = " == "
+trRelOp Neq  = " <> "
+trRelOp Lt   = " < "
+trRelOp Lte  = " <= "
+trRelOp Gt   = " > "
+trRelOp Gte  = " >= "
+trRelOp Like = " like "
 
 -- Translate a Value to a String
 trValue :: Value a -> String

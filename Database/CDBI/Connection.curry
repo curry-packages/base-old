@@ -26,8 +26,7 @@ import ReadNumeric (readInt)
 import Time
 import IOExts ( connectToCommand )
 import IO     ( Handle, hPutStrLn, hGetLine, hFlush, hClose)
-import List   ( isInfixOf, isPrefixOf )
-
+import List   ( isInfixOf, isPrefixOf, tails )
 
 -- -----------------------------------------------------------------------------
 -- Datatypes 
@@ -317,9 +316,7 @@ parseLinesUntil :: String -> DBAction [[String]]
 parseLinesUntil stop conn@(SQLiteConnection _) = next
   where
   next = do
-    --putStrLn "start parse"
     value <- readConnection conn
-   -- putStrLn $ show value
     case value of
       Left (DBError NoLineError "") -> do
             rest <- next
@@ -350,15 +347,20 @@ readConnection conn@(SQLiteConnection _) = do check `liftIO` readRawConnection c
             | otherwise
             = Left (DBError (getErrorKindSQLite str) str)
             
-  --- Get the value from a line with a '='
-  getValue :: String -> String
+--- Get the value from a line with a '='
+getValue :: String -> String
   --getValue (_ ++ "= " ++ b) = b
   --getValue (_ ++ "=") = ""
   -- alternative implementation to avoid non-deterministic functional patterns:
-  getValue s =
-    let taileq = tail (snd (break (== '=') s))
-     in if null taileq then "" else let (' ':val) = taileq
-                                     in val
+getValue s =
+ if "case" `isInfixOf` s
+    then getCaseValue s
+    else
+      let taileq = tail (snd (break (== '=') s))
+       in if null taileq then "" else let (' ':val) = taileq
+                                        in val
+  where getCaseValue str = getValue (readTilEnd str)
+        readTilEnd rest = head (filter (\ls -> "end" `isPrefixOf` ls) (tails rest))
 
 --- Identify the error kind.
 getErrorKindSQLite :: String -> DBErrorKind
