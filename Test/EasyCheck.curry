@@ -6,7 +6,7 @@ module Test.EasyCheck (
   Test, Prop, (==>), for,
 
   test, is, isAlways, isEventually, prop, uniquely, always, eventually,
-  failing, successful, deterministic, (-=-), (#), (<~>), (~>), (<~), (<=>),
+  failing, successful, deterministic, (-=-), (#), (<~>), (~>), (<~), (<~~>),
 
   -- test annotations
   label, trivial, classify, collect, collectAs,
@@ -35,7 +35,7 @@ import SearchTreeTraversal
 import Sort         ( leqList, leqString, mergeSort )
 
 infix  4 `isSameSet`, `isSubsetOf`, `isSameMSet`
-infix  1 `is`, `isAlways`, `isEventually`, -=-, #, <~>, ~>, <~, <=>, `trivial`
+infix  1 `is`, `isAlways`, `isEventually`, -=-, #, <~>, ~>, <~, <~~>, `trivial`
 infix  1 `yields`, `sameAs`
 infixr 0 ==>
 
@@ -110,12 +110,12 @@ x -=- y = (x,y) `is` uncurry (==)
 (#) :: _ -> Int -> Prop
 x # n = test x ((n==) . length . nub)
 
--- (<=>) provides multi-set semantics for EasyCheck
-(<~>), (~>), (<~), (<=>) :: a -> a -> Prop
-x <~> y = test x (isSameSet (valuesOf y))
-x  ~> y = test x (isSubsetOf (valuesOf y))
-x <~  y = test x (`isSubsetOf` (valuesOf y))
-x <=> y = test x (isSameMSet (valuesOf y))
+-- (<~~>) provides multi-set semantics for EasyCheck
+(<~>), (~>), (<~), (<~~>) :: a -> a -> Prop
+x <~>  y = test x (isSameSet (valuesOf y))
+x  ~>  y = test x (isSubsetOf (valuesOf y))
+x  <~  y = test x (`isSubsetOf` (valuesOf y))
+x <~~> y = test x (isSameMSet (valuesOf y))
 
 isSameSet, isSubsetOf, subset, isSameMSet :: [a] -> [a] -> Bool
 xs `isSameSet` ys = xs' `subset` ys' && ys' `subset` xs'
