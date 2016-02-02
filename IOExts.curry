@@ -127,7 +127,7 @@ prim_getAssoc external
 --- The values are not evaluated when they are assigned to an IORef.
 data IORef _ -- precise structure internally defined
 
---- Creates a new IORef with an initial values.
+--- Creates a new IORef with an initial value.
 newIORef :: a -> IO (IORef a)
 newIORef external
 
