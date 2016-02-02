@@ -16,7 +16,11 @@ module Test.EasyCheck (
   -- test annotations
   label, trivial, classify, collect, collectAs,
 
+  -- configurations
+  verboseConfig, easyConfig, setMaxTest, setMaxFail, setEvery,
+
   -- test functions
+  configCheck0, configCheck1, configCheck2, configCheck3, configCheck4, configCheck5,
   easyCheck, easyCheck0, easyCheck1, easyCheck2, easyCheck3, easyCheck4, easyCheck5,
   verboseCheck, verboseCheck0, verboseCheck1, verboseCheck2, verboseCheck3, verboseCheck4,
   verboseCheck5,
@@ -92,41 +96,67 @@ test x f = [setResult res notest]
           [False] -> Falsified (map show xs)
           bs      -> Ambigious bs (map show xs)
 
-is, isAlways, isEventually :: a -> (a -> Bool) -> Prop
+--- The property `is x p` is satisfied if `x` has a deterministic value which satisfies `p`.
+is :: a -> (a -> Bool) -> Prop
 is x f = test x (\xs -> case xs of [y] -> f y; _ -> False)
+
+--- The property `isAlways x p` is satisfied if all values of `x` satisfy `p`.
+isAlways :: a -> (a -> Bool) -> Prop
 isAlways x  = test x . all
+
+--- The property `isEventually x p` is satisfied if some values of `x` satisfies `p`.
+isEventually :: a -> (a -> Bool) -> Prop
 isEventually x = test x . any
 
 prop, uniquely, always, eventually :: Bool -> Prop
 prop       = uniquely
-uniquely   = (`is`id)
-always     = (`isAlways`id)
-eventually = (`isEventually`id)
+uniquely   = (`is` id)
+always     = (`isAlways` id)
+eventually = (`isEventually` id)
 
 failing, successful, deterministic :: _ -> Prop
 failing x = test x null
 successful x = test x (not . null)
 deterministic x = x `is` const True
 
+--- The property `x -=- y` is satisfied if `x` and `y` have deterministic values that are equal.
 (-=-) :: a -> a -> Prop
 x -=- y = (x,y) `is` uncurry (==)
 
+--- The property `x # n` is satisfied if `x` has `n` values.
 (#) :: _ -> Int -> Prop
 x # n = test x ((n==) . length . nub)
 
--- (<~~>) provides multi-set semantics for EasyCheck
-(<~>), (~>), (<~), (<~~>) :: a -> a -> Prop
+--- The property `x <~> y` is satisfied if the sets of the values of `x` and `y` are equal.
+(<~>) :: a -> a -> Prop
 x <~>  y = test x (isSameSet (valuesOf y))
+
+--- The property `x ~> y` is satisfied if `x` evaluates to every value of `y`.
+--- Thus, the set of values of `y` must be a subset of the set of values of `x`.
+(~>) :: a -> a -> Prop
 x  ~>  y = test x (isSubsetOf (valuesOf y))
+
+--- The property `x <~ y` is satisfied if `y` evaluates to every value of `x`.
+--- Thus, the set of values of `x` must be a subset of the set of values of `y`.
+(<~) :: a -> a -> Prop
 x  <~  y = test x (`isSubsetOf` (valuesOf y))
+
+--- The property `x <~~> y` is satisfied if the multisets of the values of `x` and `y` are equal.
+(<~~>) :: a -> a -> Prop
 x <~~> y = test x (isSameMSet (valuesOf y))
 
-isSameSet, isSubsetOf, subset, isSameMSet :: [a] -> [a] -> Bool
+isSameSet :: [a] -> [a] -> Bool
 xs `isSameSet` ys = xs' `subset` ys' && ys' `subset` xs'
  where xs' = nub xs; ys' = nub ys
+
+isSubsetOf :: [a] -> [a] -> Bool
 xs `isSubsetOf` ys = nub xs `subset` ys
+
+subset :: [a] -> [a] -> Bool
 xs `subset` ys = null (xs\\ys)
+
 -- compare to lists if they represent the same multi-set
+isSameMSet :: [a] -> [a] -> Bool
 []     `isSameMSet` ys = ys == []
 (x:xs) `isSameMSet` ys
   | x `elem` ys        = xs `isSameMSet` (delete x ys)
@@ -165,13 +195,24 @@ collect = label . show
 collectAs :: String -> a -> Prop -> Prop
 collectAs name = label . ((name++": ")++) . show
 
--- Test Functions
-
+-------------------------------------------------------------------------
+--- The configuration of property testing.
+--- The configuration contains the maximum number of test,
+--- the maximum number of condition failures before giving up,
+--- and an operation the shows the number and arguments of each test.
 data Config = Config Int Int (Int -> [String] -> String)
 
-maxTest, maxFail :: Config -> Int
+maxTest :: Config -> Int
 maxTest (Config n _ _) = n
+
+setMaxTest :: Int -> Config -> Config
+setMaxTest n (Config _ m f) = Config n m f
+
+maxFail :: Config -> Int
 maxFail (Config _ n _) = n
+
+setMaxFail :: Int -> Config -> Config
+setMaxFail m (Config n _ f) = Config n m f
 
 every :: Config -> Int -> [String] -> String
 every (Config _ _ f) = f
@@ -179,54 +220,80 @@ every (Config _ _ f) = f
 setEvery :: (Int -> [String] -> String) -> Config -> Config
 setEvery f (Config n m _) = Config n m f
 
-easy :: Config
---easy = Config 1000 10000
-easy = Config 100 10000
-        (\n _ -> let s = ' ':show (n+1) in s ++ [ chr 8 | _ <- s ])
+easyConfig :: Config
+--easyConfig = Config 1000 10000 (\n _ -> let s = ' ':show (n+1) in s ++ [ chr 8 | _ <- s ])
+easyConfig = Config 100 10000 (\n _ -> let s = ' ':show (n+1) in s ++ [ chr 8 | _ <- s ])
 
-verbose :: Config
-verbose = setEvery (\n xs -> show n ++ ":\n" ++ unlines xs) easy
+-- Verbose configuration which shows the arguments of every test.
+verboseConfig :: Config
+verboseConfig = setEvery (\n xs -> show n ++ ":\n" ++ unlines xs) easyConfig
 
-easyCheck, verboseCheck :: String -> Prop -> IO Bool
-easyCheck    = check easy
-verboseCheck = check verbose
+-------------------------------------------------------------------------
+-- Test Functions
 
 suc :: (a -> Prop) -> (b -> a) -> Prop
 suc n = forAll n unknown
 
-easyCheck0, verboseCheck0 :: String -> Prop -> IO Bool
-easyCheck0 = easyCheck
-verboseCheck0 = verboseCheck
+configCheck0 :: Config -> String -> Prop -> IO Bool
+configCheck0 = check
+
+configCheck1 :: Config -> String -> (_ -> Prop) -> IO Bool
+configCheck1 config msg = check config msg . suc id
+
+configCheck2 :: Config -> String -> (_ -> _ -> Prop) -> IO Bool
+configCheck2 config msg = check config msg . suc (suc id)
+
+configCheck3 :: Config -> String -> (_ -> _ -> _ -> Prop) -> IO Bool
+configCheck3 config msg = check config msg . suc (suc (suc id))
+
+configCheck4 :: Config -> String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
+configCheck4 config msg = check config msg . suc (suc (suc (suc id)))
+
+configCheck5 :: Config -> String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
+configCheck5 config msg = check config msg . suc (suc (suc (suc (suc id))))
+
+
+easyCheck :: String -> Prop -> IO Bool
+easyCheck = check easyConfig
+
+easyCheck0 :: String -> Prop -> IO Bool
+easyCheck0 = configCheck0 easyConfig
 
 easyCheck1 :: String -> (_ -> Prop) -> IO Bool
-easyCheck1 msg = easyCheck msg . suc id
+easyCheck1 = configCheck1 easyConfig
 
 easyCheck2 :: String -> (_ -> _ -> Prop) -> IO Bool
-easyCheck2 msg = easyCheck msg . suc (suc id)
+easyCheck2 = configCheck2 easyConfig
 
 easyCheck3 :: String -> (_ -> _ -> _ -> Prop) -> IO Bool
-easyCheck3 msg = easyCheck msg . suc (suc (suc id))
+easyCheck3 = configCheck3 easyConfig
 
 easyCheck4 :: String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
-easyCheck4 msg = easyCheck msg . suc (suc (suc (suc id)))
+easyCheck4 = configCheck4 easyConfig
 
 easyCheck5 :: String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
-easyCheck5 msg = easyCheck msg . suc (suc (suc (suc (suc id))))
+easyCheck5 = configCheck5 easyConfig
+
+verboseCheck :: String -> Prop -> IO Bool
+verboseCheck = check verboseConfig
+
+verboseCheck0 :: String -> Prop -> IO Bool
+verboseCheck0 = configCheck0 verboseConfig
 
 verboseCheck1 :: String -> (_ -> Prop) -> IO Bool
-verboseCheck1 msg = verboseCheck msg . suc id
+verboseCheck1 = configCheck1 verboseConfig
 
 verboseCheck2 :: String -> (_ -> _ -> Prop) -> IO Bool
-verboseCheck2 msg = verboseCheck msg . suc (suc id)
+verboseCheck2 = configCheck2 verboseConfig
 
 verboseCheck3 :: String -> (_ -> _ -> _ -> Prop) -> IO Bool
-verboseCheck3 msg = verboseCheck msg . suc (suc (suc id))
+verboseCheck3 = configCheck3 verboseConfig
 
 verboseCheck4 :: String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
-verboseCheck4 msg = verboseCheck msg . suc (suc (suc (suc id)))
+verboseCheck4 = configCheck4 verboseConfig
 
 verboseCheck5 :: String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
-verboseCheck5 msg = verboseCheck msg . suc (suc (suc (suc (suc id))))
+verboseCheck5 = configCheck5 verboseConfig
 
 
 check :: Config -> String -> Prop -> IO Bool
@@ -274,7 +341,7 @@ tests' config (t:ts) ntest nfail stamps
                      res       -> res
 
 easyCheck' :: Prop -> Result
-easyCheck' = check' easy
+easyCheck' = check' easyConfig
 
 easyCheck1' :: (_ -> Prop) -> Result
 easyCheck1' = easyCheck' . suc id
