@@ -29,7 +29,7 @@ module Test.EasyCheck (
   verboseConfig, quietConfig, easyConfig, setMaxTest, setMaxFail, setEvery,
 
   -- test functions
-  configCheck0, configCheck1, configCheck2, configCheck3, configCheck4, configCheck5,
+  check0, check1, check2, check3, check4, check5,
   easyCheck, easyCheck0, easyCheck1, easyCheck2, easyCheck3, easyCheck4, easyCheck5,
   verboseCheck, verboseCheck0, verboseCheck1, verboseCheck2, verboseCheck3, verboseCheck4,
   verboseCheck5,
@@ -105,7 +105,8 @@ test x f = [setResult res notest]
           [False] -> Falsified (map show xs)
           bs      -> Ambigious bs (map show xs)
 
---- The property `is x p` is satisfied if `x` has a deterministic value which satisfies `p`.
+--- The property `is x p` is satisfied if `x` has a deterministic value
+--- which satisfies `p`.
 is :: a -> (a -> Bool) -> Prop
 is x f = test x (\xs -> case xs of [y] -> f y; _ -> False)
 
@@ -113,7 +114,8 @@ is x f = test x (\xs -> case xs of [y] -> f y; _ -> False)
 isAlways :: a -> (a -> Bool) -> Prop
 isAlways x  = test x . all
 
---- The property `isEventually x p` is satisfied if some values of `x` satisfies `p`.
+--- The property `isEventually x p` is satisfied if some values of `x`
+--- satisfy `p`.
 isEventually :: a -> (a -> Bool) -> Prop
 isEventually x = test x . any
 
@@ -128,7 +130,8 @@ failing x = test x null
 successful x = test x (not . null)
 deterministic x = x `is` const True
 
---- The property `x -=- y` is satisfied if `x` and `y` have deterministic values that are equal.
+--- The property `x -=- y` is satisfied if `x` and `y` have deterministic
+--- values that are equal.
 (-=-) :: a -> a -> Prop
 x -=- y = (x,y) `is` uncurry (==)
 
@@ -136,7 +139,8 @@ x -=- y = (x,y) `is` uncurry (==)
 (#) :: _ -> Int -> Prop
 x # n = test x ((n==) . length . nub)
 
---- The property `x <~> y` is satisfied if the sets of the values of `x` and `y` are equal.
+--- The property `x <~> y` is satisfied if the sets of the values of
+--- `x` and `y` are equal.
 (<~>) :: a -> a -> Prop
 x <~>  y = test x (isSameSet (valuesOf y))
 
@@ -150,7 +154,8 @@ x  ~>  y = test x (isSubsetOf (valuesOf y))
 (<~) :: a -> a -> Prop
 x  <~  y = test x (`isSubsetOf` (valuesOf y))
 
---- The property `x <~~> y` is satisfied if the multisets of the values of `x` and `y` are equal.
+--- The property `x <~~> y` is satisfied if the multisets of the values of
+--- `x` and `y` are equal.
 (<~~>) :: a -> a -> Prop
 x <~~> y = test x (isSameMSet (valuesOf y))
 
@@ -239,7 +244,6 @@ setQuiet b (Config n m f _) = Config n m f b
 --- The default configuration for EasyCheck which some some information
 --- for each test.
 easyConfig :: Config
---easyConfig = Config 1000 10000
 easyConfig = Config 100 10000
                     (\n _ -> let s = ' ':show (n+1) in s ++ [ chr 8 | _ <- s ])
                     False
@@ -258,66 +262,66 @@ quietConfig = setQuiet True (setEvery (\_ _ -> "") easyConfig)
 suc :: (a -> Prop) -> (b -> a) -> Prop
 suc n = forAll n unknown
 
-configCheck0 :: Config -> String -> Prop -> IO Bool
-configCheck0 = check
+check0 :: Config -> String -> Prop -> IO Bool
+check0 = check
 
-configCheck1 :: Config -> String -> (_ -> Prop) -> IO Bool
-configCheck1 config msg = check config msg . suc id
+check1 :: Config -> String -> (_ -> Prop) -> IO Bool
+check1 config msg = check config msg . suc id
 
-configCheck2 :: Config -> String -> (_ -> _ -> Prop) -> IO Bool
-configCheck2 config msg = check config msg . suc (suc id)
+check2 :: Config -> String -> (_ -> _ -> Prop) -> IO Bool
+check2 config msg = check config msg . suc (suc id)
 
-configCheck3 :: Config -> String -> (_ -> _ -> _ -> Prop) -> IO Bool
-configCheck3 config msg = check config msg . suc (suc (suc id))
+check3 :: Config -> String -> (_ -> _ -> _ -> Prop) -> IO Bool
+check3 config msg = check config msg . suc (suc (suc id))
 
-configCheck4 :: Config -> String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
-configCheck4 config msg = check config msg . suc (suc (suc (suc id)))
+check4 :: Config -> String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
+check4 config msg = check config msg . suc (suc (suc (suc id)))
 
-configCheck5 :: Config -> String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
-configCheck5 config msg = check config msg . suc (suc (suc (suc (suc id))))
+check5 :: Config -> String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
+check5 config msg = check config msg . suc (suc (suc (suc (suc id))))
 
 
 easyCheck :: String -> Prop -> IO Bool
 easyCheck = check easyConfig
 
 easyCheck0 :: String -> Prop -> IO Bool
-easyCheck0 = configCheck0 easyConfig
+easyCheck0 = check0 easyConfig
 
 easyCheck1 :: String -> (_ -> Prop) -> IO Bool
-easyCheck1 = configCheck1 easyConfig
+easyCheck1 = check1 easyConfig
 
 easyCheck2 :: String -> (_ -> _ -> Prop) -> IO Bool
-easyCheck2 = configCheck2 easyConfig
+easyCheck2 = check2 easyConfig
 
 easyCheck3 :: String -> (_ -> _ -> _ -> Prop) -> IO Bool
-easyCheck3 = configCheck3 easyConfig
+easyCheck3 = check3 easyConfig
 
 easyCheck4 :: String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
-easyCheck4 = configCheck4 easyConfig
+easyCheck4 = check4 easyConfig
 
 easyCheck5 :: String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
-easyCheck5 = configCheck5 easyConfig
+easyCheck5 = check5 easyConfig
 
 verboseCheck :: String -> Prop -> IO Bool
 verboseCheck = check verboseConfig
 
 verboseCheck0 :: String -> Prop -> IO Bool
-verboseCheck0 = configCheck0 verboseConfig
+verboseCheck0 = check0 verboseConfig
 
 verboseCheck1 :: String -> (_ -> Prop) -> IO Bool
-verboseCheck1 = configCheck1 verboseConfig
+verboseCheck1 = check1 verboseConfig
 
 verboseCheck2 :: String -> (_ -> _ -> Prop) -> IO Bool
-verboseCheck2 = configCheck2 verboseConfig
+verboseCheck2 = check2 verboseConfig
 
 verboseCheck3 :: String -> (_ -> _ -> _ -> Prop) -> IO Bool
-verboseCheck3 = configCheck3 verboseConfig
+verboseCheck3 = check3 verboseConfig
 
 verboseCheck4 :: String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
-verboseCheck4 = configCheck4 verboseConfig
+verboseCheck4 = check4 verboseConfig
 
 verboseCheck5 :: String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
-verboseCheck5 = configCheck5 verboseConfig
+verboseCheck5 = check5 verboseConfig
 
 
 check :: Config -> String -> Prop -> IO Bool
