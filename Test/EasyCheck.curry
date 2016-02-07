@@ -38,8 +38,8 @@ module Test.EasyCheck (
 
   easyCheck', easyCheck1', easyCheck2', easyCheck3', easyCheck4', easyCheck5',
 
-  -- internal operations used by by the CurryCheck tool
-  checkPropIO, execPropWithMsg, execProps
+  -- operations used by the CurryCheck tool
+  checkPropWithMsg, checkPropIOWithMsg, runPropertyTests
   ) where
 
 import AllSolutions ( getAllValues )
@@ -65,11 +65,11 @@ data PropIO = PropIO (Config -> String -> IO (Maybe String))
 -- IO tests
 -- the IO operation yields a specified result
 yields :: IO a -> a -> PropIO
-yields act r = PropIO (execIOTest act (return r))
+yields act r = PropIO (testIO act (return r))
 
 -- two IO operations yield the same result
 sameAs :: IO a -> IO a -> PropIO
-sameAs a1 a2 = PropIO (execIOTest a1 a2)
+sameAs a1 a2 = PropIO (testIO a1 a2)
 
 -------------------------------------------------------------------------
 data Test = Test Result [String] [String]
@@ -437,13 +437,25 @@ valuesOf
   -- = allValuesB . someSearchTree . (id$##)
 
 -------------------------------------------------------------------------
--- Internal  operation used by currycheck to check an IO assertion
-checkPropIO :: Config -> String -> PropIO -> IO (Maybe String)
-checkPropIO config msg p = catchNDIO msg $
+--- Safely checks a property, i.e., catch all exceptions that might occur
+--- and return appropriate error message in case of a failed test.
+checkPropWithMsg :: String -> IO Bool -> IO (Maybe String)
+checkPropWithMsg msg execprop = catchNDIO msg $ do
+  b <- catch execprop
+             (\e -> putStrLn (msg ++ ": EXECUTION FAILURE:\n" ++ showError e)
+                    >> return False)
+  return (if b then Nothing else Just msg)
+
+--- Safely checks an IO property, i.e., catch all exceptions that might occur
+--- and return appropriate error message in case of a failed test.
+--- This operation is used by the currycheck tool.
+checkPropIOWithMsg :: Config -> String -> PropIO -> IO (Maybe String)
+checkPropIOWithMsg config msg p = catchNDIO msg $
   case p of PropIO propio -> propio config msg
 
-execIOTest :: IO a -> IO a -> Config -> String -> IO (Maybe String)
-execIOTest act1 act2 config msg =
+-- Test an IO property, i.e., compare the results of two IO actions.
+testIO :: IO a -> IO a -> Config -> String -> IO (Maybe String)
+testIO act1 act2 config msg =
    catch (do r1 <- act1
              r2 <- act2
              if r1 == r2
@@ -477,18 +489,12 @@ catchNDIO msg testact =
        return (Just msg)
     | otherwise = head results
 
---- Safely executes a property, i.e., catch all exceptions that might occur.
-execPropWithMsg :: String -> IO Bool -> IO (Maybe String)
-execPropWithMsg msg execprop = catchNDIO msg $ do
-  b <- catch execprop
-             (\e -> putStrLn (msg ++ ": EXECUTION FAILURE:\n" ++ showError e)
-                    >> return False)
-  return (if b then Nothing else Just msg)
-
--- Runs a sequence of tests and
--- yields a new exit status based on the succesfully executed tests.
-execProps :: [IO (Maybe String)] -> IO Int
-execProps props = do
+--- Runs a sequence of property tests. Outputs the messages of the failed tests
+--- messages and returns exit status 0 if all tests are successful,
+--- otherwise status 1.
+--- This operation is used by the currycheck tool.
+runPropertyTests :: [IO (Maybe String)] -> IO Int
+runPropertyTests props = do
   propresults <- sequenceIO props
   let failedmsgs = catMaybes propresults
   if null failedmsgs
