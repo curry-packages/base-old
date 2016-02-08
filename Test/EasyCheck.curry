@@ -5,11 +5,12 @@
 --- The tool `currycheck` automatically executes tests defined with
 --- this library. EasyCheck supports the definition of unit tests
 --- (also for I/O operations) and property tests parameterized
---- over some arguments. The latter kind of tests can only be tested
+--- over some arguments. The latter kind of tests can only be executed
 --- with KiCS2.
 ---
 --- @author Sebastian Fischer (with extensions by Michael Hanus)
 --- @version February 2016
+--- @category general
 -------------------------------------------------------------------------
 
 module Test.EasyCheck (
@@ -17,9 +18,9 @@ module Test.EasyCheck (
   -- test specification:
   PropIO, yields, sameAs,
 
-  Test, Prop, (==>), for,
+  Config, Test, Prop, (==>), for,
 
-  test, is, isAlways, isEventually, prop, uniquely, always, eventually,
+  test, is, isAlways, isEventually, uniquely, always, eventually,
   failing, successful, deterministic, (-=-), (#), (<~>), (~>), (<~), (<~~>),
 
   -- test annotations
@@ -59,44 +60,58 @@ infixr 0 ==>
 
 
 -------------------------------------------------------------------------
---- Type of IO assertions.
+--- Abstract type to represent properties involving IO actions.
 data PropIO = PropIO (Config -> String -> IO (Maybe String))
 
--- IO tests
--- the IO operation yields a specified result
+--- The property `yields a x` is satisfied if the execution of the
+--- I/O action `a` yields the value `x`.
 yields :: IO a -> a -> PropIO
 yields act r = PropIO (testIO act (return r))
 
--- two IO operations yield the same result
+--- The property `sameAs a1 a2` is satisfied if the execution of the
+--- I/O actions `a1` and `a2` yields identical values.
 sameAs :: IO a -> IO a -> PropIO
 sameAs a1 a2 = PropIO (testIO a1 a2)
 
 -------------------------------------------------------------------------
+--- Abstract type to a single test for a property to be checked.
 data Test = Test Result [String] [String]
 
+--- Data type to represent the result of checking a property.
 data Result = Undef | Ok | Falsified [String] | Ambigious [Bool] [String]
 
+--- Abstract type to represent properties to be checked.
 type Prop = [Test]
 
 notest :: Test
 notest = Test Undef [] []
 
+--- Extracts the result of a single test.
 result :: Test -> Result
 result (Test r _ _) = r
 
 setResult :: Result -> Test -> Test
 setResult res (Test _ s a) = Test res a s
 
-args, stamp :: Test -> [String]
+args :: Test -> [String]
 args  (Test _ a _) = a
+
+stamp :: Test -> [String]
 stamp (Test _ _ s) = s
 
-updArgs, updStamp :: ([String] -> [String]) -> Test -> Test
+updArgs :: ([String] -> [String]) -> Test -> Test
 updArgs  upd (Test r a s) = Test r (upd a) s
+
+updStamp :: ([String] -> [String]) -> Test -> Test
 updStamp upd (Test r a s) = Test r a (upd s)
 
 -- Test Specification
 
+--- Constructs a property to be tested from an arbitrary expression
+--- (first argument) and a predicate that is applied to the list of
+--- non-deterministic values. The given predicate determines whether
+--- the constructed property is satisfied or falsified for the given
+--- expression.
 test :: a -> ([a] -> Bool) -> Prop
 test x f = [setResult res notest]
  where
@@ -106,39 +121,10 @@ test x f = [setResult res notest]
           [False] -> Falsified (map show xs)
           bs      -> Ambigious bs (map show xs)
 
---- The property `is x p` is satisfied if `x` has a deterministic value
---- which satisfies `p`.
-is :: a -> (a -> Bool) -> Prop
-is x f = test x (\xs -> case xs of [y] -> f y; _ -> False)
-
---- The property `isAlways x p` is satisfied if all values of `x` satisfy `p`.
-isAlways :: a -> (a -> Bool) -> Prop
-isAlways x  = test x . all
-
---- The property `isEventually x p` is satisfied if some values of `x`
---- satisfy `p`.
-isEventually :: a -> (a -> Bool) -> Prop
-isEventually x = test x . any
-
-prop, uniquely, always, eventually :: Bool -> Prop
-prop       = uniquely
-uniquely   = (`is` id)
-always     = (`isAlways` id)
-eventually = (`isEventually` id)
-
-failing, successful, deterministic :: _ -> Prop
-failing x = test x null
-successful x = test x (not . null)
-deterministic x = x `is` const True
-
 --- The property `x -=- y` is satisfied if `x` and `y` have deterministic
 --- values that are equal.
 (-=-) :: a -> a -> Prop
 x -=- y = (x,y) `is` uncurry (==)
-
---- The property `x # n` is satisfied if `x` has `n` values.
-(#) :: _ -> Int -> Prop
-x # n = test x ((n==) . length . nub)
 
 --- The property `x <~> y` is satisfied if the sets of the values of
 --- `x` and `y` are equal.
@@ -184,13 +170,59 @@ cond ==> p =
   then p
   else [notest]
 
+--- The property `is x p` is satisfied if `x` has a deterministic value
+--- which satisfies `p`.
+is :: a -> (a -> Bool) -> Prop
+is x f = test x (\xs -> case xs of [y] -> f y; _ -> False)
+
+--- The property `isAlways x p` is satisfied if all values of `x` satisfy `p`.
+isAlways :: a -> (a -> Bool) -> Prop
+isAlways x  = test x . all
+
+--- The property `isEventually x p` is satisfied if some value of `x`
+--- satisfies `p`.
+isEventually :: a -> (a -> Bool) -> Prop
+isEventually x = test x . any
+
+--- The property `uniquely x` is satisfied if `x` has a deterministic value
+--- which is true.
+uniquely :: Bool -> Prop
+uniquely = (`is` id)
+
+--- The property `always x` is satisfied if all values of `x` are true.
+always :: Bool -> Prop
+always = (`isAlways` id)
+
+--- The property `eventually x` is satisfied if some value of `x` is true.
+eventually :: Bool -> Prop
+eventually = (`isEventually` id)
+
+--- The property `failing x` is satisfied if `x` has no value.
+failing :: _ -> Prop
+failing x = test x null
+
+--- The property `successful x` is satisfied if `x` has at least one value.
+successful :: _ -> Prop
+successful x = test x (not . null)
+
+--- The property `deterministic x` is satisfied if `x` has exactly one value.
+deterministic :: _ -> Prop
+deterministic x = x `is` const True
+
+--- The property `x # n` is satisfied if `x` has `n` values.
+(#) :: _ -> Int -> Prop
+x # n = test x ((n==) . length . nub)
+
 forAll :: (b -> Prop) -> a -> (a -> b) -> Prop
 forAll c x f
   = diagonal [[ updArgs (show y:) t | t <- c (f y) ] | y <- valuesOf x ]
 
+--- The property `for x p` is satisfied if all values `y` of `x`
+--- satiesfy property `p x`.
 for :: a -> (a -> Prop) -> Prop
 for = forAll id
 
+-------------------------------------------------------------------------
 -- Test Annotations
 
 label :: String -> Prop -> Prop
@@ -201,7 +233,7 @@ classify True  name = label name
 classify False _    = id
 
 trivial :: Bool -> Prop -> Prop
-trivial = (`classify`"trivial")
+trivial = (`classify` "trivial")
 
 collect :: a -> Prop -> Prop
 collect = label . show
@@ -211,48 +243,58 @@ collectAs name = label . ((name++": ")++) . show
 
 -------------------------------------------------------------------------
 --- The configuration of property testing.
---- The configuration contains the maximum number of test,
+--- The configuration contains the maximum number of tests,
 --- the maximum number of condition failures before giving up,
---- an operation the shows the number and arguments of each test,
+--- an operation that shows the number and arguments of each test,
 --- and a status whether it should work quietly.
 data Config = Config Int Int (Int -> [String] -> String) Bool
 
+--- Gets the maximum number of tests from a test configuration.
 maxTest :: Config -> Int
 maxTest (Config n _ _ _) = n
 
+--- Sets the maximum number of tests in a test configuration.
 setMaxTest :: Int -> Config -> Config
 setMaxTest n (Config _ m f q) = Config n m f q
 
+--- Gets the maximum number of condition failures from a test configuration.
 maxFail :: Config -> Int
 maxFail (Config _ n _ _) = n
 
+--- Sets the maximum number of condition failures in a test configuration.
 setMaxFail :: Int -> Config -> Config
 setMaxFail m (Config n _ f q) = Config n m f q
 
+--- Gets the operation that shows the number and arguments of each test
+--- from a test configuration.
 every :: Config -> Int -> [String] -> String
 every (Config _ _ f _) = f
 
+--- Sets the operation that shows the number and arguments of each test
+--- in a test configuration.
 setEvery :: (Int -> [String] -> String) -> Config -> Config
 setEvery f (Config n m _ q) = Config n m f q
 
+--- Gets the quiet status from a test configuration.
 isQuiet :: Config -> Bool
 isQuiet (Config _ _ _ q) = q
 
+--- Sets the quiet status in a test configuration.
 setQuiet :: Bool -> Config -> Config
 setQuiet b (Config n m f _) = Config n m f b
 
---- The default configuration for EasyCheck which some some information
+--- The default configuration for EasyCheck which shows some information
 --- for each test.
 easyConfig :: Config
 easyConfig = Config 100 10000
                     (\n _ -> let s = ' ':show (n+1) in s ++ [ chr 8 | _ <- s ])
                     False
 
---- Verbose configuration which shows the arguments of every test.
+--- A verbose configuration which shows the arguments of every test.
 verboseConfig :: Config
 verboseConfig = setEvery (\n xs -> show n ++ ":\n" ++ unlines xs) easyConfig
 
---- Quiet configuration which shows nothing but failed tests.
+--- A quiet configuration which shows nothing but failed tests.
 quietConfig :: Config
 quietConfig = setQuiet True (setEvery (\_ _ -> "") easyConfig)
 
@@ -262,64 +304,139 @@ quietConfig = setQuiet True (setEvery (\_ _ -> "") easyConfig)
 suc :: (a -> Prop) -> (b -> a) -> Prop
 suc n = forAll n unknown
 
+--- Checks a unit test with a given configuration (first argument)
+--- and a name for the test (second argument).
+--- Returns a flag whether the test was successful.
 check0 :: Config -> String -> Prop -> IO Bool
 check0 = check
 
+--- Checks a property parameterized over a single argument
+--- with a given configuration (first argument)
+--- and a name for the test (second argument).
+--- Returns a flag whether the test was successful.
 check1 :: Config -> String -> (_ -> Prop) -> IO Bool
 check1 config msg = check config msg . suc id
 
+--- Checks a property parameterized over two arguments
+--- with a given configuration (first argument)
+--- and a name for the test (second argument).
+--- Returns a flag whether the test was successful.
 check2 :: Config -> String -> (_ -> _ -> Prop) -> IO Bool
 check2 config msg = check config msg . suc (suc id)
 
+--- Checks a property parameterized over three arguments
+--- with a given configuration (first argument)
+--- and a name for the test (second argument).
+--- Returns a flag whether the test was successful.
 check3 :: Config -> String -> (_ -> _ -> _ -> Prop) -> IO Bool
 check3 config msg = check config msg . suc (suc (suc id))
 
+--- Checks a property parameterized over four arguments
+--- with a given configuration (first argument)
+--- and a name for the test (second argument).
+--- Returns a flag whether the test was successful.
 check4 :: Config -> String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
 check4 config msg = check config msg . suc (suc (suc (suc id)))
 
+--- Checks a property parameterized over five arguments
+--- with a given configuration (first argument)
+--- and a name for the test (second argument).
+--- Returns a flag whether the test was successful.
 check5 :: Config -> String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
 check5 config msg = check config msg . suc (suc (suc (suc (suc id))))
 
 
+--- Checks a unit test according to the default configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 easyCheck :: String -> Prop -> IO Bool
 easyCheck = check easyConfig
 
+--- Checks a unit test according to the default configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 easyCheck0 :: String -> Prop -> IO Bool
 easyCheck0 = check0 easyConfig
 
+--- Checks a property parameterized over a single argument
+--- according to the default configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 easyCheck1 :: String -> (_ -> Prop) -> IO Bool
 easyCheck1 = check1 easyConfig
 
+--- Checks a property parameterized over two arguments
+--- according to the default configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 easyCheck2 :: String -> (_ -> _ -> Prop) -> IO Bool
 easyCheck2 = check2 easyConfig
 
+--- Checks a property parameterized over three arguments
+--- according to the default configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 easyCheck3 :: String -> (_ -> _ -> _ -> Prop) -> IO Bool
 easyCheck3 = check3 easyConfig
 
+--- Checks a property parameterized over four arguments
+--- according to the default configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 easyCheck4 :: String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
 easyCheck4 = check4 easyConfig
 
+--- Checks a property parameterized over five arguments
+--- according to the default configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 easyCheck5 :: String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
 easyCheck5 = check5 easyConfig
 
+--- Checks a unit test according to the verbose configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 verboseCheck :: String -> Prop -> IO Bool
 verboseCheck = check verboseConfig
 
+--- Checks a unit test according to the verbose configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 verboseCheck0 :: String -> Prop -> IO Bool
 verboseCheck0 = check0 verboseConfig
 
+--- Checks a property parameterized over a single argument
+--- according to the verbose configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 verboseCheck1 :: String -> (_ -> Prop) -> IO Bool
 verboseCheck1 = check1 verboseConfig
 
+--- Checks a property parameterized over two arguments
+--- according to the verbose configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 verboseCheck2 :: String -> (_ -> _ -> Prop) -> IO Bool
 verboseCheck2 = check2 verboseConfig
 
+--- Checks a property parameterized over three arguments
+--- according to the verbose configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 verboseCheck3 :: String -> (_ -> _ -> _ -> Prop) -> IO Bool
 verboseCheck3 = check3 verboseConfig
 
+--- Checks a property parameterized over four arguments
+--- according to the verbose configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 verboseCheck4 :: String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
 verboseCheck4 = check4 verboseConfig
 
+--- Checks a property parameterized over five arguments
+--- according to the verbose configuration
+--- and a name for the test (first argument).
+--- Returns a flag whether the test was successful.
 verboseCheck5 :: String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
 verboseCheck5 = check5 verboseConfig
 
@@ -427,6 +544,9 @@ leqPair leqa leqb (x1,y1) (x2,y2)
   | x1 == x2  = leqb y1 y2
   | otherwise = leqa x1 x2
 
+--- Computes the list of all values of the given argument
+--- according to a given strategy (here:
+--- randomized diagonalization of levels with flattening).
 valuesOf :: a -> [a]
 valuesOf
   -- = depthDiag . someSearchTree . (id$##)

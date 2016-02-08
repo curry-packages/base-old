@@ -2,7 +2,7 @@
 --- This library provides some useful operations to write programs
 --- that generate AbstractCurry programs in a more compact and readable way.
 ---
---- @version January 2016
+--- @version February 2016
 --- @category meta
 ------------------------------------------------------------------------
 
@@ -156,6 +156,14 @@ tuplePattern ps
 pVars :: Int -> [CPattern]
 pVars n = [CPVar (i,"x"++show i) | i<-[0..n-1]] 
 
+--- Converts an integer into an AbstractCurry expression.
+pInt :: Int -> CPattern
+pInt x = CPLit (CIntc x)
+
+--- Converts a float into an AbstractCurry expression.
+pFloat :: Float -> CPattern
+pFloat x = CPLit (CFloatc x)
+
 --- Converts a character into a pattern.
 pChar :: Char -> CPattern
 pChar x = CPLit (CCharc x)
@@ -178,6 +186,14 @@ stringPattern = CPLit . CStringc
 list2ac :: [CExpr] -> CExpr
 list2ac []     = constF (pre "[]")
 list2ac (c:cs) = applyF (pre ":") [c, list2ac cs]
+
+--- Converts an integer into an AbstractCurry expression.
+cInt :: Int -> CExpr
+cInt x = CLit (CIntc x)
+
+--- Converts a float into an AbstractCurry expression.
+cFloat :: Float -> CExpr
+cFloat x = CLit (CFloatc x)
 
 --- Converts a character into an AbstractCurry expression.
 cChar :: Char -> CExpr
