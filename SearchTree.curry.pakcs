@@ -5,7 +5,7 @@
 --- [the JFLP'04 paper](http://www.informatik.uni-kiel.de/~mh/papers/JFLP04_findall.html).
 ---
 --- @author  Michael Hanus, Bjoern Peemoeller, Fabian Reck
---- @version September 2013
+--- @version February 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
@@ -21,6 +21,7 @@ module SearchTree
   , someValue, someValueWith
   ) where
 
+import Findall       (allValues)
 import IO            (hFlush,stdout)
 import ValueSequence
 
@@ -44,8 +45,15 @@ getSearchTree x = return (someSearchTree x)
 --- Note that this operation is not purely declarative since
 --- the ordering in the resulting search tree depends on the
 --- ordering of the program rules.
+---
+--- Note that in PAKCS the search tree is just a degenerated tree
+--- representing all values of the argument expression
+--- and it is computed at once (i.e., not lazily!).
 someSearchTree :: a -> SearchTree a
-someSearchTree external
+someSearchTree = list2st . allValues
+ where list2st []  = Fail 0
+       list2st [x] = Value x
+       list2st (x:y:ys) = Or (Value x) (list2st (y:ys))
 
 --- Returns True iff the argument is defined, i.e., has a value.
 isDefined :: a -> Bool

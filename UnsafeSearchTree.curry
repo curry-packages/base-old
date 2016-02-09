@@ -11,7 +11,7 @@
 ---
 --- @author  Michael Hanus, Bjoern Peemoeller, Fabian Reck
 --- @version July 2013
---- @category general
+--- @category algorithm
 ------------------------------------------------------------------------------
 
 module UnsafeSearchTree

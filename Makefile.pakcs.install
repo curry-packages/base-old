@@ -94,13 +94,16 @@ Profile.curry: $(LIBTRUNKDIR)/Profile.curry.$(CURRYSYSTEM)
 Random.curry: $(LIBTRUNKDIR)/Random.curry.$(CURRYSYSTEM)
 	cp $< $@
 
+SearchTree.curry: $(LIBTRUNKDIR)/SearchTree.curry.$(CURRYSYSTEM)
+	cp $< $@
+
 SetFunctions.curry: $(LIBTRUNKDIR)/SetFunctions.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 Unsafe.curry: $(LIBTRUNKDIR)/Unsafe.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Test/EasyCheck.curry: $(LIBTRUNKDIR)/Test/EasyCheck.curry.$(CURRYSYSTEM)
+ValueSequence.curry: $(LIBTRUNKDIR)/ValueSequence.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry

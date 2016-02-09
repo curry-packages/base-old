@@ -37,7 +37,7 @@ module Test.EasyCheck (
 
   valuesOf, Result(..), result,
 
-  easyCheck', easyCheck1', easyCheck2', easyCheck3', easyCheck4', easyCheck5',
+  -- easyCheck', easyCheck1', easyCheck2', easyCheck3', easyCheck4', easyCheck5',
 
   -- operations used by the CurryCheck tool
   checkPropWithMsg, checkPropIOWithMsg, runPropertyTests
@@ -214,8 +214,8 @@ deterministic x = x `is` const True
 x # n = test x ((n==) . length . nub)
 
 forAll :: (b -> Prop) -> a -> (a -> b) -> Prop
-forAll c x f
-  = diagonal [[ updArgs (show y:) t | t <- c (f y) ] | y <- valuesOf x ]
+forAll c x f =
+  diagonal [[ updArgs (show y:) t | t <- c (f y) ] | y <- valuesOf x ]
 
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satiesfy property `p x`.
@@ -302,7 +302,11 @@ quietConfig = setQuiet True (setEvery (\_ _ -> "") easyConfig)
 -- Test Functions
 
 suc :: (a -> Prop) -> (b -> a) -> Prop
-suc n = forAll n unknown
+suc n =
+  if curryCompiler == "kics2"
+  then forAll n unknown
+  else error
+    "Test.EasyCheck: tests with arbitrary values not yet implemented in PAKCS!"
 
 --- Checks a unit test with a given configuration (first argument)
 --- and a name for the test (second argument).
@@ -549,12 +553,15 @@ leqPair leqa leqb (x1,y1) (x2,y2)
 --- randomized diagonalization of levels with flattening).
 valuesOf :: a -> [a]
 valuesOf
-  -- = depthDiag . someSearchTree . (id$##)
-  -- = rndDepthDiag 0 . someSearchTree . (id$##)
-  -- = levelDiag . someSearchTree . (id$##)
-  -- = rndLevelDiag 0 . someSearchTree . (id$##)
-   = rndLevelDiagFlat 5 0 . someSearchTree . (id$##)
-  -- = allValuesB . someSearchTree . (id$##)
+  -- = depthDiag            . someSearchTree . (id $##)
+  -- = rndDepthDiag 0       . someSearchTree . (id $##)
+  -- = levelDiag            . someSearchTree . (id $##)
+  -- = rndLevelDiag 0       . someSearchTree . (id $##)
+  -- = rndLevelDiagFlat 5 0 . someSearchTree . (id $##)
+  -- = allValuesB           . someSearchTree . (id $##)
+  = if curryCompiler == "kics2"
+    then rndLevelDiagFlat 5 0 . someSearchTree . (id $##)
+    else depthDiag            . someSearchTree . (id $##)
 
 -------------------------------------------------------------------------
 --- Safely checks a property, i.e., catch all exceptions that might occur

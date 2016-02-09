@@ -19,6 +19,7 @@ import SearchTree
 import Integer ( abs )
 import Random
 
+split :: Int -> [Int]
 split = nextInt
 
 --- diagonalized depth first search.
@@ -131,6 +132,8 @@ shuffle :: Int -> [a] -> [a]
 shuffle rnd l = shuffleWithLen (nextInt rnd) (length l) l
 
 shuffleWithLen :: [Int] -> Int -> [a] -> [a]
+shuffleWithLen [] _ _ =
+  error "Internal error in SearchTreeTraversal.shuffleWithLen"
 shuffleWithLen (r:rs) len xs
   | len == 0  = []
   | otherwise = z : shuffleWithLen rs (len-1) (ys++zs)
