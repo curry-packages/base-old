@@ -580,7 +580,7 @@ negateFloat :: Float -> Float
 negateFloat external
 
 
--- Constraints (included for backwar compatibility)
+-- Constraints (included for backward compatibility)
 type Success = Bool
 
 --- The always satisfiable constraint.

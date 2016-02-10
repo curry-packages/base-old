@@ -19,7 +19,7 @@
 --- range of their possible values.
 ---
 --- @author Michael Hanus
---- @version September 2015
+--- @version February 2015
 --- @category general
 ------------------------------------------------------------------------------
 
@@ -29,11 +29,11 @@ module CLP.FD
   , (*#), (+#), (-#)
   , (=#), (/=#), (<#), (<=#), (>#), (>=#)
   , true, (/\), andC, allC
-  , solveFD
+  , solveFD, solveFDAll, solveFDOne
   ) where
 
 import qualified CLPFD as C
-import qualified Constraint
+import Findall (allValues, someValue)
 
 infixl 7 *#
 infixl 6 +#, -#
@@ -227,17 +227,33 @@ data FDConstr = FDTrue
 
 
 --- Computes (non-deterministically) a solution for the FD variables (second
---- argument) w.r.t. constraint (third argument).
+--- argument) w.r.t. constraint (third argument), where
+--- the values in the solution correspond to the list of FD variables.
 --- The first argument contains options to control the labeling/instantiation
 --- of FD variables.
 solveFD :: [Option] -> [FDExpr] -> FDConstr -> [Int]
 solveFD options cvars constr =
-  let domconstr = Constraint.allC (\ (FDVar l u v) -> C.domain [v] l u)
-                                  (allFDVars constr)
+  let domconstr = all (\ (FDVar l u v) -> C.domain [v] l u) (allFDVars constr)
       tconstr = trC constr
       allvars = map getFDVal cvars
       labelvars = C.labeling (map trO options) allvars
    in (domconstr & tconstr & labelvars) &> allvars
+
+--- Computes all solutions for the FD variables (second
+--- argument) w.r.t. constraint (third argument), where
+--- the values in each solution correspond to the list of FD variables.
+--- The first argument contains options to control the labeling/instantiation
+--- of FD variables.
+solveFDAll :: [Option] -> [FDExpr] -> FDConstr -> [[Int]]
+solveFDAll options cvars constr = allValues (solveFD options cvars constr)
+
+--- Computes a single solution for the FD variables (second
+--- argument) w.r.t. constraint (third argument), where
+--- the values in the solution correspond to the list of FD variables.
+--- The first argument contains options to control the labeling/instantiation
+--- of FD variables.
+solveFDOne :: [Option] -> [FDExpr] -> FDConstr -> [Int]
+solveFDOne options cvars constr = someValue (solveFD options cvars constr)
 
 -- get value (possibly an unbound variable) of an FD expression:
 getFDVal :: FDExpr -> Int

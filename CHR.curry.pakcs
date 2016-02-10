@@ -25,7 +25,6 @@ module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
           ) where
 
 import Findall(rewriteSome)
-import Constraint(allC)
 import Unsafe -- for tracing
 import SetRBT
 import List
@@ -292,7 +291,7 @@ evalCHR withtrace urules (Goal goal)
 
   (gidx,chrgoal) = numberCHR 0 goal
 
-  solvePrims = allC evalPrimCHR
+  solvePrims = all evalPrimCHR
 
   -- evaluate list of active constraints:
   evalConstr gi hist gl cstore finalcs = tracing (showAnyTerm (gl,cstore)) $

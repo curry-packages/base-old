@@ -597,7 +597,7 @@ negateFloat x = prim_negateFloat $# x
 prim_negateFloat :: Float -> Float
 prim_negateFloat external
 
--- Constraints (included for backwar compatibility)
+-- Constraints (included for backward compatibility)
 type Success = Bool
 
 --- The always satisfiable constraint.
