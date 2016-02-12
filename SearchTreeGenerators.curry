@@ -9,6 +9,7 @@
 
 module SearchTreeGenerators
   ( genBool, genInt, genChar, genList
+  , genMaybe, genEither, genUnit, genPair
   ) where
  
 import SearchTree
@@ -43,23 +44,43 @@ genNat = gen id
  where
   gen f = Or (Value (nat2int (f IHi))) (Or (gen (O . f)) (gen (I . f)))
 
---- Generators a search tree for integer values.
+--- Generates a search tree for integer values.
 genInt :: SearchTree Int
 genInt = Or (mapST (\n -> 0 - n) genNat)
             (Or (Value 0) genNat)
              
---- Generators a search tree for Boolean values.
+--- Generates a search tree for Boolean values.
 genBool :: SearchTree Bool
 genBool = Or (Value False) (Value True)
 
---- Generators a search tree for character values.
+--- Generates a search tree for character values.
 genChar :: SearchTree Char
 genChar = mapST (\n -> chr (n+1)) genNat
 
---- Generators a search tree for list values where the search tree for
+--- Generates a search tree for list values where the search tree for
 --- the elements is given as a parameter.
 genList :: SearchTree a -> SearchTree [a]
 genList genx = genL id
  where
   genL f = Or (Value (f []))
               (mapSTVal (\v -> genL ((v:) . f)) genx)
+
+--- Generates a search tree for Maybe values where the search tree for
+--- the possible element is given as a parameter.
+genMaybe :: SearchTree a -> SearchTree (Maybe a)
+genMaybe genx = Or (Value Nothing) (mapST Just genx)
+
+--- Generates a search tree for Maybe values where the search tree for
+--- the possible elements is given as a parameter.
+genEither :: SearchTree a -> SearchTree b -> SearchTree (Either a b)
+genEither genx geny = Or (mapST Left genx) (mapST Right geny)
+
+--- Generates a search tree for the unit values.
+genUnit :: SearchTree ()
+genUnit = Value ()
+
+--- Generates a search tree for pair values where the search tree for
+--- the possible components is given as a parameter.
+genPair :: SearchTree a -> SearchTree b -> SearchTree (a,b)
+genPair genx geny = mapSTVal (\x -> mapST (\y -> (x,y)) geny) genx
+

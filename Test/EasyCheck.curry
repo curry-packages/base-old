@@ -31,7 +31,7 @@ module Test.EasyCheck (
 
   -- test functions
   checkWithValues0, checkWithValues1, checkWithValues2,
-  checkWithValues3,
+  checkWithValues3, checkWithValues4, checkWithValues5,
   check0, check1, check2, check3, check4, check5,
   easyCheck, easyCheck0, easyCheck1, easyCheck2, easyCheck3, easyCheck4, easyCheck5,
   verboseCheck, verboseCheck0, verboseCheck1, verboseCheck2, verboseCheck3, verboseCheck4,
@@ -359,6 +359,33 @@ checkWithValues3 :: Config -> String -> [a] -> [b] -> [c]
 checkWithValues3 config msg xs ys zs p =
   check config msg
         (forValues xs (\x -> forValues ys (\y -> forValues zs (p x y))))
+
+--- Checks a property parameterized over four arguments
+--- with a given configuration (first argument)
+--- a name for the test (second argument),
+--- and all values given in the further arguments.
+--- Returns a flag whether the test was successful.
+checkWithValues4 :: Config -> String -> [a] -> [b] -> [c] -> [d]
+                -> (a -> b -> c -> d -> Prop) -> IO Bool
+checkWithValues4 config msg xs ys zs1 zs2 p =
+  check config msg
+        (forValues xs (\x -> forValues ys
+                      (\y -> forValues zs1
+                      (\z1 -> forValues zs2 (p x y z1)))))
+
+--- Checks a property parameterized over five arguments
+--- with a given configuration (first argument)
+--- a name for the test (second argument),
+--- and all values given in the further arguments.
+--- Returns a flag whether the test was successful.
+checkWithValues5 :: Config -> String -> [a] -> [b] -> [c] -> [d] -> [e]
+                -> (a -> b -> c -> d -> e -> Prop) -> IO Bool
+checkWithValues5 config msg xs ys zs1 zs2 zs3 p =
+  check config msg
+        (forValues xs (\x -> forValues ys
+                      (\y -> forValues zs1
+                      (\z1 -> forValues zs2
+                      (\z2 -> forValues zs3 (p x y z1 z2))))))
 
 --- Checks a property parameterized over a single argument
 --- with a given configuration (first argument)
