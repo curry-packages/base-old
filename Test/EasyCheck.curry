@@ -30,12 +30,14 @@ module Test.EasyCheck (
   verboseConfig, quietConfig, easyConfig, setMaxTest, setMaxFail, setEvery,
 
   -- test functions
+  checkWithValues0, checkWithValues1, checkWithValues2,
+  checkWithValues3,
   check0, check1, check2, check3, check4, check5,
   easyCheck, easyCheck0, easyCheck1, easyCheck2, easyCheck3, easyCheck4, easyCheck5,
   verboseCheck, verboseCheck0, verboseCheck1, verboseCheck2, verboseCheck3, verboseCheck4,
   verboseCheck5,
 
-  valuesOf, Result(..), result,
+  valuesOfSearchTree, valuesOf, Result(..), result,
 
   -- easyCheck', easyCheck1', easyCheck2', easyCheck3', easyCheck4', easyCheck5',
 
@@ -49,7 +51,7 @@ import IO           ( hFlush, stdout )
 import List         ( delete, nub, group, intersperse, (\\) )
 import Maybe        ( catMaybes )
 import Random       ( nextInt )
-import SearchTree   ( someSearchTree )
+import SearchTree   ( SearchTree, someSearchTree )
 import SearchTreeTraversal
 import Sort         ( leqList, leqString, mergeSort )
 
@@ -217,10 +219,19 @@ forAll :: (b -> Prop) -> a -> (a -> b) -> Prop
 forAll c x f =
   diagonal [[ updArgs (show y:) t | t <- c (f y) ] | y <- valuesOf x ]
 
+forAllValues :: (b -> Prop) -> [a] -> (a -> b) -> Prop
+forAllValues c vals f =
+  diagonal [[ updArgs (show y:) t | t <- c (f y) ] | y <- vals ]
+
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satiesfy property `p x`.
 for :: a -> (a -> Prop) -> Prop
-for = forAll id
+for x p = forAllValues id (valuesOf x) p
+
+--- The property `for x p` is satisfied if all values `y` of `x`
+--- satiesfy property `p x`.
+forValues :: [a] -> (a -> Prop) -> Prop
+forValues xs p = forAllValues id xs p
 
 -------------------------------------------------------------------------
 -- Test Annotations
@@ -304,7 +315,7 @@ quietConfig = setQuiet True (setEvery (\_ _ -> "") easyConfig)
 suc :: (a -> Prop) -> (b -> a) -> Prop
 suc n =
   if curryCompiler == "kics2"
-  then forAll n unknown
+  then forAllValues n (valuesOf unknown)
   else error
     "Test.EasyCheck: tests with arbitrary values not yet implemented in PAKCS!"
 
@@ -313,6 +324,41 @@ suc n =
 --- Returns a flag whether the test was successful.
 check0 :: Config -> String -> Prop -> IO Bool
 check0 = check
+
+--- Checks a unit test with a given configuration (first argument)
+--- and a name for the test (second argument).
+--- Returns a flag whether the test was successful.
+checkWithValues0 :: Config -> String -> Prop -> IO Bool
+checkWithValues0 = check
+
+--- Checks a property parameterized over a single argument
+--- with a given configuration (first argument),
+--- a name for the test (second argument),
+--- and all values given in the third argument.
+--- Returns a flag whether the test was successful.
+checkWithValues1 :: Config -> String -> [a] -> (a -> Prop) -> IO Bool
+checkWithValues1 config msg xs p = check config msg (forValues xs p)
+
+--- Checks a property parameterized over two arguments
+--- with a given configuration (first argument)
+--- a name for the test (second argument),
+--- and all values given in the third and fourth argument.
+--- Returns a flag whether the test was successful.
+checkWithValues2 :: Config -> String -> [a] -> [b]
+                -> (a -> b -> Prop) -> IO Bool
+checkWithValues2 config msg xs ys p =
+  check config msg (forValues xs (\x -> forValues ys (p x)))
+
+--- Checks a property parameterized over three arguments
+--- with a given configuration (first argument)
+--- a name for the test (second argument),
+--- and all values given in the third, fourth and fifth argument.
+--- Returns a flag whether the test was successful.
+checkWithValues3 :: Config -> String -> [a] -> [b] -> [c]
+                -> (a -> b -> c -> Prop) -> IO Bool
+checkWithValues3 config msg xs ys zs p =
+  check config msg
+        (forValues xs (\x -> forValues ys (\y -> forValues zs (p x y))))
 
 --- Checks a property parameterized over a single argument
 --- with a given configuration (first argument)
@@ -548,20 +594,25 @@ leqPair leqa leqb (x1,y1) (x2,y2)
   | x1 == x2  = leqb y1 y2
   | otherwise = leqa x1 x2
 
+--- Extracts values of a search tree according to a given strategy
+--- (here: randomized diagonalization of levels with flattening).
+valuesOfSearchTree :: SearchTree a -> [a]
+valuesOfSearchTree
+  -- = depthDiag            
+  -- = rndDepthDiag 0       
+  -- = levelDiag            
+  -- = rndLevelDiag 0       
+  -- = rndLevelDiagFlat 5 0 
+  -- = allValuesB           
+  = if curryCompiler == "kics2"
+    then rndLevelDiagFlat 5 0
+    else depthDiag
+
 --- Computes the list of all values of the given argument
 --- according to a given strategy (here:
 --- randomized diagonalization of levels with flattening).
 valuesOf :: a -> [a]
-valuesOf
-  -- = depthDiag            . someSearchTree . (id $##)
-  -- = rndDepthDiag 0       . someSearchTree . (id $##)
-  -- = levelDiag            . someSearchTree . (id $##)
-  -- = rndLevelDiag 0       . someSearchTree . (id $##)
-  -- = rndLevelDiagFlat 5 0 . someSearchTree . (id $##)
-  -- = allValuesB           . someSearchTree . (id $##)
-  = if curryCompiler == "kics2"
-    then rndLevelDiagFlat 5 0 . someSearchTree . (id $##)
-    else depthDiag            . someSearchTree . (id $##)
+valuesOf = valuesOfSearchTree . someSearchTree . (id $##)
 
 -------------------------------------------------------------------------
 --- Safely checks a property, i.e., catch all exceptions that might occur
