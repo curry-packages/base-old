@@ -1,6 +1,28 @@
 ------------------------------------------------------------------------------
 --- This library implements some operations to generate search trees
---- for various types.
+--- for various data types.
+---
+--- The library also provides combinators to support the easy definition
+--- of search tree generators for user-defined data types.
+--- If a data type is defined by
+---
+---     data T a1 ... an = ... | C t1 ... tn | ....
+---
+--- then one can define a search tree generator for this type by
+---
+---     genT gena1 ... genan =
+---       ... ||| genCons<n> C gen_t1 ... gen_t1 ||| ...
+---
+--- where `gen_ti` genotes the search tree generator for type `ti`.
+--- For instance, a search tree generator for the type
+---
+---     data Tree a = Leaf a
+---                 | Node [Tree a]
+---
+--- can be defined by
+---
+---     genTree gena =  genCons1 Leaf gena
+---                 ||| genCons1 Node (genList (genTree gena))
 ---
 --- @author  Michael Hanus
 --- @version February 2016
@@ -12,10 +34,13 @@ module SearchTreeGenerators
   , genMaybe, genEither, genUnit, genPair, genTriple, genTuple4, genTuple5
   , genOrdering
   , genCons0, genCons1, genCons2, genCons3, genCons4, genCons5
+  , (|||)
   ) where
  
 import SearchTree
 import SearchTreeTraversal
+
+infixr 1 |||
 
 --- Replace in a given search tree each value node by a new search tree
 --- according to the function provided as the second argument.
@@ -23,6 +48,10 @@ valsTo :: SearchTree a -> (a -> SearchTree b) -> SearchTree b
 valsTo (Value a)  f = f a
 valsTo (Fail i)   _ = Fail i
 valsTo (Or t1 t2) f = Or (valsTo t1 f) (valsTo t2 f)
+
+--- Constructs an alternative of two search trees.
+(|||) :: SearchTree a -> SearchTree a -> SearchTree a
+x ||| y = Or x y
 
 --- Constructs a generator for a nullary constructor.
 genCons0 :: a -> SearchTree a
@@ -107,19 +136,15 @@ genList genx =
   Or (Value [])
      (genCons2 (:) genx (genList genx))
 
---- Generates a search tree for Maybe values where the search tree for
+--- Generates a search tree for `Maybe` values where the search tree for
 --- the possible element is given as a parameter.
 genMaybe :: SearchTree a -> SearchTree (Maybe a)
-genMaybe genx =
-  Or (Value Nothing)
-     (genCons1 Just genx)
+genMaybe genx = Value Nothing ||| genCons1 Just genx
 
---- Generates a search tree for Maybe values where the search tree for
+--- Generates a search tree for `Either` values where the search tree for
 --- the possible elements is given as a parameter.
 genEither :: SearchTree a -> SearchTree b -> SearchTree (Either a b)
-genEither genx geny =
-  Or (genCons1 Left  genx)
-     (genCons1 Right geny)
+genEither genx geny = genCons1 Left  genx ||| genCons1 Right geny
 
 --- Generates a search tree for the unit values.
 genUnit :: SearchTree ()
@@ -148,18 +173,6 @@ genTuple5 :: SearchTree a -> SearchTree b -> SearchTree c -> SearchTree d
           -> SearchTree e -> SearchTree (a,b,c,d,e)
 genTuple5 = genCons5 (\x y z1 z2 z3 -> (x,y,z1,z2,z3))
 
---- Generates a search tree for the unit values.
+--- Generates a search tree for the `Ordering` values.
 genOrdering :: SearchTree Ordering
 genOrdering = Or (Value LT) (Or (Value EQ) (Value GT))
-
-{-
--- General scheme to implement a search tree generator for a type
-
-data T a1 ... an = ... | C t1 ... tn | ....
-
-genT gena1 ... genan =
- Or ...
-   (Or (genCons<n> C gent1 ... gentn)
-       ...)
-
--}
