@@ -44,7 +44,7 @@ data CVisibility
 --- Data type for representing a Curry module in the intermediate form.
 --- A value of this data type has the form
 --- 
----     (CProg modname imports typedecls functions opdecls)
+---     (CurryProg modname imports typedecls functions opdecls)
 --- 
 --- where modname: name of this module,
 ---       imports: list of modules names that are imported,

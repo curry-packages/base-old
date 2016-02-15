@@ -13,7 +13,7 @@
 ---     genT gena1 ... genan =
 ---       ... ||| genCons<n> C gen_t1 ... gen_t1 ||| ...
 ---
---- where `gen_ti` genotes the search tree generator for type `ti`.
+--- where `gen_ti` denotes the search tree generator for type `ti`.
 --- For instance, a search tree generator for the type
 ---
 ---     data Tree a = Leaf a
