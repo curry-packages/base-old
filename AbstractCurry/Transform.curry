@@ -16,8 +16,6 @@ module AbstractCurry.Transform where
 
 import AbstractCurry.Types
 import AbstractCurry.Select
-import AbstractCurry.Files
-import AbstractCurry.Pretty
 
 --- This type synonym is useful to denote the type of an update,
 --- where the first argument is the type of values which are updated
@@ -430,8 +428,3 @@ updQNamesInCExpr f =
   recupd exp fields = CRecUpdate exp (map (\ (l,e) -> (f l,e)) fields)
   
 ----------------------------------------------------------------------------
-
-main f = do
-  p <- readCurry f
-  putStrLn (showCProg (renameCurryModule "XXX" p))
-  
