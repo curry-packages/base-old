@@ -25,14 +25,18 @@
 ---     }
 ---
 --- @author Sergio Antoy (with extensions by Michael Hanus)
---- @version Fri Jun 10 12:49:36 PDT 2011
+--- @version February 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
-module Random(nextInt, nextIntRange, nextBoolean, getRandomSeed) where
+module Random
+  ( nextInt, nextIntRange, nextBoolean, getRandomSeed
+  , shuffle
+  ) where
 
+import Integer ( abs )
+import System  ( getCPUTime )
 import Time
-import System(getCPUTime)
 
 zfact = 36969
 wfact = 18000
@@ -87,6 +91,24 @@ getRandomSeed =
   let (CalendarTime y mo d h m s _) = toUTCTime time
    in return ((y+mo+d+h+m*s*(msecs+1)) `mod` two16)
                             
+--- Computes a random permutation of the given list.
+---
+--- @param rnd random seed
+--- @param l lists to shuffle
+--- @return shuffled list
+---
+shuffle :: Int -> [a] -> [a]
+shuffle rnd xs = shuffleWithLen (nextInt rnd) (length xs) xs
+
+shuffleWithLen :: [Int] -> Int -> [a] -> [a]
+shuffleWithLen [] _ _ =
+  error "Internal error in Random.shuffleWithLen"
+shuffleWithLen (r:rs) len xs
+  | len == 0  = []
+  | otherwise = z : shuffleWithLen rs (len-1) (ys++zs)
+ where
+  (ys,z:zs) = splitAt (abs r `mod` len) xs
+
 {-     Simple tests and examples
 
 testInt = take 20 (nextInt 0)

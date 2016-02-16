@@ -47,10 +47,8 @@ module Test.EasyCheck (
 
 import AllSolutions ( getAllValues )
 import Distribution ( curryCompiler )
-import IO           ( hFlush, stdout )
-import List         ( delete, nub, group, intersperse, (\\) )
+import List         ( (\\), delete, diagonal, group, intersperse, nub )
 import Maybe        ( catMaybes )
-import Random       ( nextInt )
 import SearchTree   ( SearchTree, someSearchTree )
 import SearchTreeTraversal
 import Sort         ( leqList, leqString, mergeSort )
@@ -629,11 +627,8 @@ valuesOfSearchTree
   -- = rndDepthDiag 0       
   -- = levelDiag            
   -- = rndLevelDiag 0       
-  -- = rndLevelDiagFlat 5 0 
+  = rndLevelDiagFlat 5 0 
   -- = allValuesB           
-  = if curryCompiler == "kics2"
-    then rndLevelDiagFlat 5 0
-    else depthDiag
 
 --- Computes the list of all values of the given argument
 --- according to a given strategy (here:

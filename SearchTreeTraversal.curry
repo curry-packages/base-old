@@ -2,25 +2,23 @@
 --- Implements additional traversals on search trees.
 ---
 --- @author Sebastian Fischer <sebf@informatik.uni-kiel.de>
---- @version August 2007
+--- @version February 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
-module SearchTreeTraversal (
-
-  depthDiag, rndDepthDiag, levelDiag, rndLevelDiag, rndLevelDiagFlat,
-
-  -- these should be standard library functions of List and Random modules:
-  diagonal, shuffle
-
+module SearchTreeTraversal
+  (
+    depthDiag, rndDepthDiag, levelDiag, rndLevelDiag, rndLevelDiagFlat
   ) where
 
+import List       ( diagonal )
+import Random     ( nextInt, nextIntRange, shuffle )
 import SearchTree
-import Integer ( abs )
-import Random
 
+--- Splits a random seeds into new seeds.
+--- The range avoids large negative seeds (which cause problems with PAKCS).
 split :: Int -> [Int]
-split = nextInt
+split n = nextIntRange n 2147483648
 
 --- diagonalized depth first search.
 ---
@@ -34,7 +32,7 @@ dfsDiag :: SearchTree a -> [SearchTree a]
 -- dfsDiag Suspend      = []
 dfsDiag (Fail _)     = []
 dfsDiag t@(Value _)  = [t]
-dfsDiag t@(Or t1 t2) = t : diagonal (map dfsDiag [t1,t2])
+dfsDiag (Or t1 t2) = diagonal (map dfsDiag [t1,t2])
 
 
 --- randomized variant of diagonalized depth first search.
@@ -49,8 +47,8 @@ rndDfsDiag :: Int -> SearchTree a -> [SearchTree a]
 -- rndDfsDiag _   Suspend      = []
 rndDfsDiag _   (Fail _)     = []
 rndDfsDiag _   t@(Value _)  = [t]
-rndDfsDiag rnd t@(Or t1 t2) =
-  t : diagonal (zipWith rndDfsDiag rs (shuffle r [t1,t2]))
+rndDfsDiag rnd (Or t1 t2) =
+  diagonal (zipWith rndDfsDiag rs (shuffle r [t1,t2]))
  where
   r:rs = split rnd
 
@@ -84,7 +82,7 @@ rndLevels rnd ts
  where
   r:rs = split rnd
 
---- randomized diagonalization of levels with flatening.
+--- randomized diagonalization of levels with flattening.
 
 rndLevelDiagFlat :: Int -> Int -> SearchTree a -> [a]
 rndLevelDiagFlat d rnd t =
@@ -103,43 +101,6 @@ flatRep n ts
   | otherwise = flatRep (n-1) (concatMap flat ts)
 
 -- auxiliary functions
-
---- list diagonalization.
---- Fairly merges (possibly infinite) list of (possibly infinite) lists.
----
---- @param ls lists of lists
---- @return fair enumeration of all elements of inner lists of given lists
----
-diagonal :: [[a]] -> [a]
-diagonal = concat . foldr diags []
- where
-  diags []     ys = ys
-  diags (x:xs) ys = [x] : merge xs ys
-  -- diags xs@(_:_) ys = take 5 xs : merge (drop 5 xs) ys
-
-  merge []       ys     = ys
-  merge xs@(_:_) []     = map (:[]) xs
-  merge (x:xs)   (y:ys) = (x:y) : merge xs ys
-
-
---- Computes a random permutation of the given list.
----
---- @param rnd random seed
---- @param l lists to shuffle
---- @return shuffled list
----
-shuffle :: Int -> [a] -> [a]
-shuffle rnd l = shuffleWithLen (nextInt rnd) (length l) l
-
-shuffleWithLen :: [Int] -> Int -> [a] -> [a]
-shuffleWithLen [] _ _ =
-  error "Internal error in SearchTreeTraversal.shuffleWithLen"
-shuffleWithLen (r:rs) len xs
-  | len == 0  = []
-  | otherwise = z : shuffleWithLen rs (len-1) (ys++zs)
- where
-  (ys,z:zs) = splitAt (abs r `mod` len) xs
-
 
 transpose :: [[a]] -> [[a]]
 transpose [] = []

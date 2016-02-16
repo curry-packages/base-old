@@ -2,7 +2,7 @@
 --- Library with some useful operations on lists.
 ---
 --- @author Michael Hanus, Bjoern Peemoeller
---- @version September 2012
+--- @version Februar 2016
 --- @category general
 ------------------------------------------------------------------------------
 
@@ -11,7 +11,7 @@
 module List
   ( elemIndex, elemIndices, find, findIndex, findIndices
   , nub, nubBy, delete, deleteBy, (\\), union, intersect
-  , intersperse, intercalate, transpose, permutations, partition
+  , intersperse, intercalate, transpose, diagonal, permutations, partition
   , group, groupBy, splitOn, split, inits, tails, replace
   , isPrefixOf, isSuffixOf, isInfixOf
   , sortBy, insertBy
@@ -122,6 +122,22 @@ transpose               :: [[a]] -> [[a]]
 transpose []             = []
 transpose ([]     : xss) = transpose xss
 transpose ((x:xs) : xss) = (x : map head xss) : transpose (xs : map tail xss)
+
+--- List diagonalization.
+--- Fairly merges (possibly infinite) list of (possibly infinite) lists.
+---
+--- @param xss - lists of lists
+--- @return fair enumeration of all elements of inner lists of given lists
+---
+diagonal :: [[a]] -> [a]
+diagonal = concat . foldr diags []
+ where
+  diags []     ys = ys
+  diags (x:xs) ys = [x] : merge xs ys
+
+  merge []       ys     = ys
+  merge xs@(_:_) []     = map (:[]) xs
+  merge (x:xs)   (y:ys) = (x:y) : merge xs ys
 
 --- Returns the list of all permutations of the argument.
 permutations           :: [a] -> [[a]]
