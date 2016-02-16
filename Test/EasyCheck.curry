@@ -27,14 +27,14 @@ module Test.EasyCheck (
   label, trivial, classify, collect, collectAs,
 
   -- configurations
-  verboseConfig, quietConfig, easyConfig, setMaxTest, setMaxFail, setEvery,
+  verboseConfig, quietConfig, easyConfig, setMaxTest, setMaxFail,
 
   -- test functions
   checkWithValues0, checkWithValues1, checkWithValues2,
   checkWithValues3, checkWithValues4, checkWithValues5,
   check0, check1, check2, check3, check4, check5,
-  easyCheck, easyCheck0, easyCheck1, easyCheck2, easyCheck3, easyCheck4, easyCheck5,
-  verboseCheck, verboseCheck0, verboseCheck1, verboseCheck2, verboseCheck3, verboseCheck4,
+  easyCheck0, easyCheck1, easyCheck2, easyCheck3, easyCheck4, easyCheck5,
+  verboseCheck0, verboseCheck1, verboseCheck2, verboseCheck3, verboseCheck4,
   verboseCheck5,
 
   valuesOfSearchTree, valuesOf, Result(..), result,
@@ -252,60 +252,43 @@ collectAs name = label . ((name++": ")++) . show
 
 -------------------------------------------------------------------------
 --- The configuration of property testing.
---- The configuration contains the maximum number of tests,
---- the maximum number of condition failures before giving up,
---- an operation that shows the number and arguments of each test,
---- and a status whether it should work quietly.
-data Config = Config Int Int (Int -> [String] -> String) Bool
-
---- Gets the maximum number of tests from a test configuration.
-maxTest :: Config -> Int
-maxTest (Config n _ _ _) = n
+--- The configuration contains
+---  * the maximum number of tests,
+---  * the maximum number of condition failures before giving up,
+---  * an operation that shows the number and arguments of each test,
+---  * a status whether it should work quietly.
+data Config = Config
+  { maxTest :: Int
+  , maxFail :: Int
+  , every   :: Int -> [String] -> String
+  , isQuiet :: Bool
+  }
 
 --- Sets the maximum number of tests in a test configuration.
 setMaxTest :: Int -> Config -> Config
-setMaxTest n (Config _ m f q) = Config n m f q
-
---- Gets the maximum number of condition failures from a test configuration.
-maxFail :: Config -> Int
-maxFail (Config _ n _ _) = n
+setMaxTest n config = config { maxTest = n }
 
 --- Sets the maximum number of condition failures in a test configuration.
 setMaxFail :: Int -> Config -> Config
-setMaxFail m (Config n _ f q) = Config n m f q
+setMaxFail n config = config { maxFail = n }
 
---- Gets the operation that shows the number and arguments of each test
---- from a test configuration.
-every :: Config -> Int -> [String] -> String
-every (Config _ _ f _) = f
-
---- Sets the operation that shows the number and arguments of each test
---- in a test configuration.
-setEvery :: (Int -> [String] -> String) -> Config -> Config
-setEvery f (Config n m _ q) = Config n m f q
-
---- Gets the quiet status from a test configuration.
-isQuiet :: Config -> Bool
-isQuiet (Config _ _ _ q) = q
-
---- Sets the quiet status in a test configuration.
-setQuiet :: Bool -> Config -> Config
-setQuiet b (Config n m f _) = Config n m f b
-
---- The default configuration for EasyCheck which shows some information
+--- The default configuration for EasyCheck shows and deletes the number
 --- for each test.
 easyConfig :: Config
-easyConfig = Config 100 10000
-                    (\n _ -> let s = ' ':show (n+1) in s ++ [ chr 8 | _ <- s ])
-                    False
+easyConfig =
+ Config { maxTest = 100
+        , maxFail = 10000
+        , every = (\n _ -> let s = ' ':show (n+1) in s ++ [ chr 8 | _ <- s ])
+        , isQuiet = False
+        }
 
 --- A verbose configuration which shows the arguments of every test.
 verboseConfig :: Config
-verboseConfig = setEvery (\n xs -> show n ++ ":\n" ++ unlines xs) easyConfig
+verboseConfig = easyConfig { every = (\n xs -> show n ++ ":\n" ++ unlines xs) }
 
 --- A quiet configuration which shows nothing but failed tests.
 quietConfig :: Config
-quietConfig = setQuiet True (setEvery (\_ _ -> "") easyConfig)
+quietConfig = easyConfig { isQuiet = True, every = (\_ _ -> "") }
 
 -------------------------------------------------------------------------
 -- Test Functions
@@ -424,12 +407,6 @@ check5 config msg = check config msg . suc (suc (suc (suc (suc id))))
 --- Checks a unit test according to the default configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-easyCheck :: String -> Prop -> IO Bool
-easyCheck = check easyConfig
-
---- Checks a unit test according to the default configuration
---- and a name for the test (first argument).
---- Returns a flag whether the test was successful.
 easyCheck0 :: String -> Prop -> IO Bool
 easyCheck0 = check0 easyConfig
 
@@ -467,12 +444,6 @@ easyCheck4 = check4 easyConfig
 --- Returns a flag whether the test was successful.
 easyCheck5 :: String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
 easyCheck5 = check5 easyConfig
-
---- Checks a unit test according to the verbose configuration
---- and a name for the test (first argument).
---- Returns a flag whether the test was successful.
-verboseCheck :: String -> Prop -> IO Bool
-verboseCheck = check verboseConfig
 
 --- Checks a unit test according to the verbose configuration
 --- and a name for the test (first argument).
