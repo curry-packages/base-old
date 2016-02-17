@@ -222,12 +222,12 @@ forAllValues c vals f =
   diagonal [[ updArgs (show y:) t | t <- c (f y) ] | y <- vals ]
 
 --- The property `for x p` is satisfied if all values `y` of `x`
---- satiesfy property `p x`.
+--- satisfy property `p x`.
 for :: a -> (a -> Prop) -> Prop
 for x p = forAllValues id (valuesOf x) p
 
 --- The property `for x p` is satisfied if all values `y` of `x`
---- satiesfy property `p x`.
+--- satisfy property `p x`.
 forValues :: [a] -> (a -> Prop) -> Prop
 forValues xs p = forAllValues id xs p
 
