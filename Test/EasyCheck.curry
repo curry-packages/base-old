@@ -16,7 +16,7 @@
 module Test.EasyCheck (
 
   -- test specification:
-  PropIO, yields, sameAs,
+  PropIO, returns, sameReturns,
 
   Config, Test, Prop, (==>), for,
 
@@ -55,7 +55,7 @@ import Sort         ( leqList, leqString, mergeSort )
 
 infix  4 `isSameSet`, `isSubsetOf`, `isSameMSet`
 infix  1 `is`, `isAlways`, `isEventually`, -=-, #, <~>, ~>, <~, <~~>, `trivial`
-infix  1 `yields`, `sameAs`
+infix  1 `returns`, `sameReturns`
 infixr 0 ==>
 
 
@@ -63,15 +63,15 @@ infixr 0 ==>
 --- Abstract type to represent properties involving IO actions.
 data PropIO = PropIO (Config -> String -> IO (Maybe String))
 
---- The property `yields a x` is satisfied if the execution of the
---- I/O action `a` yields the value `x`.
-yields :: IO a -> a -> PropIO
-yields act r = PropIO (testIO act (return r))
+--- The property `returns a x` is satisfied if the execution of the
+--- I/O action `a` returns the value `x`.
+returns :: IO a -> a -> PropIO
+returns act r = PropIO (testIO act (return r))
 
---- The property `sameAs a1 a2` is satisfied if the execution of the
---- I/O actions `a1` and `a2` yields identical values.
-sameAs :: IO a -> IO a -> PropIO
-sameAs a1 a2 = PropIO (testIO a1 a2)
+--- The property `sameReturns a1 a2` is satisfied if the execution of the
+--- I/O actions `a1` and `a2` return identical values.
+sameReturns :: IO a -> IO a -> PropIO
+sameReturns a1 a2 = PropIO (testIO a1 a2)
 
 -------------------------------------------------------------------------
 --- Abstract type to a single test for a property to be checked.
