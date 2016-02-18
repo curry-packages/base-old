@@ -123,7 +123,7 @@ transpose []             = []
 transpose ([]     : xss) = transpose xss
 transpose ((x:xs) : xss) = (x : map head xss) : transpose (xs : map tail xss)
 
---- List diagonalization.
+--- Diagonalization of a list of lists.
 --- Fairly merges (possibly infinite) list of (possibly infinite) lists.
 ---
 --- @param xss - lists of lists

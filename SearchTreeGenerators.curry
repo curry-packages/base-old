@@ -30,13 +30,13 @@
 ------------------------------------------------------------------------------
 
 module SearchTreeGenerators
-  ( genBool, genInt, genChar, genList
+  ( genBool, genNat, genInt, genChar, genList
   , genMaybe, genEither, genUnit, genPair, genTriple, genTuple4, genTuple5
   , genOrdering
   , genCons0, genCons1, genCons2, genCons3, genCons4, genCons5
   , (|||)
   ) where
- 
+
 import SearchTree
 import SearchTreeTraversal
 
@@ -99,21 +99,14 @@ genCons5 c gena1 gena2 gena3 gena4 gena5 =
   valsTo gena4 (\a4 ->
   valsTo gena5 (\a5 -> Value (c a1 a2 a3 a4 a5))))))
 
---- Natural numbers in a binary representation:
-data Nat    = IHi | O Nat | I Nat
-
-nat2int :: Nat -> Int
-nat2int IHi = 1
-nat2int (O n) = 2 * nat2int n
-nat2int (I n) = 2 * nat2int n + 1
+------------------------------------------------------------------------------
+-- Generators for specific types:
 
 --- Generates a search tree for natural numbers:
 genNat :: SearchTree Int
-genNat = valsTo gen (Value . nat2int)
- where
-  gen = Or (Value IHi)
-           (Or (valsTo gen (Value . O))
-               (valsTo gen (Value . I)))
+genNat = Or (Value 1)
+            (Or (valsTo genNat (\n -> Value (2*n)))
+                (valsTo genNat (\n -> Value (2*n+1))))
 
 --- Generates a search tree for integer values.
 genInt :: SearchTree Int
@@ -126,8 +119,13 @@ genBool :: SearchTree Bool
 genBool = Or (Value False) (Value True)
 
 --- Generates a search tree for character values.
+--- In order to obtain readable values, we only generate letters and digits.
 genChar :: SearchTree Char
-genChar = valsTo genNat (Value . chr . (+1))
+genChar = foldr1 Or (map Value chars)
+ where
+   chars = map chr ([65..90] ++ [97..122] ++ [48..57])
+-- or use this for generating all characters:
+-- genChar = valsTo genNat (Value . chr . (+1))
 
 --- Generates a search tree for list values where the search tree for
 --- the elements is given as a parameter.
