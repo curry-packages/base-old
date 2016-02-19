@@ -102,7 +102,7 @@ genCons5 c gena1 gena2 gena3 gena4 gena5 =
 ------------------------------------------------------------------------------
 -- Generators for specific types:
 
---- Generates a search tree for natural numbers:
+--- Generates a search tree for positive natural numbers:
 genNat :: SearchTree Int
 genNat = Or (Value 1)
             (Or (valsTo genNat (\n -> Value (2*n)))
