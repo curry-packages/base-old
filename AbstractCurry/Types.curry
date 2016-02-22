@@ -216,8 +216,12 @@ data CCaseType
   | CFlex  -- flexible case expression
 
 ---------------------------------------------------------------------------
+--- The name of the standard prelude.
+preludeName :: String
+preludeName = "Prelude"
+
 --- Converts a string into a qualified name of the Prelude.
 pre :: String -> QName
-pre f = ("Prelude", f)
+pre f = (preludeName, f)
 
 ---------------------------------------------------------------------------
