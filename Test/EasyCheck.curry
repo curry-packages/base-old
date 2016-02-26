@@ -22,6 +22,7 @@ module Test.EasyCheck (
 
   test, is, isAlways, isEventually, uniquely, always, eventually,
   failing, successful, deterministic, (-=-), (#), (<~>), (~>), (<~), (<~~>),
+  solutionOf,
 
   -- test annotations
   label, trivial, classify, collect, collectAs,
@@ -169,6 +170,12 @@ cond ==> p =
   if True `elem` valuesOf cond
   then p
   else [notest]
+
+--- `solutionOf p` returns (non-deterministically) a solution
+--- of predicate `p`. This operation is useful to test solutions
+--- of predicates.
+solutionOf :: (a -> Bool) -> a
+solutionOf pred = pred x &> x where x free
 
 --- The property `is x p` is satisfied if `x` has a deterministic value
 --- which satisfies `p`.
