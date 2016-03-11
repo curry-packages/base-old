@@ -9,7 +9,7 @@
 --- with KiCS2.
 ---
 --- @author Sebastian Fischer (with extensions by Michael Hanus)
---- @version February 2016
+--- @version March 2016
 --- @category general
 -------------------------------------------------------------------------
 
@@ -40,16 +40,15 @@ module Test.EasyCheck (
 
   valuesOfSearchTree, valuesOf, Result(..), result,
 
-  -- easyCheck', easyCheck1', easyCheck2', easyCheck3', easyCheck4', easyCheck5',
+  --easyCheck', easyCheck1', easyCheck2', easyCheck3', easyCheck4', easyCheck5',
 
   -- operations used by the CurryCheck tool
-  checkPropWithMsg, checkPropIOWithMsg, runPropertyTests
+  checkPropWithMsg, checkPropIOWithMsg
   ) where
 
 import AllSolutions ( getAllValues )
 import Distribution ( curryCompiler )
 import List         ( (\\), delete, diagonal, group, intersperse, nub )
-import Maybe        ( catMaybes )
 import SearchTree   ( SearchTree, someSearchTree )
 import SearchTreeTraversal
 import Sort         ( leqList, leqString, mergeSort )
@@ -666,22 +665,5 @@ catchNDIO msg testact =
      = putStrLn (msg++": FAILURE: computation is non-deterministic") >>
        return (Just msg)
     | otherwise = head results
-
---- Runs a sequence of property tests. Outputs the messages of the failed tests
---- messages and returns exit status 0 if all tests are successful,
---- otherwise status 1.
---- This operation is used by the currycheck tool.
-runPropertyTests :: [IO (Maybe String)] -> IO Int
-runPropertyTests props = do
-  propresults <- sequenceIO props
-  let failedmsgs = catMaybes propresults
-  if null failedmsgs
-   then return 0
-   else do putStrLn $ line ++
-                      "\nFAILURE OCCURRED IN SOME TESTS:\n" ++
-                      unlines failedmsgs ++ line
-           return 1
- where
-   line = take 78 (repeat '=')
 
 -------------------------------------------------------------------------
