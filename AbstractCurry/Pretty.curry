@@ -21,7 +21,7 @@ module AbstractCurry.Pretty
 
     , ppMName, ppExports, ppImports
 
-    , ppCOpDecl, ppCTypeDecl, ppCFuncDecl, ppCFuncDeclWithoutSig
+    , ppCOpDecl, ppCTypeDecl, ppCFuncDecl, ppCFuncDeclWithoutSig, ppCRhs
     , ppCFuncSignature, ppCTypeExpr, ppCPattern, ppCLiteral, ppCExpr
     , ppCStatement, ppQFunc, ppFunc, ppQType, ppType)
     where
@@ -472,7 +472,7 @@ ppCRhs d opts rhs = case rhs of
 
 --- Like 'ppCRhs', but do not pretty-print local declarations.
 --- Instead give caller the choice how to handle the declarations. For example
---- the function 'ppCRule' uses this to prevent local declarationsfrom being
+--- the function 'ppCRule' uses this to prevent local declarations from being
 --- further indented.
 ppFuncRhs :: Options -> CRhs -> Doc
 {- No further enrichment of options necessary -- it was done in 'ppCRule' -}

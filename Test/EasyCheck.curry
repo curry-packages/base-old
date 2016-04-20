@@ -5,11 +5,10 @@
 --- The tool `currycheck` automatically executes tests defined with
 --- this library. EasyCheck supports the definition of unit tests
 --- (also for I/O operations) and property tests parameterized
---- over some arguments. The latter kind of tests can only be executed
---- with KiCS2.
+--- over some arguments.
 ---
 --- @author Sebastian Fischer (with extensions by Michael Hanus)
---- @version March 2016
+--- @version April 2016
 --- @category general
 -------------------------------------------------------------------------
 
@@ -30,6 +29,8 @@ module Test.EasyCheck (
   -- configurations
   verboseConfig, quietConfig, easyConfig, setMaxTest, setMaxFail,
 
+  valuesOfSearchTree, valuesOf, Result(..), result,
+
   -- test functions
   checkWithValues0, checkWithValues1, checkWithValues2,
   checkWithValues3, checkWithValues4, checkWithValues5,
@@ -37,8 +38,6 @@ module Test.EasyCheck (
   easyCheck0, easyCheck1, easyCheck2, easyCheck3, easyCheck4, easyCheck5,
   verboseCheck0, verboseCheck1, verboseCheck2, verboseCheck3, verboseCheck4,
   verboseCheck5,
-
-  valuesOfSearchTree, valuesOf, Result(..), result,
 
   --easyCheck', easyCheck1', easyCheck2', easyCheck3', easyCheck4', easyCheck5',
 
@@ -73,6 +72,22 @@ returns act r = PropIO (testIO act (return r))
 sameReturns :: IO a -> IO a -> PropIO
 sameReturns a1 a2 = PropIO (testIO a1 a2)
 
+-- Test an IO property, i.e., compare the results of two IO actions.
+testIO :: IO a -> IO a -> Config -> String -> IO (Maybe String)
+testIO act1 act2 config msg =
+   catch (do r1 <- act1
+             r2 <- act2
+             if r1 == r2
+               then putStrNQ (msg++": OK\n") >>  return Nothing
+               else do putStrLn $ msg++": FAILED!\nResults: " ++ show (r1,r2)
+                       return (Just msg)
+         )
+         (\err -> do putStrLn $ msg++": EXECUTION FAILURE:\n" ++ showError err
+                     return (Just msg)
+         )
+ where
+  putStrNQ = unless (isQuiet config) . putStr
+
 -------------------------------------------------------------------------
 --- Abstract type to a single test for a property to be checked.
 data Test = Test Result [String] [String]
@@ -81,7 +96,10 @@ data Test = Test Result [String] [String]
 data Result = Undef | Ok | Falsified [String] | Ambigious [Bool] [String]
 
 --- Abstract type to represent properties to be checked.
-type Prop = [Test]
+data Prop = Prop [Test]
+
+testsOf :: Prop -> [Test]
+testsOf (Prop ts) = ts
 
 notest :: Test
 notest = Test Undef [] []
@@ -113,7 +131,7 @@ updStamp upd (Test r a s) = Test r a (upd s)
 --- the constructed property is satisfied or falsified for the given
 --- expression.
 test :: a -> ([a] -> Bool) -> Prop
-test x f = [setResult res notest]
+test x f = Prop [setResult res notest]
  where
   xs  = valuesOf x
   res = case valuesOf (f xs) of
@@ -168,7 +186,7 @@ isSameMSet :: [a] -> [a] -> Bool
 cond ==> p =
   if True `elem` valuesOf cond
   then p
-  else [notest]
+  else Prop [notest]
 
 --- `solutionOf p` returns (non-deterministically) a solution
 --- of predicate `p`. This operation is useful to test solutions
@@ -221,11 +239,11 @@ x # n = test x ((n==) . length . nub)
 
 forAll :: (b -> Prop) -> a -> (a -> b) -> Prop
 forAll c x f =
-  diagonal [[ updArgs (show y:) t | t <- c (f y) ] | y <- valuesOf x ]
+ Prop (diagonal [[ updArgs (show y:) t | t <- testsOf (c (f y)) ] | y <- valuesOf x ])
 
 forAllValues :: (b -> Prop) -> [a] -> (a -> b) -> Prop
 forAllValues c vals f =
-  diagonal [[ updArgs (show y:) t | t <- c (f y) ] | y <- vals ]
+ Prop (diagonal [[ updArgs (show y:) t | t <- testsOf (c (f y)) ] | y <- vals ])
 
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satisfy property `p x`.
@@ -241,7 +259,7 @@ forValues xs p = forAllValues id xs p
 -- Test Annotations
 
 label :: String -> Prop -> Prop
-label = map . updStamp . (:)
+label l (Prop ts) = Prop (map (updStamp (l:)) ts)
 
 classify :: Bool -> String -> Prop -> Prop
 classify True  name = label name
@@ -297,14 +315,32 @@ quietConfig :: Config
 quietConfig = easyConfig { isQuiet = True, every = (\_ _ -> "") }
 
 -------------------------------------------------------------------------
+-- Value generation
+
+--- Extracts values of a search tree according to a given strategy
+--- (here: randomized diagonalization of levels with flattening).
+valuesOfSearchTree :: SearchTree a -> [a]
+valuesOfSearchTree
+  -- = depthDiag            
+  -- = rndDepthDiag 0       
+  -- = levelDiag            
+  -- = rndLevelDiag 0       
+  = rndLevelDiagFlat 5 0 
+  -- = allValuesB           
+
+--- Computes the list of all values of the given argument
+--- according to a given strategy (here:
+--- randomized diagonalization of levels with flattening).
+valuesOf :: a -> [a]
+valuesOf = valuesOfSearchTree . someSearchTree . (id $##)
+
+-------------------------------------------------------------------------
 -- Test Functions
 
+-- Note that this does not work with PAKCS! However, if CurryCheck is used,
+-- this operation is not replaced by explicit generator operations.
 suc :: (a -> Prop) -> (b -> a) -> Prop
-suc n =
-  if curryCompiler == "kics2"
-  then forAllValues n (valuesOf unknown)
-  else error
-    "Test.EasyCheck: tests with arbitrary values not yet implemented in PAKCS!"
+suc n = forAllValues n (valuesOf unknown)
 
 --- Checks a unit test with a given configuration (first argument)
 --- and a name for the test (second argument).
@@ -494,7 +530,7 @@ verboseCheck5 = check5 verboseConfig
 
 
 check :: Config -> String -> Prop -> IO Bool
-check config msg p = tests config msg p 0 0 []
+check config msg (Prop ts) = tests config msg ts 0 0 []
 
 tests :: Config -> String -> [Test] -> Int -> Int -> [[String]] -> IO Bool
 tests config msg [] ntest _ stamps =
@@ -529,7 +565,7 @@ tests config msg (t:ts) ntest nfail stamps
           return False
 
 check' :: Config -> Prop -> Result
-check' config p = tests' config p 0 0 []
+check' config (Prop ts) = tests' config ts 0 0 []
 
 tests' :: Config -> [Test] -> Int -> Int -> [[String]] -> Result
 tests' config (t:ts) ntest nfail stamps
@@ -596,23 +632,6 @@ leqPair leqa leqb (x1,y1) (x2,y2)
   | x1 == x2  = leqb y1 y2
   | otherwise = leqa x1 x2
 
---- Extracts values of a search tree according to a given strategy
---- (here: randomized diagonalization of levels with flattening).
-valuesOfSearchTree :: SearchTree a -> [a]
-valuesOfSearchTree
-  -- = depthDiag            
-  -- = rndDepthDiag 0       
-  -- = levelDiag            
-  -- = rndLevelDiag 0       
-  = rndLevelDiagFlat 5 0 
-  -- = allValuesB           
-
---- Computes the list of all values of the given argument
---- according to a given strategy (here:
---- randomized diagonalization of levels with flattening).
-valuesOf :: a -> [a]
-valuesOf = valuesOfSearchTree . someSearchTree . (id $##)
-
 -------------------------------------------------------------------------
 --- Safely checks a property, i.e., catch all exceptions that might occur
 --- and return appropriate error message in case of a failed test.
@@ -630,22 +649,6 @@ checkPropIOWithMsg :: Config -> String -> PropIO -> IO (Maybe String)
 checkPropIOWithMsg config msg p = catchNDIO msg $
   case p of PropIO propio -> propio config msg
 
--- Test an IO property, i.e., compare the results of two IO actions.
-testIO :: IO a -> IO a -> Config -> String -> IO (Maybe String)
-testIO act1 act2 config msg =
-   catch (do r1 <- act1
-             r2 <- act2
-             if r1 == r2
-               then putStrNQ (msg++": OK\n") >>  return Nothing
-               else do putStrLn $ msg++": FAILED!\nResults: " ++ show (r1,r2)
-                       return (Just msg)
-         )
-         (\err -> do putStrLn $ msg++": EXECUTION FAILURE:\n" ++ showError err
-                     return (Just msg)
-         )
- where
-  putStrNQ = unless (isQuiet config) . putStr
-
 -- Execute I/O action for assertion checking and report any failure
 -- or non-determinism.
 catchNDIO :: String -> IO (Maybe String) -> IO (Maybe String)
@@ -654,7 +657,9 @@ catchNDIO msg testact =
   then -- specific handling for KiCS2 since it might report non-det errors
        -- even if there is only one result value, e.g., in functional patterns
        getAllValues testact >>= checkIOActions
-  else catch testact
+  else -- For PAKCS we need a different code since it is more strict
+       -- in encapsulating search
+       catch testact
              (\e -> putStrLn (msg++": EXECUTION FAILURE: "++showError e) >>
                     return (Just msg))
  where

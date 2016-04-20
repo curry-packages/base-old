@@ -3,7 +3,7 @@
 --- in AbstractCurry programs, i.e., it provides a collection of
 --- selector functions for AbstractCurry.
 ---
---- @version January 2016
+--- @version April 2016
 --- @category meta
 ------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ module AbstractCurry.Select where
 --     , isBaseType, isPolyType, isFunctionalType, isIOType, isIOReturnType
 --     , argTypes, resultType, tvarsOfType, modsOfType
 --
---     , funcName, funcArity, funcVis, funcType
+--     , funcName, funcArity, funcVis, funcType, funcRules, ruleRHS
 --
 --     , varsOfPat, varsOfExp, varsOfRhs, varsOfStat, varsOfLDecl
 --     , varsOfFDecl, varsOfRule
@@ -173,6 +173,15 @@ funcVis (CmtFunc _ _ _ vis _ _) = vis
 funcType :: CFuncDecl -> CTypeExpr
 funcType (CFunc     _ _ _ texp _) = texp
 funcType (CmtFunc _ _ _ _ texp _) = texp
+
+--- Returns the rules of a given function declaration.
+funcRules :: CFuncDecl -> [CRule]
+funcRules (CFunc     _ _ _ _ rules) = rules
+funcRules (CmtFunc _ _ _ _ _ rules) = rules
+
+--- Returns the right-hand side of a rules.
+ruleRHS :: CRule -> CRhs
+ruleRHS (CRule _ rhs) = rhs
 
 ------------------------------------------------------------------------
 -- Operations to compute the variables occurring in a pattern or expression:
