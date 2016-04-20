@@ -8,15 +8,15 @@
 --- In practice, these conditions are not enforced.
 ---
 --- @author Sergio Antoy
---- @version August 2004
+--- @version April 2016
 --- @category general
---  Fri Aug 20 11:04:22 MEST 2004
 ------------------------------------------------------------------------------
 
-module Combinatorial(permute, subset, splitSet,
+module Combinatorial(permute, subset, allSubsets, splitSet,
                      sizedSubset, partition) where
 
 import SetFunctions
+import Test.EasyCheck
 
 ------------------------------------------------------------------
 --                       Public Operations
@@ -34,6 +34,10 @@ permute (x:xs) = ndinsert (permute xs)
     where ndinsert [] = [x]
           ndinsert (y:ys) = (x:y:ys) ? (y:ndinsert ys)
 
+permute1234 = permute [1,2,3,4] ~> [1,3,4,2]
+permLength xs = length (permute xs) <~> length xs
+
+
 --- Compute any sublist of a list.
 --- The sublist contains some of the elements of the list in the same order.
 --- For example, [1,2,3,4] may give [1,3], and
@@ -47,14 +51,20 @@ subset []     = []
 subset (x:xs) = x:subset xs
 subset (_:xs) =   subset xs
 
+subset1234 = subset [1,2,3,4] ~> [1,3]
+subset123  = subset [1,2,3] <~> ([1,2,3]?[1,2]?[1,3]?[1]?[2,3]?[2]?[3]?[])
+
+
 --- Compute all the sublists of a list.
---- For example, [1,2,3] gives [[1,2,3],[1,2],[1,3],[1],[2,3],[2],[3],[]].
 ---
 --- @param l - The list.
 --- @return All the sublists of the argument.
 
 allSubsets      :: [a] -> [[a]]
 allSubsets list = sortValues (set1 subset list)
+
+allSubsets123 = allSubsets [1,2,3] -=- [[],[1],[1,2],[1,2,3],[1,3],[2],[2,3],[3]]
+
 
 --- Split a list into any two sublists.
 --- For example, [1,2,3,4] may give ([1,3,4],[2]).
@@ -66,12 +76,15 @@ splitSet    :: [a] -> ([a],[a])
 splitSet [] = ([],[])
 splitSet (x:xs) = let (u,v) = splitSet xs in (x:u,v) ? (u,x:v)
 
+splitSet1234 = splitSet [1,2,3,4] ~> ([1,3,4],[2])
+
+
 --- Compute any sublist of fixed length of a list.
---- Similar to <code>subset</code>, but the length of the result is fixed.
+--- Similar to 'subset', but the length of the result is fixed.
 ---
 --- @param c - The length of the output sublist.
 --- @param l - The input list.
---- @return A sublist of <code>l</code> of length <code>c</code>.
+--- @return A sublist of `l` of length `c`.
 
 sizedSubset     :: Int -> [a] -> [a]
 sizedSubset c l = if c == 0 then [] else aux l
@@ -94,5 +107,8 @@ partition (x:xs) = insert x (partition xs)
     where insert e [] = [[e]]
           insert e (y:ys) = ((e:y):ys) ? (y:insert e ys)
 
+partition1234 = partition [1,2,3,4] ~> [[4],[2,3],[1]]
+partition123  = partition [1,2,3] <~>
+                ([[1,2,3]] ? [[2,3],[1]] ? [[1,3],[2]] ? [[3],[1,2]] ? [[3],[2],[1]])
 
 -- end module Combinatorial
