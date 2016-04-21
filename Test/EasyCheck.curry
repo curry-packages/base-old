@@ -21,7 +21,7 @@ module Test.EasyCheck (
   -- test specification:
   PropIO, returns, sameReturns,
 
-  Config(..), Test, Prop, (==>), for,
+  Test, Prop, (==>), for,
 
   test, is, isAlways, isEventually, uniquely, always, eventually,
   failing, successful, deterministic, (-=-), (#), (<~>), (~>), (<~), (<~~>),
@@ -30,13 +30,11 @@ module Test.EasyCheck (
   -- test annotations
   label, trivial, classify, collect, collectAs,
 
-  -- configurations
-  verboseConfig, quietConfig, easyConfig, setMaxTest, setMaxFail,
-
-  valuesOfSearchTree, valuesOf, Result(..), result,
+  -- enumerating values
+  valuesOfSearchTree, valuesOf,
 
   -- for EasyCheckExec
-  forAllValues, args, stamp, testsOf, ioTestOf
+  Result(..), result, args, updArgs, stamp, testsOf, ioTestOf, forAllValues
 
   ) where
 
@@ -51,7 +49,7 @@ infixr 0 ==>
 
 -------------------------------------------------------------------------
 --- Abstract type to represent properties involving IO actions.
-data PropIO = PropIO (Config -> String -> IO (Maybe String))
+data PropIO = PropIO (Bool -> String -> IO (Maybe String))
 
 --- The property `returns a x` is satisfied if the execution of the
 --- I/O action `a` returns the value `x`.
@@ -64,12 +62,12 @@ sameReturns :: IO a -> IO a -> PropIO
 sameReturns a1 a2 = PropIO (testIO a1 a2)
 
 --- Extracts the tests of an I/O property (used by the test runner).
-ioTestOf :: PropIO -> (Config -> String -> IO (Maybe String))
+ioTestOf :: PropIO -> (Bool -> String -> IO (Maybe String))
 ioTestOf (PropIO t) = t
 
 -- Test an IO property, i.e., compare the results of two IO actions.
-testIO :: IO a -> IO a -> Config -> String -> IO (Maybe String)
-testIO act1 act2 config msg =
+testIO :: IO a -> IO a -> Bool -> String -> IO (Maybe String)
+testIO act1 act2 quiet msg =
    catch (do r1 <- act1
              r2 <- act2
              if r1 == r2
@@ -81,29 +79,35 @@ testIO act1 act2 config msg =
                      return (Just msg)
          )
  where
-  putStrNQ = unless (isQuiet config) . putStr
+  putStrNQ = unless quiet . putStr
 
 -------------------------------------------------------------------------
 --- Abstract type to represent a single test for a property to be checked.
+--- A test consists of the result computed for this test,
+--- the arguments used for this test, and the labels possibly assigned
+--- to this test by annotating properties.
 data Test = Test Result [String] [String]
 
 --- Data type to represent the result of checking a property.
 data Result = Undef | Ok | Falsified [String] | Ambigious [Bool] [String]
 
 --- Abstract type to represent properties to be checked.
+--- Basically, it contains all tests to be executed to check the property.
 data Prop = Prop [Test]
 
 --- Extracts the tests of a property (used by the test runner).
 testsOf :: Prop -> [Test]
 testsOf (Prop ts) = ts
 
+--- An empty test.
 notest :: Test
 notest = Test Undef [] []
 
---- Extracts the result of a single test.
+--- Extracts the result of a test.
 result :: Test -> Result
 result (Test r _ _) = r
 
+--- Set the result of a test.
 setResult :: Result -> Test -> Test
 setResult res (Test _ s a) = Test res a s
 
@@ -111,12 +115,15 @@ setResult res (Test _ s a) = Test res a s
 args :: Test -> [String]
 args  (Test _ a _) = a
 
+--- Extracts the labels of a test.
 stamp :: Test -> [String]
 stamp (Test _ _ s) = s
 
+--- Updates the arguments of a test.
 updArgs :: ([String] -> [String]) -> Test -> Test
 updArgs  upd (Test r a s) = Test r (upd a) s
 
+--- Updates the labels of a test.
 updStamp :: ([String] -> [String]) -> Test -> Test
 updStamp upd (Test r a s) = Test r a (upd s)
 
@@ -235,77 +242,50 @@ deterministic x = x `is` const True
 (#) :: _ -> Int -> Prop
 x # n = test x ((n==) . length . nub)
 
-forAll :: (b -> Prop) -> a -> (a -> b) -> Prop
-forAll c x f =
- Prop (diagonal [[ updArgs (show y:) t | t <- testsOf (c (f y)) ] | y <- valuesOf x ])
-
-forAllValues :: (b -> Prop) -> [a] -> (a -> b) -> Prop
-forAllValues c vals f =
- Prop (diagonal [[ updArgs (show y:) t | t <- testsOf (c (f y)) ] | y <- vals ])
-
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satisfy property `p y`.
 for :: a -> (a -> Prop) -> Prop
 for x p = forAllValues id (valuesOf x) p
 
+--- Only for internal use by the test runner.
+forAllValues :: (b -> Prop) -> [a] -> (a -> b) -> Prop
+forAllValues c vals f =
+ Prop $
+  diagonal
+    [[ updArgs (show y:) t | let Prop ts = c (f y), t <- ts ] | y <- vals ]
+
 -------------------------------------------------------------------------
 -- Test Annotations
 
+--- Assign a label to a property.
+--- All labeled tests are counted and shown at the end.
 label :: String -> Prop -> Prop
 label l (Prop ts) = Prop (map (updStamp (l:)) ts)
 
+--- Assign a label to a property if the first argument is `True`.
+--- All labeled tests are counted and shown at the end.
+--- Hence, this combinator can be used to classify tests:
+---
+---     multIsComm x y = classify (x<0 || y<0) "Negative" $ x*y -=- y*x
+---
 classify :: Bool -> String -> Prop -> Prop
 classify True  name = label name
 classify False _    = id
 
+--- Assign the label "trivial" to a property if the first argument is `True`.
+--- All labeled tests are counted and shown at the end.
 trivial :: Bool -> Prop -> Prop
 trivial = (`classify` "trivial")
 
+--- Assign a label showing the given argument to a property.
+--- All labeled tests are counted and shown at the end.
 collect :: a -> Prop -> Prop
 collect = label . show
 
+--- Assign a label showing a given name and the given argument to a property.
+--- All labeled tests are counted and shown at the end.
 collectAs :: String -> a -> Prop -> Prop
 collectAs name = label . ((name++": ")++) . show
-
--------------------------------------------------------------------------
---- The configuration of property testing.
---- The configuration contains
----  * the maximum number of tests,
----  * the maximum number of condition failures before giving up,
----  * an operation that shows the number and arguments of each test,
----  * a status whether it should work quietly.
-data Config = Config
-  { maxTest :: Int
-  , maxFail :: Int
-  , every   :: Int -> [String] -> String
-  , isQuiet :: Bool
-  }
-
---- Sets the maximum number of tests in a test configuration.
-setMaxTest :: Int -> Config -> Config
-setMaxTest n config = config { maxTest = n }
-
---- Sets the maximum number of condition failures in a test configuration.
-setMaxFail :: Int -> Config -> Config
-setMaxFail n config = config { maxFail = n }
-
---- The default configuration for EasyCheck shows and deletes the number
---- for each test.
-easyConfig :: Config
-easyConfig =
- Config { maxTest = 100
-        , maxFail = 10000
-        , every = (\n _ -> let s = ' ':show (n+1) in s ++ [ chr 8 | _ <- s ])
-        , isQuiet = False
-        }
-
---- A verbose configuration which shows the arguments of every test.
-verboseConfig :: Config
-verboseConfig = easyConfig { every = (\n xs -> show n ++ ":\n" ++ unlines xs) }
-
---- A quiet configuration which shows nothing but failed tests.
-quietConfig :: Config
-quietConfig = easyConfig { isQuiet = True, every = (\_ _ -> "") }
 
 -------------------------------------------------------------------------
 -- Value generation

@@ -12,6 +12,9 @@
 
 module Test.EasyCheckExec (
 
+  -- configurations
+  Config(..), verboseConfig, quietConfig, easyConfig, setMaxTest, setMaxFail,
+
   -- test functions
   checkWithValues0, checkWithValues1, checkWithValues2,
   checkWithValues3, checkWithValues4, checkWithValues5,
@@ -31,6 +34,46 @@ import Distribution ( curryCompiler )
 import List         ( group, intersperse, nub )
 import Sort         ( leqList, leqString, mergeSort )
 import Test.EasyCheck
+
+-------------------------------------------------------------------------
+--- The configuration of property testing.
+--- The configuration contains
+---  * the maximum number of tests,
+---  * the maximum number of condition failures before giving up,
+---  * an operation that shows the number and arguments of each test,
+---  * a status whether it should work quietly.
+data Config = Config
+  { maxTest :: Int
+  , maxFail :: Int
+  , every   :: Int -> [String] -> String
+  , isQuiet :: Bool
+  }
+
+--- Sets the maximum number of tests in a test configuration.
+setMaxTest :: Int -> Config -> Config
+setMaxTest n config = config { maxTest = n }
+
+--- Sets the maximum number of condition failures in a test configuration.
+setMaxFail :: Int -> Config -> Config
+setMaxFail n config = config { maxFail = n }
+
+--- The default configuration for EasyCheck shows and deletes the number
+--- for each test.
+easyConfig :: Config
+easyConfig =
+ Config { maxTest = 100
+        , maxFail = 10000
+        , every = (\n _ -> let s = ' ':show (n+1) in s ++ [ chr 8 | _ <- s ])
+        , isQuiet = False
+        }
+
+--- A verbose configuration which shows the arguments of every test.
+verboseConfig :: Config
+verboseConfig = easyConfig { every = (\n xs -> show n ++ ":\n" ++ unlines xs) }
+
+--- A quiet configuration which shows nothing but failed tests.
+quietConfig :: Config
+quietConfig = easyConfig { isQuiet = True, every = (\_ _ -> "") }
 
 -------------------------------------------------------------------------
 -- Test Functions
@@ -247,7 +290,7 @@ tests config msg (t:ts) ntest nfail stamps
       putStr (every config ntest (args t))
       case result t of
         Undef -> tests config msg ts ntest (nfail+1) stamps
-        Ok    -> tests config msg ts (ntest+1) nfail (stamp t:stamps)
+        Ok    -> tests config msg ts (ntest+1) nfail (stamp t : stamps)
         Falsified results -> do
           putStr $
             msg ++ " failed\n" ++
@@ -349,7 +392,8 @@ checkPropWithMsg msg execprop = catchNDIO msg $ do
 --- and return appropriate error message in case of a failed test.
 --- This operation is used by the currycheck tool.
 checkPropIOWithMsg :: Config -> String -> PropIO -> IO (Maybe String)
-checkPropIOWithMsg config msg p = catchNDIO msg $ (ioTestOf p) config msg
+checkPropIOWithMsg config msg p =
+  catchNDIO msg $ (ioTestOf p) (isQuiet config) msg
 
 -- Execute I/O action for assertion checking and report any failure
 -- or non-determinism.
