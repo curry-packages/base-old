@@ -3,16 +3,24 @@
 --- functional lists.
 ---
 --- @author  Bjoern Peemoeller
---- @version March 2015
+--- @version April 2016
 --- @category general
 --------------------------------------------------------------------------------
-module ShowS where
+module ShowS ( ShowS
+             , showString, showChar, showParen, shows
+             , space, nl, sep, replicateS, concatS
+             ) where
+
+import Test.EasyCheck
 
 type ShowS = String -> String
 
 --- Prepend a string
 showString :: String -> ShowS
 showString s = (s ++)
+
+showStringIsString s = showString s [] -=- s
+showStringConcat s1 s2 = (showString s1 . showString s2) [] -=- s1++s2
 
 --- Prepend a single character
 showChar :: Char -> ShowS
@@ -47,7 +55,12 @@ replicateS n funcS
   | n <= 0    = id
   | otherwise = funcS . replicateS (n - 1) funcS
 
+replicateSIsConRep n s =
+  n>=0 ==> replicateS n (showString s) [] -=- concat (replicate n s)
+
 --- Concatenate a list of `ShowS`
 concatS :: [ShowS] -> ShowS
 concatS []       = id
 concatS xs@(_:_) = foldr1 (\ f g -> f . g) xs
+
+concatSIsConcat xs = concatS (map showString xs) [] -=- concat xs
