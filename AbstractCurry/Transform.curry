@@ -8,7 +8,7 @@
 --- `renameCurryModule` to rename an AbstractCurry module.
 ---
 --- @author Michael Hanus
---- @version February 2016
+--- @version April 2016
 --- @category meta
 ----------------------------------------------------------------------------
 
@@ -340,8 +340,8 @@ renameCurryModule :: String -> CurryProg -> CurryProg
 renameCurryModule newname prog =
   updCProgName (const newname) (updQNamesInCProg rnm prog)
  where
-  rnm (mod,n) | mod == progName prog = (newname,n)
-              | otherwise            = (mod,n)
+  rnm mn@(mod,n) | mod == progName prog = (newname,n)
+                 | otherwise            = mn
 
 --- Updates all qualified names in a Curry program.
 updQNamesInCProg :: Update CurryProg QName
