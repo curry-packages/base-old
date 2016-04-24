@@ -17,7 +17,7 @@ module Combinatorial(permute, subset, allSubsets, splitSet,
 
 import List(sum)
 import SetFunctions
-import Test.EasyCheck
+import Test.Prop
 
 ------------------------------------------------------------------------------
 --                       Public Operations

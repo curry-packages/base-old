@@ -16,7 +16,7 @@ module Sort( sort, sortBy, sorted, sortedBy
            ) where
 
 import Char
-import Test.EasyCheck
+import Test.Prop
 
 --- The default sorting operation, mergeSort, with standard ordering `<=`.
 sort :: [a] -> [a]

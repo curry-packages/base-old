@@ -11,7 +11,7 @@ module ShowS ( ShowS
              , space, nl, sep, replicateS, concatS
              ) where
 
-import Test.EasyCheck
+import Test.Prop
 
 type ShowS = String -> String
 
