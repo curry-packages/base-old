@@ -32,7 +32,7 @@ module Test.EasyCheckExec (
 import AllSolutions ( getAllValues )
 import Distribution ( curryCompiler )
 import List         ( group, intersperse, nub )
-import Sort         ( leqList, leqString, mergeSort )
+import Sort         ( leqList, leqString, sort )
 import Test.EasyCheck
 
 -------------------------------------------------------------------------
@@ -353,10 +353,10 @@ done config mesg ntest stamps status = do
   table = display
         . map entry
         . reverse
-        . mergeSort (leqPair (<=) (leqList leqString))
+        . sort (leqPair (<=) (leqList leqString))
         . map pairLength
         . group
-        . mergeSort (leqList leqString)
+        . sort (leqList leqString)
         . filter (not . null)
         $ stamps
 
@@ -371,7 +371,7 @@ done config mesg ntest stamps status = do
   percentage n _ = let s = show n -- ((100*n)`div`m)
                     in replicate (5-length s) ' ' ++ s -- ++ "%"
 
--- Auxiliary Functions
+-- Auxiliary operations
 
 leqPair :: (a -> a -> Bool) -> (b -> b -> Bool) -> ((a,b) -> (a,b) -> Bool)
 leqPair leqa leqb (x1,y1) (x2,y2)
