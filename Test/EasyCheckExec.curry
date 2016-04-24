@@ -32,7 +32,7 @@ module Test.EasyCheckExec (
 import AllSolutions ( getAllValues )
 import Distribution ( curryCompiler )
 import List         ( group, intersperse, nub )
-import Sort         ( leqList, leqString, sort )
+import Sort         ( leqList, leqString, sortBy )
 import Test.EasyCheck
 
 -------------------------------------------------------------------------
@@ -353,10 +353,10 @@ done config mesg ntest stamps status = do
   table = display
         . map entry
         . reverse
-        . sort (leqPair (<=) (leqList leqString))
+        . sortBy (leqPair (<=) (leqList leqString))
         . map pairLength
         . group
-        . sort (leqList leqString)
+        . sortBy (leqList leqString)
         . filter (not . null)
         $ stamps
 
