@@ -50,7 +50,7 @@ module SetFunctions
   ) where
 
 import Findall
-import Sort(mergeSort)
+import Sort(mergeSortBy)
 import List(delete)
 
 --- Combinator to transform a 0-ary function into a corresponding set function.
@@ -243,6 +243,6 @@ sortValues = sortValuesBy (<=)
 --- In order to ensure that the result of this operation is independent of the
 --- evaluation order, the given ordering must be a total order.
 sortValuesBy :: (a -> a -> Bool) -> Values a -> [a]
-sortValuesBy leq (Values _ s) = mergeSort leq s
+sortValuesBy leq (Values _ s) = mergeSortBy leq s
 
 ------------------------------------------------------------------------

@@ -84,7 +84,7 @@ module GraphInductive (
   UGr) where
 
 import FiniteMap
-import Sort (mergeSort)
+import Sort (mergeSortBy)
 import Maybe 
 
 infixr 5 .:
@@ -570,7 +570,7 @@ updAdj g ((l,v):vs) f
    | elemFM v g = updAdj (updFM g v (f l)) vs f
    | otherwise  = error ("Edge Exception, Node: "++show v)
 
-sortBy p = mergeSort (\x y -> let pxy = p x y in pxy==EQ||pxy==LT)
+sortBy p = mergeSortBy (\x y -> let pxy = p x y in pxy==EQ||pxy==LT)
 
 
 

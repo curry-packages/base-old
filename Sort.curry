@@ -7,8 +7,9 @@
 --- @category algorithm
 ------------------------------------------------------------------------------
 
-module Sort( sort, sorted, sortedBy
-           , permSort, insertionSort, quickSort, mergeSort
+module Sort( sort, sortBy, sorted, sortedBy
+           , permSort, permSortBy, insertionSort, insertionSortBy
+           , quickSort, quickSortBy, mergeSort, mergeSortBy
            , cmpChar, cmpList, cmpString
            , leqChar, leqCharIgnoreCase, leqList
            , leqString, leqStringIgnoreCase, leqLexGerman
@@ -17,21 +18,22 @@ module Sort( sort, sorted, sortedBy
 import Char
 import Test.EasyCheck
 
---- The preferred sorting operation: mergeSort
-sort :: (a -> a -> Bool) -> [a] -> [a]
-sort = mergeSort
+--- The default sorting operation, mergeSort, with standard ordering `<=`.
+sort :: [a] -> [a]
+sort xs = mergeSort xs
 
--- Properties:
--- Input and output lists have same length and output is sorted.
-sortPost :: [Int] -> Prop
-sortPost xs =
-  let ys = sort (<=) xs
-   in always $ length xs == length ys && sorted ys
+-- Postcondition: input and output lists have same length and output is sorted.
+sort'post :: [a] -> [a] -> Bool
+sort'post xs ys = length xs == length ys && sorted ys
 
 -- Specification via permutation sort:
-sortSpec :: [Int] -> Prop
-sortSpec xs = sort (<=) xs <~> permSort (<=) xs
+sort'spec :: [a] -> [a]
+sort'spec xs = permSort xs
 
+
+--- The default sorting operation: mergeSort
+sortBy :: (a -> a -> Bool) -> [a] -> [a]
+sortBy = mergeSortBy
 
 --- `sorted xs` is satisfied if the elements `xs` are in ascending order.
 sorted :: [a] -> Bool
@@ -46,11 +48,19 @@ sortedBy leq (x:y:ys) = leq x y && sortedBy leq (y:ys)
 
 
 ------------------------------------------------------------------------------
---- Permutation sort. Sorts a list by finding a sorted permutation
+--- Permutation sort with standard ordering `<=`.
+--- Sorts a list by finding a sorted permutation
 --- of the input. This is not a usable way to sort a list but it can be used
 --- as a specification of other sorting algorithms.
-permSort  :: (a -> a -> Bool) -> [a] -> [a]
-permSort leq xs | ys == perm xs && sortedBy leq ys = ys  where ys free
+permSort  :: [a] -> [a]
+permSort xs = permSortBy (<=) xs
+
+--- Permutation sort with ordering as first parameter.
+--- Sorts a list by finding a sorted permutation
+--- of the input. This is not a usable way to sort a list but it can be used
+--- as a specification of other sorting algorithms.
+permSortBy  :: (a -> a -> Bool) -> [a] -> [a]
+permSortBy leq xs | ys == perm xs && sortedBy leq ys = ys  where ys free
 
 --- Computes a permutation of a list.
 perm []     = []
@@ -59,58 +69,78 @@ perm (x:xs) = insert (perm xs)
        insert (y:ys) = y : insert ys
 
 ------------------------------------------------------------------------------
---- Insertion sort.
+--- Insertion sort with standard ordering `<=`.
 --- The list is sorted by repeated sorted insertion of the elements
 --- into the already sorted part of the list.
-insertionSort  :: (a -> a -> Bool) -> [a] -> [a]
-insertionSort _ [] = []
-insertionSort leq (x:xs) = insert (insertionSort leq xs)
+insertionSort  :: [a] -> [a]
+insertionSort xs = insertionSortBy (<=) xs
+
+-- Postcondition: input and output lists have same length and output is sorted.
+insertionSort'post :: [a] -> [a] -> Bool
+insertionSort'post xs ys = length xs == length ys && sorted ys
+
+-- Specification via permutation sort:
+insertionSort'spec :: [a] -> [a]
+insertionSort'spec xs = permSort xs
+
+
+--- Insertion sort with ordering as first parameter.
+--- The list is sorted by repeated sorted insertion of the elements
+--- into the already sorted part of the list.
+insertionSortBy  :: (a -> a -> Bool) -> [a] -> [a]
+insertionSortBy _ [] = []
+insertionSortBy leq (x:xs) = insert (insertionSortBy leq xs)
  where
   insert [] = [x]
   insert zs@(y:ys) | leq x y   = x : zs
                    | otherwise = y : insert ys
 
--- Properties:
--- Input and output lists have same length and output is sorted.
-insertionSortPost :: [Int] -> Prop
-insertionSortPost xs =
-  let ys = insertionSort (<=) xs
-   in always $ length xs == length ys && sorted ys
-
--- Specification via permutation sort:
-insertionSortSpec :: [Int] -> Prop
-insertionSortSpec xs = insertionSort (<=) xs <~> permSort (<=) xs
-
 
 ------------------------------------------------------------------------------
---- Quicksort.
+--- Quicksort with standard ordering `<=`.
 --- The classical quicksort algorithm on lists.
-quickSort :: (a -> a -> Bool) -> [a] -> [a]
-quickSort _   []     = []
-quickSort leq (x:xs) = let (l,r) = split x xs
-                        in quickSort leq l ++ (x:quickSort leq r)
+quickSort :: [a] -> [a]
+quickSort xs = quickSortBy (<=) xs
+
+-- Postcondition: input and output lists have same length and output is sorted.
+quickSort'post :: [a] -> [a] -> Bool
+quickSort'post xs ys = length xs == length ys && sorted ys
+
+-- Specification via permutation sort:
+quickSort'spec :: [a] -> [a]
+quickSort'spec xs = permSort xs
+
+
+--- Quicksort with ordering as first parameter.
+--- The classical quicksort algorithm on lists.
+quickSortBy :: (a -> a -> Bool) -> [a] -> [a]
+quickSortBy _   []     = []
+quickSortBy leq (x:xs) = let (l,r) = split x xs
+                          in quickSortBy leq l ++ (x : quickSortBy leq r)
  where
   split _ [] = ([],[])
   split e (y:ys) | leq y e   = (y:l,r)
                  | otherwise = (l,y:r)
               where (l,r) = split e ys
 
--- Properties:
--- Input and output lists have same length and output is sorted.
-quickSortPost :: [Int] -> Prop
-quickSortPost xs =
-  let ys = quickSort (<=) xs
-   in always $ length xs == length ys && sorted ys
-
--- Specification via permutation sort:
-quickSortSpec :: [Int] -> Prop
-quickSortSpec xs = quickSort (<=) xs <~> permSort (<=) xs
-
 
 ------------------------------------------------------------------------------
---- Bottom-up mergesort.
-mergeSort :: (a -> a -> Bool) -> [a] -> [a]
-mergeSort leq zs =  mergeLists (genRuns zs)
+--- Bottom-up mergesort with standard ordering `<=`.
+mergeSort :: [a] -> [a]
+mergeSort xs = mergeSortBy (<=) xs
+
+-- Postcondition: input and output lists have same length and output is sorted.
+mergeSort'post :: [a] -> [a] -> Bool
+mergeSort'post xs ys = length xs == length ys && sorted ys
+
+-- Specification via permutation sort:
+mergeSort'spec :: [a] -> [a]
+mergeSort'spec xs = permSort xs
+
+
+--- Bottom-up mergesort with ordering as first parameter.
+mergeSortBy :: (a -> a -> Bool) -> [a] -> [a]
+mergeSortBy leq zs =  mergeLists (genRuns zs)
  where
   -- generate runs of length 2:
   genRuns []               =  []
@@ -135,17 +165,6 @@ merge _   [] ys     = ys
 merge _   (x:xs) [] = x : xs
 merge leq (x:xs) (y:ys) | leq x y   = x : merge leq xs (y:ys)
                         | otherwise = y : merge leq (x:xs) ys
-
--- Properties:
--- Input and output lists have same length and output is sorted.
-mergeSortPost :: [Int] -> Prop
-mergeSortPost xs =
-  let ys = mergeSort (<=) xs
-   in always $ length xs == length ys && sorted ys
-
--- Specification via permutation sort:
-mergeSortSpec :: [Int] -> Prop
-mergeSortSpec xs = mergeSort (<=) xs <~> permSort (<=) xs
 
 
 ------------------------------------------------------------------------------

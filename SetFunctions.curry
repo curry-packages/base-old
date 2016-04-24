@@ -47,7 +47,7 @@ module SetFunctions
   ,values2list,printValues,sortValues,sortValuesBy
   ) where
 
-import Sort(mergeSort)
+import Sort(mergeSortBy)
 import SearchTree
 import List(delete)
 
@@ -272,6 +272,6 @@ sortValues = sortValuesBy (<=)
 --- In order to ensure that the result of this operation is independent of the
 --- evaluation order, the given ordering must be a total order.
 sortValuesBy :: (a -> a -> Bool) -> Values a -> [a]
-sortValuesBy leq (Values s) = mergeSort leq s
+sortValuesBy leq (Values s) = mergeSortBy leq s
 
 ------------------------------------------------------------------------

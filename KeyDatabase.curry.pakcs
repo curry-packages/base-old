@@ -68,13 +68,13 @@ index x xs = idx 0 xs
 
 --- Sorts a given list by associated index .
 sortByIndex :: [(Int,b)] -> [b]
-sortByIndex = map snd . mergeSort (\x y -> fst x < fst y) 
+sortByIndex = map snd . mergeSortBy (\x y -> fst x < fst y) 
 
 --- Sorts a given list by associated index and group for identical index.
 --- Empty lists are added for missing indexes
 groupByIndex :: [(Int,b)] -> [[b]]
-groupByIndex = addEmptyIdxs 0 . groupBy   (\x y -> fst x == fst y) 
-                              . mergeSort (\x y -> fst x <  fst y)
+groupByIndex = addEmptyIdxs 0 . groupBy     (\x y -> fst x == fst y) 
+                              . mergeSortBy (\x y -> fst x <  fst y)
   where
     addEmptyIdxs _ [] = []
     addEmptyIdxs n (((m,x):xs):ys) = 
