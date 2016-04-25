@@ -22,7 +22,8 @@ module AbstractCurry.Pretty
     , ppMName, ppExports, ppImports
 
     , ppCOpDecl, ppCTypeDecl, ppCFuncDecl, ppCFuncDeclWithoutSig, ppCRhs
-    , ppCFuncSignature, ppCTypeExpr, ppCPattern, ppCLiteral, ppCExpr
+    , ppCFuncSignature, ppCTypeExpr, ppCRules, ppCRule
+    , ppCPattern, ppCLiteral, ppCExpr
     , ppCStatement, ppQFunc, ppFunc, ppQType, ppType)
     where
 

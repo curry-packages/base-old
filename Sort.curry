@@ -7,6 +7,8 @@
 --- @category algorithm
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -Wno-overlapping #-}
+
 module Sort( sort, sortBy, sorted, sortedBy
            , permSort, permSortBy, insertionSort, insertionSortBy
            , quickSort, quickSortBy, mergeSort, mergeSortBy
@@ -52,17 +54,18 @@ sortedBy leq (x:y:ys) = leq x y && sortedBy leq (y:ys)
 --- Sorts a list by finding a sorted permutation
 --- of the input. This is not a usable way to sort a list but it can be used
 --- as a specification of other sorting algorithms.
-permSort  :: [a] -> [a]
+permSort :: [a] -> [a]
 permSort xs = permSortBy (<=) xs
 
 --- Permutation sort with ordering as first parameter.
 --- Sorts a list by finding a sorted permutation
 --- of the input. This is not a usable way to sort a list but it can be used
 --- as a specification of other sorting algorithms.
-permSortBy  :: (a -> a -> Bool) -> [a] -> [a]
+permSortBy :: (a -> a -> Bool) -> [a] -> [a]
 permSortBy leq xs | ys == perm xs && sortedBy leq ys = ys  where ys free
 
 --- Computes a permutation of a list.
+perm :: [a] -> [a]
 perm []     = []
 perm (x:xs) = insert (perm xs)
  where insert ys     = x : ys
