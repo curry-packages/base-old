@@ -3,7 +3,7 @@
 
 CURRYBIN="../bin"
 
-ALLTESTS="Combinatorial ShowS"
+ALLTESTS="Combinatorial ShowS Sort"
 
 VERBOSE=no
 if [ "$1" = "-v" ] ; then
@@ -17,7 +17,7 @@ export PATH
 # clean up before
 $CURRYBIN/cleancurry
 
-CCOPTS=-m50
+CCOPTS="-m100 -dInt"
 LOGFILE=xxx$$
 
 if [ $VERBOSE = yes ] ; then
