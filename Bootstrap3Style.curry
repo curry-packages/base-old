@@ -24,6 +24,7 @@ import HTML
 ---                 `bootstrap` and `bootstrap-responsive`), stored in
 ---                 `rootdir/css` with suffix `.css`)
 --- @param title - the title of the form
+--- @param brandurltitle - the URL and contents shown as the brand of the page
 --- @lefttopmenu - the menu shown in the left side of the top navigation bar
 --- @righttopmenu - the menu shown in the right side of the top navigation bar
 ---                 (could be empty)
