@@ -16,7 +16,7 @@ module AbstractCurry.Select where
 --     , isBaseType, isPolyType, isFunctionalType, isIOType, isIOReturnType
 --     , argTypes, resultType, tvarsOfType, modsOfType
 --
---     , funcName, funcArity, funcVis, funcType, funcRules, ruleRHS
+--     , funcName, funcArity, funcComment, funcVis, funcType, funcRules, ruleRHS
 --
 --     , varsOfPat, varsOfExp, varsOfRhs, varsOfStat, varsOfLDecl
 --     , varsOfFDecl, varsOfRule
@@ -163,6 +163,11 @@ funcName (CmtFunc _ n _ _ _ _) = n
 funcArity :: CFuncDecl -> Int
 funcArity (CFunc     _ a _ _ _) = a
 funcArity (CmtFunc _ _ a _ _ _) = a
+
+--- Returns the documentation comment of a given function declaration.
+funcComment :: CFuncDecl -> String
+funcComment (CFunc       _ _ _ _ _) = ""
+funcComment (CmtFunc cmt _ _ _ _ _) = cmt
 
 --- Returns the visibility of a given function declaration.
 funcVis :: CFuncDecl -> CVisibility

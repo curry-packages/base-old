@@ -91,6 +91,11 @@ cmtfunc = CmtFunc
 simpleRule :: [CPattern] -> CExpr -> CRule
 simpleRule pats rhs = CRule pats (CSimpleRhs rhs [])
 
+--- Constructs a simple rule with a pattern list, an
+--- unconditional right-hand side, and local declarations.
+simpleRuleWithLocals :: [CPattern] -> CExpr -> [CLocalDecl] -> CRule
+simpleRuleWithLocals pats rhs ldecls = CRule pats (CSimpleRhs rhs ldecls)
+
 --- Constructs a rule with a possibly guarded right-hand side
 --- and local declarations.
 --- A simple right-hand side is constructed if there is only one
@@ -139,6 +144,10 @@ tupleExpr es | l==0 = constF (pre "()")
              | otherwise = applyF (pre ('(' : take (l-1) (repeat ',') ++ ")"))
                                   es
  where l = length es
+
+-- Constructs a let declaration (with possibly empty local delcarations).
+letExpr :: [CLocalDecl] -> CExpr -> CExpr
+letExpr locals cexp = if null locals then cexp else CLetDecl locals cexp
 
 --- Constructs from a pattern and an expression a branch for a case expression.
 cBranch :: CPattern -> CExpr -> (CPattern, CRhs)
