@@ -33,13 +33,13 @@ checkPre :: String -> Bool -> String -> Bool
 checkPre fname result arg = case result of
   True  -> True
   False -> traceLines
-             ["Precondition of operation '"++fname++"' violated for:",arg]
+             ["Precondition of "++fname++" violated for:",arg]
              (error "Execution aborted due to contract violation!")
 
 checkPreND :: String -> Values Bool -> String -> Bool
 checkPreND fname result arg = case False `valueOf` result of
   True  -> traceLines
-             ["Precondition of operation '"++fname++"' violated for:",arg]
+             ["Precondition of "++fname++" violated for:",arg]
              (error "Execution aborted due to contract violation!")
   False -> True
 
@@ -47,14 +47,14 @@ checkPost :: String -> Bool -> String -> Bool
 checkPost fname result arg = case result of
   True  -> True
   False -> traceLines
-             ["Postcondition of operation '"++fname++"' violated "++
+             ["Postcondition of "++fname++" violated "++
               "for:", arg]
              (error "Execution aborted due to contract violation!")
 
 checkPostND :: String -> Values Bool -> String -> Bool
 checkPostND fname result arg = case False `valueOf` result of
   True  -> traceLines
-             ["Postcondition of operation '"++fname++"' violated "++
+             ["Postcondition of "++fname++" violated "++
               "for:", arg]
              (error "Execution aborted due to contract violation!")
   False -> True
