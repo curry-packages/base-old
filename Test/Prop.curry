@@ -23,7 +23,7 @@
 module Test.Prop (
 
   -- test specification:
-  PropIO, returns, sameReturns,
+  PropIO, returns, sameReturns, toError, toIOError,
 
   Test, Prop, (==>), for,
 
@@ -58,6 +58,16 @@ returns act r = PropIO (testIO act (return r))
 sameReturns :: IO a -> IO a -> PropIO
 sameReturns a1 a2 = PropIO (testIO a1 a2)
 
+--- The property `toError a` is satisfied if the evaluation of the argument
+--- to normal form yields an exception.
+toError :: a -> PropIO
+toError x = propUndefinedError "toError"
+
+--- The property `toIOError a` is satisfied if the execution of the
+--- I/O action `a` causes an exception.
+toIOError :: IO a -> PropIO
+toIOError act = PropIO (hasIOError act)
+
 --- Extracts the tests of an I/O property (used by the test runner).
 ioTestOf :: PropIO -> (Bool -> String -> IO (Maybe String))
 ioTestOf (PropIO t) = t
@@ -68,15 +78,19 @@ testIO act1 act2 quiet msg =
    catch (do r1 <- act1
              r2 <- act2
              if r1 == r2
-               then putStrNQ (msg++": OK\n") >>  return Nothing
+               then unless quiet (putStr (msg++": OK\n")) >> return Nothing
                else do putStrLn $ msg++": FAILED!\nResults: " ++ show (r1,r2)
                        return (Just msg)
          )
          (\err -> do putStrLn $ msg++": EXECUTION FAILURE:\n" ++ showError err
                      return (Just msg)
          )
- where
-  putStrNQ = unless quiet . putStr
+
+-- Test whether an IO action produces an error.
+hasIOError :: IO a -> Bool -> String -> IO (Maybe String)
+hasIOError act quiet msg =
+   catch (act >> return (Just msg))
+         (\_ -> unless quiet (putStr (msg++": OK\n")) >> return Nothing)
 
 -------------------------------------------------------------------------
 --- Abstract type to represent a single test for a property to be checked.
