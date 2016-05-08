@@ -32,8 +32,8 @@ import ReadShowTerm    (readUnqualifiedTerm, showTerm)
 --- or ".lcurry") and the result is a FlatCurry term representing this
 --- program.
 readFlatCurry :: String -> IO Prog
-readFlatCurry progfile =
-   readFlatCurryWithParseOptions progfile (setQuiet True defaultParams)
+readFlatCurry progname =
+   readFlatCurryWithParseOptions progname (setQuiet True defaultParams)
 
 --- I/O action which parses a Curry program
 --- with respect to some parser options and returns the
@@ -95,6 +95,18 @@ readFlatCurryFile filename = do
 --- interface of this module.
 readFlatCurryInt :: String -> IO Prog
 readFlatCurryInt progname = do
+   readFlatCurryIntWithParseOptions progname (setQuiet True defaultParams)
+
+--- I/O action which parses Curry program
+--- with respect to some parser options and returns the FlatCurry
+--- interface of this program, i.e.,
+--- a FlatCurry program containing only "Public" entities and function
+--- definitions without rules (i.e., external functions).
+--- The argument is the file name without suffix ".curry"
+--- (or ".lcurry") and the result is a FlatCurry term representing the
+--- interface of this module.
+readFlatCurryIntWithParseOptions :: String -> FrontendParams -> IO Prog
+readFlatCurryIntWithParseOptions progname options = do
   mbsrc <- lookupModuleSourceInLoadPath progname
   case mbsrc of
     Nothing -> do -- no source file, try to find FlatCurry file in load path:
@@ -103,7 +115,7 @@ readFlatCurryInt progname = do
                                 loadpath
       readFlatCurryFile filename
     Just (dir,_) -> do
-      callFrontend FINT progname
+      callFrontendWithParams FINT options progname
       readFlatCurryFile (flatCurryIntName (dir </> takeFileName progname))
 
 --- Writes a FlatCurry program into a file in ".fcy" format.
