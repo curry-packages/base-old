@@ -5,9 +5,11 @@
 --- for applications generating Prolog programs.
 ---
 --- @author Michael Hanus
---- @version August 14, 2014
+--- @version May 2016
 --- @category general
 ------------------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 
 module Prolog(PlClause(..), PlGoal(..), PlTerm(..), plList,
               showPlProg, showPlClause, showPlGoals, showPlGoal, showPlTerm)
@@ -46,6 +48,7 @@ plList = foldr (\t ts -> PlStruct "." [t,ts]) (PlAtom "[]")
 showPlProg :: [PlClause] -> String
 showPlProg clauses = unlines $ map (showPlClause . optimizeClause) clauses
 
+showPlClause :: PlClause -> String
 showPlClause (PlClause pred args []) =
   showPlGoal (PlLit pred args) ++ "."
 showPlClause (PlClause pred args body@(_:_)) =
@@ -55,12 +58,15 @@ showPlClause (PlDirective body) =
 showPlClause (PlQuery body) =
   "?- " ++ showPlGoals body ++ "."
 
+showPlGoals :: [PlGoal] -> String
 showPlGoals gs = intercalate ", " (map showPlGoal gs)
 
+showPrimPlGoals :: [PlGoal] -> String
 showPrimPlGoals []         = "true"
 showPrimPlGoals [g]        = showPlGoal g
 showPrimPlGoals gs@(_:_:_) = "(" ++ intercalate ", " (map showPlGoal gs) ++ ")"
 
+showPlGoal :: PlGoal -> String
 showPlGoal (PlLit pred args) =
   if pred=="="
   then showPlTerm (args!!0) ++ "=" ++ showPlTerm (args!!1)
@@ -71,6 +77,7 @@ showPlGoal (PlCond cond tgoal fgoal) =
   "(" ++ showPrimPlGoals cond ++ " -> " ++ showPlGoals tgoal ++ " ; " ++
   showPlGoals fgoal ++ ")"
 
+showPlTerm :: PlTerm -> String
 showPlTerm (PlVar v)       = v
 showPlTerm (PlAtom a)      = showPlAtom a
 showPlTerm (PlInt i)       = show i
@@ -83,18 +90,21 @@ showPlTerm (PlStruct f args@(h:t))
     = "("++ showPlTerm (args!!0) ++ f ++ showPlTerm (args!!1) ++")"
   | otherwise = showPlAtom f ++"("++ intercalate "," (map showPlTerm args) ++")"
 
+showPlListElems :: PlTerm -> String
 showPlListElems xs = case xs of
   PlAtom "[]" -> ""
   PlStruct f [y,ys] -> if f=="." then "," ++ showPlTerm y ++ showPlListElems ys
                                  else "|" ++ showPlTerm ys
   _                 -> "|" ++ showPlTerm xs
 
+showPlAtom :: String -> String
 showPlAtom a =
   if a=="[]" || (all (\c -> isAlphaNum c || c=='_') a && isLower (head a))
              || all (`elem` specialChars) a
   then a
   else '\'': (concatMap (\c->if c=='\'' then "\\\'" else [c]) a) ++"\'"
 
+specialChars :: String
 specialChars = "+-*/<=>`\\:.?@#$&^~"
 
 ----------------------------------------------------------------------------
@@ -107,6 +117,7 @@ optimizeClause (PlClause pred args body) =
 optimizeClause (PlDirective body) = PlDirective (optimizeBody [] body)
 optimizeClause (PlQuery     body) = PlQuery     (optimizeBody [] body)
 
+optimizeBody :: [String] -> [PlGoal] -> [PlGoal]
 optimizeBody _ [] = []
 optimizeBody vars (PlCond cond tgoal fgoal : lits) =
  let ocond = optimizeBody vars cond
@@ -125,33 +136,40 @@ optimizeBody vars (PlLit pred args : lits)
  | otherwise
   = PlLit pred args : optimizeBody (union vars (unionMap varsOf args)) lits
 
+replaceInLit :: String -> PlTerm -> PlGoal -> PlGoal
 replaceInLit x y (PlLit pred args) = PlLit pred (map (replaceInTerm x y) args)
 replaceInLit x y (PlCond cond tgoal fgoal) =
   PlCond (map (replaceInLit x y) cond)
          (map (replaceInLit x y) tgoal)
          (map (replaceInLit x y) fgoal)
 
+replaceInTerm :: String -> PlTerm -> PlTerm -> PlTerm
 replaceInTerm x y (PlVar   v) = if x==v then y else PlVar v
 replaceInTerm _ _ (PlAtom  a) = PlAtom  a
 replaceInTerm _ _ (PlInt   i) = PlInt   i
 replaceInTerm _ _ (PlFloat f) = PlFloat f
 replaceInTerm x y (PlStruct f args) = PlStruct f (map (replaceInTerm x y) args)
 
+varsOfLit :: PlGoal -> [String]
 varsOfLit (PlLit _ args) = unionMap varsOf args
 varsOfLit (PlCond g1 g2 g3) = unionMap varsOfLit (g1++g2++g3)
 
+varsOf :: PlTerm -> [String]
 varsOf (PlVar   v) = [v]
 varsOf (PlAtom  _) = []
 varsOf (PlInt   _) = []
 varsOf (PlFloat _) = []
 varsOf (PlStruct _ args) = unionMap varsOf args
 
+isPlVar :: PlTerm -> Bool
 isPlVar t = case t of
               PlVar _ -> True
               _       -> False
 
+varOf :: PlTerm -> String
 varOf (PlVar v) = v
 
+unionMap :: (a -> [b]) -> [a] -> [b]
 unionMap f = foldr union [] . map f
 
 ----------------------------------------------------------------------------

@@ -61,7 +61,7 @@ sameReturns a1 a2 = PropIO (testIO a1 a2)
 --- The property `toError a` is satisfied if the evaluation of the argument
 --- to normal form yields an exception.
 toError :: a -> PropIO
-toError x = propUndefinedError "toError"
+toError _ = propUndefinedError "toError"
 
 --- The property `toIOError a` is satisfied if the execution of the
 --- I/O action `a` causes an exception.

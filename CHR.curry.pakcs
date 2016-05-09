@@ -11,9 +11,11 @@
 ---     > pakcs :l MyRules :add CHR :eval 'compileCHR "MyCHR" [rule1,rule2]' :q
 ---
 --- @author Michael Hanus
---- @version February 2015
+--- @version May 2016
 --- @category general
 ----------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
 
 module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
            true, fail, andCHR, allCHR, chrsToGoal,
@@ -24,17 +26,18 @@ module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
            compileCHR, chr2curry
           ) where
 
-import Findall(rewriteSome)
-import Unsafe -- for tracing
-import SetRBT
-import List
 import Char
+import Findall           (rewriteSome)
 import FlatCurry.Types
 import FlatCurry.Files
 import FlatCurry.Goodies
-import FlatCurry.Show(showCurryType)
-import XML
+import FlatCurry.Pretty  (defaultOptions, ppTypeExp)
+import List
 import Prolog
+import Pretty            (pretty)
+import SetRBT
+import Unsafe -- for tracing
+import XML
 
 -------------------------------------------------------------------------------
 -- Operator definitions for writing CHRs:
@@ -259,8 +262,14 @@ solveCHR prules goal =
 -- extendHistory = (:)
 -- inHistory     = elem
 type History = SetRBT ([Int],Int) -- entry: constraint indices and rule index
+
+emptyHistory :: SetRBT a
 emptyHistory  = emptySetRBT (<=)
+
+extendHistory :: a -> SetRBT a -> SetRBT a
 extendHistory = insertRBT
+
+inHistory :: a -> SetRBT a -> Bool
 inHistory     = elemRBT
 
 ------------------------------------------------------------------------
@@ -405,6 +414,7 @@ compileCHR currymod rules
   sourcemodname = fst (head rids)
 
 -- extract the qualified name of a rule:
+ruleId :: ([dom] -> CHR dom chr) -> QName
 ruleId rule =
   let rcallstring = showAnyQExpression rule -- "(partcall 1 qid [])"
       qid = takeWhile (not . isSpace) (drop (length "(partcall 1 ") rcallstring)
@@ -412,6 +422,7 @@ ruleId rule =
    in (mname, tail rname)
 
 -- compile all specifed CHR rules to CHR(Prolog):
+compileRules :: String -> String -> [String] -> IO ()
 compileRules modname chrmodname rids = do
   (Prog _ _ _ fdecls opdecls) <- readFlatCurry modname
   let pmodname = chrmodname++"_prim"
@@ -496,11 +507,11 @@ showOpDecl (Op op fixity prec) = unwords [showFixity fixity,show prec,showOp op]
 
   showOp (_,on) = if isAlpha (head on) then '`':on++"`" else on
 
-
+showCurryConstraint :: ((QName,Int),TypeExpr) -> String
 showCurryConstraint (((_,cname),carity),ctype) =
   let cargtypes = argTypes carity ctype in
   showCName cname ++" :: "++ concatMap (++" -> ") cargtypes
-    ++"Goal "++ showCurryType showTCons True (resultType carity ctype) ++"\n"++
+    ++"Goal "++ showCurryType (resultType carity ctype) ++"\n"++
   showCName cname ++ concatMap (\i->" x"++show i) [1..carity] ++ " = Goal " ++
     take carity (repeat '(') ++
     showCName ("prim_"++cname) ++
@@ -517,11 +528,10 @@ showCurryConstraint (((_,cname),carity),ctype) =
 
    argTypes arity ftype = if arity==0 then [] else
      let FuncType atype rtype = ftype
-      in showCurryType showTCons True atype : argTypes (arity-1) rtype
-
-   showTCons (mtc,ntc) = if mtc=="Prelude" then ntc else mtc++"."++ntc
+      in showCurryType atype : argTypes (arity-1) rtype
 
 -- generate prim_c2p specification of external operations:
+constraints2xml :: String -> [(QName,Int)] -> XmlExp
 constraints2xml prologmod constraints =
   xml "primitives" (map constraint2xml constraints)
  where
@@ -532,6 +542,8 @@ constraints2xml prologmod constraints =
             xml "entry" [xtxt (showCName ("prim_"++cname))]]
 
 -- compile a single CHR rule:
+compileRule :: (QName -> TypeExpr) -> [(QName,Int)] -> Rule
+            -> ([(QName,Int)],String)
 compileRule getftype chrs (Rule _ rhs) =
   let (_,rchrs,trule) = exp2CHR 100 (firstBranch rhs)
    in (rchrs, trule ++ ".")
@@ -689,5 +701,11 @@ chr2curry :: CHR.Goal dom chr -> Bool
 chr2curry (CHR.Goal c) = case c of
   [CHR.PrimCHR pc] -> CHR.evalPrimCHR pc
   _                -> error "CHRcompiled.chr2curry: unexpected argument!"
+
+----------------------------------------------------------------------
+
+-- Use FlatCurry pretty printer to show a non-top-level type expression.
+showCurryType :: TypeExpr -> String
+showCurryType te = '(' : pretty 78 (ppTypeExp defaultOptions te) ++ ")"
 
 ----------------------------------------------------------------------
