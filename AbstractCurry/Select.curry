@@ -3,25 +3,28 @@
 --- in AbstractCurry programs, i.e., it provides a collection of
 --- selector functions for AbstractCurry.
 ---
---- @version April 2016
+--- @version May 2016
 --- @category meta
 ------------------------------------------------------------------------
 
-module AbstractCurry.Select where
---     ( progName, imports, functions, constructors, types, publicFuncNames
---     , publicConsNames, publicTypeNames
---
---     , typeName, typeVis, typeCons
---     , consName, consVis
---     , isBaseType, isPolyType, isFunctionalType, isIOType, isIOReturnType
---     , argTypes, resultType, tvarsOfType, modsOfType
---
---     , funcName, funcArity, funcComment, funcVis, funcType, funcRules, ruleRHS
---
---     , varsOfPat, varsOfExp, varsOfRhs, varsOfStat, varsOfLDecl
---     , varsOfFDecl, varsOfRule
---
---     , isPrelude) where
+module AbstractCurry.Select
+  ( progName, imports, functions, constructors, types, publicFuncNames
+  , publicConsNames, publicTypeNames
+
+  , typeName, typeVis, typeCons
+  , consName, consVis
+  , isBaseType, isPolyType, isFunctionalType, isIOType, isIOReturnType
+  , argTypes, resultType, tvarsOfType, tconsOfType, modsOfType
+
+  , funcName, funcArity, funcComment, funcVis, funcType, funcRules
+  , ruleRHS, ldeclsOfRule
+
+  , varsOfPat, varsOfExp, varsOfRhs, varsOfStat, varsOfLDecl
+  , varsOfFDecl, varsOfRule
+
+  , funcNamesOfLDecl, funcNamesOfFDecl, funcNamesOfStat
+  , isPrelude
+  ) where
 
 import AbstractCurry.Types
 import List(union)
@@ -145,11 +148,15 @@ tvarsOfType (CTVar v) = [v]
 tvarsOfType (CFuncType t1 t2) = tvarsOfType t1 ++ tvarsOfType t2
 tvarsOfType (CTCons _ args) = concatMap tvarsOfType args
 
+--- Returns all type constructors used in the given type.
+tconsOfType :: CTypeExpr -> [QName]
+tconsOfType (CTVar            _) = []
+tconsOfType (CFuncType t1 t2) = tconsOfType t1 `union` tconsOfType t2
+tconsOfType (CTCons tc tys)   = foldr union [tc] $ map tconsOfType tys
+
 --- Returns all modules used in the given type.
 modsOfType :: CTypeExpr -> [String]
-modsOfType (CTVar            _) = []
-modsOfType (CFuncType    t1 t2) = modsOfType t1 `union` modsOfType t2
-modsOfType (CTCons (mod,_) tys) = foldr union [mod] $ map modsOfType tys
+modsOfType = map fst . tconsOfType
 
 ------------------------------------------------------------------------
 -- Selectors for function definitions
@@ -184,9 +191,17 @@ funcRules :: CFuncDecl -> [CRule]
 funcRules (CFunc     _ _ _ _ rules) = rules
 funcRules (CmtFunc _ _ _ _ _ rules) = rules
 
+------------------------------------------------------------------------
+-- Selectors for rules.
+
 --- Returns the right-hand side of a rules.
 ruleRHS :: CRule -> CRhs
 ruleRHS (CRule _ rhs) = rhs
+
+--- Returns the local declarations of given rule.
+ldeclsOfRule :: CRule -> [CLocalDecl]
+ldeclsOfRule (CRule _ (CSimpleRhs  _ lDecls)) = lDecls
+ldeclsOfRule (CRule _ (CGuardedRhs _ lDecls)) = lDecls
 
 ------------------------------------------------------------------------
 -- Operations to compute the variables occurring in a pattern or expression:
@@ -280,14 +295,6 @@ funcNamesOfStat :: CStatement -> [QName]
 funcNamesOfStat stms =
     case stms of CSLet ld -> concatMap funcNamesOfLDecl ld
                  _        -> []
-
-------------------------------------------------------------------------
--- Selectors for rules expressions
-
---- @return The local declarations of given rule.
-ldeclsOfRule :: CRule -> [CLocalDecl]
-ldeclsOfRule (CRule _ (CSimpleRhs  _ lDecls)) = lDecls
-ldeclsOfRule (CRule _ (CGuardedRhs _ lDecls)) = lDecls
 
 ------------------------------------------------------------------------
 --- Tests whether a module name is the prelude.

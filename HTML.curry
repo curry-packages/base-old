@@ -20,6 +20,8 @@
 --- @category web
 ------------------------------------------------------------------------------
 
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
+
 module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             HtmlForm(..),FormParam(..),CookieParam(..),
             CgiRef,idOfCgiRef,CgiEnv,HtmlHandler,
@@ -72,6 +74,7 @@ infixl 0 `addFormParam`
 
 ------------------------------------------------------------------------------
 --- The default encoding used in generated web pages.
+defaultEncoding :: String
 defaultEncoding = "utf-8" --"iso-8859-1"
 
 ------------------------------------------------------------------------------
@@ -235,6 +238,7 @@ addCookies _ (HtmlAnswer _ _) =
   error "addCookies: cannot add cookie to Html answer"
 
 -- Shows the cookie in standard syntax:
+formatCookie :: (String,String,[CookieParam]) -> String
 formatCookie (name,value,params) =
   "Set-Cookie: " ++ name ++ "=" ++ string2urlencoded value ++
   concatMap (\p->"; "++formatCookieParam p) params
@@ -522,6 +526,7 @@ olist :: [[HtmlExp]] -> HtmlExp
 olist items = HtmlStruct "ol" [] (map litem items)
 
 --- A single list item (usually not explicitly used)
+litem :: [HtmlExp] -> HtmlExp
 litem hexps = HtmlStruct "li" [] hexps
 
 --- Description list
@@ -860,10 +865,16 @@ addClass hexp cls = addAttr hexp ("class",cls)
 
 type ShowS = String -> String
 
+showString :: String -> String -> String
 showString s = (s++)
-showChar   c = (c:)
-nl    = showChar '\n'
 
+showChar :: Char -> String -> String
+showChar c = (c:)
+
+nl :: String -> String
+nl = showChar '\n'
+
+concatS :: [a -> a] -> a -> a
 concatS [] = id
 concatS xs@(_:_) = foldr1 (\ f g -> f . g) xs
 
@@ -887,6 +898,7 @@ getTag (HtmlEvent  he _)    = getTag he
 getTag (HtmlCRef   he _)    = getTag he
 
 -- is this a tag where a line break can be safely added?
+tagWithLn :: String -> Bool
 tagWithLn t = t/="" &&
               t `elem` ["br","p","li","ul","ol","dl","dt","dd","hr",
                         "h1","h2","h3","h4","h5","h6","div",
@@ -899,6 +911,7 @@ showHtmlExp :: HtmlExp -> String
 showHtmlExp hexp = showsHtmlExp 0 hexp ""
 
 --- HTML tags that have no end tag in HTML:
+noEndTags :: [String]
 noEndTags = ["img","input","link","meta"]
 
 showsHtmlExp :: Int -> HtmlExp -> ShowS
@@ -926,6 +939,7 @@ showsHtmlExps i (he:hes) = showsWithLnPrefix he . showsHtmlExps i hes
                                then nl . showTab i . showString (tail s)
                                else showsHtmlExp i hexp
 
+showTab :: Int -> String -> String
 showTab n = showString (take n (repeat ' '))
 
 showsHtmlOpenTag :: String -> [(String,String)] -> String -> ShowS
@@ -970,9 +984,11 @@ showHtmlPage (HtmlPage title params html) =
   bodyattrs = [attr | (PageBodyAttr attr) <- params]
 
 --- Standard header for generated HTML pages.
+htmlPrelude :: String
 htmlPrelude = "<!DOCTYPE html>\n"
 
 --- Standard attributes for element "html".
+htmlTagAttrs :: [(String,String)]
 htmlTagAttrs = [("lang","en")]
 
 ------------------------------------------------------------------------------
@@ -1100,6 +1116,7 @@ runFormServerWithKeyAndFormParams url cgikey formparams hformact = do
                                  hformact socket state
 
 -- The default timeout period for the cgi server in milliseconds:
+defaultCgiServerTimeout :: Int
 defaultCgiServerTimeout = 7200000 -- two hours
 
 
@@ -1217,6 +1234,9 @@ serveCgiMessagesForForm servertimeout url cgikey portname
     serveCgiMessages state
 
 -- computes a HTML form w.r.t. a state and a cgi environment:
+computeFormInStateAndEnv
+  :: String -> String -> [FormParam] -> ServerState -> String
+  -> IO HtmlForm -> [(String,String)] -> IO (ServerState,String)
 computeFormInStateAndEnv url cgikey fparams state scriptkey hformact cenv =
   catch tryComputeForm
         (\e -> do uparam <- getUrlParameter
@@ -1269,6 +1289,7 @@ encodeKey = map mapchr . reverse . filter (not . isSpace)
    where oc = ord c
 
 -- Puts a line to stderr:
+putErrLn :: String -> IO ()
 putErrLn s = hPutStrLn stderr s >> hFlush stderr
 
 
@@ -1300,6 +1321,7 @@ showAnswerFormInEnv _ _ (HtmlAnswer ctype cont) _ = do
 
 
 -- Adds the initial content lines (including content length) to an HTML string.
+addHtmlContentType :: String -> String
 addHtmlContentType htmlstring =
     "Content-Length: " ++ show (length htmlstring) ++ "\n" ++
     "Content-Type: text/html\n\n" ++ htmlstring
@@ -1357,6 +1379,7 @@ getMaxFieldNr ((name,_):env) =
   then max (tryReadNat 0 (drop 6 name)) (getMaxFieldNr env)
   else getMaxFieldNr env
 
+max :: a -> a -> a
 max x y = if x>y then x else y
 
 -- try to read a natural number in a string or return first argument:
@@ -1429,6 +1452,7 @@ translateHandlers (HtmlEvent (HtmlStruct tag attrs hes) handler : hexps) =
  where key free
 
 -- show a HTML form in String representation:
+showForm :: [(String,String)] -> String -> HtmlForm -> String
 showForm cenv url (HtmlForm title params html) =
   htmlPrelude ++
   showHtmlExp
@@ -1487,6 +1511,7 @@ env2html env = concat (map (\(n,v)->[htxt (n++": "++v),breakline]) env)
 -- (note: the field values are urlencoded to avoid problems
 --  with passing special characters; moreover, the names of fields
 --  containing urlencoded values are prefixed by "U")
+cenv2hidden :: [(String,String)] -> [HtmlExp]
 cenv2hidden env = concat (map pair2hidden env)
  where
    pair2hidden (n,v)
@@ -1675,6 +1700,7 @@ htmlSpecialChars2tex (c:cs)
                            htmlSpecialChars2tex (tail rest)
   | otherwise   = c : htmlSpecialChars2tex cs
 
+htmlspecial2tex :: String -> String
 htmlspecial2tex special
   | special=="Auml"   =  "{\\\"A}"
   | special=="Euml"   =  "{\\\"E}"
@@ -1868,6 +1894,7 @@ intFormInEnv url cgikey initform hformact cenv state forever socket = do
      orgform `addFormParam` HeadInclude (HtmlStruct "base" [("href",url)] [])
 
 -- has an HTML form event handlers?
+formWithHandlers :: HtmlForm -> Bool
 formWithHandlers (HtmlForm _ _ hexps) = hasHandlers hexps
  where
   hasHandlers :: [HtmlExp] -> Bool
@@ -1879,6 +1906,7 @@ formWithHandlers (HtmlForm _ _ hexps) = hasHandlers hexps
   hasHandlers (HtmlEvent _ _ : _) = True
 
 --- Shows a string in HTML format in a browser.
+showHtmlStringInBrowser :: String -> IO ()
 showHtmlStringInBrowser htmlstring = do
   pid <- getPID
   let htmlfilename = "tmpcgiform_" ++ show pid ++ ".html"
