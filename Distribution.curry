@@ -311,7 +311,8 @@ lookupModuleSourceInLoadPath modpath =
 --- @cons UACY - Untyped (without type checking) AbstractCurry file ending with .uacy
 --- @cons HTML - colored HTML representation of source program
 --- @cons CY   - source representation employed by the frontend
-data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY
+--- @cons TOKS - token stream of source program
+data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY | TOKS
 
 --- Abstract data type for representing parameters supported by the front end
 --- of the Curry compiler.
@@ -461,6 +462,7 @@ callFrontendWithParams target params modpath = do
    showFrontendTarget UACY = "--uacy"
    showFrontendTarget HTML = "--html"
    showFrontendTarget CY   = "--parse-only"
+   showFrontendTarget TOKS = "--tokens"
 
    showFrontendParams = unwords
     [ if quiet       params then runQuiet     else ""
