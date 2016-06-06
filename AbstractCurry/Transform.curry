@@ -16,6 +16,7 @@ module AbstractCurry.Transform where
 
 import AbstractCurry.Types
 import AbstractCurry.Select
+import List (nub, union)
 
 --- This type synonym is useful to denote the type of an update,
 --- where the first argument is the type of values which are updated
@@ -427,4 +428,97 @@ updQNamesInCExpr f =
   reccon rec fields = CRecConstr (f rec) (map (\ (l,e) -> (f l,e)) fields)
   recupd exp fields = CRecUpdate exp (map (\ (l,e) -> (f l,e)) fields)
   
+-------------------------------------------------------------------------
+--- Extracts all type names occurring in a program.
+typesOfCurryProg :: CurryProg -> [QName]
+typesOfCurryProg =
+  trCProg (\_ _ types funcs _ ->
+              foldr union [] (map (nub . typesOfCTypeDecl) types) ++
+              foldr union [] (map (nub . typesOfCFuncDecl) funcs))
+
+--- Extracts all type names occurring in a type declaration.
+typesOfCTypeDecl :: CTypeDecl -> [QName]
+typesOfCTypeDecl =
+  trCTypeDecl (\qn _ _ cdecls -> qn : concatMap typesOfConsDecl cdecls)
+              (\qn _ _ texp   -> qn : typesOfTypeExpr texp)
+              (\qn _ _ cdecl  -> qn : typesOfConsDecl cdecl)
+
+typesOfConsDecl :: CConsDecl -> [QName]
+typesOfConsDecl =
+  trCConsDecl (\_ _ texps   -> concatMap typesOfTypeExpr texps)
+              (\_ _ fddecls -> concatMap typesOfFieldDecl fddecls)
+
+typesOfFieldDecl :: CFieldDecl -> [QName]
+typesOfFieldDecl = trCFieldDecl (\_ _ texp -> typesOfTypeExpr texp)
+
+typesOfTypeExpr :: CTypeExpr -> [QName]
+typesOfTypeExpr = trCTypeExpr (\_ -> [])
+                              (\qn targs -> qn : concat targs)
+                              (++)
+
+typesOfCFuncDecl :: CFuncDecl -> [QName]
+typesOfCFuncDecl =
+  trCFuncDecl (\_ _ _ _ texp _ -> typesOfTypeExpr texp)
+  -- type annotations in expressions are currently ignored
+
 ----------------------------------------------------------------------------
+--- Extracts all function (and constructor) names occurring in a program.
+funcsOfCurryProg :: CurryProg -> [QName]
+funcsOfCurryProg =
+  trCProg (\_ _ types funcs _ ->
+              foldr union [] (map (nub . funcsOfCTypeDecl) types) ++
+              foldr union [] (map (nub . funcsOfCFuncDecl) funcs))
+
+funcsOfCTypeDecl :: CTypeDecl -> [QName]
+funcsOfCTypeDecl =
+  trCTypeDecl (\_ _ _ cdecls -> concatMap funcsOfConsDecl cdecls)
+              (\_ _ _ _      -> [])
+              (\_ _ _ cdecl  -> funcsOfConsDecl cdecl)
+
+funcsOfConsDecl :: CConsDecl -> [QName]
+funcsOfConsDecl =
+  trCConsDecl (\qn _ _       -> [qn])
+              (\qn _ fddecls -> qn : concatMap funcsOfFieldDecl fddecls)
+
+funcsOfFieldDecl :: CFieldDecl -> [QName]
+funcsOfFieldDecl = trCFieldDecl (\qn _ _ -> [qn])
+
+--- Extracts all function (and constructor) names occurring in a function
+--- declaration.
+funcsOfCFuncDecl :: CFuncDecl -> [QName]
+funcsOfCFuncDecl =
+  trCFuncDecl (\_ _ _ _ _ rules -> concatMap funcsOfCRule rules)
+
+funcsOfCRule :: CRule -> [QName]
+funcsOfCRule = trCRule (\_ rhs -> funcsOfCRhs rhs)
+
+funcsOfCRhs :: CRhs -> [QName]
+funcsOfCRhs =
+  trCRhs (\e  ldecls -> funcsOfExpr e ++ concatMap funcsOfLDecl ldecls)
+         (\gs ldecls -> concatMap (\ (g,e) -> funcsOfExpr g ++ funcsOfExpr e) gs
+                        ++ concatMap funcsOfLDecl ldecls)
+
+funcsOfLDecl :: CLocalDecl -> [QName]
+funcsOfLDecl = trCLocalDecl funcsOfCFuncDecl (const funcsOfCRhs) (const [])
+
+funcsOfExpr :: CExpr -> [QName]
+funcsOfExpr =
+  trExpr (const [])
+         (const [])
+         (\n -> [n])
+         (++)
+         (const id)
+         (\ldecls e -> concatMap funcsOfLDecl ldecls ++ e)
+         (concatMap funcsOfStat)
+         (\e stats -> e ++ concatMap funcsOfStat stats)
+         (\_ e brs -> e ++ concatMap (funcsOfCRhs . snd) brs)
+         (\e _ -> e)
+         (\_ fields -> concatMap snd fields)
+         (\e fields -> e ++ concatMap snd fields)
+         
+funcsOfStat :: CStatement -> [QName]
+funcsOfStat = trCStatement funcsOfExpr
+                           (const funcsOfExpr)
+                           (concatMap funcsOfLDecl)
+
+-------------------------------------------------------------------------

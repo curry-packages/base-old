@@ -31,9 +31,10 @@ import Pretty hiding        ( list, listSpaced, tupled, tupledSpaced, set
                             , setSpaced )
 import AbstractCurry.Select hiding (varsOfLDecl, varsOfFDecl, varsOfStat)
 import AbstractCurry.Types
-import Function             (on)
-import List                 (partition, union, scanl, last)
-import Maybe                (isJust, fromJust)
+import AbstractCurry.Transform (typesOfCurryProg, funcsOfCurryProg)
+import Function                (on)
+import List                    (partition, union, scanl, last, nub)
+import Maybe                   (isJust, fromJust)
 
 type Collection a = [a]
 
@@ -199,18 +200,28 @@ showCProg = prettyCurryProg defaultOptions
 prettyCurryProg :: Options -> CurryProg -> String
 prettyCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 
---- Pretty-print a CurryProg (the representation of a program, written in curry,
---- using AbstractCurry) according to given options. This function will overwrite
---- the module name given by options with the name encapsulated in CurryProg.
+--- Pretty-print a CurryProg (the representation of a program, written in Curry,
+--- using AbstractCurry) according to given options.
+--- This function will overwrite the module name given by options
+--- with the name specified as the first component of `CurryProg`.
+--- The list of imported modules is extended to all modules mentioned
+--- in the program if qualified pretty printing is used.
+--- This is necessary to avoid errors w.r.t. names re-exported by modules.
 ppCurryProg :: Options -> CurryProg -> Doc
-ppCurryProg opts (CurryProg m ms ts fs os) = vsepBlank
+ppCurryProg opts cprog@(CurryProg m ms ts fs os) = vsepBlank
     [ (nest' opts' $ sep [ text "module" <+> ppMName m, ppExports opts' ts fs])
        </> where_
-    , ppImports opts' ms
+    , ppImports opts' allImports
     , vcatMap (ppCOpDecl opts') os
     , vsepBlankMap (ppCTypeDecl opts') ts
     , vsepBlankMap (ppCFuncDecl opts') fs ]
-    where opts' = opts { moduleName = m }
+ where
+   opts' = opts { moduleName = m }
+   allModNames = union (nub (map fst (typesOfCurryProg cprog)))
+                       (nub (map fst (funcsOfCurryProg cprog)))
+   allImports = if qualification opts == None
+                then ms
+                else nub (ms ++ allModNames)
 
 --- Pretty-print a module name (just a string).
 ppMName :: MName -> Doc
