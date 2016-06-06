@@ -752,7 +752,7 @@ seq6_ cons xa xb xc xd xe xf = Conv rd sh
   sh arg | (cons a b c d e f) =:<= arg
          = xmlShows xa a . xmlShows xb b . xmlShows xc c
                          . xmlShows xd d . xmlShows xe e . xmlShows xf f
-			 where a,b,c,d,e,f free
+                         where a,b,c,d,e,f free
 
 --- Creates an XML converter representing a sequence of arbitrary XML data.
 --- The sequence must not be used in repetitions and does not represent an
