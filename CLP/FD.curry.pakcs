@@ -334,14 +334,14 @@ trO option = case option of
   Max                  -> C.Max
   Step                 -> C.Step
   Step                 -> C.Min
-  Enum		       -> C.Enum		
-  Bisect	       -> C.Bisect		
-  Up		       -> C.Up		
-  Down		       -> C.Down		
-  All		       -> C.All		
-  Minimize n  	       -> C.Minimize n	
-  Maximize n  	       -> C.Maximize n	
-  Assumptions n        -> C.Assumptions n	
+  Enum                 -> C.Enum                
+  Bisect               -> C.Bisect              
+  Up                   -> C.Up          
+  Down                 -> C.Down                
+  All                  -> C.All         
+  Minimize n           -> C.Minimize n  
+  Maximize n           -> C.Maximize n  
+  Assumptions n        -> C.Assumptions n       
   RandomVariable n     -> C.RandomVariable n
   RandomValue n        -> C.RandomValue n
   _                    -> error $ "Unknown option: " ++ show option
