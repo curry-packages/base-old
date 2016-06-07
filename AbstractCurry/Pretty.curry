@@ -33,7 +33,7 @@ import AbstractCurry.Select hiding (varsOfLDecl, varsOfFDecl, varsOfStat)
 import AbstractCurry.Types
 import AbstractCurry.Transform (typesOfCurryProg, funcsOfCurryProg)
 import Function                (on)
-import List                    (partition, union, scanl, last, nub)
+import List                    (partition, union, scanl, last, nub, (\\))
 import Maybe                   (isJust, fromJust)
 
 type Collection a = [a]
@@ -217,11 +217,12 @@ ppCurryProg opts cprog@(CurryProg m ms ts fs os) = vsepBlank
     , vsepBlankMap (ppCFuncDecl opts') fs ]
  where
    opts' = opts { moduleName = m }
-   allModNames = union (nub (map fst (typesOfCurryProg cprog)))
-                       (nub (map fst (funcsOfCurryProg cprog)))
+   allModNames = filter (not . null)
+                   (union (nub (map fst (typesOfCurryProg cprog)))
+                          (nub (map fst (funcsOfCurryProg cprog))))
    allImports = if qualification opts == None
                 then ms
-                else nub (ms ++ allModNames)
+                else nub (ms ++ allModNames) \\ [m]
 
 --- Pretty-print a module name (just a string).
 ppMName :: MName -> Doc
