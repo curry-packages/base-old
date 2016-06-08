@@ -80,7 +80,7 @@ prim_toCalendarTime :: ClockTime -> IO CalendarTime
 prim_toCalendarTime external
 
 --- Transforms a clock time into a standard UTC calendar time.
---- Thus, this operationa is independent on the local time.
+--- Thus, this operation is independent on the local time.
 toUTCTime :: ClockTime -> CalendarTime
 toUTCTime ctime = prim_toUTCTime $## ctime
 

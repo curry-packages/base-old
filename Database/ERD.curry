@@ -15,6 +15,8 @@ module Database.ERD
   , readERDTermFile
   ) where
 
+import Char(isSpace)
+import IO
 import ReadShowTerm(readUnqualifiedTerm)
 import Time
 
@@ -43,7 +45,7 @@ data Domain = IntDom      (Maybe Int)
             | CharDom     (Maybe Char)
             | StringDom   (Maybe String)
             | BoolDom     (Maybe Bool)
-            | DateDom     (Maybe ClockTime)
+            | DateDom     (Maybe CalendarTime)
             | UserDefined String (Maybe String)
             | KeyDom      String  -- for foreign keys
 
@@ -74,9 +76,25 @@ data MaxValue = Max Int | Infinite
 readERDTermFile :: String -> IO ERD
 readERDTermFile termfilename = do
   putStrLn $ "Reading ERD term from file " ++ termfilename ++ "..."
-  termstring <- readFile termfilename
+  handle <- openFile termfilename ReadMode
+  line <- skipCommentLines handle
+  termstring <- hGetContents handle
   return (updateERDTerm (readUnqualifiedTerm ["Database.ERD","Prelude"]
-                                             termstring))
+                                             (unlines [line,termstring])))
+ where
+  skipCommentLines h = do
+    line <- hGetLine h >>= return . dropWhile isSpace
+    if null line || take 2 line == "--"
+     then skipCommentLines h
+     else if take 2 line == "{-" -- -}
+          then skipBracketComment h (drop 2 line)
+          else return line
+
+  skipBracketComment h [] = hGetLine h >>= skipBracketComment h
+  skipBracketComment h [_] = hGetLine h >>= skipBracketComment h
+  skipBracketComment h (c1:c2:cs) =
+   if c1=='-' && c2=='}' then return cs
+                         else skipBracketComment h (c2:cs)
 
 --- Transforms an ERD term possible containing old, outdated, information.
 --- In particular, translate (Range ...) into (Between ...).
