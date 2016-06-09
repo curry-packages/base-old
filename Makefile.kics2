@@ -163,6 +163,12 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 .curry/kics2/Database/CDBI/Curry_%.hs: Database/CDBI/%.curry
 	$(COMP) -v0 -i. Database.CDBI.$*
 
+.curry/kics2/Database/Curry_Trace_%.hs: Database/%.curry
+	$(COMP) -v0 -i. --trace-failure Database.CDBI.$*
+
+.curry/kics2/Database/Curry_%.hs: Database/%.curry
+	$(COMP) -v0 -i. Database.CDBI.$*
+
 .curry/kics2/Test/Curry_Trace_%.hs: Test/%.curry
 	$(COMP) -v0 -i. --trace-failure Test.$*
 
@@ -211,6 +217,9 @@ $(LIBDOCDIR)/CLP.%.html: CLP/%.curry
 $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
 
+$(LIBDOCDIR)/Database.%.html: Database/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.$*
+
 $(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Rewriting.$*
 
@@ -244,6 +253,9 @@ $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
 
 $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
+
+$(TEXDOCDIR)/Database.%.tex: Database/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.$*
 
 $(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Rewriting.$*

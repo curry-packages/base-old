@@ -117,6 +117,9 @@ $(LIBDOCDIR)/CLP.%.html: CLP/%.curry
 $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
 
+$(LIBDOCDIR)/Database.%.html: Database/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.$*
+
 $(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
 	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Rewriting.$*
 
@@ -150,6 +153,9 @@ $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
 
 $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
+
+$(TEXDOCDIR)/Database.%.tex: Database/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.$*
 
 $(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
 	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Rewriting.$*
