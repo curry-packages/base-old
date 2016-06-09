@@ -42,6 +42,9 @@ FlatCurry/%.curry: $(LIBTRUNKDIR)/FlatCurry/%.curry
 Database/CDBI/%.curry: $(LIBTRUNKDIR)/Database/CDBI/%.curry
 	cp $< $@
 
+Database/%.curry: $(LIBTRUNKDIR)/Database/%.curry
+	cp $< $@
+
 Rewriting/%.curry: $(LIBTRUNKDIR)/Rewriting/%.curry
 	cp $< $@
 
