@@ -164,10 +164,10 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 	$(COMP) -v0 -i. Database.CDBI.$*
 
 .curry/kics2/Database/Curry_Trace_%.hs: Database/%.curry
-	$(COMP) -v0 -i. --trace-failure Database.CDBI.$*
+	$(COMP) -v0 -i. --trace-failure Database.$*
 
 .curry/kics2/Database/Curry_%.hs: Database/%.curry
-	$(COMP) -v0 -i. Database.CDBI.$*
+	$(COMP) -v0 -i. Database.$*
 
 .curry/kics2/Test/Curry_Trace_%.hs: Test/%.curry
 	$(COMP) -v0 -i. --trace-failure Test.$*
