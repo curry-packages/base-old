@@ -16,7 +16,7 @@
 --- (execept for the prelude).
 ---
 --- @author Sebastian Fischer (with extensions by Michael Hanus)
---- @version April 2016
+--- @version June 2016
 --- @category general
 -------------------------------------------------------------------------
 
@@ -238,11 +238,7 @@ _ # _ =  propUndefinedError "#"
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satisfy property `p y`.
 for :: a -> (a -> Prop) -> Prop
-for x p = forAllValues id (valuesOf x) p
-
---- Only for internal use by the test runner.
-forAllValues :: (b -> Prop) -> [a] -> (a -> b) -> Prop
-forAllValues _ _ _ = propUndefinedError "forAllValues"
+for _ _ = propUndefinedError "for"
 
 -------------------------------------------------------------------------
 -- Test Annotations

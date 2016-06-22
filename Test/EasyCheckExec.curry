@@ -280,7 +280,7 @@ check config msg ts = tests config msg (testsOf ts) 0 0 []
 
 tests :: Config -> String -> [Test] -> Int -> Int -> [[String]] -> IO Bool
 tests config msg [] ntest _ stamps =
-  done config (msg ++ ":\n Passed") ntest stamps True
+  done config (msg ++ ":\n Passed all available tests:") ntest stamps True
 tests config msg (t:ts) ntest nfail stamps
   | ntest == maxTest config
   = done config (msg ++ ":\n OK, passed") ntest stamps True

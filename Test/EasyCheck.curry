@@ -12,7 +12,7 @@
 --- are contained in the accompanying library `Test.EasyCheckExec`.
 ---
 --- @author Sebastian Fischer (with extensions by Michael Hanus)
---- @version April 2016
+--- @version June 2016
 --- @category general
 -------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ module Test.EasyCheck (
   -- test specification:
   PropIO, returns, sameReturns, toError, toIOError,
 
-  Test, Prop, (==>), for,
+  Test, Prop, (==>), for, forAll,
 
   test, is, isAlways, isEventually, uniquely, always, eventually,
   failing, successful, deterministic, (-=-), (#), (<~>), (~>), (<~), (<~~>),
@@ -260,7 +260,12 @@ x # n = test x ((n==) . length . nub)
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satisfy property `p y`.
 for :: a -> (a -> Prop) -> Prop
-for x p = forAllValues id (valuesOf x) p
+for x p = forAll (valuesOf x) p
+
+--- The property `forAll xs p` is satisfied if all values `x` of the list `xs`
+--- satisfy property `p x`.
+forAll :: [a] -> (a -> Prop) -> Prop
+forAll xs p = forAllValues id xs p
 
 --- Only for internal use by the test runner.
 forAllValues :: (b -> Prop) -> [a] -> (a -> b) -> Prop
