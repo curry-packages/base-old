@@ -6,7 +6,7 @@
 --- the tests.
 ---
 --- @author Sebastian Fischer (with extensions by Michael Hanus)
---- @version April 2016
+--- @version June 2016
 --- @category general
 -------------------------------------------------------------------------
 

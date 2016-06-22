@@ -28,7 +28,8 @@ module Test.Prop (
   Test, Prop, (==>), for,
 
   is, isAlways, isEventually, uniquely, always, eventually,
-  failing, successful, deterministic, (-=-), (#), (<~>), (~>), (<~), (<~~>),
+  failing, successful, deterministic, (-=-), (<~>), (~>), (<~), (<~~>),
+  (#), (#<), (#>),
   solutionOf,
 
   -- test annotations
@@ -39,7 +40,8 @@ module Test.Prop (
 
   ) where
 
-infix  1 `is`, `isAlways`, `isEventually`, -=-, #, <~>, ~>, <~, <~~>, `trivial`
+infix  1 `is`, `isAlways`, `isEventually`
+infix  1 -=-, <~>, ~>, <~, <~~>, `trivial`, #, #<, #>
 infix  1 `returns`, `sameReturns`
 infixr 0 ==>
 
@@ -234,6 +236,14 @@ deterministic x = x `is` const True
 --- The property `x # n` is satisfied if `x` has `n` values.
 (#) :: _ -> Int -> Prop
 _ # _ =  propUndefinedError "#"
+
+--- The property `x #< n` is satisfied if `x` has less than `n` values.
+(#<) :: _ -> Int -> Prop
+x #< n = propUndefinedError "#<"
+
+--- The property `x #> n` is satisfied if `x` has more than `n` values.
+(#>) :: _ -> Int -> Prop
+x #> n = propUndefinedError "#>"
 
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satisfy property `p y`.

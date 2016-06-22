@@ -24,7 +24,8 @@ module Test.EasyCheck (
   Test, Prop, (==>), for, forAll,
 
   test, is, isAlways, isEventually, uniquely, always, eventually,
-  failing, successful, deterministic, (-=-), (#), (<~>), (~>), (<~), (<~~>),
+  failing, successful, deterministic, (-=-), (<~>), (~>), (<~), (<~~>),
+  (#), (#<), (#>),
   solutionOf,
 
   -- test annotations
@@ -43,7 +44,8 @@ import List         ( (\\), delete, diagonal, nub )
 import SearchTree   ( SearchTree, someSearchTree )
 import SearchTreeTraversal
 
-infix  1 `is`, `isAlways`, `isEventually`, -=-, #, <~>, ~>, <~, <~~>, `trivial`
+infix  1 `is`, `isAlways`, `isEventually`
+infix  1 -=-, <~>, ~>, <~, <~~>, `trivial`, #, #<, #>
 infix  1 `returns`, `sameReturns`
 infixr 0 ==>
 
@@ -256,6 +258,14 @@ deterministic x = x `is` const True
 --- The property `x # n` is satisfied if `x` has `n` values.
 (#) :: _ -> Int -> Prop
 x # n = test x ((n==) . length . nub)
+
+--- The property `x #< n` is satisfied if `x` has less than `n` values.
+(#<) :: _ -> Int -> Prop
+x #< n = test x ((<n) . length . nub)
+
+--- The property `x #> n` is satisfied if `x` has more than `n` values.
+(#>) :: _ -> Int -> Prop
+x #> n = test x ((>n) . length . nub)
 
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satisfy property `p y`.
