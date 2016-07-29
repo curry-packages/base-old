@@ -12,7 +12,7 @@ import GHC.Exts (Char (C#), Char#, eqChar#, leChar#, ord#, chr#)
 import System.IO
 
 import CurryException
-import Debug          (internalError)
+import KiCS2Debug     (internalError)
 import FailInfo       (customFail)
 import PrimTypes
 
