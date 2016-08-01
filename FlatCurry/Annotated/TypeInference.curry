@@ -4,9 +4,9 @@
 ---
 --- It can be used by any other Curry program which processes
 --- or transforms FlatCurry programs. The main operation to use is
---- 
+---
 ---     inferProg :: Prog -> IO (Either String (AProg TypeExpr))
---- 
+---
 --- which annotates a FlatCurry program with type information.
 ---
 --- The type inference works in several steps:
@@ -37,30 +37,35 @@
 --- In case of any error, the type inference quits with an error message.
 ---
 --- @author  Jonas Oberschweiber, Bjoern Peemoeller, Michael Hanus
---- @version November 2015
+--- @version August 2016
 --- @category meta
 ------------------------------------------------------------------------------
 
 module FlatCurry.Annotated.TypeInference
   ( TypeEnv, getTypeEnv, getTypeEnvFromProgEnv
   , inferProg, inferProgFromProgEnv, inferProgEnv
-  , inferFunction, inferFunctionEnv, inferNewFunctions, inferExpr
+  , inferFunction, inferFunctionEnv
+  , inferNewFunctions, inferNewFunctionsEnv
+  , inferExpr, inferExprEnv
   ) where
 
-import FiniteMap
-import List      (find)
+import           FiniteMap
+import           List                               (find)
+import qualified Pretty as P
 
-import ErrorState
-import FlatCurry.Types
-import FlatCurry.Files
-import FlatCurry.Goodies (branchExpr, funcName)
-import FlatCurry.Annotated.Types
-import FlatCurry.Annotated.TypeSubst
+import           ErrorState
+import           FlatCurry.Types
+import           FlatCurry.Files
+import           FlatCurry.Goodies                  (branchExpr, funcName)
+import           FlatCurry.Annotated.Types
 import qualified FlatCurry.Annotated.Goodies as AFC (annExpr, funcName)
-import SCC
-import Rewriting.Term
-import Rewriting.Unification
-import Unsafe
+import           FlatCurry.Annotated.Pretty         (ppQName, ppExp, ppTypeExp
+                                                    , ppVarIndex)
+import           FlatCurry.Annotated.TypeSubst
+import           SCC
+import           Rewriting.Term
+import           Rewriting.Unification
+import           Unsafe
 
 -- ---------------------------------------------------------------------------
 -- Public Interface
@@ -85,11 +90,11 @@ inferProgFromProgEnv env p = case getTypeEnvFromProgEnv env p of
 
 --- Infers the types of a single function specified by its qualified name.
 ---
---- @param q - the qualified name of the function
 --- @param p - the Prog containing the function
+--- @param q - the qualified name of the function
 --- @return the inferred function or an error
-inferFunction :: QName -> Prog -> IO (Either String (AFuncDecl TypeExpr))
-inferFunction f p = getTypeEnv p >>= \te -> return (inferFunctionEnv te f p)
+inferFunction :: Prog -> QName -> IO (Either String (AFuncDecl TypeExpr))
+inferFunction p f = getTypeEnv p >>= \te -> return (inferFunctionEnv te p f)
 
 --- Infers the types of a group of (possibly mutually recursive) functions.
 --- Note that the functions are only monomorphically instantiated, i.e.,
@@ -101,6 +106,11 @@ inferNewFunctions :: Prog -> [FuncDecl]
 inferNewFunctions p@(Prog mid _ _ _ _) fs
   = getTypeEnv p >>= \te -> return (inferNewFunctionsEnv te mid fs)
 
+--- Infer the type of a single expression.
+---
+--- @param p - the Prog containing the function
+--- @param e - the expression
+--- @return the inferred expression or an error
 inferExpr :: Prog -> Expr -> IO (Either String (AExpr TypeExpr))
 inferExpr p e = getTypeEnv p >>= \te -> return (inferExprEnv te e)
 
@@ -119,16 +129,20 @@ inferProgEnv te p = evalES (annProg p >+= inferAProg) (initTIM te)
 --- Uses the given type environment instead of generating a new one.
 ---
 --- @param te  - the type environment
---- @param fun - the qualified name of the function
 --- @param p   - the Prog containing the function
+--- @param fun - the qualified name of the function
 --- @return the inferred function or an error
-inferFunctionEnv :: TypeEnv -> QName -> Prog
+inferFunctionEnv :: TypeEnv -> Prog -> QName
                  -> Either String (AFuncDecl TypeExpr)
-inferFunctionEnv te fun (Prog _ _ _ fd _) = case find (hasName fun) fd of
-  Nothing -> Left "No such function"
-  Just f  -> evalES (annFunc f >+= inferFunc) (initTIM te)
- where hasName f (Func g _ _ _ _) = f == g
+inferFunctionEnv te (Prog _ _ _ fs _) f = case find ((== f) . funcName) fs of
+  Nothing -> Left $ P.pretty 80 $ P.text "No such function:" P.<+> ppQName f
+  Just fd -> evalES (annFunc fd >+= inferFunc) (initTIM te)
 
+--- Infers the types of a group of (possibly mutually recursive) functions.
+--- Note that the functions are only monomorphically instantiated, i.e.,
+--- polymorphic recursion is not supported.
+--- The given type may be too general, for instance a type variable only,
+--- and will be specialised to the inferred type.
 inferNewFunctionsEnv :: TypeEnv -> String -> [FuncDecl]
                      -> Either String [AFuncDecl TypeExpr]
 inferNewFunctionsEnv te mid fs = evalES (infer (depGraph mid fs)) (initTIM te)
@@ -142,6 +156,12 @@ inferNewFunctionsEnv te mid fs = evalES (infer (depGraph mid fs)) (initTIM te)
     Just af -> returnES af
     Nothing -> failES "Internal error: extract"
 
+--- Infers the types of a single expression.
+--- Uses the given type environment instead of generating a new one.
+---
+--- @param te - the type environment
+--- @param e  - the expression
+--- @return the inferred expression or an error
 inferExprEnv :: TypeEnv -> Expr -> Either String (AExpr TypeExpr)
 inferExprEnv te e = evalES (annExpr e >+= inferAExpr) (initTIM te)
 
@@ -217,7 +237,7 @@ getTypeEnvFromProgEnv env prog@(Prog _ imps _ _ _) = case extract imps of
  where
   extract []     = Right []
   extract (i:is) = case lookup i env of
-    Nothing -> Left ("getTypeEnvFrom: Could not find module " ++ i)
+    Nothing -> Left $ "getTypeEnvFromProgEnv: Could not find module " ++ i
     Just p  -> case extract is of
       Left err -> Left err
       Right ps -> Right (p : ps)
@@ -302,7 +322,7 @@ lookupVarType v = gets >+= \ (_, _, _, var2Ty) -> returnES (lookupFM var2Ty v)
 getTypeVariant :: QName -> TIM (QName, TypeExpr)
 getTypeVariant f = gets >+= \ (env, _, fe, _) -> case lookupType env f of
   Nothing -> case lookupFM fe f of
-    Nothing -> failES "Internal error: getTypeVariant"
+    Nothing -> failES $ "Internal error: getTypeVariant " ++ show f
     Just ty -> returnES (f, ty)
   Just t  -> freshVariant t >+= \ty -> returnES (f, ty)
 
@@ -354,7 +374,8 @@ annRule (External s) = flip AExternal s <$> nextTVar
 annExpr :: Expr -> TIM (AExpr TypeExpr)
 annExpr (Var       i) = lookupVarType i >+=
                         maybe (failES err) (\ty -> returnES (AVar ty i))
-  where err = "Variable " ++ show i ++ " not initialized with a type!"
+  where err = P.pretty 80 $ P.text "Variable" P.<+> ppVarIndex i
+                      P.<+> P.text "was not initialized with a type"
 annExpr (Lit       l) = nextTVar >+= \ty -> returnES (ALit ty l)
 annExpr (Comb t q es) = flip AComb t <$> nextTVar <*> getTypeVariant q
                                                   <*> mapES annExpr es
@@ -381,7 +402,7 @@ annVar v = nextTVar >+= \ty -> insertVarType v ty >+ returnES (v, ty)
 --- and must therefore be met. Otherwise, the type inference must be extended.
 checkShadowing :: VarIndex -> TIM ()
 checkShadowing v = lookupVarType v >+= maybe (returnES ()) (\_ -> failES err)
-  where err = "shadowing with variable " ++ show v ++ " occurred!"
+  where err = P.pretty 80 $ P.text "shadowing with variable" P.<+> ppVarIndex v
 
 --- Converts the BranchExpr to an ABranchExpr, inserting TVars
 --- into all expressions
@@ -413,9 +434,9 @@ type TypeEqs = [(TypeExpr, TypeExpr)]
 (=.=) :: TypeExpr -> TypeExpr -> (TypeExpr, TypeExpr)
 ty1 =.= ty2 = (ty1, ty2)
 
-showTypeEqs :: TypeEqs -> String
-showTypeEqs = unlines . map showEquation
-  where showEquation (l, r) = show l ++ " =.= " ++ show r
+ppTypeEqs :: TypeEqs -> P.Doc
+ppTypeEqs = P.vsep . map ppEquation
+  where ppEquation (l, r) = ppTypeExp l P.<+> P.equals P.<+> ppTypeExp r
 
 --- Append two lists yielded by monadic computations.
 (++=) :: TIM [a] -> TIM [a] -> TIM [a]
@@ -435,12 +456,13 @@ inferFuncGroup :: [AFuncDecl TypeExpr] -> TIM [AFuncDecl TypeExpr]
 inferFuncGroup fs =
 --   returnES (unsafePerformIO (mapIO_ print fs)) >+= \() ->
   concatMapES (uncurry eqsRule) [(ty, r) | AFunc _ _ _ ty r <- fs] >+= \eqs ->
---   returnES (unsafePerformIO (putStrLn (showTypeEqs eqs))) >+= \() ->
-  solve eqs >+= \ sigma ->
+--   returnES (unsafePerformIO (putStrLn (ppTypeEqs eqs))) >+= \() ->
+  solve (P.text "functions" P.<+> doc) eqs >+= \ sigma ->
 --   returnES (unsafePerformIO (putStrLn (showAFCSubst sigma))) >+= \() ->
   mapES (normalize normFunc . substFunc sigma) fs >+= \afs ->
 --   returnES (unsafePerformIO (mapIO_ print afs)) >+= \() ->
   returnES afs
+  where doc = P.hsep $ P.punctuate P.comma (map (ppQName . AFC.funcName) fs)
 
 --- Infers all types in the given function.
 ---
@@ -450,13 +472,13 @@ inferFuncGroup fs =
 inferFunc :: AFuncDecl TypeExpr -> TIM (AFuncDecl TypeExpr)
 inferFunc func@(AFunc _ _ _ ty r) =
   eqsRule ty r >+= \ eqs    ->
-  solve eqs    >+= \ sigma ->
+  solve (P.text "function" P.<+> ppQName (AFC.funcName func)) eqs >+= \ sigma ->
   normalize normFunc (substFunc sigma func)
 
 --- Infer the type of an expression.
 inferAExpr :: AExpr TypeExpr -> TIM (AExpr TypeExpr)
 inferAExpr e = eqsExpr e >+= \eqs   ->
-               solve eqs >+= \sigma ->
+               solve (P.text "expression" P.<+> ppExp e) eqs >+= \sigma ->
                normalize normExpr (substExpr sigma e)
 
 --- Infer the type for a rule.
@@ -542,9 +564,10 @@ exprType = AFC.annExpr
 -- ---------------------------------------------------------------------------
 
 --- Solve a list of type equations using unification.
-solve :: TypeEqs -> TIM AFCSubst
-solve eqs = case unify (fromTypeEqs eqs) of
-  Left  err -> failES $ showUnificationError err
+solve :: P.Doc -> TypeEqs -> TIM AFCSubst
+solve what eqs = case unify (fromTypeEqs eqs) of
+  Left  err -> failES $ P.pretty 80 $ ppUnificationError err
+                 P.<+> P.text "during type inference for:" P.<$$> P.nest 2 what
   Right sub -> returnES (mapFM (\_ -> toTypeExpr) sub)
 
 --- Converts a list of type expression equations into term equations.
@@ -590,13 +613,13 @@ splitFirst (a:as) c
     where rest = splitFirst as c
 
 --- Formats a unification error with the given message.
-showUnificationError :: UnificationError String -> String
-showUnificationError (Clash      a b)
-  = "Clash: " ++ show (toTypeExpr a)
-    ++ " = "  ++ show (toTypeExpr b)
-showUnificationError (OccurCheck v t)
-  = "OccurCheck: Variable " ++ show (toTypeExpr (TermVar v))
-    ++ " occurs in " ++ show (toTypeExpr t)
+ppUnificationError :: UnificationError String -> P.Doc
+ppUnificationError (Clash      a b)
+  = P.text "Clash:" P.<+> ppTypeExp (toTypeExpr a) P.<+> P.equals
+                    P.<+> ppTypeExp (toTypeExpr b)
+ppUnificationError (OccurCheck v t)
+  = P.text "OccurCheck: Type variable" P.<+> ppTypeExp (toTypeExpr (TermVar v))
+      P.<+> P.text "occurs in type" P.<+> ppTypeExp (toTypeExpr t)
 
 -- ---------------------------------------------------------------------------
 -- 5. Functions for normalization of type variables.
