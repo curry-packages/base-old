@@ -5,15 +5,11 @@
 --- so-called FlatCurry programs.
 ---
 --- @author Michael Hanus
---- @version October 2015
+--- @version July 2016
 --- @category meta
 ------------------------------------------------------------------------------
 
 module FlatCurry.Types where
-
-------------------------------------------------------------------------------
--- Definition of data types for representing FlatCurry programs:
--- =============================================================
 
 --- Data type for representing a Curry module in the intermediate form.
 --- A value of this data type has the form
@@ -32,11 +28,12 @@ data Prog = Prog String [String] [TypeDecl] [FuncDecl] [OpDecl]
 --- In FlatCurry all names are qualified to avoid name clashes.
 --- The first component is the module name and the second component the
 --- unqualified name as it occurs in the source program.
-type QName = (String,String)
+type QName = (String, String)
 
 --- Data type to specify the visibility of various entities.
-data Visibility = Public    -- public (exported) entity
-                | Private   -- private entity
+data Visibility
+  = Public    -- public (exported) entity
+  | Private   -- private entity
 
 --- The data type for representing type variables.
 --- They are represented by `(TVar i)` where `i` is a type variable index.
@@ -60,8 +57,9 @@ type TVarIndex = Int
 ---
 --- Thus, a data type declaration consists of the name of the data type,
 --- a list of type parameters and a list of constructor declarations.
-data TypeDecl = Type    QName Visibility [TVarIndex] [ConsDecl]
-              | TypeSyn QName Visibility [TVarIndex] TypeExpr
+data TypeDecl
+  = Type    QName Visibility [TVarIndex] [ConsDecl]
+  | TypeSyn QName Visibility [TVarIndex] TypeExpr
 
 --- A constructor declaration consists of the name and arity of the
 --- constructor and a list of the argument types of the constructor.
@@ -93,6 +91,9 @@ data Fixity = InfixOp | InfixlOp | InfixrOp
 --- where `i` is a variable index.
 type VarIndex = Int
 
+--- Arity of a function.
+type Arity = Int
+
 --- Data type for representing function declarations.
 ---
 --- A function declaration in FlatCurry is a term of the form
@@ -116,12 +117,13 @@ type VarIndex = Int
 --- where s is the external name associated to this function.
 ---
 --- Thus, a function declaration consists of the name, arity, type, and rule.
-data FuncDecl = Func QName Int Visibility TypeExpr Rule
+data FuncDecl = Func QName Arity Visibility TypeExpr Rule
 
 --- A rule is either a list of formal parameters together with an expression
 --- or an "External" tag.
-data Rule = Rule [VarIndex] Expr
-          | External String
+data Rule
+  = Rule [VarIndex] Expr
+  | External String
 
 --- Data type for classifying case expressions.
 --- Case expressions can be either flexible or rigid in Curry.
@@ -137,19 +139,19 @@ data CaseType = Rigid | Flex       -- type of a case expression
 --- @cons ConsPartCall - a partial call to a constructor (i.e., not all arguments
 ---                      are provided) where the parameter is the number of
 ---                      missing arguments
-data CombType = FuncCall | ConsCall | FuncPartCall Int | ConsPartCall Int
+data CombType = FuncCall | ConsCall | FuncPartCall Arity | ConsPartCall Arity
 
 --- Data type for representing expressions.
 ---
 --- Remarks:
 ---
---- if-then-else expressions are represented as function calls:
+--- if-then-else expressions are represented as rigid case expressions:
 ---
 ---     (if e1 then e2 else e3)
 ---
 --- is represented as
 ---
----     (Comb FuncCall ("Prelude","if_then_else") [e1,e2,e3])
+---     (case e1 of { True -> e2; False -> e3})
 ---
 --- Higher-order applications are represented as calls to the (external)
 --- function `apply`. For instance, the rule
@@ -184,14 +186,15 @@ data CombType = FuncCall | ConsCall | FuncPartCall Int | ConsPartCall Int
 --- @cons Case - case distinction (rigid or flex)
 --- @cons Typed - typed expression to represent an expression with a
 ---               type declaration
-data Expr = Var VarIndex
-          | Lit Literal
-          | Comb CombType QName [Expr]
-          | Let [(VarIndex,Expr)] Expr
-          | Free [VarIndex] Expr
-          | Or Expr Expr
-          | Case CaseType Expr [BranchExpr]
-          | Typed Expr TypeExpr
+data Expr
+  = Var VarIndex
+  | Lit Literal
+  | Comb CombType QName [Expr]
+  | Let [(VarIndex, Expr)] Expr
+  | Free [VarIndex] Expr
+  | Or Expr Expr
+  | Case CaseType Expr [BranchExpr]
+  | Typed Expr TypeExpr
 
 --- Data type for representing branches in a case expression.
 ---
@@ -208,14 +211,16 @@ data Expr = Var VarIndex
 data BranchExpr = Branch Pattern Expr
 
 --- Data type for representing patterns in case expressions.
-data Pattern = Pattern QName [VarIndex]
-             | LPattern Literal
+data Pattern
+  = Pattern QName [VarIndex]
+  | LPattern Literal
 
 --- Data type for representing literals occurring in an expression
 --- or case branch. It is either an integer, a float, or a character constant.
-data Literal = Intc   Int
-             | Floatc Float
-             | Charc  Char
+data Literal
+  = Intc   Int
+  | Floatc Float
+  | Charc  Char
 
 -----------------------------------------------------------------------
 --- Translates a given qualified type name into external name relative to

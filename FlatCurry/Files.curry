@@ -22,10 +22,6 @@ import FlatCurry.Types
 import Maybe           (isNothing)
 import ReadShowTerm    (readUnqualifiedTerm, showTerm)
 
--- ---------------------------------------------------------------------------
--- Reading and writing of files
--- ---------------------------------------------------------------------------
-
 --- I/O action which parses a Curry program and returns the corresponding
 --- FlatCurry program.
 --- Thus, the argument is the module path (without suffix ".curry"
@@ -137,5 +133,3 @@ getFlatCurryFileInLoadPath :: String -> IO String
 getFlatCurryFileInLoadPath modname =
   getLoadPathForModule modname >>=
   getFileInPath (flatCurryFileName modname) [""]
-
------------------------------------------------------------------------
