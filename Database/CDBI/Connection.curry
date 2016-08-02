@@ -20,13 +20,20 @@ module Database.CDBI.Connection
   , connectSQLite, disconnect, begin, commit, rollback, runWithDB
   ) where
 
+import Char         ( isDigit )
+import Function     ( on )
+import Global       ( Global, GlobalSpec(..), global, readGlobal, writeGlobal )
+import IOExts       ( connectToCommand )
+import IO           ( Handle, hPutStrLn, hGetLine, hFlush, hClose, stderr )
+import List         ( insertBy, isInfixOf, isPrefixOf, tails )
 import ReadShowTerm ( readsQTerm )
-import Char ( isDigit )
-import ReadNumeric (readInt)
+import ReadNumeric  ( readInt )
 import Time
-import IOExts ( connectToCommand )
-import IO     ( Handle, hPutStrLn, hGetLine, hFlush, hClose)
-import List   ( isInfixOf, isPrefixOf, tails )
+
+--- Global flag for database debug mode.
+--- If on, all communication with database is written to stderr.
+dbDebug :: Bool
+dbDebug = False
 
 -- -----------------------------------------------------------------------------
 -- Datatypes 
@@ -187,8 +194,8 @@ data Connection = SQLiteConnection Handle
 --- @param str - name of the database (e.g. "database.db")
 --- @return A connection to a SQLite Database
 connectSQLite :: String -> IO Connection
-connectSQLite str = do
-  h <- connectToCommand $ "sqlite3 " ++ str
+connectSQLite db = do
+  h <- connectToCommand $ "sqlite3 " ++ db
   hPutAndFlush h ".mode line"
   hPutAndFlush h ".log stdout"
   return $ SQLiteConnection h
@@ -198,7 +205,9 @@ disconnect :: Connection -> IO ()
 disconnect (SQLiteConnection h) = hClose h
 
 hPutAndFlush :: Handle -> String -> IO ()
-hPutAndFlush h s = hPutStrLn h s >> hFlush h
+hPutAndFlush h s = do
+  when dbDebug $ hPutStrLn stderr ("DB>>> " ++ s)
+  hPutStrLn h s >> hFlush h
 
 --- Write a `String` to a `Connection`.
 writeConnection :: String -> Connection -> IO ()
@@ -206,7 +215,12 @@ writeConnection str (SQLiteConnection h) = hPutAndFlush h str
 
 --- Read a `String` from a `Connection`.
 readRawConnection :: Connection -> IO String
-readRawConnection (SQLiteConnection h) = hGetLine h
+readRawConnection (SQLiteConnection h) =
+  if dbDebug
+   then do inp <- hGetLine h
+           hPutStrLn stderr ("DB<<< " ++ inp)
+           return inp
+   else hGetLine h
 
 --- Begin a Transaction.
 begin :: Connection -> IO ()
@@ -221,12 +235,21 @@ rollback :: Connection -> IO ()
 rollback conn@(SQLiteConnection _) = writeConnection "rollback;" conn
 
 --- Executes an action dependent on a connection on a database
---- by connecting and disconnecting to the datebase.
+--- by connecting to the datebase. The connection will be kept open
+--- and re-used for the next action to this database.
 --- @param str - name of the database (e.g. "database.db")
 --- @param action - an action parameterized over a database connection
 --- @return the result of the action
 runWithDB :: String -> (Connection -> IO a) -> IO a
-runWithDB dbname dbaction = do
+runWithDB dbname dbaction = ensureSQLiteConnection dbname >>= dbaction
+
+--- Executes an action dependent on a connection on a database
+--- by connecting and disconnecting to the datebase.
+--- @param str - name of the database (e.g. "database.db")
+--- @param action - an action parameterized over a database connection
+--- @return the result of the action
+runWithDB' :: String -> (Connection -> IO a) -> IO a
+runWithDB' dbname dbaction = do
   conn <- connectSQLite dbname
   result <- dbaction conn
   disconnect conn
@@ -281,10 +304,10 @@ parseLines conn@(SQLiteConnection _) = do
 --- `getRandom` requests a random number from a SQLite-database.
 getRandom :: IO (SQLResult String)
 getRandom = do
-  conn <- connectSQLite ""
+  conn <- ensureSQLiteConnection "" -- connectSQLite ""
   writeConnection "select hex(randomblob(8));" conn
   result <- readConnection conn
-  disconnect conn
+  --disconnect conn
   return result
 
 --- Inserts parameters into a SQL query for placeholders denoted by (`?`).
@@ -292,10 +315,11 @@ getRandom = do
 --- Will throw error if the number of placeholders isn't equal to the length
 --- of the list
 insertParams :: String -> [String] -> SQLResult String
-insertParams qu xs = if (length xs == (countPlaceholder qu)) 
-                       then (Right (insertParams' qu xs))
-                       else (Left  (DBError ParameterError 
-                                          "Amount of placeholders not equal to length of placeholder-list"))
+insertParams qu xs =
+  if (length xs == (countPlaceholder qu)) 
+    then Right (insertParams' qu xs)
+    else Left (DBError ParameterError 
+               "Amount of placeholders not equal to length of placeholder-list")
 
   where 
   insertParams' sql []            = sql
@@ -456,3 +480,34 @@ isFloat :: String -> Bool
 isFloat [a] = isDigit a
 isFloat (a:b:_) = (isDigit a) || (isDigit b && a == '-')
 isFloat [] = False
+
+-----------------------------------------------------------------------------
+-- A global value that keeps all open database handles.
+openDBConnections :: Global [(String,Connection)]
+openDBConnections = global [] Temporary
+
+-- Connect to SQLite database. Either create a new connection
+-- (and keep it) or re-use a previous connection.
+ensureSQLiteConnection :: String -> IO Connection
+ensureSQLiteConnection db = do
+  dbConnections <- readGlobal openDBConnections
+  maybe (addNewConnection dbConnections) return (lookup db dbConnections)
+ where
+  addNewConnection dbConnections = do
+    dbcon <- connectSQLite db
+    writeGlobal openDBConnections $ -- sort against deadlock
+       insertBy ((<=) `on` fst) (db,dbcon) dbConnections
+    return dbcon
+
+-- Performs an action on all open database connections.
+withAllDBConnections :: (Connection -> IO _) -> IO ()
+withAllDBConnections f = readGlobal openDBConnections >>= mapIO_ (f . snd)
+
+--- Closes all database connections. Should be called when no more
+--- database access will be necessary.
+closeDBConnections :: IO ()
+closeDBConnections = do
+  withAllDBConnections disconnect
+  writeGlobal openDBConnections []
+
+-----------------------------------------------------------------------------
