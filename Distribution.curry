@@ -4,7 +4,7 @@
 --- compiler version, load paths, front end.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version October 2015
+--- @version August 2016
 --- @category general
 --------------------------------------------------------------------------------
 
@@ -17,10 +17,6 @@ module Distribution (
 
   joinModuleIdentifiers, splitModuleIdentifiers, splitModuleFileName,
   inCurrySubdirModule,
-
-  -- deprecated operations are not exported:
-  -- findFileInLoadPath,lookupFileInLoadPath,
-  -- readFirstFileInLoadPath,getLoadPath,getLoadPathForFile,
 
   getLoadPathForModule, lookupModuleSourceInLoadPath,
 
@@ -207,55 +203,6 @@ getSysLibPath = case curryCompiler of
   "kics"  -> return [installDir </> "src" </> "lib"]
   "kics2" -> return [installDir </> "lib"]
   _       -> error "Distribution.getSysLibPath: unknown curryCompiler"
-
---- Adds a directory name to a file by looking up the current load path.
---- An error message is delivered if there is no such file.
-lookupFileInLoadPath :: String -> IO (Maybe String)
-lookupFileInLoadPath fn = getLoadPathForFile fn >>= lookupFileInPath fn [""]
-
---- Adds a directory name to a file by looking up the current load path.
---- An error message is delivered if there is no such file.
-findFileInLoadPath :: String -> IO String
-findFileInLoadPath fn = getLoadPathForFile fn >>= getFileInPath fn [""]
-
---- Returns the contents of the file found first in the current load path.
---- An error message is delivered if there is no such file.
-readFirstFileInLoadPath :: String -> IO String
-readFirstFileInLoadPath fn = findFileInLoadPath fn >>= readFile
-
---- Returns the current path (list of directory names) that is
---- used for loading modules.
----
---- Deprecated operation!
-getLoadPath :: IO [String]
-getLoadPath = getLoadPathForFile "xxx"
-
---- Returns the current path (list of directory names) that is
---- used for loading modules w.r.t. a given main module file.
---- The directory prefix of the module file (or "." if there is
---- no such prefix) is the first element of the load path and the
---- remaining elements are determined by the environment variable
---- CURRYRPATH and the entry "libraries" of the system's rc file.
----
---- Deprecated operation! Use 'getLoadPathForModule'!
-getLoadPathForFile :: String -> IO [String]
-getLoadPathForFile file = do
-  syslib <- getSysLibPath
-  mblib  <- getRcVar "libraries"
-  let fileDir = dropFileName file
-  if curryCompiler `elem` ["pakcs","kics","kics2"] then
-    do currypath <- getEnviron "CURRYPATH"
-       let llib      = maybe [] splitSearchPath mblib
-           curryDirs = [fileDir, normalise (currySubdir </> fileDir)]
-       return $ curryDirs ++ (addCurrySubdirs
-                  (fileDir : (if null currypath
-                              then []
-                              else splitSearchPath currypath) ++
-                              llib ++ syslib))
-
-    else error "Distribution.getLoadPathForFile: unknown curryCompiler"
- where
-  addCurrySubdirs = concatMap (\ d -> [d, addCurrySubdir d])
 
 --- Returns the current path (list of directory names) that is
 --- used for loading modules w.r.t. a given module path.
