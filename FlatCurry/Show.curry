@@ -27,9 +27,9 @@ import Char
 showFlatProg :: Prog -> String
 showFlatProg (Prog modname imports types funcs ops) =
      " (Prog " ++ show modname
-     ++ (if imports==[] then "\n  []" else
+     ++ (if null imports then "\n  []" else
          "\n  [" ++ showFlatListElems show imports ++ "]")
-     ++ (if types==[] then "\n  []" else
+     ++ (if null types then "\n  []" else
          "\n  [" ++ showFlatListElems showFlatType types ++ "\n ]")
      ++ "\n  [" ++ showFlatListElems showFlatFunc funcs ++ "\n  ]"
      ++ "\n " ++ showFlatList showFlatOp ops
@@ -143,7 +143,7 @@ showCurryType tf nested (FuncType t1 t2) =
     (showCurryType tf (isFuncType t1) t1 ++ " -> " ++
      showCurryType tf False t2)
 showCurryType tf nested (TCons tc ts)
- | ts==[]  = tf tc
+ | null ts = tf tc
  | tc==("Prelude","[]") && (head ts == TCons ("Prelude","Char") [])
    = "String"
  | tc==("Prelude","[]")
@@ -200,7 +200,7 @@ showCurryExpr tf nested b (Comb ct cf [e1,e2])
               (showCurryExpr tf True b e1 ++ " " ++ tf cf ++ " " ++
                showCurryExpr tf True b e2 )
 showCurryExpr tf nested b (Comb _ cf (e1:e2:e3:es))
- | cf==("Prelude","if_then_else") && es==[]
+ | cf==("Prelude","if_then_else") && null es
   = showBracketsIf nested
         ("\n" ++
          sceBlanks b ++ " if "   ++ showCurryExpr tf False (b+2) e1 ++ "\n" ++
@@ -234,7 +234,8 @@ showCurryExpr tf nested b (Or e1 e2) =
 
 showCurryExpr tf nested b (Case ctype e cs) =
   showBracketsIf nested
-    ((if ctype==Rigid then "case " else "fcase ") ++
+    ((case ctype of Rigid -> "case "
+                    Flex  -> "fcase ") ++
      showCurryExpr tf True b e ++ " of\n " ++
      showCurryElems (showCurryCase tf (b+2)) cs ++ sceBlanks b)
 
@@ -305,7 +306,7 @@ isFiniteList :: Expr -> Bool
 isFiniteList (Var _) = False
 isFiniteList (Lit _) = False
 isFiniteList (Comb _ name args)
-  | name==("Prelude","[]") && args==[] = True
+  | name==("Prelude","[]") && null args = True
   | name==("Prelude",":") && length args == 2 = isFiniteList (args!!1)
   | otherwise = False
 isFiniteList (Let _ _) = False
