@@ -1,16 +1,17 @@
 --- ----------------------------------------------------------------------------
 --- This is the main CDBI-module. It provides datatypes and functions to
 --- do Database-Queries working with Entities (ER-Model)
---- @author Mike Tallarek, extensions by Julia Krone
+--- @author Mike Tallarek, extensions by Julia Krone, Michael Hanus
 ---
 --- @version 0.2
 --- @category database
 --- ----------------------------------------------------------------------------
 module Database.CDBI.ER (
     -- Database Functions
-    saveEntry, saveMultipleEntries, getEntries,
-    getEntriesCombined, updateEntries, deleteEntries, 
-    saveEntryCombined, updateEntry, updateEntryCombined, 
+    saveEntry, saveMultipleEntries, saveEntryCombined,
+    insertEntry, insertEntries, restoreEntries,
+    getEntries, getEntriesCombined, updateEntries, deleteEntries, 
+    insertEntryCombined, updateEntry, updateEntryCombined, 
     getColumn, getColumnTuple, getColumnTriple, getColumnFourTuple, 
     getColumnFiveTuple,
     --CDBI.Connection
@@ -50,19 +51,23 @@ import Database.CDBI.QueryTypes
 -- Database functions with Entities
 -- -----------------------------------------------------------------------------
 
---- Saves an entry to the database.
+--- Inserts an entry into the database.
 --- @param a - The entry to save
 --- @param en - The EntityDescription that describes the entity to be saved
 --- @param conn - A Connection to a database which will be used for this
 --- @return A Result without parameter if saving worked or an Error if there
 --- was a problem
-saveEntry :: a -> EntityDescription a -> DBAction ()
-saveEntry a en conn = do
+insertEntry :: a -> EntityDescription a -> DBAction ()
+insertEntry a en conn = do
   let query = ("insert into '" ++ (getTable en)
               ++ "' values("++ (questionmarks en) ++");")
   execute query ((getToInsertValues en) a) conn
 
---- Saves multiple entries to the database.
+--- Saves an entry to the database (only for backward compatibility).
+saveEntry :: a -> EntityDescription a -> DBAction ()
+saveEntry = insertEntry
+
+--- Inserts several entries into the database.
 --- @param xs - The list of entries to save
 --- @param en - The EntityDescription that describes the entities to be saved
 --- @param conn - A Connection to a database which will be used for this
@@ -71,11 +76,32 @@ saveEntry a en conn = do
 --- saving operation will be aborted but every saving operation up to that
 --- point will be executed. If these executed saving operations should also
 --- be discarded withTransaction or begin/commit/rollback should be used
-saveMultipleEntries :: [a] -> EntityDescription a -> DBAction ()
-saveMultipleEntries xs en conn = do
+insertEntries :: [a] -> EntityDescription a -> DBAction ()
+insertEntries xs en conn = do
   let query = ("insert into '" ++ (getTable en) ++
                "' values("++ (questionmarks en) ++");")
   executeMultipleTimes query (map (getToInsertValues en) xs) conn
+
+--- Saves multiple entries to the database (only for backward compatibility).
+saveMultipleEntries :: [a] -> EntityDescription a -> DBAction ()
+saveMultipleEntries = insertEntries
+
+--- Stores entries with their current keys in the database.
+--- It is an error if entries with the same key are already in the database.
+--- Thus, this operation is useful only to restore a database with saved data.
+--- @param xs - The list of entries to save
+--- @param en - The EntityDescription that describes the entities to be saved
+--- @param conn - A Connection to a database which will be used for this
+--- @return A Result without parameter if saving worked or an Error if there
+--- was a problem. If one saving operation reports an error, every following
+--- saving operation will be aborted but every saving operation up to that
+--- point will be executed. If these executed saving operations should also
+--- be discarded withTransaction or begin/commit/rollback should be used
+restoreEntries :: [a] -> EntityDescription a -> DBAction ()
+restoreEntries xs en conn = do
+  let query = ("insert into '" ++ (getTable en) ++
+               "' values("++ (questionmarks en) ++");")
+  executeMultipleTimes query (map (getToValues en) xs) conn
 
 --- Gets entries from the database.
 --- @param spec - Specifier All or Distinct
@@ -292,14 +318,14 @@ getEntriesCombined spec cd@(CD _ f _ _) joins crit op limit conn = do
     Right xs -> return $ Right $ map f xs
     Left err -> return $ Left err
                        
---- Saves combined entries.
+--- Inserts combined entries.
 --- @param a - The combined Entity to be saved
 --- @param cd - The CombinedDescription that describes the entity
 --- @param conn - A Connection to a database which will be used for this
 --- @return A Result without parameter if saving worked or an Error if there
 --- was a problem
-saveEntryCombined :: a -> CombinedDescription a -> DBAction ()
-saveEntryCombined ent (CD desc _ _ f3) conn = foldIO save 
+insertEntryCombined :: a -> CombinedDescription a -> DBAction ()
+insertEntryCombined ent (CD desc _ _ f3) conn = foldIO save 
                                                      (Right _) 
                                                      (zip desc (f3 ent))
   where
@@ -313,7 +339,9 @@ saveEntryCombined ent (CD desc _ _ f3) conn = foldIO save
                                  (questionmarksHelp (length types)) ++");")
                        execute query vals conn
 
-
+--- Saves combined entries (for backward compatibility).
+saveEntryCombined :: a -> CombinedDescription a -> DBAction ()
+saveEntryCombined = insertEntryCombined
 
 --- Updates entries depending on wether they fulfill the criteria or not
 --- @param en - The EntityDescription descriping the Entities that are to be
