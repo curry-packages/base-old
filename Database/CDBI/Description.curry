@@ -1,7 +1,12 @@
---- Module contains basic datatypes representing a relational data model and
---- designed to provide type safety when working with databases (via CDBI).
---- @author Mike Tallarek, changes by Julia Krone
+--- This module contains basic datatypes and operations to represent
+--- a relational data model in a type-safe manner. This representation is
+--- used by the library `Database.CDBI.ER` to provide type safety
+--- when working with relational databases.
+--- The tool `erd2cdbi` generates from an entity-relationship model
+--- a Curry program that represents all entities and relationships
+--- by the use of this module.
 ---
+--- @author Mike Tallarek, changes by Julia Krone
 --- @version 0.2
 --- @category database
 --- ----------------------------------------------------------------------------
@@ -192,6 +197,9 @@ sqlStringOrNull :: (Maybe String) -> SQLValue
 sqlStringOrNull Nothing = SQLNull
 sqlStringOrNull (Just a) = SQLString a
 
+sqlString :: String -> SQLValue
+sqlString a = SQLString a
+
 sqlBoolOrNull :: (Maybe Bool) -> SQLValue
 sqlBoolOrNull Nothing = SQLNull
 sqlBoolOrNull (Just a) = SQLBool a
@@ -215,6 +223,10 @@ charOrNothing (SQLChar a) = Just a
 stringOrNothing :: SQLValue -> (Maybe String)
 stringOrNothing SQLNull = Nothing
 stringOrNothing (SQLString a) = Just a
+
+fromStringOrNull :: SQLValue -> String
+fromStringOrNull SQLNull = ""
+fromStringOrNull (SQLString a) = a
 
 boolOrNothing :: SQLValue -> (Maybe Bool)
 boolOrNothing SQLNull = Nothing
