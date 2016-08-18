@@ -69,4 +69,4 @@ intersectRBT s1 s2 = foldr insertRBT (RBT.newTreeLike s1)
 --- Generic sort based on insertion into red-black trees.
 --- The first argument is the order for the elements.
 sortRBT  :: (a -> a -> Bool) -> [a] -> [a]
-sortRBT = RBT.sort
+sortRBT = RBT.sortBy

@@ -45,7 +45,7 @@ module AnsiCodes
   , cyan
   , magenta
   , white
-  , default
+  , fgDefault
 
   -- background color
   , bgBlack
@@ -190,8 +190,8 @@ white :: String -> String
 white = mode 37
 
 --- Default foreground color
-default :: String -> String
-default = mode 39
+fgDefault :: String -> String
+fgDefault = mode 39
 
 -- -----------------------------------------------------------------------------
 -- Background color

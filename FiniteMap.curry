@@ -391,8 +391,8 @@ minFM :: FM a b -> Maybe (a,b)
 minFM = min . tree
   where
    min EmptyFM            = Nothing
-   min (BranchFM k x _ l _) | l==EmptyFM = Just (k,x)
-                            | otherwise  = min l
+   min (BranchFM k x _ l _) | isBranchFM l = min l
+                            | otherwise    = Just (k,x)
 
 --- Retrieves the greatest key/element pair in the finite map
 --- according to the basic key ordering.
@@ -400,8 +400,8 @@ maxFM :: FM a b -> Maybe (a,b)
 maxFM = max . tree
   where
     max EmptyFM            = Nothing
-    max (BranchFM k x _ _ r) | r==EmptyFM = Just (k,x)
-                             | otherwise  = max r
+    max (BranchFM k x _ _ r) | isBranchFM r = max r
+                             | otherwise    = Just (k,x)
 
 
 
@@ -475,6 +475,10 @@ data FiniteMap key elt
 
 isEmptyFM' :: FiniteMap _ _ -> Bool
 isEmptyFM' fm = sizeFM' fm == 0
+
+isBranchFM :: FiniteMap _ _ -> Bool
+isBranchFM (BranchFM _ _ _ _ _) = True
+isBranchFM EmptyFM              = False
 
 -------------------------------------------------------------------------
 --                                                                      -

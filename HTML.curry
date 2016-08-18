@@ -1347,7 +1347,7 @@ showHtmlFormInEnv url key (HtmlForm ftitle fparams fhexp) crefnr = do
 extractCookies :: HtmlForm -> (String,HtmlForm)
 extractCookies (HtmlAnswer ctype cont) = ("",HtmlAnswer ctype cont)
 extractCookies (HtmlForm title params hexp) =
-  let cookiestring = if cookies==[]
+  let cookiestring = if null cookies
                      then ""
                      else "Cache-control: no-cache=\"set-cookie\"\n" ++
                           concatMap ((++"\n") . formatCookie) cookies
@@ -1378,9 +1378,6 @@ getMaxFieldNr ((name,_):env) =
   if take 6 name == "FIELD_"
   then max (tryReadNat 0 (drop 6 name)) (getMaxFieldNr env)
   else getMaxFieldNr env
-
-max :: a -> a -> a
-max x y = if x>y then x else y
 
 -- try to read a natural number in a string or return first argument:
 tryReadNat :: Int -> String -> Int

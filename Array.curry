@@ -40,7 +40,7 @@ errorArray idx =  error ("Array index "++show idx++" not initialized")
 --- indexes.
 --- @param default - function to call for each non-initialized index
 emptyDefaultArray :: (Int -> b) -> Array b
-emptyDefaultArray default = Array default Empty
+emptyDefaultArray dflt = Array dflt Empty
 
 --- Inserts a list of entries into an array.
 --- @param array - array to modify
@@ -49,9 +49,9 @@ emptyDefaultArray default = Array default Empty
 --- will be overwritten. Likewise the last entry with a given index
 --- will be contained in the result array.
 (//) :: Array b -> [(Int,b)] -> Array b
-(//) (Array default array) modifications = 
-  Array default 
-    (foldr (\ (n,v) a -> at (default n) a n (const v)) array modifications)
+(//) (Array dflt array) modifications = 
+  Array dflt 
+    (foldr (\ (n,v) a -> at (dflt n) a n (const v)) array modifications)
 
 --- Inserts a new entry into an array.
 --- @param array - array to modify
@@ -59,8 +59,8 @@ emptyDefaultArray default = Array default Empty
 --- @param val - value to update at index idx
 --- Entries already initialized will be overwritten.
 update :: Array b -> Int -> b -> Array b
-update (Array default a) i v = 
-  Array default (at (default i) a i (const v))
+update (Array dflt a) i v = 
+  Array dflt (at (dflt i) a i (const v))
 
 --- Applies a function to an element.
 --- @param array - array to modify
@@ -68,32 +68,32 @@ update (Array default a) i v =
 --- @param fun - function to apply on element at index idx
 
 applyAt :: Array b -> Int -> (b->b) -> Array b
-applyAt (Array default a) n f = Array default (at (default n) a n f)
+applyAt (Array dflt a) n f = Array dflt (at (dflt n) a n f)
 
 
 at :: b -> Entry b -> Int -> (b -> b) -> Entry b
-at default Empty n f 
-  | n==0      = Entry (f default) Empty Empty
-  | odd n     = Entry default (at default Empty (n `div` 2) f) Empty
-  | otherwise = Entry default Empty (at default Empty (n `div` 2 - 1) f) 
-at default (Entry v al ar) n f
+at dflt Empty n f 
+  | n==0      = Entry (f dflt) Empty Empty
+  | odd n     = Entry dflt (at dflt Empty (n `div` 2) f) Empty
+  | otherwise = Entry dflt Empty (at dflt Empty (n `div` 2 - 1) f) 
+at dflt (Entry v al ar) n f
   | n==0      = Entry (f v) al ar
-  | odd n     = Entry v (at default al (n `div` 2) f) ar
-  | otherwise = Entry v al (at default ar (n `div` 2 - 1) f)
+  | odd n     = Entry v (at dflt al (n `div` 2) f) ar
+  | otherwise = Entry v al (at dflt ar (n `div` 2 - 1) f)
 
 
 --- Yields the value at a given position.
 --- @param a - array to look up in
 --- @param n - index, where to look 
 (!) :: Array b -> Int -> b
-(Array default array) ! i = from (default i) array i
+(Array dflt array) ! i = from (dflt i) array i
 
 from :: a -> Entry a -> Int -> a
-from default Empty _ = default
-from default (Entry v al ar) n 
+from dflt Empty _ = dflt
+from dflt (Entry v al ar) n 
   | n==0      = v
-  | odd n     = from default al (n `div` 2)
-  | otherwise = from default ar (n `div` 2 - 1)
+  | odd n     = from dflt al (n `div` 2)
+  | otherwise = from dflt ar (n `div` 2 - 1)
 
 
 split :: [a] -> ([a],[a])

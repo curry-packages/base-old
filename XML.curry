@@ -177,7 +177,7 @@ showXmlExp :: Int -> (String -> String) -> XmlExp -> String
 showXmlExp i encFun (XText s)  = xtab i ++ (encFun s) ++ "\n"
 showXmlExp i encFun (XElem tag attrs xexps) =
   xtab i ++ showXmlOpenTag tag attrs encFun ++
-  if xexps == []
+  if null xexps
   then " />\n"
   else if length xexps == 1 && isXText (head xexps)
        then let [XText s] = xexps
@@ -240,11 +240,11 @@ readXmlFile :: String -> IO XmlExp
 readXmlFile file =
  do xmlstring <- readFile file
     let xexps = parseXmlString xmlstring
-    if xexps==[]
+    if null xexps
       then error ("File "++file++" contains no XML document!")
-      else if tail xexps /= []
-            then error ("File "++file++" contains more than one XML document!")
-            else return (head xexps)
+      else if null (tail xexps)
+            then return (head xexps)
+            else error ("File "++file++" contains more than one XML document!")
 
 --- Tries to read a file with an XML document and returns
 --- the corresponding XML expression, if possible.
