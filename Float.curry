@@ -1,8 +1,8 @@
 ------------------------------------------------------------------------------
 --- A collection of operations on floating point numbers.
+---
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Float(pi,(+.),(-.),(*.),(/.),(^.),i2f,truncate,round,recip,sqrt,log
              ,logBase, exp,sin,cos,tan,asin,acos,atan,sinh,cosh,tanh

@@ -1,17 +1,26 @@
 ------------------------------------------------------------------------------
 --- Library with some operations for encapsulating search.
---- In previous versions of PAKCS, these operations were part of
---- the standard prelude. Since there are alternative and better approaches
---- the encpasulate search, e.g., set functions,
---- these operations are now in a separate module
---- in order to keep the standard prelude more portable.
+--- Note that some of these operations are not fully declarative,
+--- i.e., the results depend on the order of evaluation and program rules.
+--- There are newer and better approaches the encpasulate search,
+--- in particular, set functions (see module `SetFunctions`),
+--- which should be used.
+---
+--- In previous versions of PAKCS, some of these operations were part of
+--- the standard prelude. We keep them in this separate module
+--- in order to support a more portable standard prelude.
 ---
 --- @author Michael Hanus
---- @version May 2014
+--- @version July 2015
+--- @category general
 ------------------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 
 module Findall
   ( getAllValues, getSomeValue
+  , allValues, someValue
+  , allSolutions, someSolution
   , try, inject, solveAll, once, best
   , findall, findfirst, browse, browseList, unpack
   , rewriteAll, rewriteSome
@@ -24,7 +33,7 @@ module Findall
 --- as long as the expression contains unbound variables.
 --- Similar to Prolog's findall.
 getAllValues :: a -> IO [a]
-getAllValues e = return (findall (=:=e))
+getAllValues e = return (allValues e)
 
 --- Gets a value of an expression (currently, via an incomplete
 --- depth-first strategy). The expression must have a value, otherwise
@@ -33,17 +42,66 @@ getAllValues e = return (findall (=:=e))
 --- any results. Moreover, the evaluation suspends as long as the expression
 --- contains unbound variables.
 getSomeValue :: a -> IO a
-getSomeValue e = return (findfirst (=:=e))
+getSomeValue e = return (someValue e)
 
+--- Returns all values of an expression (currently, via an incomplete
+--- depth-first strategy). Conceptually, all values are computed on a copy
+--- of the expression, i.e., the evaluation of the expression does not share
+--- any results. Moreover, the evaluation suspends as long as the expression
+--- contains unbound variables.
+---
+--- Note that this operation is not purely declarative since the ordering
+--- of the computed values depends on the ordering of the program rules.
+allValues :: a -> [a]
+allValues e = findall (\x -> x=:=e)
+
+--- Returns some value for an expression (currently, via an incomplete
+--- depth-first strategy). If the expression has no value, the
+--- computation fails. Conceptually, the value is computed on a copy
+--- of the expression, i.e., the evaluation of the expression does not share
+--- any results. Moreover, the evaluation suspends as long as the expression
+--- contains unbound variables.
+---
+--- Note that this operation is not purely declarative since
+--- the computed value depends on the ordering of the program rules.
+--- Thus, this operation should be used only if the expression
+--- has a single value.
+someValue :: a -> a
+someValue e = findfirst (=:=e)
+
+--- Returns all values satisfying a predicate, i.e., all arguments such that
+--- the predicate applied to the argument can be evaluated to `True`
+--- (currently, via an incomplete depth-first strategy).
+--- The evaluation suspends as long as the predicate expression
+--- contains unbound variables.
+---
+--- Note that this operation is not purely declarative since the ordering
+--- of the computed values depends on the ordering of the program rules.
+allSolutions :: (a->Bool) -> [a]
+allSolutions p = findall (\x -> p x =:= True)
+
+--- Returns some values satisfying a predicate, i.e., some argument such that
+--- the predicate applied to the argument can be evaluated to `True`
+--- (currently, via an incomplete depth-first strategy).
+--- If there is no value satisfying the predicate, the computation fails.
+---
+--- Note that this operation is not purely declarative since the ordering
+--- of the computed values depends on the ordering of the program rules.
+--- Thus, this operation should be used only if the
+--- predicate has a single solution.
+someSolution :: (a->Bool) -> a
+someSolution p = findfirst (\x -> p x =:= True)
+
+------------------------------------------------------------------------------
 --- Basic search control operator.
-try     :: (a -> Success) -> [a -> Success]
+try     :: (a -> Bool) -> [a -> Bool]
 try external
 
 --- Inject operator which adds the application of the unary
 --- procedure p to the search variable to the search goal
 --- taken from Oz. p x comes before g x to enable a test+generate
 --- form in a sequential implementation.
-inject  :: (a -> Success) -> (a -> Success) -> (a -> Success)
+inject  :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
 inject g p = \x -> p x & g x
 
 --- Computes all solutions via a a depth-first strategy.
@@ -59,7 +117,7 @@ inject g p = \x -> p x & g x
 -- The following solveAll algorithm is faster.
 -- For comparison we have solveAll2, which implements the above algorithm.
 
-solveAll     :: (a -> Success) -> [a -> Success]
+solveAll     :: (a -> Bool) -> [a -> Bool]
 solveAll g = evalall (try g)
   where
     evalall []      = []
@@ -74,7 +132,7 @@ solveAll g = evalall (try g)
     evalall3 (c:d:e) b  = evalall3 (try c) (d:e ++b)
 
 
-solveAll2  :: (a -> Success) -> [a -> Success]
+solveAll2  :: (a -> Bool) -> [a -> Bool]
 solveAll2 g = evalResult (try g)
         where
           evalResult []      = []
@@ -83,7 +141,7 @@ solveAll2 g = evalResult (try g)
 
 
 --- Gets the first solution via a depth-first strategy.
-once :: (a -> Success) -> (a -> Success)
+once :: (a -> Bool) -> (a -> Bool)
 once g = head (solveAll g)
 
 
@@ -91,7 +149,7 @@ once g = head (solveAll g)
 --- a specified operator that can always take a decision which
 --- of two solutions is better.
 --- In general, the comparison operation should be rigid in its arguments!
-best           :: (a -> Success) -> (a -> a -> Bool) -> [a -> Success]
+best           :: (a -> Bool) -> (a -> a -> Bool) -> [a -> Bool]
 best g cmp = bestHelp [] (try g) []
  where
    bestHelp [] []     curbest = curbest
@@ -114,28 +172,28 @@ best g cmp = bestHelp [] (try g) []
 --- Gets all solutions via a depth-first strategy and unpack
 --- the values from the lambda-abstractions.
 --- Similar to Prolog's findall.
-findall :: (a -> Success) -> [a]
+findall :: (a -> Bool) -> [a]
 findall g = map unpack (solveAll g)
 
 
 --- Gets the first solution via a depth-first strategy
 --- and unpack the values from the search goals.
-findfirst :: (a -> Success) -> a
+findfirst :: (a -> Bool) -> a
 findfirst g = head (findall g)
 
 --- Shows the solution of a solved constraint.
-browse  :: Show a => (a -> Success) -> IO ()
+browse  :: Show a => (a -> Bool) -> IO ()
 browse g = putStr (show (unpack g))
 
 --- Unpacks solutions from a list of lambda abstractions and write
 --- them to the screen.
-browseList :: Show a => [a -> Success] -> IO ()
+browseList :: Show a => [a -> Bool] -> IO ()
 browseList []     = done
 browseList (g:gs) = browse g >> putChar '\n' >> browseList gs
 
 
 --- Unpacks a solution's value from a (solved) search goal.
-unpack  :: (a -> Success) -> a
+unpack  :: (a -> Bool) -> a
 unpack g | g x = x where x free
 
 --- Gets all values computable by term rewriting.

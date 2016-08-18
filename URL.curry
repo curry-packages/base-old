@@ -3,9 +3,8 @@
 ---
 --- @author Michael Hanus
 --- @version November 2003
+--- @category web
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module URL(getContentsOfUrl) where
 

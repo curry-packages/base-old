@@ -7,9 +7,8 @@
 ---
 --- @author Michael Hanus
 --- @version January 2000
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Read(readNat,readInt,readHex)  where
 

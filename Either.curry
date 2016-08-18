@@ -1,12 +1,11 @@
 --- ----------------------------------------------------------------------------
 --- Library with some useful operations for the `Either` data type.
 ---
---- @author  Björn Peemöller
---- @version September 2014
+--- @author   Bjoern Peemoeller
+--- @version  March 2015
+--- @category general
 --- ----------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
-
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 module Either
   ( Either (..)
   , either
@@ -14,6 +13,8 @@ module Either
   , rights
   , isLeft
   , isRight
+  , fromLeft
+  , fromRight
   , partitionEithers
   ) where
 
@@ -34,6 +35,14 @@ isLeft (Right _) = False
 isRight :: Either a b -> Bool
 isRight (Left  _) = False
 isRight (Right _) = True
+
+--- Extract the value from a `Left` constructor.
+fromLeft :: Either a _ -> a
+fromLeft (Left x) = x
+
+--- Extract the value from a `Right` constructor.
+fromRight :: Either _ b -> b
+fromRight (Right x) = x
 
 --- Partitions a list of `Either` into two lists.
 --- All the `Left` elements are extracted, in order, to the first

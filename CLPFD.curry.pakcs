@@ -25,6 +25,7 @@
 ---
 --- @author Michael Hanus
 --- @version June 2012
+--- @category general
 ------------------------------------------------------------------------------
 
 module CLPFD(domain, (+#), (-#), (*#), (=#), (/=#), (<#), (<=#), (>#), (>=#),
@@ -50,10 +51,10 @@ infixr 1 #=>#, #<=>#
 --- @param min - minimum value for all variables in xs
 --- @param max - maximum value for all variables in xs
 
-domain :: [Int] -> Int -> Int -> Success
+domain :: [Int] -> Int -> Int -> Bool
 domain vs l u = ((prim_domain $!! (ensureSpine vs)) $# l) $# u
 
-prim_domain :: [Int] -> Int -> Int -> Success
+prim_domain :: [Int] -> Int -> Int -> Bool
 prim_domain external
 
 --- Addition of FD variables.
@@ -78,45 +79,45 @@ prim_FD_times :: Int -> Int -> Int
 prim_FD_times external
 
 --- Equality of FD variables.
-(=#)   :: Int -> Int -> Success
+(=#)   :: Int -> Int -> Bool
 x =# y = (prim_FD_equal $! y) $! x
 
-prim_FD_equal :: Int -> Int -> Success
+prim_FD_equal :: Int -> Int -> Bool
 prim_FD_equal external
 
 --- Disequality of FD variables.
-(/=#)  :: Int -> Int -> Success
+(/=#)  :: Int -> Int -> Bool
 x /=# y = (prim_FD_notequal $! y) $! x
 
-prim_FD_notequal :: Int -> Int -> Success
+prim_FD_notequal :: Int -> Int -> Bool
 prim_FD_notequal external
 
 --- "Less than" constraint on FD variables.
-(<#)   :: Int -> Int -> Success
+(<#)   :: Int -> Int -> Bool
 x <# y = (prim_FD_le $! y) $! x
 
-prim_FD_le :: Int -> Int -> Success
+prim_FD_le :: Int -> Int -> Bool
 prim_FD_le external
 
 --- "Less than or equal" constraint on FD variables.
-(<=#)  :: Int -> Int -> Success
+(<=#)  :: Int -> Int -> Bool
 x <=# y = (prim_FD_leq $! y) $! x
 
-prim_FD_leq :: Int -> Int -> Success
+prim_FD_leq :: Int -> Int -> Bool
 prim_FD_leq external
 
 --- "Greater than" constraint on FD variables.
-(>#)   :: Int -> Int -> Success
+(>#)   :: Int -> Int -> Bool
 x ># y = (prim_FD_ge $! y) $! x
 
-prim_FD_ge :: Int -> Int -> Success
+prim_FD_ge :: Int -> Int -> Bool
 prim_FD_ge external
 
 --- "Greater than or equal" constraint on FD variables.
-(>=#)  :: Int -> Int -> Success
+(>=#)  :: Int -> Int -> Bool
 x >=# y = (prim_FD_geq $! y) $! x
 
-prim_FD_geq :: Int -> Int -> Success
+prim_FD_geq :: Int -> Int -> Bool
 prim_FD_geq external
 
 ---------------------------------------------------------------------------
@@ -185,33 +186,33 @@ x #=># y = FDImply x y
 x #<=># y = FDEquiv x y
 
 --- Solves a reified constraint.
-solve :: Constraint -> Success
+solve :: Constraint -> Bool
 solve c = prim_solve_reify $!! c
 
-prim_solve_reify :: Constraint -> Success
+prim_solve_reify :: Constraint -> Bool
 prim_solve_reify external
 
 ---------------------------------------------------------------------------
 -- Complex constraints.
 
 --- Relates the sum of FD variables with some integer of FD variable.
-sum :: [Int] -> (Int -> Int -> Success) -> Int -> Success
+sum :: [Int] -> (Int -> Int -> Bool) -> Int -> Bool
 sum vs rel v = seq (normalForm (ensureSpine vs))
                    (seq (ensureNotFree rel) (seq v (prim_sum vs rel v)))
 
-prim_sum :: [Int] -> (Int -> Int -> Success) -> Int -> Success
+prim_sum :: [Int] -> (Int -> Int -> Bool) -> Int -> Bool
 prim_sum external
 
 --- (scalarProduct cs vs relop v) is satisfied if ((cs*vs) relop v) is satisfied.
 --- The first argument must be a list of integers. The other arguments are as
 --- in <code>sum</code>.
-scalarProduct :: [Int] -> [Int] -> (Int -> Int -> Success) -> Int -> Success
+scalarProduct :: [Int] -> [Int] -> (Int -> Int -> Bool) -> Int -> Bool
 scalarProduct cs vs rel v =
   seq (groundNormalForm cs)
       (seq (normalForm (ensureSpine vs))
            (seq (ensureNotFree rel) (seq v (prim_scalarProduct cs vs rel v))))
 
-prim_scalarProduct :: [Int] -> [Int] -> (Int -> Int -> Success) -> Int -> Success
+prim_scalarProduct :: [Int] -> [Int] -> (Int -> Int -> Bool) -> Int -> Bool
 prim_scalarProduct external
 
 
@@ -219,13 +220,13 @@ prim_scalarProduct external
 --- elements in the list of FD variables vs that are equal to v, is satisfied.
 --- The first argument must be an integer. The other arguments are as
 --- in <code>sum</code>.
-count :: Int -> [Int] -> (Int -> Int -> Success) -> Int -> Success
+count :: Int -> [Int] -> (Int -> Int -> Bool) -> Int -> Bool
 count v vs rel c =
   seq (ensureNotFree v)
       (seq (normalForm (ensureSpine vs))
            (seq (ensureNotFree rel) (seq c (prim_count v vs rel c))))
 
-prim_count :: Int -> [Int] -> (Int -> Int -> Success) -> Int -> Success
+prim_count :: Int -> [Int] -> (Int -> Int -> Bool) -> Int -> Bool
 prim_count external
 
 
@@ -234,21 +235,21 @@ prim_count external
 --- @return satisfied if the FD variables in the argument list xs
 ---         have pairwise different values.
 
-allDifferent :: [Int] -> Success
+allDifferent :: [Int] -> Bool
 allDifferent vs = seq (normalForm (ensureSpine vs)) (prim_allDifferent vs)
 
 --- For backward compatibility. Use <code>allDifferent</code>.
-all_different :: [Int] -> Success
+all_different :: [Int] -> Bool
 all_different = allDifferent
 
-prim_allDifferent :: [Int] -> Success
+prim_allDifferent :: [Int] -> Bool
 prim_allDifferent external
 
 --- Instantiate a single FD variable to its values in the specified domain.
-indomain :: Int -> Success
+indomain :: Int -> Bool
 indomain x = seq x (prim_indomain x)
 
-prim_indomain :: Int -> Success
+prim_indomain :: Int -> Bool
 prim_indomain external
 
 
@@ -260,12 +261,12 @@ prim_indomain external
 --- @param xs - list of FD variables that are non-deterministically
 ---             instantiated to their possible values.
 
-labeling :: [LabelingOption] -> [Int] -> Success
+labeling :: [LabelingOption] -> [Int] -> Bool
 labeling options vs = seq (normalForm (map ensureNotFree (ensureSpine options)))
                           (seq (normalForm (ensureSpine vs))
                                (prim_labeling options vs))
 
-prim_labeling :: [LabelingOption] -> [Int] -> Success
+prim_labeling :: [LabelingOption] -> [Int] -> Bool
 prim_labeling external
 
 --- This datatype contains all options to control the instantiated of FD variables
@@ -298,6 +299,12 @@ prim_labeling external
 --- @cons Assumptions x - The variable x is unified with the number of choices
 ---                       made by the selected enumeration strategy when a solution
 ---                       is found.
+--- @cons RandomVariable x - Select a random variable for instantiation
+---                          where `x` is a seed value for the random numbers
+---                          (only supported by SWI-Prolog).
+--- @cons RandomValue x - Label variables with random integer values
+---                       where `x` is a seed value for the random numbers
+---                       (only supported by SWI-Prolog).
 
 data LabelingOption = LeftMost
                     | FirstFail
@@ -313,6 +320,8 @@ data LabelingOption = LeftMost
                     | Minimize Int
                     | Maximize Int
                     | Assumptions Int
+                    | RandomVariable Int
+                    | RandomValue Int
 
 
 -- end of library CLPFD

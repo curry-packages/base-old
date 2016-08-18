@@ -1,13 +1,13 @@
 ------------------------------------------------------------------------------
---- Library for GUI programming in Curry (based on Tcl/Tk).
---- [This paper](http://www.informatik.uni-kiel.de/~mh/papers/PADL00.html)
---- contains a description of the basic ideas behind this library.
+--- This library contains definitions and functions to implement
+--- graphical user interfaces for Curry programs.
+--- It is based on Tcl/Tk and its basic ideas are described in detail
+--- [in this paper](http://www.informatik.uni-kiel.de/~mh/papers/PADL00.html)
 ---
 --- @authors Michael Hanus, Bernd Brassel
 --- @version November 2014
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module GUI(GuiPort,Widget(..),Button,ConfigButton,
            TextEditScroll,ListBoxScroll,CanvasScroll,EntryScroll,
@@ -168,7 +168,15 @@ data Event = DefaultEvent
            | MouseButton3
            | KeyPress
            | Return
-  deriving Eq
+-- deriving Eq
+
+instance Eq Event where
+  DefaultEvent == x = case x of { DefaultEvent -> True ; _ -> False }
+  MouseButton1 == x = case x of { MouseButton1 -> True ; _ -> False }
+  MouseButton2 == x = case x of { MouseButton2 -> True ; _ -> False }
+  MouseButton3 == x = case x of { MouseButton3 -> True ; _ -> False }
+  KeyPress == x = case x of { KeyPress -> True ; _ -> False }
+  Return == x = case x of { Return -> True ; _ -> False }
 
 -- translate event into corresponding Tcl string (except for DefaultEvent)
 -- with a leading blank:
@@ -189,7 +197,6 @@ event2tcl Return       = " <Return>"
 --- @cons BottomAlign  - bottom alignment
 data ConfCollection =
    CenterAlign | LeftAlign | RightAlign | TopAlign | BottomAlign
-  deriving Eq
 
 --- The data type for specifying items in a menu.
 --- @cons MButton - a button with an associated command
@@ -208,7 +215,7 @@ data CanvasItem = CLine [(Int,Int)] String
                 | CRectangle (Int,Int) (Int,Int) String
                 | COval (Int,Int) (Int,Int) String
                 | CText (Int,Int) String String
-  deriving Eq
+
 
 --- The (hidden) data type of references to a widget in a GUI window.
 --- Note that the constructor WRefLabel will not be exported so that values
@@ -219,7 +226,6 @@ data CanvasItem = CLine [(Int,Int)] String
 ---       button / canvas / checkbutton / entry / label / listbox /
 ---       message / scale / scrollbar / textedit
 data WidgetRef = WRefLabel String String
-  deriving Eq
 
 wRef2Label (WRefLabel var _)   = wRefname2Label var
 wRef2Wtype (WRefLabel _ wtype) = wtype

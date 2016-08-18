@@ -24,6 +24,7 @@
 ---
 --- @author Michael Hanus
 --- @version August 2011
+--- @category database
 ------------------------------------------------------------------------------
 
 module Database(Dynamic,dynamic,persistent,(<>),(|&>),(|>),
@@ -88,7 +89,10 @@ runQ (QueryDB q) = q
 
 --- The type of errors that might occur during a transaction.
 data TError = TError TErrorKind String
- deriving Eq
+-- deriving Eq
+
+instance Eq TError where
+  TError k1 s1 == TError k2 s2 = k1==k2 && s1==s2
 
 --- The various kinds of transaction errors.
 data TErrorKind = KeyNotExistsError
@@ -100,7 +104,13 @@ data TErrorKind = KeyNotExistsError
                 | MaxError
                 | UserDefinedError
                 | ExecutionError
- deriving (Eq,Show)
+-- deriving (Eq,Show)
+
+instance Eq TErrorKind where
+  _ == _ = error "TODO: define Eq.TErrorKind"
+
+instance Show TErrorKind where
+  show _ = error "TODO: define Show.TErrorKind"
 
 --- Transforms a transaction error into a string.
 showTError :: TError -> String

@@ -1,5 +1,7 @@
 ------------------------------------------------------------------------------
---- Some tools to show FlatCurry programs.
+--- This library contains operations to transform FlatCurry programs
+--- into string representations, either in a FlatCurry format or
+--- in a Curry-like syntax.
 ---
 --- This library contains
 --- 
@@ -9,27 +11,25 @@
 ---     Curry syntax (`showCurryType`, `showCurryExpr`,...).
 ---
 --- @author Michael Hanus
---- @version December 2005
+--- @version October 2015
+--- @category meta
 ------------------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
-
-module FlatCurryShow(showFlatProg,showFlatType,showFlatFunc,
-                     showCurryType,showCurryExpr,showCurryId,showCurryVar)
+module FlatCurry.Show(showFlatProg,showFlatType,showFlatFunc,
+                      showCurryType,showCurryExpr,showCurryId,showCurryVar)
    where
 
-import FlatCurry
+import FlatCurry.Types
 import List
 import Char
-import SetFunctions
 
 --- Shows a FlatCurry program term as a string (with some pretty printing).
 showFlatProg :: Prog -> String
 showFlatProg (Prog modname imports types funcs ops) =
      " (Prog " ++ show modname
-     ++ (if imports==[] then "\n  []" else
+     ++ (if null imports then "\n  []" else
          "\n  [" ++ showFlatListElems show imports ++ "]")
-     ++ (if types==[] then "\n  []" else
+     ++ (if null types then "\n  []" else
          "\n  [" ++ showFlatListElems showFlatType types ++ "\n ]")
      ++ "\n  [" ++ showFlatListElems showFlatFunc funcs ++ "\n  ]"
      ++ "\n " ++ showFlatList showFlatOp ops
@@ -145,65 +145,10 @@ showCurryType tf nested texp = case texp of
   _              -> showCurryType_ tf nested texp
 
 isClassContext :: TypeExpr -> Maybe (String,TypeExpr)
-isClassContext texp =
-  let vals = set1 classContext texp
-   in if isEmpty vals then Nothing
-                      else Just (selectValue vals)
-
---------------------------------
--- Auxiliary operations to define current implementation types
--- of various class contexts:
-
--- Try to match a given type expression against some class context
--- representation (as defined in the prelude):
-classContext :: TypeExpr -> (String,TypeExpr)
-classContext (eqContext   a) = ("Eq",a)
-classContext (ordContext  a) = ("Ord",a)
-classContext (numContext  a) = ("Num",a)
-classContext (frcContext  a) = ("Fractional",a)
-classContext (intgContext a) = ("Integral",a)
-classContext (enumContext a) = ("Enum",a)
-classContext (showContext a) = ("Show",a)
-
-eqContext  a = pairType (binBoolOp a) (binBoolOp a)
-
-ordContext a  = tupleType [eqContext a, binOrderingOp a,
-                           binBoolOp a, binBoolOp a,
-                           binBoolOp a, binBoolOp a, binOp a a, binOp a a]
-
-numContext a  = tupleType [binOp a a, binOp a a, binOp a a, unOp a, unOp a,
-                           unOp a, FuncType intType a]
-
-intgContext a = tupleType [tupleType [numContext a, ordContext a],
-                           binOp a a, binOp a a, binOp a a, binOp a a,
-                           binOp a (pairType a a),
-                           binOp a (pairType a a)]
-
-frcContext a  = tupleType [numContext a, binOp a a, unOp a,
-                           FuncType (TCons ("Prelude","Float") []) a]
-
-enumContext a = tupleType [unOp a, unOp a,
-                           FuncType intType a, FuncType a intType,
-                           FuncType a (listType a),
-                           binOp a (listType a),
-                           binOp a (listType a),
-                           FuncType a (FuncType a (FuncType a (listType a)))]
-
-showContext a = tupleType [FuncType a stringType,
-                           FuncType intType
-                                (FuncType a (FuncType stringType stringType)),
-                           FuncType (listType a)
-                                (FuncType stringType stringType)]
-
-unOp a          = FuncType a a
-binOp a b       = FuncType a (FuncType a b)
-binOrderingOp a = binOp a (TCons ("Prelude","Ordering") [])
-binBoolOp a     = binOp a (TCons ("Prelude","Bool") [])
-intType      = TCons ("Prelude","Int") []
-stringType   = TCons ("Prelude","[]") [TCons ("Prelude","Char") []]
-listType a   = TCons ("Prelude","[]") [a]
-pairType a b = TCons ("Prelude","(,)") [a,b]
-tupleType ts = TCons ("Prelude","("++take (length ts - 1) (repeat ',')++")") ts
+isClassContext texp = case texp of
+  TCons (_,tc) [a] -> if take 6 tc == "_Dict#" then Just (drop 6 tc, a)
+                                               else Nothing
+  _ -> Nothing
 
 ------------------------------
 
@@ -214,7 +159,7 @@ showCurryType_ tf nested (FuncType t1 t2) =
     (showCurryType_ tf (isFuncType t1) t1 ++ " -> " ++
      showCurryType_ tf False t2)
 showCurryType_ tf nested (TCons tc ts)
- | ts==[]  = tf tc
+ | null ts = tf tc
  | tc==("Prelude","[]") && (head ts == TCons ("Prelude","Char") [])
    = "String"
  | tc==("Prelude","[]")
@@ -271,7 +216,7 @@ showCurryExpr tf nested b (Comb ct cf [e1,e2])
               (showCurryExpr tf True b e1 ++ " " ++ tf cf ++ " " ++
                showCurryExpr tf True b e2 )
 showCurryExpr tf nested b (Comb _ cf (e1:e2:e3:es))
- | cf==("Prelude","if_then_else") && es==[]
+ | cf==("Prelude","if_then_else") && null es
   = showBracketsIf nested
         ("\n" ++
          sceBlanks b ++ " if "   ++ showCurryExpr tf False (b+2) e1 ++ "\n" ++
@@ -305,7 +250,8 @@ showCurryExpr tf nested b (Or e1 e2) =
 
 showCurryExpr tf nested b (Case ctype e cs) =
   showBracketsIf nested
-    ((if ctype==Rigid then "case " else "fcase ") ++
+    ((case ctype of Rigid -> "case "
+                    Flex  -> "fcase ") ++
      showCurryExpr tf True b e ++ " of\n " ++
      showCurryElems (showCurryCase tf (b+2)) cs ++ sceBlanks b)
 
@@ -376,7 +322,7 @@ isFiniteList :: Expr -> Bool
 isFiniteList (Var _) = False
 isFiniteList (Lit _) = False
 isFiniteList (Comb _ name args)
-  | name==("Prelude","[]") && args==[] = True
+  | name==("Prelude","[]") && null args = True
   | name==("Prelude",":") && length args == 2 = isFiniteList (args!!1)
   | otherwise = False
 isFiniteList (Let _ _) = False

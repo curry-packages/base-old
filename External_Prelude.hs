@@ -12,7 +12,7 @@ import GHC.Exts (Char (C#), Char#, eqChar#, leChar#, ord#, chr#)
 import System.IO
 
 import CurryException
-import Debug          (internalError)
+import KiCS2Debug     (internalError)
 import FailInfo       (customFail)
 import PrimTypes
 
@@ -27,26 +27,6 @@ isTrue# :: Bool -> Bool
 {-# INLINE isTrue# #-}
 isTrue# x = x
 #endif
-
--- ---------------------------------------------------------------------------
--- Curry types
--- ---------------------------------------------------------------------------
-
--- Class for Curry types
-class (Show a, Read a, NonDet a, Generable a, NormalForm a, Unifiable a)
-      => Curry a
-
-instance Curry (PrimData a)
-
--- BEGIN GENERATED FROM PrimTypes.curry
-instance Curry C_Success
--- END GENERATED FROM PrimTypes.curry
-
-instance (Curry t0, Curry t1) => Curry (Func t0 t1)
-    
-instance Curry t0 => Curry (C_IO t0)
-
-instance NonDet b => Curry (a -> b)
 
 -- -----------------------------------------------------------------------------
 -- Int representation
@@ -116,16 +96,16 @@ instance NormalForm C_Int where
   searchNF _ _ x = error ("Prelude.Int.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Int where
-  (=.=) (C_Int      x1) (C_Int      y1) cd _  = if isTrue# (x1 ==# y1) then C_Success else Fail_C_Success cd defFailInfo
+  (=.=) (C_Int      x1) (C_Int      y1) cd _  = if isTrue# (x1 ==# y1) then C_True else Fail_C_Bool cd defFailInfo
   (=.=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =:= y1) cd cs
   (=.=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =:= (primint2curryint y1)) cd cs
   (=.=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =:= y1) cd cs
-  (=.=) _               _               cd _  = Fail_C_Success cd defFailInfo
-  (=.<=) (C_Int      x1) (C_Int      y1) cd _ = if isTrue# (x1 ==# y1) then C_Success else Fail_C_Success cd defFailInfo
+  (=.=) _               _               cd _  = Fail_C_Bool cd defFailInfo
+  (=.<=) (C_Int      x1) (C_Int      y1) cd _ = if isTrue# (x1 ==# y1) then C_True else Fail_C_Bool cd defFailInfo
   (=.<=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =:<= y1) cd cs
   (=.<=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =:<= (primint2curryint y1)) cd cs
   (=.<=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =:<= y1) cd cs
-  (=.<=) _ _ cd _= Fail_C_Success cd defFailInfo
+  (=.<=) _ _ cd _= Fail_C_Bool cd defFailInfo
   bind cd i (C_Int      x2) = (i :=: ChooseN 0 1) : bind cd (leftID i) (primint2curryint x2)
   bind cd i (C_CurryInt x2) = (i :=: ChooseN 0 1) : bind cd (leftID i) x2
   bind cd i (Choice_C_Int d j l r) = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
@@ -143,36 +123,32 @@ instance Unifiable C_Int where
   lazyBind _  _ (Fail_C_Int _ info) = [Unsolvable info]
   lazyBind cd i (Guard_C_Int _ cs e) = getConstrList cs ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry C_Int
-
-external_d_C_eqInt :: C_Int -> C_Int -> Cover -> ConstStore -> C_Bool
-external_d_C_eqInt (Choice_C_Int d i x y) z cd cs = narrow d i ((x `external_d_C_eqInt` z) cd cs) ((y `external_d_C_eqInt` z) cd cs)
-external_d_C_eqInt (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_eqInt` y) cd cs) xs
-external_d_C_eqInt (Guard_C_Int d c x) y cd cs = guardCons d c ((x `external_d_C_eqInt` y) cd $! (addCs c cs))
-external_d_C_eqInt (Fail_C_Int d info) _ _ _ = failCons d info
-external_d_C_eqInt z (Choice_C_Int d i x y) cd cs = narrow d i ((z `external_d_C_eqInt` x) cd cs) ((z `external_d_C_eqInt` y) cd cs)
-external_d_C_eqInt y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_eqInt` x) cd cs) xs
-external_d_C_eqInt y (Guard_C_Int d c x) cd cs = guardCons d c ((y `external_d_C_eqInt` x) cd $! (addCs c cs))
-external_d_C_eqInt _ (Fail_C_Int d info) _ _ = failCons d info
-external_d_C_eqInt (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 ==# y1))
-external_d_C_eqInt (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) `d_C_eqBinInt` y1) cd cs
-external_d_C_eqInt (C_CurryInt x1) (C_Int      y1) cd cs = (x1 `d_C_eqBinInt` (primint2curryint y1)) cd cs
-external_d_C_eqInt (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 `d_C_eqBinInt` y1) cd cs
-
-external_d_C_ltEqInt :: C_Int -> C_Int -> Cover -> ConstStore -> C_Bool
-external_d_C_ltEqInt (Choice_C_Int d i x y) z cd cs = narrow d i ((x `external_d_C_ltEqInt` z) cd cs) ((y `external_d_C_ltEqInt` z) cd cs)
-external_d_C_ltEqInt (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x`external_d_C_ltEqInt` y) cd cs) xs
-external_d_C_ltEqInt (Guard_C_Int d c x) y cd cs = guardCons d c ((x `external_d_C_ltEqInt` y) cd $! (addCs c cs))
-external_d_C_ltEqInt (Fail_C_Int d info) _ _ _ = failCons d info
-external_d_C_ltEqInt z (Choice_C_Int d i x y) cd cs = narrow d i ((z `external_d_C_ltEqInt` x) cd cs) ((z `external_d_C_ltEqInt` y) cd cs)
-external_d_C_ltEqInt y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_ltEqInt` x) cd cs) xs
-external_d_C_ltEqInt y (Guard_C_Int d c x) cd cs = guardCons d c ((y `external_d_C_ltEqInt` x) cd $! (addCs c cs))
-external_d_C_ltEqInt _ (Fail_C_Int d info) _ _ = failCons d info
-external_d_C_ltEqInt (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 <=# y1))
-external_d_C_ltEqInt (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) `d_C_lteqInteger` y1) cd cs
-external_d_C_ltEqInt (C_CurryInt x1) (C_Int      y1) cd cs = (x1 `d_C_lteqInteger` (primint2curryint y1)) cd cs
-external_d_C_ltEqInt (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
---END GENERATED FROM PrimTypes.curry
+instance Curry C_Int where
+  (=?=) (Choice_C_Int d i x y) z cd cs = narrow d i ((x =?= z) cd cs) ((y =?= z) cd cs)
+  (=?=) (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x =?= y) cd cs) xs
+  (=?=) (Guard_C_Int d c x) y cd cs = guardCons d c ((x =?= y) cd $! (addCs c cs))
+  (=?=) (Fail_C_Int d info) _ _ _ = failCons d info
+  (=?=) z (Choice_C_Int d i x y) cd cs = narrow d i ((z =?= x) cd cs) ((z =?= y) cd cs)
+  (=?=) y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y =?= x) cd cs) xs
+  (=?=) y (Guard_C_Int d c x) cd cs = guardCons d c ((y =?= x) cd $! (addCs c cs))
+  (=?=) _ (Fail_C_Int d info) _ _ = failCons d info
+  (=?=) (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 ==# y1))
+  (=?=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =?= y1) cd cs
+  (=?=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =?= (primint2curryint y1)) cd cs
+  (=?=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =?= y1) cd cs
+  (<?=) (Choice_C_Int d i x y) z cd cs = narrow d i ((x <?= z) cd cs) ((y <?= z) cd cs)
+  (<?=) (Choices_C_Int d i xs) y cd cs = narrows cs d i (\x -> (x<?= y) cd cs) xs
+  (<?=) (Guard_C_Int d c x) y cd cs = guardCons d c ((x <?= y) cd $! (addCs c cs))
+  (<?=) (Fail_C_Int d info) _ _ _ = failCons d info
+  (<?=) z (Choice_C_Int d i x y) cd cs = narrow d i ((z <?= x) cd cs) ((z <?= y) cd cs)
+  (<?=) y (Choices_C_Int d i xs) cd cs = narrows cs d i (\x -> (y <?= x) cd cs) xs
+  (<?=) y (Guard_C_Int d c x) cd cs = guardCons d c ((y <?= x) cd $! (addCs c cs))
+  (<?=) _ (Fail_C_Int d info) _ _ = failCons d info
+  (<?=) (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 <=# y1))
+  (<?=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) `d_C_lteqInteger` y1) cd cs
+  (<?=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 `d_C_lteqInteger` (primint2curryint y1)) cd cs
+  (<?=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
+-- END GENERATED FROM PrimTypes.curry
 
 primint2curryint :: Int# -> BinInt
 primint2curryint n
@@ -201,6 +177,8 @@ currynat2primint nat   = error ("KiCS2 error: Prelude.currynat2primint: no groun
 -- -----------------------------------------------------------------------------
 -- Float representation
 -- -----------------------------------------------------------------------------
+
+-- BEGIN GENERATED FROM PrimTypes.curry
 
 data C_Float
      = C_Float Float#
@@ -255,8 +233,8 @@ instance NormalForm C_Float where
   searchNF _ _ x = error ("Prelude.Float.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Float where
-  (=.=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_Success else Fail_C_Success cd defFailInfo
-  (=.<=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_Success else Fail_C_Success cd defFailInfo
+  (=.=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_True else Fail_C_Bool cd defFailInfo
+  (=.<=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_True else Fail_C_Bool cd defFailInfo
   bind cd i (Choice_C_Float d j l r) = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
   bind cd i (Choices_C_Float d j@(FreeID _ _) xs) = bindOrNarrow cd i d j xs
   bind cd i (Choices_C_Float d j@(NarrowedID _ _) xs) = [(ConstraintChoices d j (map (bind cd i) xs))]
@@ -270,33 +248,33 @@ instance Unifiable C_Float where
   lazyBind _  _ (Fail_C_Float _ info) = [Unsolvable info]
   lazyBind cd  i (Guard_C_Float _ cs e) = getConstrList cs ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry C_Float
+instance Curry C_Float where
+  (=?=) (Choice_C_Float d i x y) z cd cs = narrow d i ((x =?= z) cd cs) ((y =?= z) cd cs)
+  (=?=) (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x =?= y) cd cs) xs
+  (=?=) (Guard_C_Float d c x) y cd cs = guardCons d c ((x =?= y) cd  $! (addCs c cs))
+  (=?=) (Fail_C_Float d info) _ _ _= failCons d info
+  (=?=) z (Choice_C_Float d i x y) cd cs = narrow d i ((z =?= x) cd cs) ((z =?= y) cd cs)
+  (=?=) y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y =?= x) cd cs) xs
+  (=?=) y (Guard_C_Float d c x) cd cs = guardCons d c ((y =?= x) cd  $! (addCs c cs))
+  (=?=) _ (Fail_C_Float d info) _ _ = failCons d info
+  (=?=) (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `eqFloat#` y1))
+  (<?=) (Choice_C_Float d i x y) z cd cs = narrow d i ((x <?= z) cd cs) ((y <?= z) cd cs)
+  (<?=) (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x <?= y) cd cs) xs
+  (<?=) (Guard_C_Float d c x) y cd cs = guardCons d c ((x <?= y) cd $! (addCs c cs))
+  (<?=) (Fail_C_Float d info) _ _ _ = failCons d info
+  (<?=) z (Choice_C_Float d i x y) cd cs = narrow d i ((z <?= x) cd cs) ((z <?= y) cd cs)
+  (<?=) y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y <?= x) cd cs) xs
+  (<?=) y (Guard_C_Float d c x) cd cs = guardCons d c ((y <?= x) cd $! (addCs c cs))
+  (<?=) _ (Fail_C_Float d info) _ _ = failCons d info
+  (<?=) (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `leFloat#` y1))
 
-external_d_C_eqFloat :: C_Float -> C_Float -> Cover -> ConstStore -> C_Bool
-external_d_C_eqFloat (Choice_C_Float d i x y) z cd cs = narrow d i ((x `external_d_C_eqFloat` z) cd cs) ((y `external_d_C_eqFloat` z) cd cs)
-external_d_C_eqFloat (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_eqFloat` y) cd cs) xs
-external_d_C_eqFloat (Guard_C_Float d c x) y cd cs = guardCons d c ((x `external_d_C_eqFloat` y) cd  $! (addCs c cs))
-external_d_C_eqFloat (Fail_C_Float d info) _ _ _= failCons d info
-external_d_C_eqFloat z (Choice_C_Float d i x y) cd cs = narrow d i ((z `external_d_C_eqFloat` x) cd cs) ((z `external_d_C_eqFloat` y) cd cs)
-external_d_C_eqFloat y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_eqFloat` x) cd cs) xs
-external_d_C_eqFloat y (Guard_C_Float d c x) cd cs = guardCons d c ((y `external_d_C_eqFloat` x) cd  $! (addCs c cs))
-external_d_C_eqFloat _ (Fail_C_Float d info) _ _ = failCons d info
-external_d_C_eqFloat (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `eqFloat#` y1))
-
-external_d_C_ltEqFloat :: C_Float -> C_Float -> Cover -> ConstStore -> C_Bool
-external_d_C_ltEqFloat (Choice_C_Float d i x y) z cd cs = narrow d i ((x `external_d_C_ltEqFloat` z) cd cs) ((y `external_d_C_ltEqFloat` z) cd cs)
-external_d_C_ltEqFloat (Choices_C_Float d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_ltEqFloat` y) cd cs) xs
-external_d_C_ltEqFloat (Guard_C_Float d c x) y cd cs = guardCons d c ((x `external_d_C_ltEqFloat` y) cd $! (addCs c cs))
-external_d_C_ltEqFloat (Fail_C_Float d info) _ _ _ = failCons d info
-external_d_C_ltEqFloat z (Choice_C_Float d i x y) cd cs = narrow d i ((z `external_d_C_ltEqFloat` x) cd cs) ((z `external_d_C_ltEqFloat` y) cd cs)
-external_d_C_ltEqFloat y (Choices_C_Float d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_ltEqFloat` x) cd cs) xs
-external_d_C_ltEqFloat y (Guard_C_Float d c x) cd cs = guardCons d c ((y `external_d_C_ltEqFloat` x) cd $! (addCs c cs))
-external_d_C_ltEqFloat _ (Fail_C_Float d info) _ _ = failCons d info
-external_d_C_ltEqFloat (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `leFloat#` y1))
+-- END GENERATED FROM PrimTypes.curry
 
 -- ---------------------------------------------------------------------------
 -- Char
 -- ---------------------------------------------------------------------------
+
+-- BEGIN GENERATED FROM PrimTypes.curry
 
 data C_Char
      = C_Char Char#
@@ -388,18 +366,18 @@ instance NormalForm C_Char where
   searchNF _ _ x = error ("Prelude.Char.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Char where
-  (=.=) (C_Char       x1) (C_Char      x2) cd _ | isTrue# (x1 `eqChar#` x2) = C_Success
-                                                | otherwise                 = Fail_C_Success cd defFailInfo
+  (=.=) (C_Char       x1) (C_Char      x2) cd _ | isTrue# (x1 `eqChar#` x2) = C_True
+                                                | otherwise                 = Fail_C_Bool cd defFailInfo
   (=.=) (C_Char       x1) (CurryChar x2)   cd cs = (primChar2CurryChar x1 =:= x2) cd cs
   (=.=) (CurryChar  x1) (C_Char      x2)   cd cs = (x1 =:= primChar2CurryChar x2) cd cs
   (=.=) (CurryChar x1)    (CurryChar   x2) cd cs = (x1 =:= x2) cd cs
-  (=.=) _                 _                cd _  = Fail_C_Success cd  defFailInfo
-  (=.<=) (C_Char       x1) (C_Char      x2) cd _ | isTrue# (x1 `eqChar#` x2) = C_Success
-                                                 | otherwise                 = Fail_C_Success cd defFailInfo
+  (=.=) _                 _                cd _  = Fail_C_Bool cd  defFailInfo
+  (=.<=) (C_Char       x1) (C_Char      x2) cd _ | isTrue# (x1 `eqChar#` x2) = C_True
+                                                 | otherwise                 = Fail_C_Bool cd defFailInfo
   (=.<=) (C_Char       x1) (CurryChar x2)   cd cs = (primChar2CurryChar x1 =:<= x2) cd cs
   (=.<=) (CurryChar  x1) (C_Char      x2)   cd cs = (x1 =:<= primChar2CurryChar x2) cd cs
   (=.<=) (CurryChar x1)    (CurryChar   x2) cd cs = (x1 =:<= x2) cd cs
-  (=.<=) _                 _                cd _  = Fail_C_Success cd defFailInfo
+  (=.<=) _                 _                cd _  = Fail_C_Bool cd defFailInfo
   bind cd i (C_Char    x) = (i :=: ChooseN 0 1) : bind cd (leftID i) (primChar2CurryChar x)
   bind cd i (CurryChar x) = (i :=: ChooseN 0 1) : bind cd (leftID i) x
   bind cd i (Choice_C_Char d j l r) = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
@@ -417,35 +395,33 @@ instance Unifiable C_Char where
   lazyBind _  _ (Fail_C_Char _ info) = [Unsolvable info]
   lazyBind cd i (Guard_C_Char _ cs e) = getConstrList cs ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry C_Char
+instance Curry C_Char where
+  (=?=) (Choice_C_Char d i x y) z cd cs = narrow d i ((x =?= z) cd cs) ((y =?= z) cd cs)
+  (=?=) (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x =?= y) cd cs) xs
+  (=?=) (Guard_C_Char d c x) y cd cs = guardCons d c ((x =?= y) cd $! (addCs c cs))
+  (=?=) (Fail_C_Char d info) _ _ _ = failCons d info
+  (=?=) z (Choice_C_Char d i x y) cd cs = narrow d i ((z =?= x) cd cs) ((z =?= y) cd cs)
+  (=?=) y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y =?= x) cd cs) xs
+  (=?=) y (Guard_C_Char d c x) cd cs = guardCons d c ((y =?= x) cd $! (addCs c cs))
+  (=?=) _ (Fail_C_Char d info) _ _ = failCons d info
+  (=?=) (C_Char x1) (C_Char y1) _ _ = toCurry (isTrue# (x1 `eqChar#` y1))
+  (=?=) (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) =?= y1) cd cs
+  (=?=) (CurryChar x1) (C_Char      y1) cd cs = (x1 =?= (primChar2CurryChar y1)) cd cs
+  (=?=) (CurryChar x1) (CurryChar y1) cd cs = (x1 =?= y1) cd cs
+  (<?=) (Choice_C_Char d i x y) z cd cs = narrow d i ((x <?= z) cd cs) ((y <?= z) cd cs)
+  (<?=) (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x <?= y) cd cs) xs
+  (<?=) (Guard_C_Char d c x) y cd cs = guardCons d c ((x <?= y) cd $! (addCs c cs))
+  (<?=) (Fail_C_Char d info) _ _ _ = failCons d info
+  (<?=) z (Choice_C_Char d i x y) cd cs = narrow d i ((z <?= x) cd cs) ((z <?= y) cd cs)
+  (<?=) y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y <?= x) cd cs) xs
+  (<?=) y (Guard_C_Char d c x) cd cs = guardCons d c ((y <?= x) cd $! (addCs c cs))
+  (<?=) _ (Fail_C_Char d info) _ _ = failCons d info
+  (<?=) (C_Char x1) (C_Char y1) _ _ = toCurry (isTrue# (x1 `leChar#` y1))
+  (<?=) (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) `d_C_lteqInteger` y1) cd cs
+  (<?=) (CurryChar x1) (C_Char      y1) cd cs = (x1 `d_C_lteqInteger` (primChar2CurryChar y1)) cd cs
+  (<?=) (CurryChar x1) (CurryChar y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
 
-external_d_C_eqChar :: C_Char -> C_Char -> Cover -> ConstStore -> C_Bool
-external_d_C_eqChar (Choice_C_Char d i x y) z cd cs = narrow d i ((x `external_d_C_eqChar` z) cd cs) ((y `external_d_C_eqChar` z) cd cs)
-external_d_C_eqChar (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_eqChar` y) cd cs) xs
-external_d_C_eqChar (Guard_C_Char d c x) y cd cs = guardCons d c ((x `external_d_C_eqChar` y) cd $! (addCs c cs))
-external_d_C_eqChar (Fail_C_Char d info) _ _ _ = failCons d info
-external_d_C_eqChar z (Choice_C_Char d i x y) cd cs = narrow d i ((z `external_d_C_eqChar` x) cd cs) ((z `external_d_C_eqChar` y) cd cs)
-external_d_C_eqChar y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_eqChar` x) cd cs) xs
-external_d_C_eqChar y (Guard_C_Char d c x) cd cs = guardCons d c ((y `external_d_C_eqChar` x) cd $! (addCs c cs))
-external_d_C_eqChar _ (Fail_C_Char d info) _ _ = failCons d info
-external_d_C_eqChar (C_Char x1) (C_Char y1) _ _ = toCurry (isTrue# (x1 `eqChar#` y1))
-external_d_C_eqChar (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) `d_C_eqBinInt` y1) cd cs
-external_d_C_eqChar (CurryChar x1) (C_Char      y1) cd cs = (x1 `d_C_eqBinInt` (primChar2CurryChar y1)) cd cs
-external_d_C_eqChar (CurryChar x1) (CurryChar y1) cd cs = (x1 `d_C_eqBinInt` y1) cd cs
-
-external_d_C_ltEqChar :: C_Char -> C_Char -> Cover -> ConstStore -> C_Bool
-external_d_C_ltEqChar (Choice_C_Char d i x y) z cd cs = narrow d i ((x `external_d_C_ltEqChar` z) cd cs) ((y `external_d_C_ltEqChar` z) cd cs)
-external_d_C_ltEqChar (Choices_C_Char d i xs) y cd cs = narrows cs d i (\x -> (x `external_d_C_ltEqChar` y) cd cs) xs
-external_d_C_ltEqChar (Guard_C_Char d c x) y cd cs = guardCons d c ((x `external_d_C_ltEqChar` y) cd $! (addCs c cs))
-external_d_C_ltEqChar (Fail_C_Char d info) _ _ _ = failCons d info
-external_d_C_ltEqChar z (Choice_C_Char d i x y) cd cs = narrow d i ((z `external_d_C_ltEqChar` x) cd cs) ((z `external_d_C_ltEqChar` y) cd cs)
-external_d_C_ltEqChar y (Choices_C_Char d i xs) cd cs = narrows cs d i (\x -> (y `external_d_C_ltEqChar` x) cd cs) xs
-external_d_C_ltEqChar y (Guard_C_Char d c x) cd cs = guardCons d c ((y `external_d_C_ltEqChar` x) cd $! (addCs c cs))
-external_d_C_ltEqChar _ (Fail_C_Char d info) _ _ = failCons d info
-external_d_C_ltEqChar (C_Char x1) (C_Char y1) _ _ = toCurry (isTrue# (x1 `leChar#` y1))
-external_d_C_ltEqChar (C_Char      x1) (CurryChar y1) cd cs = ((primChar2CurryChar x1) `d_C_lteqInteger` y1) cd cs
-external_d_C_ltEqChar (CurryChar x1) (C_Char      y1) cd cs = (x1 `d_C_lteqInteger` (primChar2CurryChar y1)) cd cs
-external_d_C_ltEqChar (CurryChar x1) (CurryChar y1) cd cs = (x1 `d_C_lteqInteger` y1) cd cs
+-- END GENERATED FROM PrimTypes.curry
 
 primChar2CurryChar :: Char# -> BinInt
 primChar2CurryChar c = primint2curryint (ord# c)
@@ -568,22 +544,25 @@ showsPrec4CurryList d cl =
 external_d_C_prim_show :: Show a => a -> Cover -> ConstStore -> C_String
 external_d_C_prim_show a _ _ = toCurry (show a)
 
-external_d_OP_eq_colon_eq :: Unifiable a => a -> a -> Cover -> ConstStore -> C_Success
+external_d_OP_eq_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Bool
+external_d_OP_eq_eq  = (=?=)
+
+external_d_OP_lt_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Bool
+external_d_OP_lt_eq = (<?=)
+
+external_d_OP_eq_colon_eq :: Unifiable a => a -> a -> Cover -> ConstStore -> C_Bool
 external_d_OP_eq_colon_eq = (=:=)
 
-external_d_OP_eq_colon_lt_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Success
+external_d_OP_eq_colon_lt_eq :: Curry a => a -> a -> Cover -> ConstStore -> C_Bool
 external_d_OP_eq_colon_lt_eq = (=:<=)
 
 external_d_C_failed :: NonDet a => Cover -> ConstStore -> a
 external_d_C_failed cd _ = failCons cd (customFail "Call to function `failed'")
 
-external_d_C_success :: Cover -> ConstStore -> C_Success
-external_d_C_success _ _ = C_Success
-
-external_d_C_cond :: Curry a => C_Success -> a -> Cover -> ConstStore -> a
+external_d_C_cond :: Curry a => C_Bool -> a -> Cover -> ConstStore -> a
 external_d_C_cond succ a cd cs = ((\_ _ _ -> a) `d_OP_dollar_hash` succ) cd cs
 
-external_d_OP_amp :: C_Success -> C_Success -> Cover -> ConstStore -> C_Success
+external_d_OP_amp :: C_Bool -> C_Bool -> Cover -> ConstStore -> C_Bool
 external_d_OP_amp = (&)
 
 external_d_C_ensureNotFree :: Curry a => a -> Cover -> ConstStore -> a
@@ -648,97 +627,97 @@ external_d_C_prim_chr (C_CurryInt i) _ _ = CurryChar i
 -- Primitive operations: Arithmetics
 -- -----------------------------------------------------------------------------
 
-external_d_OP_plus_dollar :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_OP_plus_dollar (C_Int      x) (C_Int      y) _  _  = C_Int (x +# y)
-external_d_OP_plus_dollar (C_Int      x) (C_CurryInt y) cd cs
+external_d_OP_plus :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_OP_plus (C_Int      x) (C_Int      y) _  _  = C_Int (x +# y)
+external_d_OP_plus (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_OP_plus_hash` y) cd cs)
-external_d_OP_plus_dollar (C_CurryInt x) (C_Int      y) cd cs
+external_d_OP_plus (C_CurryInt x) (C_Int      y) cd cs
   = C_CurryInt ((x `d_OP_plus_hash` (primint2curryint y)) cd cs)
-external_d_OP_plus_dollar (C_CurryInt x) (C_CurryInt y) cd cs
+external_d_OP_plus (C_CurryInt x) (C_CurryInt y) cd cs
   = C_CurryInt ((x `d_OP_plus_hash` y) cd cs)
-external_d_OP_plus_dollar x              y              cd cs
-  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_OP_plus_dollar` b) cd2 cs2))
+external_d_OP_plus x              y              cd cs
+  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_OP_plus` b) cd2 cs2))
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_OP_minus_dollar :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_OP_minus_dollar (C_Int      x) (C_Int      y) _  _  = C_Int (x -# y)
-external_d_OP_minus_dollar (C_Int      x) (C_CurryInt y) cd cs
+external_d_OP_minus :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_OP_minus (C_Int      x) (C_Int      y) _  _  = C_Int (x -# y)
+external_d_OP_minus (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_OP_minus_hash` y) cd cs)
-external_d_OP_minus_dollar (C_CurryInt x) (C_Int y)      cd cs
+external_d_OP_minus (C_CurryInt x) (C_Int y)      cd cs
   = C_CurryInt ((x `d_OP_minus_hash` (primint2curryint y)) cd cs)
-external_d_OP_minus_dollar (C_CurryInt x) (C_CurryInt y) cd cs
+external_d_OP_minus (C_CurryInt x) (C_CurryInt y) cd cs
   = C_CurryInt ((x `d_OP_minus_hash` y) cd cs)
-external_d_OP_minus_dollar x              y              cd cs
-  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_OP_minus_dollar` b) cd2 cs2 ))
+external_d_OP_minus x              y              cd cs
+  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_OP_minus` b) cd2 cs2 ))
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_OP_star_dollar :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_OP_star_dollar (C_Int      x) (C_Int      y) _  _  = C_Int (x *# y)
-external_d_OP_star_dollar (C_Int      x) (C_CurryInt y) cd cs
+external_d_OP_star :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_OP_star (C_Int      x) (C_Int      y) _  _  = C_Int (x *# y)
+external_d_OP_star (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_OP_star_hash` y) cd cs)
-external_d_OP_star_dollar (C_CurryInt x) (C_Int      y) cd cs
+external_d_OP_star (C_CurryInt x) (C_Int      y) cd cs
   = C_CurryInt ((x `d_OP_star_hash` (primint2curryint y)) cd cs)
-external_d_OP_star_dollar (C_CurryInt x) (C_CurryInt y) cd cs
+external_d_OP_star (C_CurryInt x) (C_CurryInt y) cd cs
   = C_CurryInt ((x `d_OP_star_hash` y) cd cs)
-external_d_OP_star_dollar x              y              cd cs
-  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_OP_star_dollar` b) cd2 cs2))
+external_d_OP_star x              y              cd cs
+  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_OP_star` b) cd2 cs2))
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_C_quot_ :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_C_quot_ (C_Int      x) (C_Int      y) cd _
+external_d_C_quot :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_C_quot (C_Int      x) (C_Int      y) cd _
   | isTrue# (y ==# 0#) = Fail_C_Int cd (customFail "Division by Zero")
   | otherwise          = C_Int (x `quotInt#` y)
-external_d_C_quot_ (C_Int      x) (C_CurryInt y) cd cs
+external_d_C_quot (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_C_quotInteger` y) cd cs)
-external_d_C_quot_ (C_CurryInt x) (C_Int      y) cd cs
+external_d_C_quot (C_CurryInt x) (C_Int      y) cd cs
   = C_CurryInt ((x `d_C_quotInteger` (primint2curryint y)) cd cs)
-external_d_C_quot_ (C_CurryInt x) (C_CurryInt y) cd cs
+external_d_C_quot (C_CurryInt x) (C_CurryInt y) cd cs
   = C_CurryInt ((x `d_C_quotInteger` y) cd cs)
-external_d_C_quot_ x              y              cd cs
-  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_quot_` b) cd2 cs2 ))
+external_d_C_quot x              y              cd cs
+  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_quot` b) cd2 cs2 ))
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_C_rem_ :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_C_rem_ (C_Int      x) (C_Int      y) cd _
+external_d_C_rem :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_C_rem (C_Int      x) (C_Int      y) cd _
   | isTrue# (y ==# 0#) = Fail_C_Int cd (customFail "Division by Zero")
   | otherwise          = C_Int (x `remInt#` y)
-external_d_C_rem_ (C_Int      x) (C_CurryInt y) cd cs
+external_d_C_rem (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_C_remInteger` y) cd cs)
-external_d_C_rem_ (C_CurryInt x) (C_Int      y) cd cs
+external_d_C_rem (C_CurryInt x) (C_Int      y) cd cs
   = C_CurryInt ((x `d_C_remInteger` (primint2curryint y)) cd cs)
-external_d_C_rem_ (C_CurryInt x) (C_CurryInt y) cd cs
+external_d_C_rem (C_CurryInt x) (C_CurryInt y) cd cs
   = C_CurryInt ((x `d_C_remInteger` y) cd cs)
-external_d_C_rem_ x              y              cd cs
-  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_rem_` b) cd2 cs2))
+external_d_C_rem x              y              cd cs
+  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_rem` b) cd2 cs2))
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_C_quotRem_ :: C_Int -> C_Int
+external_d_C_quotRem :: C_Int -> C_Int
   -> Cover -> ConstStore -> OP_Tuple2 C_Int C_Int
-external_d_C_quotRem_ (C_Int      x) (C_Int      y) cd _
+external_d_C_quotRem (C_Int      x) (C_Int      y) cd _
   | isTrue# (y ==# 0#)  = Fail_OP_Tuple2 cd (customFail "Division by Zero")
   | otherwise           = OP_Tuple2 (C_Int (x `quotInt#` y)) (C_Int (x `remInt#` y))
-external_d_C_quotRem_ (C_Int      x) (C_CurryInt y) cd cs
+external_d_C_quotRem (C_Int      x) (C_CurryInt y) cd cs
   = (mkIntTuple `d_dollar_bang` (((primint2curryint x) `d_C_quotRemInteger` y) cd cs)) cd cs
-external_d_C_quotRem_ (C_CurryInt x) (C_Int      y) cd cs
+external_d_C_quotRem (C_CurryInt x) (C_Int      y) cd cs
   = (mkIntTuple `d_dollar_bang` ((x `d_C_quotRemInteger` (primint2curryint y)) cd cs)) cd cs
-external_d_C_quotRem_ (C_CurryInt x) (C_CurryInt y) cd cs
+external_d_C_quotRem (C_CurryInt x) (C_CurryInt y) cd cs
   = (mkIntTuple `d_dollar_bang` ((x `d_C_quotRemInteger` y) cd cs)) cd cs
-external_d_C_quotRem_ x              y              cd cs
-  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_quotRem_` b) cd2 cs2))
+external_d_C_quotRem x              y              cd cs
+  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_quotRem` b) cd2 cs2))
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
-external_d_C_div_ :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_C_div_ (C_Int      x) (C_Int      y) cd _
+external_d_C_div :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_C_div (C_Int      x) (C_Int      y) cd _
   | isTrue# (y ==# 0#) = Fail_C_Int cd (customFail "Division by Zero")
   | otherwise          = C_Int (x `divInt#` y)
-external_d_C_div_ (C_Int      x) (C_CurryInt y) cd cs
+external_d_C_div (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_C_divInteger` y) cd cs)
-external_d_C_div_ (C_CurryInt x) (C_Int      y) cd cs
+external_d_C_div (C_CurryInt x) (C_Int      y) cd cs
   = C_CurryInt ((x `d_C_divInteger` (primint2curryint y)) cd cs)
-external_d_C_div_ (C_CurryInt x) (C_CurryInt y) cd cs
+external_d_C_div (C_CurryInt x) (C_CurryInt y) cd cs
   = C_CurryInt ((x `d_C_divInteger` y) cd cs)
-external_d_C_div_ x              y              cd cs
-  = ((\a cd1 cs1-> ((\b cd2 cs2-> ((a `external_d_C_div_` b) cd2 cs2))
+external_d_C_div x              y              cd cs
+  = ((\a cd1 cs1-> ((\b cd2 cs2-> ((a `external_d_C_div` b) cd2 cs2))
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
 -- PrimOp taken from GHC.Base
@@ -753,18 +732,18 @@ x# `divInt#` y#
     | isTrue# ((x# <# 0#)) && isTrue# ((y# ># 0#)) = ((x# +# 1#) `quotInt#` y#) -# 1#
     | otherwise                                    = x# `quotInt#` y#
 
-external_d_C_mod_ :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_C_mod_ (C_Int      x) (C_Int      y) cd _
+external_d_C_mod :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
+external_d_C_mod (C_Int      x) (C_Int      y) cd _
   | isTrue# (y ==# 0#) = Fail_C_Int cd (customFail "Division by Zero")
   | otherwise          = C_Int (x `modInt#` y)
-external_d_C_mod_ (C_Int      x) (C_CurryInt y) cd cs
+external_d_C_mod (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_C_modInteger` y) cd cs)
-external_d_C_mod_ (C_CurryInt x) (C_Int      y) cd cs
+external_d_C_mod (C_CurryInt x) (C_Int      y) cd cs
   = C_CurryInt ((x `d_C_modInteger` (primint2curryint y)) cd cs)
-external_d_C_mod_ (C_CurryInt x) (C_CurryInt y) cd cs
+external_d_C_mod (C_CurryInt x) (C_CurryInt y) cd cs
   = C_CurryInt ((x `d_C_modInteger` y) cd cs)
-external_d_C_mod_ x              y              cd cs
-  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_mod_` b)) cd2 cs2)
+external_d_C_mod x              y              cd cs
+  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_mod` b)) cd2 cs2)
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
 -- PrimOp taken from GHC.Base
@@ -777,18 +756,18 @@ x# `modInt#` y#
     = r#
   where !r# = x# `remInt#` y#
 
-external_d_C_divMod_ :: C_Int -> C_Int ->  Cover -> ConstStore -> OP_Tuple2 C_Int C_Int
-external_d_C_divMod_ (C_Int      x) (C_Int      y) cd _
+external_d_C_divMod :: C_Int -> C_Int ->  Cover -> ConstStore -> OP_Tuple2 C_Int C_Int
+external_d_C_divMod (C_Int      x) (C_Int      y) cd _
   | isTrue# (y ==# 0#) = Fail_OP_Tuple2 cd (customFail "Division by Zero")
   | otherwise          = OP_Tuple2 (C_Int (x `divInt#` y)) (C_Int (x `modInt#` y))
-external_d_C_divMod_ (C_Int      x) (C_CurryInt y) cd cs
+external_d_C_divMod (C_Int      x) (C_CurryInt y) cd cs
   = (mkIntTuple `d_OP_dollar_hash` (((primint2curryint x) `d_C_divModInteger` y) cd cs)) cd cs
-external_d_C_divMod_ (C_CurryInt x) (C_Int      y) cd cs
+external_d_C_divMod (C_CurryInt x) (C_Int      y) cd cs
   = (mkIntTuple `d_OP_dollar_hash` ((x `d_C_divModInteger` (primint2curryint y)) cd cs)) cd cs
-external_d_C_divMod_ (C_CurryInt x) (C_CurryInt y) cd cs
+external_d_C_divMod (C_CurryInt x) (C_CurryInt y) cd cs
   = (mkIntTuple `d_OP_dollar_hash` ((x `d_C_divModInteger` y) cd cs)) cd cs
-external_d_C_divMod_ x              y              cd cs
-  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_divMod_` b) cd2 cs2 ))
+external_d_C_divMod x              y              cd cs
+  = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_divMod` b) cd2 cs2 ))
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
 mkIntTuple :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> OP_Tuple2 C_Int C_Int
@@ -798,25 +777,6 @@ external_d_C_negateFloat :: C_Float -> Cover -> ConstStore -> C_Float
 external_d_C_negateFloat (C_Float x) _  _  = C_Float (negateFloat# x)
 external_d_C_negateFloat x           cd cs
   = (external_d_C_negateFloat `d_OP_dollar_hash` x) cd cs
-
-external_d_C_prim_Float_plus :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
-external_d_C_prim_Float_plus y x _ _ =
-  toCurry ((fromCurry x + fromCurry y) :: Float)
-
-external_d_C_prim_Float_minus :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
-external_d_C_prim_Float_minus y x _ _ =
-  toCurry ((fromCurry x - fromCurry y) :: Float)
-
-external_d_C_prim_Float_times :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
-external_d_C_prim_Float_times y x _ _ =
-  toCurry ((fromCurry x * fromCurry y) :: Float)
-
-external_d_C_prim_Float_div :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
-external_d_C_prim_Float_div y x _ _ =
-  toCurry ((fromCurry x / fromCurry y) :: Float)
-
-external_d_C_prim_i2f :: C_Int -> Cover -> ConstStore -> C_Float
-external_d_C_prim_i2f x _ _ = toCurry (fromInteger (fromCurry x) :: Float)
 
 -- -----------------------------------------------------------------------------
 -- Primitive operations: IO stuff
@@ -924,1118 +884,955 @@ exceptionHandlers s cd cs hndl =
 -- Functions on Integer and Nat added from PrimTypes
 -- -----------------------------------------------------------------------------
 
-instance Curry Nat
+d_C_cmpNat :: Nat -> Nat -> Cover -> ConstStore -> C_Ordering
+d_C_cmpNat x1 x2 cd cs = case x1 of
+  IHi -> d_C__casept_33 x2 cd cs
+  O x5 -> d_C__casept_32 x5 x2 cd cs
+  I x9 -> d_C__casept_30 x9 x2 cd cs
+  Choice_Nat d i l r -> narrow d i (d_C_cmpNat l x2 cd cs) (d_C_cmpNat r x2 cd
+    cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C_cmpNat z x2 cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C_cmpNat e x2 cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude.cmpNat" [show x1, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude.cmpNat" (showCons x1))
 
-d_C_eqNat :: Nat -> Nat -> Cover -> ConstStore -> C_Bool
-d_C_eqNat (Choice_Nat cd i x y) z d cs = narrow cd i (((x `d_C_eqNat` z) d) cs) (((y `d_C_eqNat` z) d) cs)
-d_C_eqNat (Choices_Nat  cd i xs) y d cs = narrows cs cd i (\x -> ((x `d_C_eqNat` y) d) cs) xs
-d_C_eqNat (Guard_Nat  cd c e) y d cs = guardCons cd c (((e `d_C_eqNat` y) d) (addCs c cs))
-d_C_eqNat (Fail_Nat  cd info) _ _ _ = failCons cd info
-d_C_eqNat z (Choice_Nat  cd i x y) d cs = narrow cd i (((z `d_C_eqNat` x) d) cs) (((z `d_C_eqNat` y) d) cs)
-d_C_eqNat y (Choices_Nat  cd i xs) d cs = narrows cs cd i (\x -> ((y `d_C_eqNat` x) d) cs) xs
-d_C_eqNat y (Guard_Nat  cd c e) d cs = guardCons cd c (((y `d_C_eqNat` e) d) (addCs c cs))
-d_C_eqNat _ (Fail_Nat  cd info) _ _ = failCons cd info
-d_C_eqNat IHi IHi d cs = C_True
-d_C_eqNat (O x1) (O y1) d cs = ((x1 `d_C_eqNat` y1) d) cs
-d_C_eqNat (I x1) (I y1) d cs = ((x1 `d_C_eqNat` y1) d) cs
-d_C_eqNat _ _ d _ = C_False
- 
-instance Curry BinInt
+d_C_succ :: Nat -> Cover -> ConstStore -> Nat
+d_C_succ x1 cd cs = case x1 of
+  IHi -> O IHi
+  O x2 -> I x2
+  I x3 -> O (d_C_succ x3 cd cs)
+  Choice_Nat d i l r -> narrow d i (d_C_succ l cd cs) (d_C_succ r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C_succ z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C_succ e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude.succ" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.succ" (showCons x1))
 
-d_C_eqBinInt :: BinInt -> BinInt -> Cover -> ConstStore -> C_Bool
-d_C_eqBinInt (Choice_BinInt cd i x y) z d cs = narrow cd i (((x `d_C_eqBinInt` z) d) cs) (((y `d_C_eqBinInt` z) d) cs)
-d_C_eqBinInt (Choices_BinInt cd i xs) y d cs = narrows cs cd i (\x -> ((x `d_C_eqBinInt` y) d) cs) xs
-d_C_eqBinInt (Guard_BinInt cd c e) y d cs = guardCons cd c (((e `d_C_eqBinInt` y) d) (addCs c cs))
-d_C_eqBinInt (Fail_BinInt cd info) _ _ _ = failCons cd info
-d_C_eqBinInt z (Choice_BinInt cd i x y) d cs = narrow cd i (((z `d_C_eqBinInt` x) d) cs) (((z `d_C_eqBinInt` y) d) cs)
-d_C_eqBinInt y (Choices_BinInt cd i xs) d cs = narrows cs cd i (\x -> ((y `d_C_eqBinInt` x) d) cs) xs
-d_C_eqBinInt y (Guard_BinInt cd c e) d cs = guardCons cd c (((y `d_C_eqBinInt` e) d) (addCs c cs))
-d_C_eqBinInt _ (Fail_BinInt cd info) _ _ = failCons cd info
-d_C_eqBinInt (Neg x1) (Neg y1) d cs = ((x1 `d_C_eqNat` y1) d) cs
-d_C_eqBinInt Zero Zero d cs = C_True
-d_C_eqBinInt (Pos x1) (Pos y1) d cs = ((x1 `d_C_eqNat` y1) d) cs
-d_C_eqBinInt _ _ d _ = C_False
+d_C_pred :: Nat -> Cover -> ConstStore -> Nat
+d_C_pred x1 cd cs = case x1 of
+  IHi -> d_C_failed cd cs
+  O x2 -> d_C__casept_28 x2 cd cs
+  I x5 -> O x5
+  Choice_Nat d i l r -> narrow d i (d_C_pred l cd cs) (d_C_pred r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C_pred z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C_pred e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude.pred" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.pred" (showCons x1))
 
+d_OP_plus_caret :: Nat -> Nat -> Cover -> ConstStore -> Nat
+d_OP_plus_caret x1 x2 cd cs = case x1 of
+  IHi -> d_C_succ x2 cd cs
+  O x3 -> d_C__casept_27 x3 x2 cd cs
+  I x6 -> d_C__casept_26 x6 x2 cd cs
+  Choice_Nat d i l r -> narrow d i (d_OP_plus_caret l x2 cd cs)
+    (d_OP_plus_caret r x2 cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_OP_plus_caret z x2 cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_OP_plus_caret e x2 cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude.+^" [show x1, show x2] info)
+  _ -> failCons cd (consFail "Prelude.+^" (showCons x1))
 
-d_C_cmpNat :: Nat  -> Nat  -> Cover -> ConstStore -> C_Ordering
-d_C_cmpNat x1 x2 x3250 x3500 = case x1 of
-     IHi -> d_OP__casePT_33 x2 x3250 x3500
-     (O x5) -> d_OP__casePT_32 x5 x2 x3250 x3500
-     (I x8) -> d_OP__casePT_30 x8 x2 x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_cmpNat x1002 x2 x3250 x3500) (d_C_cmpNat x1003 x2 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_cmpNat z x2 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_cmpNat x1002 x2 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_C_succ :: Nat  -> Cover -> ConstStore -> Nat
-d_C_succ x1 x3250 x3500 = case x1 of
-     IHi -> O IHi
-     (O x2) -> I x2
-     (I x3) -> O (d_C_succ x3 x3250 x3500)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_succ x1002 x3250 x3500) (d_C_succ x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_succ z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_succ x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_C_pred :: Nat  -> Cover -> ConstStore -> Nat
-d_C_pred x1 x3250 x3500 = case x1 of
-     IHi -> d_C_failed x3250 x3500
-     (O x2) -> d_OP__casePT_28 x2 x3250 x3500
-     (I x5) -> O x5
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_pred x1002 x3250 x3500) (d_C_pred x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_pred z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_pred x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP_plus_caret :: Nat  -> Nat  -> Cover -> ConstStore -> Nat
-d_OP_plus_caret x1 x2 x3250 x3500 = case x1 of
-     IHi -> d_C_succ x2 x3250 x3500
-     (O x3) -> d_OP__casePT_27 x3 x2 x3250 x3500
-     (I x6) -> d_OP__casePT_26 x6 x2 x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_plus_caret x1002 x2 x3250 x3500) (d_OP_plus_caret x1003 x2 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_plus_caret z x2 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_plus_caret x1002 x2 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP_minus_caret :: Nat  -> Nat  -> Cover -> ConstStore -> BinInt
-d_OP_minus_caret x1 x2 x3250 x3500 = case x1 of
-     IHi -> d_C_inc (Neg x2) x3250 x3500
-     (O x3) -> d_OP__casePT_25 x1 x3 x2 x3250 x3500
-     (I x6) -> d_OP__casePT_24 x6 x2 x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_minus_caret x1002 x2 x3250 x3500) (d_OP_minus_caret x1003 x2 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_minus_caret z x2 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_minus_caret x1002 x2 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_minus_caret :: Nat -> Nat -> Cover -> ConstStore -> BinInt
+d_OP_minus_caret x1 x2 cd cs = case x1 of
+  IHi -> d_C_inc (Neg x2) cd cs
+  O x3 -> d_C__casept_25 x3 x1 x2 cd cs
+  I x6 -> d_C__casept_24 x6 x2 cd cs
+  Choice_Nat d i l r -> narrow d i (d_OP_minus_caret l x2 cd cs)
+    (d_OP_minus_caret r x2 cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_OP_minus_caret z x2 cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_OP_minus_caret e x2 cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude.-^" [show x1, show x2] info)
+  _ -> failCons cd (consFail "Prelude.-^" (showCons x1))
 
 d_C_mult2 :: BinInt -> Cover -> ConstStore -> BinInt
-d_C_mult2 x1 x3250 x3500 = case x1 of
-     (Pos x2) -> Pos (O x2)
-     Zero -> Zero
-     (Neg x3) -> Neg (O x3)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_mult2 x1002 x3250 x3500) (d_C_mult2 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_mult2 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_mult2 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_mult2 x1 cd cs = case x1 of
+  Pos x2 -> Pos (O x2)
+  Zero -> Zero
+  Neg x3 -> Neg (O x3)
+  Choice_BinInt d i l r -> narrow d i (d_C_mult2 l cd cs) (d_C_mult2 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C_mult2 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C_mult2 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.mult2" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.mult2" (showCons x1))
 
-d_OP_star_caret :: Nat  -> Nat  -> Cover -> ConstStore -> Nat
-d_OP_star_caret x1 x2 x3250 x3500 = case x1 of
-     IHi -> x2
-     (O x3) -> O (d_OP_star_caret x3 x2 x3250 x3500)
-     (I x4) -> d_OP_plus_caret x2 (O (d_OP_star_caret x4 x2 x3250 x3500)) x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_star_caret x1002 x2 x3250 x3500) (d_OP_star_caret x1003 x2 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_star_caret z x2 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_star_caret x1002 x2 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_star_caret :: Nat -> Nat -> Cover -> ConstStore -> Nat
+d_OP_star_caret x1 x2 cd cs = case x1 of
+  IHi -> x2
+  O x3 -> O (d_OP_star_caret x3 x2 cd cs)
+  I x4 -> d_OP_plus_caret x2 (O (d_OP_star_caret x4 x2 cd cs)) cd cs
+  Choice_Nat d i l r -> narrow d i (d_OP_star_caret l x2 cd cs)
+    (d_OP_star_caret r x2 cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_OP_star_caret z x2 cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_OP_star_caret e x2 cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude.*^" [show x1, show x2] info)
+  _ -> failCons cd (consFail "Prelude.*^" (showCons x1))
 
-d_C_div2 :: Nat  -> Cover -> ConstStore -> Nat
-d_C_div2 x1 x3250 x3500 = case x1 of
-     IHi -> d_C_failed x3250 x3500
-     (O x2) -> x2
-     (I x3) -> x3
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_div2 x1002 x3250 x3500) (d_C_div2 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_div2 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_div2 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_div2 :: Nat -> Cover -> ConstStore -> Nat
+d_C_div2 x1 cd cs = case x1 of
+  IHi -> d_C_failed cd cs
+  O x2 -> x2
+  I x3 -> x3
+  Choice_Nat d i l r -> narrow d i (d_C_div2 l cd cs) (d_C_div2 r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C_div2 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C_div2 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude.div2" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.div2" (showCons x1))
 
-d_C_mod2 :: Nat  -> Cover -> ConstStore -> BinInt
-d_C_mod2 x1 x3250 x3500 = case x1 of
-     IHi -> Pos IHi
-     (O x2) -> Zero
-     (I x3) -> Pos IHi
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_mod2 x1002 x3250 x3500) (d_C_mod2 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_mod2 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_mod2 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_mod2 :: Nat -> Cover -> ConstStore -> BinInt
+d_C_mod2 x1 cd cs = case x1 of
+  IHi -> Pos IHi
+  O x2 -> Zero
+  I x3 -> Pos IHi
+  Choice_Nat d i l r -> narrow d i (d_C_mod2 l cd cs) (d_C_mod2 r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C_mod2 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C_mod2 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude.mod2" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.mod2" (showCons x1))
 
-d_C_quotRemNat :: Nat  -> Nat  -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
-d_C_quotRemNat x1 x2 x3250 x3500 = d_OP__casePT_23 x1 x2 (d_C_eqNat x2 IHi x3250 x3500) x3250 x3500
+d_C_quotRemNat :: Nat -> Nat -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
+d_C_quotRemNat x1 x2 cd cs = d_C__casept_23 x2 x1 (d_OP_eq_eq x2
+  IHi cd cs) cd cs
 
+d_OP_quotRemNat_dot_shift_dot_104 :: Nat -> Nat -> Cover -> ConstStore -> Nat
+d_OP_quotRemNat_dot_shift_dot_104 x1 x2 cd cs = case x1 of
+  IHi -> d_C_error (toCurryString
+    "quotRemNat.shift: IHi") cd cs
+  O x3 -> O x2
+  I x4 -> I x2
+  Choice_Nat d i l r -> narrow d i (d_OP_quotRemNat_dot_shift_dot_104 l x2 cd
+    cs) (d_OP_quotRemNat_dot_shift_dot_104 r x2 cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z ->
+    d_OP_quotRemNat_dot_shift_dot_104 z x2 cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_OP_quotRemNat_dot_shift_dot_104 e x2
+    cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude.quotRemNat.shift.104" [show x1
+    , show x2] info)
+  _ -> failCons cd (consFail "Prelude.quotRemNat.shift.104" (showCons x1))
 
-d_OP_quotRemNat_dot_shift_dot_104 :: Nat  -> Nat  -> Cover -> ConstStore -> Nat
-d_OP_quotRemNat_dot_shift_dot_104 x1 x2 x3250 x3500 = case x1 of
-     (O x3) -> O x2
-     (I x4) -> I x2
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_quotRemNat_dot_shift_dot_104 x1002 x2 x3250 x3500) (d_OP_quotRemNat_dot_shift_dot_104 x1003 x2 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_quotRemNat_dot_shift_dot_104 z x2 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_quotRemNat_dot_shift_dot_104 x1002 x2 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_C_lteqInteger :: BinInt -> BinInt -> Cover -> ConstStore -> C_Bool
-d_C_lteqInteger x1 x2 x3250 x3500 = d_C_not
-   (d_OP_sel_colon_uscore_Prelude_dot_Eq_colon_uscore_eq_eq
-     (d_OP_dict_colon_uscore_Prelude_dot_Eq_colon_uscore_Prelude_dot_Ordering x3250 x3500)
-     x3250
-     x3500
-     (d_C_cmpInteger x1 x2 x3250 x3500)
-     x3250
-     x3500
-     C_GT
-     x3250
-     x3500) x3250 x3500
+d_C_lteqInteger :: BinInt -> BinInt -> Cover -> ConstStore
+  -> C_Bool
+d_C_lteqInteger x1 x2 cd cs = d_OP_slash_eq (d_C_cmpInteger x1 x2
+  cd cs) C_GT cd cs
 
 d_C_cmpInteger :: BinInt -> BinInt -> Cover -> ConstStore -> C_Ordering
-d_C_cmpInteger x1 x2 x3250 x3500 = case x1 of
-     Zero -> d_OP__casePT_14 x2 x3250 x3500
-     (Pos x5) -> d_OP__casePT_13 x5 x2 x3250 x3500
-     (Neg x8) -> d_OP__casePT_12 x8 x2 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_cmpInteger x1002 x2 x3250 x3500) (d_C_cmpInteger x1003 x2 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_cmpInteger z x2 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_cmpInteger x1002 x2 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_cmpInteger x1 x2 cd cs = case x1 of
+  Zero -> d_C__casept_14 x2 cd cs
+  Pos x5 -> d_C__casept_13 x5 x2 cd cs
+  Neg x8 -> d_C__casept_12 x8 x2 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_C_cmpInteger l x2 cd cs)
+    (d_C_cmpInteger r x2 cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C_cmpInteger z x2 cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C_cmpInteger e x2 cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.cmpInteger" [show x1, show
+    x2] info)
+  _ -> failCons cd (consFail "Prelude.cmpInteger" (showCons x1))
 
 d_C_neg :: BinInt -> Cover -> ConstStore -> BinInt
-d_C_neg x1 x3250 x3500 = case x1 of
-     Zero -> Zero
-     (Pos x2) -> Neg x2
-     (Neg x3) -> Pos x3
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_neg x1002 x3250 x3500) (d_C_neg x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_neg z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_neg x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_neg x1 cd cs = case x1 of
+  Zero -> Zero
+  Pos x2 -> Neg x2
+  Neg x3 -> Pos x3
+  Choice_BinInt d i l r -> narrow d i (d_C_neg l cd cs) (d_C_neg r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C_neg z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C_neg e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.neg" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.neg" (showCons x1))
 
 d_C_inc :: BinInt -> Cover -> ConstStore -> BinInt
-d_C_inc x1 x3250 x3500 = case x1 of
-     Zero -> Pos IHi
-     (Pos x2) -> Pos (d_C_succ x2 x3250 x3500)
-     (Neg x3) -> d_OP__casePT_11 x3 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_inc x1002 x3250 x3500) (d_C_inc x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_inc z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_inc x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_inc x1 cd cs = case x1 of
+  Zero -> Pos IHi
+  Pos x2 -> Pos (d_C_succ x2 cd cs)
+  Neg x3 -> d_C__casept_11 x3 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_C_inc l cd cs) (d_C_inc r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C_inc z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C_inc e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.inc" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.inc" (showCons x1))
 
 d_C_dec :: BinInt -> Cover -> ConstStore -> BinInt
-d_C_dec x1 x3250 x3500 = case x1 of
-     Zero -> Neg IHi
-     (Pos x2) -> d_OP__casePT_10 x2 x3250 x3500
-     (Neg x5) -> Neg (d_C_succ x5 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_dec x1002 x3250 x3500) (d_C_dec x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_dec z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_dec x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_dec x1 cd cs = case x1 of
+  Zero -> Neg IHi
+  Pos x2 -> d_C__casept_10 x2 cd cs
+  Neg x5 -> Neg (d_C_succ x5 cd cs)
+  Choice_BinInt d i l r -> narrow d i (d_C_dec l cd cs) (d_C_dec r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C_dec z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C_dec e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.dec" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.dec" (showCons x1))
 
 d_OP_plus_hash :: BinInt -> BinInt -> Cover -> ConstStore -> BinInt
-d_OP_plus_hash x1 x2 x3250 x3500 = case x1 of
-     Zero -> x2
-     (Pos x3) -> d_OP__casePT_9 x1 x3 x2 x3250 x3500
-     (Neg x6) -> d_OP__casePT_8 x1 x6 x2 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_plus_hash x1002 x2 x3250 x3500) (d_OP_plus_hash x1003 x2 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_plus_hash z x2 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_plus_hash x1002 x2 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_plus_hash x1 x2 cd cs = case x1 of
+  Zero -> x2
+  Pos x3 -> d_C__casept_9 x3 x1 x2 cd cs
+  Neg x6 -> d_C__casept_8 x6 x1 x2 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_OP_plus_hash l x2 cd cs)
+    (d_OP_plus_hash r x2 cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_OP_plus_hash z x2 cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_OP_plus_hash e x2 cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.+#" [show x1, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude.+#" (showCons x1))
 
 d_OP_minus_hash :: BinInt -> BinInt -> Cover -> ConstStore -> BinInt
-d_OP_minus_hash x1 x2 x3250 x3500 = case x2 of
-     Zero -> x1
-     (Pos x3) -> d_OP_plus_hash x1 (Neg x3) x3250 x3500
-     (Neg x4) -> d_OP_plus_hash x1 (Pos x4) x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_minus_hash x1 x1002 x3250 x3500) (d_OP_minus_hash x1 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_minus_hash x1 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_minus_hash x1 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_minus_hash x1 x2 cd cs = case x2 of
+  Zero -> x1
+  Pos x3 -> d_OP_plus_hash x1 (Neg x3) cd cs
+  Neg x4 -> d_OP_plus_hash x1 (Pos x4) cd cs
+  Choice_BinInt d i l r -> narrow d i (d_OP_minus_hash x1 l cd cs)
+    (d_OP_minus_hash x1 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_OP_minus_hash x1 z cd cs)
+    xs
+  Guard_BinInt d c e -> guardCons d c (d_OP_minus_hash x1 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.-#" [show x1, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude.-#" (showCons x2))
 
 d_OP_star_hash :: BinInt -> BinInt -> Cover -> ConstStore -> BinInt
-d_OP_star_hash x1 x2 x3250 x3500 = case x1 of
-     Zero -> Zero
-     (Pos x3) -> d_OP__casePT_7 x3 x2 x3250 x3500
-     (Neg x6) -> d_OP__casePT_6 x6 x2 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_star_hash x1002 x2 x3250 x3500) (d_OP_star_hash x1003 x2 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_star_hash z x2 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_star_hash x1002 x2 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_star_hash x1 x2 cd cs = case x1 of
+  Zero -> Zero
+  Pos x3 -> d_C__casept_7 x3 x2 cd cs
+  Neg x6 -> d_C__casept_6 x6 x2 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_OP_star_hash l x2 cd cs)
+    (d_OP_star_hash r x2 cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_OP_star_hash z x2 cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_OP_star_hash e x2 cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.*#" [show x1, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude.*#" (showCons x1))
 
-d_C_quotRemInteger :: BinInt -> BinInt -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
-d_C_quotRemInteger x1 x2 x3250 x3500 = case x2 of
-     Zero -> d_C_failed x3250 x3500
-     (Pos x3) -> d_OP__casePT_5 x3 x1 x3250 x3500
-     (Neg x9) -> d_OP__casePT_4 x9 x1 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_quotRemInteger x1 x1002 x3250 x3500) (d_C_quotRemInteger x1 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_quotRemInteger x1 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_quotRemInteger x1 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_quotRemInteger :: BinInt -> BinInt -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C_quotRemInteger x1 x2 cd cs = case x2 of
+  Zero -> d_C_failed cd cs
+  Pos x3 -> d_C__casept_5 x3 x1 cd cs
+  Neg x9 -> d_C__casept_4 x9 x1 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_C_quotRemInteger x1 l cd cs)
+    (d_C_quotRemInteger x1 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C_quotRemInteger x1 z cd
+    cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C_quotRemInteger x1 e cd $! addCs c
+    cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.quotRemInteger" [show x1
+    , show x2] info)
+  _ -> failCons cd (consFail "Prelude.quotRemInteger" (showCons x2))
 
-d_OP_quotRemInteger_dot___hash_selFP2_hash_d :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_quotRemInteger_dot___hash_selFP2_hash_d x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x2
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_quotRemInteger_dot___hash_selFP2_hash_d x1002 x3250 x3500) (d_OP_quotRemInteger_dot___hash_selFP2_hash_d x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_quotRemInteger_dot___hash_selFP2_hash_d z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_quotRemInteger_dot___hash_selFP2_hash_d x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_quotRemInteger_dot_uscore_hash_selFP2_hash_d :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_quotRemInteger_dot_uscore_hash_selFP2_hash_d x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x2
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP2_hash_d l cd cs)
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP2_hash_d r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_quotRemInteger_dot_uscore_hash_selFP2_hash_d z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP2_hash_d e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.quotRemInteger._#selFP2#d" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.quotRemInteger._#selFP2#d" (showCons x1))
 
-d_OP_quotRemInteger_dot___hash_selFP3_hash_m :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_quotRemInteger_dot___hash_selFP3_hash_m x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x3
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_quotRemInteger_dot___hash_selFP3_hash_m x1002 x3250 x3500) (d_OP_quotRemInteger_dot___hash_selFP3_hash_m x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_quotRemInteger_dot___hash_selFP3_hash_m z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_quotRemInteger_dot___hash_selFP3_hash_m x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_quotRemInteger_dot_uscore_hash_selFP3_hash_m :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_quotRemInteger_dot_uscore_hash_selFP3_hash_m x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x3
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP3_hash_m l cd cs)
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP3_hash_m r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_quotRemInteger_dot_uscore_hash_selFP3_hash_m z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP3_hash_m e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.quotRemInteger._#selFP3#m" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.quotRemInteger._#selFP3#m" (showCons x1))
 
-d_OP_quotRemInteger_dot___hash_selFP5_hash_d :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_quotRemInteger_dot___hash_selFP5_hash_d x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x2
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_quotRemInteger_dot___hash_selFP5_hash_d x1002 x3250 x3500) (d_OP_quotRemInteger_dot___hash_selFP5_hash_d x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_quotRemInteger_dot___hash_selFP5_hash_d z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_quotRemInteger_dot___hash_selFP5_hash_d x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_quotRemInteger_dot_uscore_hash_selFP5_hash_d :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_quotRemInteger_dot_uscore_hash_selFP5_hash_d x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x2
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP5_hash_d l cd cs)
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP5_hash_d r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_quotRemInteger_dot_uscore_hash_selFP5_hash_d z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP5_hash_d e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.quotRemInteger._#selFP5#d" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.quotRemInteger._#selFP5#d" (showCons x1))
 
-d_OP_quotRemInteger_dot___hash_selFP6_hash_m :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_quotRemInteger_dot___hash_selFP6_hash_m x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x3
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_quotRemInteger_dot___hash_selFP6_hash_m x1002 x3250 x3500) (d_OP_quotRemInteger_dot___hash_selFP6_hash_m x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_quotRemInteger_dot___hash_selFP6_hash_m z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_quotRemInteger_dot___hash_selFP6_hash_m x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_quotRemInteger_dot_uscore_hash_selFP6_hash_m :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_quotRemInteger_dot_uscore_hash_selFP6_hash_m x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x3
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP6_hash_m l cd cs)
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP6_hash_m r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_quotRemInteger_dot_uscore_hash_selFP6_hash_m z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP6_hash_m e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.quotRemInteger._#selFP6#m" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.quotRemInteger._#selFP6#m" (showCons x1))
 
-d_OP_quotRemInteger_dot___hash_selFP8_hash_d :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_quotRemInteger_dot___hash_selFP8_hash_d x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x2
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_quotRemInteger_dot___hash_selFP8_hash_d x1002 x3250 x3500) (d_OP_quotRemInteger_dot___hash_selFP8_hash_d x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_quotRemInteger_dot___hash_selFP8_hash_d z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_quotRemInteger_dot___hash_selFP8_hash_d x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_quotRemInteger_dot_uscore_hash_selFP8_hash_d :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_quotRemInteger_dot_uscore_hash_selFP8_hash_d x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x2
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP8_hash_d l cd cs)
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP8_hash_d r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_quotRemInteger_dot_uscore_hash_selFP8_hash_d z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP8_hash_d e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.quotRemInteger._#selFP8#d" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.quotRemInteger._#selFP8#d" (showCons x1))
 
-d_OP_quotRemInteger_dot___hash_selFP9_hash_m :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_quotRemInteger_dot___hash_selFP9_hash_m x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x3
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_quotRemInteger_dot___hash_selFP9_hash_m x1002 x3250 x3500) (d_OP_quotRemInteger_dot___hash_selFP9_hash_m x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_quotRemInteger_dot___hash_selFP9_hash_m z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_quotRemInteger_dot___hash_selFP9_hash_m x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_quotRemInteger_dot_uscore_hash_selFP9_hash_m :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_quotRemInteger_dot_uscore_hash_selFP9_hash_m x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x3
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP9_hash_m l cd cs)
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP9_hash_m r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_quotRemInteger_dot_uscore_hash_selFP9_hash_m z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_quotRemInteger_dot_uscore_hash_selFP9_hash_m e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.quotRemInteger._#selFP9#m" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.quotRemInteger._#selFP9#m" (showCons x1))
 
-d_C_divModInteger :: BinInt -> BinInt -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
-d_C_divModInteger x1 x2 x3250 x3500 = case x2 of
-     Zero -> d_C_failed x3250 x3500
-     (Pos x3) -> d_OP__casePT_3 x3 x1 x3250 x3500
-     (Neg x11) -> d_OP__casePT_1 x11 x1 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_C_divModInteger x1 x1002 x3250 x3500) (d_C_divModInteger x1 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_C_divModInteger x1 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_C_divModInteger x1 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_divModInteger :: BinInt -> BinInt -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C_divModInteger x1 x2 cd cs = case x2 of
+  Zero -> d_C_failed cd cs
+  Pos x3 -> d_C__casept_3 x3 x1 cd cs
+  Neg x12 -> d_C__casept_1 x12 x1 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_C_divModInteger x1 l cd cs)
+    (d_C_divModInteger x1 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C_divModInteger x1 z cd cs)
+    xs
+  Guard_BinInt d c e -> guardCons d c (d_C_divModInteger x1 e cd $! addCs c
+    cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude.divModInteger" [show x1
+    , show x2] info)
+  _ -> failCons cd (consFail "Prelude.divModInteger" (showCons x2))
 
-d_OP_divModInteger_dot___hash_selFP11_hash_d :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_divModInteger_dot___hash_selFP11_hash_d x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x2
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_divModInteger_dot___hash_selFP11_hash_d x1002 x3250 x3500) (d_OP_divModInteger_dot___hash_selFP11_hash_d x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_divModInteger_dot___hash_selFP11_hash_d z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_divModInteger_dot___hash_selFP11_hash_d x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_divModInteger_dot_uscore_hash_selFP11_hash_d :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_divModInteger_dot_uscore_hash_selFP11_hash_d x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x2
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_divModInteger_dot_uscore_hash_selFP11_hash_d l cd cs)
+    (d_OP_divModInteger_dot_uscore_hash_selFP11_hash_d r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_divModInteger_dot_uscore_hash_selFP11_hash_d z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_divModInteger_dot_uscore_hash_selFP11_hash_d e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.divModInteger._#selFP11#d" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.divModInteger._#selFP11#d" (showCons x1))
 
-d_OP_divModInteger_dot___hash_selFP12_hash_m :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_divModInteger_dot___hash_selFP12_hash_m x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x3
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_divModInteger_dot___hash_selFP12_hash_m x1002 x3250 x3500) (d_OP_divModInteger_dot___hash_selFP12_hash_m x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_divModInteger_dot___hash_selFP12_hash_m z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_divModInteger_dot___hash_selFP12_hash_m x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_divModInteger_dot_uscore_hash_selFP12_hash_m :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_divModInteger_dot_uscore_hash_selFP12_hash_m x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x3
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_divModInteger_dot_uscore_hash_selFP12_hash_m l cd cs)
+    (d_OP_divModInteger_dot_uscore_hash_selFP12_hash_m r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_divModInteger_dot_uscore_hash_selFP12_hash_m z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_divModInteger_dot_uscore_hash_selFP12_hash_m e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.divModInteger._#selFP12#m" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.divModInteger._#selFP12#m" (showCons x1))
 
-d_OP_divModInteger_dot___hash_selFP14_hash_d :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_divModInteger_dot___hash_selFP14_hash_d x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x2
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_divModInteger_dot___hash_selFP14_hash_d x1002 x3250 x3500) (d_OP_divModInteger_dot___hash_selFP14_hash_d x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_divModInteger_dot___hash_selFP14_hash_d z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_divModInteger_dot___hash_selFP14_hash_d x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_divModInteger_dot_uscore_hash_selFP14_hash_d :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_divModInteger_dot_uscore_hash_selFP14_hash_d x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x2
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_divModInteger_dot_uscore_hash_selFP14_hash_d l cd cs)
+    (d_OP_divModInteger_dot_uscore_hash_selFP14_hash_d r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_divModInteger_dot_uscore_hash_selFP14_hash_d z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_divModInteger_dot_uscore_hash_selFP14_hash_d e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.divModInteger._#selFP14#d" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.divModInteger._#selFP14#d" (showCons x1))
 
-d_OP_divModInteger_dot___hash_selFP15_hash_m :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_divModInteger_dot___hash_selFP15_hash_m x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x3
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_divModInteger_dot___hash_selFP15_hash_m x1002 x3250 x3500) (d_OP_divModInteger_dot___hash_selFP15_hash_m x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_divModInteger_dot___hash_selFP15_hash_m z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_divModInteger_dot___hash_selFP15_hash_m x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_divModInteger_dot_uscore_hash_selFP15_hash_m :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_divModInteger_dot_uscore_hash_selFP15_hash_m x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x3
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_divModInteger_dot_uscore_hash_selFP15_hash_m l cd cs)
+    (d_OP_divModInteger_dot_uscore_hash_selFP15_hash_m r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_divModInteger_dot_uscore_hash_selFP15_hash_m z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_divModInteger_dot_uscore_hash_selFP15_hash_m e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.divModInteger._#selFP15#m" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.divModInteger._#selFP15#m" (showCons x1))
 
-d_OP_divModInteger_dot___hash_selFP17_hash_d :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_divModInteger_dot___hash_selFP17_hash_d x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x2
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_divModInteger_dot___hash_selFP17_hash_d x1002 x3250 x3500) (d_OP_divModInteger_dot___hash_selFP17_hash_d x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_divModInteger_dot___hash_selFP17_hash_d z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_divModInteger_dot___hash_selFP17_hash_d x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_divModInteger_dot_uscore_hash_selFP17_hash_d :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_divModInteger_dot_uscore_hash_selFP17_hash_d x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x2
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_divModInteger_dot_uscore_hash_selFP17_hash_d l cd cs)
+    (d_OP_divModInteger_dot_uscore_hash_selFP17_hash_d r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_divModInteger_dot_uscore_hash_selFP17_hash_d z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_divModInteger_dot_uscore_hash_selFP17_hash_d e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.divModInteger._#selFP17#d" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.divModInteger._#selFP17#d" (showCons x1))
 
-d_OP_divModInteger_dot___hash_selFP18_hash_m :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> BinInt
-d_OP_divModInteger_dot___hash_selFP18_hash_m x1 x3250 x3500 = case x1 of
-     (OP_Tuple2 x2 x3) -> x3
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP_divModInteger_dot___hash_selFP18_hash_m x1002 x3250 x3500) (d_OP_divModInteger_dot___hash_selFP18_hash_m x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP_divModInteger_dot___hash_selFP18_hash_m z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP_divModInteger_dot___hash_selFP18_hash_m x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_OP_divModInteger_dot_uscore_hash_selFP18_hash_m :: OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> BinInt
+d_OP_divModInteger_dot_uscore_hash_selFP18_hash_m x1 cd cs = case x1 of
+  OP_Tuple2 x2 x3 -> x3
+  Choice_OP_Tuple2 d i l r -> narrow d i
+    (d_OP_divModInteger_dot_uscore_hash_selFP18_hash_m l cd cs)
+    (d_OP_divModInteger_dot_uscore_hash_selFP18_hash_m r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z ->
+    d_OP_divModInteger_dot_uscore_hash_selFP18_hash_m z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c
+    (d_OP_divModInteger_dot_uscore_hash_selFP18_hash_m e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail
+    "Prelude.divModInteger._#selFP18#m" [show x1] info)
+  _ -> failCons cd (consFail "Prelude.divModInteger._#selFP18#m" (showCons x1))
 
 d_C_divInteger :: BinInt -> BinInt -> Cover -> ConstStore -> BinInt
-d_C_divInteger x1 x2 x3250 x3500 = d_C_fst (d_C_divModInteger x1 x2 x3250 x3500) x3250 x3500
+d_C_divInteger x1 x2 cd cs = d_C_fst (d_C_divModInteger x1 x2 cd
+  cs) cd cs
 
 d_C_modInteger :: BinInt -> BinInt -> Cover -> ConstStore -> BinInt
-d_C_modInteger x1 x2 x3250 x3500 = d_C_snd (d_C_divModInteger x1 x2 x3250 x3500) x3250 x3500
+d_C_modInteger x1 x2 cd cs = d_C_snd (d_C_divModInteger x1 x2 cd
+  cs) cd cs
 
 d_C_quotInteger :: BinInt -> BinInt -> Cover -> ConstStore -> BinInt
-d_C_quotInteger x1 x2 x3250 x3500 = d_C_fst (d_C_quotRemInteger x1 x2 x3250 x3500) x3250 x3500
+d_C_quotInteger x1 x2 cd cs = d_C_fst (d_C_quotRemInteger x1 x2 cd
+  cs) cd cs
 
 d_C_remInteger :: BinInt -> BinInt -> Cover -> ConstStore -> BinInt
-d_C_remInteger x1 x2 x3250 x3500 = d_C_snd (d_C_quotRemInteger x1 x2 x3250 x3500) x3250 x3500
-
-d_OP__casePT_1 x11 x1 x3250 x3500 = case x1 of
-     Zero -> OP_Tuple2 Zero Zero
-     (Pos x12) -> let
-          x13 = d_C_quotRemNat x12 x11 x3250 x3500
-          x14 = d_OP_divModInteger_dot___hash_selFP14_hash_d x13 x3250 x3500
-          x15 = d_OP_divModInteger_dot___hash_selFP15_hash_m x13 x3250 x3500
-           in (d_OP__casePT_0 x11 x14 x15 x3250 x3500)
-     (Neg x18) -> let
-          x19 = d_C_quotRemNat x18 x11 x3250 x3500
-          x20 = d_OP_divModInteger_dot___hash_selFP17_hash_d x19 x3250 x3500
-          x21 = d_OP_divModInteger_dot___hash_selFP18_hash_m x19 x3250 x3500
-           in (OP_Tuple2 x20 (d_C_neg x21 x3250 x3500))
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_1 x11 x1002 x3250 x3500) (d_OP__casePT_1 x11 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_1 x11 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_1 x11 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_1 x11 x1 x3000 x3250 x3500 = case x1 of
-     Zero -> OP_Tuple2 Zero Zero
-     (Pos x12) -> let
-          x2000 = x3000
-           in (seq x2000 (let
-               x13 = d_C_quotRemNat x12 x11 x3250 x3500
-               x14 = d_OP_divModInteger_dot___hash_selFP14_hash_d x13 x3250 x3500
-               x15 = d_OP_divModInteger_dot___hash_selFP15_hash_m x13 x3250 x3500
-                in (nd_OP__casePT_0 x11 x14 x15 x2000 x3250 x3500)))
-     (Neg x18) -> let
-          x19 = d_C_quotRemNat x18 x11 x3250 x3500
-          x20 = d_OP_divModInteger_dot___hash_selFP17_hash_d x19 x3250 x3500
-          x21 = d_OP_divModInteger_dot___hash_selFP18_hash_m x19 x3250 x3500
-           in (OP_Tuple2 x20 (d_C_neg x21 x3250 x3500))
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_1 x11 x1002 x3000 x3250 x3500) (nd_OP__casePT_1 x11 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_1 x11 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_1 x11 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_0 x11 x14 x15 x3250 x3500 = case x15 of
-     Zero -> OP_Tuple2 (d_C_neg x14 x3250 x3500) x15
-     (Neg x16) -> OP_Tuple2 (d_C_neg (d_C_inc x14 x3250 x3500) x3250 x3500) (d_OP_minus_hash x15 (Pos x11) x3250 x3500)
-     (Pos x17) -> OP_Tuple2 (d_C_neg (d_C_inc x14 x3250 x3500) x3250 x3500) (d_OP_minus_hash x15 (Pos x11) x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_0 x11 x14 x1002 x3250 x3500) (d_OP__casePT_0 x11 x14 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_0 x11 x14 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_0 x11 x14 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_0 x11 x14 x15 x3000 x3250 x3500 = case x15 of
-     Zero -> OP_Tuple2 (d_C_neg x14 x3250 x3500) x15
-     (Neg x16) -> OP_Tuple2 (d_C_neg (d_C_inc x14 x3250 x3500) x3250 x3500) (d_OP_minus_hash x15 (Pos x11) x3250 x3500)
-     (Pos x17) -> OP_Tuple2 (d_C_neg (d_C_inc x14 x3250 x3500) x3250 x3500) (d_OP_minus_hash x15 (Pos x11) x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_0 x11 x14 x1002 x3000 x3250 x3500) (nd_OP__casePT_0 x11 x14 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_0 x11 x14 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_0 x11 x14 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_3 x3 x1 x3250 x3500 = case x1 of
-     Zero -> OP_Tuple2 Zero Zero
-     (Pos x4) -> d_C_quotRemNat x4 x3 x3250 x3500
-     (Neg x5) -> let
-          x6 = d_C_quotRemNat x5 x3 x3250 x3500
-          x7 = d_OP_divModInteger_dot___hash_selFP11_hash_d x6 x3250 x3500
-          x8 = d_OP_divModInteger_dot___hash_selFP12_hash_m x6 x3250 x3500
-           in (d_OP__casePT_2 x3 x7 x8 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_3 x3 x1002 x3250 x3500) (d_OP__casePT_3 x3 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_3 x3 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_3 x3 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_3 x3 x1 x3000 x3250 x3500 = case x1 of
-     Zero -> OP_Tuple2 Zero Zero
-     (Pos x4) -> d_C_quotRemNat x4 x3 x3250 x3500
-     (Neg x5) -> let
-          x2000 = x3000
-           in (seq x2000 (let
-               x6 = d_C_quotRemNat x5 x3 x3250 x3500
-               x7 = d_OP_divModInteger_dot___hash_selFP11_hash_d x6 x3250 x3500
-               x8 = d_OP_divModInteger_dot___hash_selFP12_hash_m x6 x3250 x3500
-                in (nd_OP__casePT_2 x3 x7 x8 x2000 x3250 x3500)))
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_3 x3 x1002 x3000 x3250 x3500) (nd_OP__casePT_3 x3 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_3 x3 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_3 x3 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_2 x3 x7 x8 x3250 x3500 = case x8 of
-     Zero -> OP_Tuple2 (d_C_neg x7 x3250 x3500) x8
-     (Neg x9) -> OP_Tuple2 (d_C_neg (d_C_inc x7 x3250 x3500) x3250 x3500) (d_OP_minus_hash (Pos x3) x8 x3250 x3500)
-     (Pos x10) -> OP_Tuple2 (d_C_neg (d_C_inc x7 x3250 x3500) x3250 x3500) (d_OP_minus_hash (Pos x3) x8 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_2 x3 x7 x1002 x3250 x3500) (d_OP__casePT_2 x3 x7 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_2 x3 x7 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_2 x3 x7 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_2 x3 x7 x8 x3000 x3250 x3500 = case x8 of
-     Zero -> OP_Tuple2 (d_C_neg x7 x3250 x3500) x8
-     (Neg x9) -> OP_Tuple2 (d_C_neg (d_C_inc x7 x3250 x3500) x3250 x3500) (d_OP_minus_hash (Pos x3) x8 x3250 x3500)
-     (Pos x10) -> OP_Tuple2 (d_C_neg (d_C_inc x7 x3250 x3500) x3250 x3500) (d_OP_minus_hash (Pos x3) x8 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_2 x3 x7 x1002 x3000 x3250 x3500) (nd_OP__casePT_2 x3 x7 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_2 x3 x7 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_2 x3 x7 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_4 x9 x1 x3250 x3500 = case x1 of
-     Zero -> OP_Tuple2 Zero Zero
-     (Pos x10) -> let
-          x11 = d_C_quotRemNat x10 x9 x3250 x3500
-          x12 = d_OP_quotRemInteger_dot___hash_selFP5_hash_d x11 x3250 x3500
-          x13 = d_OP_quotRemInteger_dot___hash_selFP6_hash_m x11 x3250 x3500
-           in (OP_Tuple2 (d_C_neg x12 x3250 x3500) x13)
-     (Neg x14) -> let
-          x15 = d_C_quotRemNat x14 x9 x3250 x3500
-          x16 = d_OP_quotRemInteger_dot___hash_selFP8_hash_d x15 x3250 x3500
-          x17 = d_OP_quotRemInteger_dot___hash_selFP9_hash_m x15 x3250 x3500
-           in (OP_Tuple2 x16 (d_C_neg x17 x3250 x3500))
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_4 x9 x1002 x3250 x3500) (d_OP__casePT_4 x9 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_4 x9 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_4 x9 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_4 x9 x1 x3000 x3250 x3500 = case x1 of
-     Zero -> OP_Tuple2 Zero Zero
-     (Pos x10) -> let
-          x11 = d_C_quotRemNat x10 x9 x3250 x3500
-          x12 = d_OP_quotRemInteger_dot___hash_selFP5_hash_d x11 x3250 x3500
-          x13 = d_OP_quotRemInteger_dot___hash_selFP6_hash_m x11 x3250 x3500
-           in (OP_Tuple2 (d_C_neg x12 x3250 x3500) x13)
-     (Neg x14) -> let
-          x15 = d_C_quotRemNat x14 x9 x3250 x3500
-          x16 = d_OP_quotRemInteger_dot___hash_selFP8_hash_d x15 x3250 x3500
-          x17 = d_OP_quotRemInteger_dot___hash_selFP9_hash_m x15 x3250 x3500
-           in (OP_Tuple2 x16 (d_C_neg x17 x3250 x3500))
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_4 x9 x1002 x3000 x3250 x3500) (nd_OP__casePT_4 x9 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_4 x9 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_4 x9 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_5 x3 x1 x3250 x3500 = case x1 of
-     Zero -> OP_Tuple2 Zero Zero
-     (Pos x4) -> d_C_quotRemNat x4 x3 x3250 x3500
-     (Neg x5) -> let
-          x6 = d_C_quotRemNat x5 x3 x3250 x3500
-          x7 = d_OP_quotRemInteger_dot___hash_selFP2_hash_d x6 x3250 x3500
-          x8 = d_OP_quotRemInteger_dot___hash_selFP3_hash_m x6 x3250 x3500
-           in (OP_Tuple2 (d_C_neg x7 x3250 x3500) (d_C_neg x8 x3250 x3500))
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_5 x3 x1002 x3250 x3500) (d_OP__casePT_5 x3 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_5 x3 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_5 x3 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_5 x3 x1 x3000 x3250 x3500 = case x1 of
-     Zero -> OP_Tuple2 Zero Zero
-     (Pos x4) -> d_C_quotRemNat x4 x3 x3250 x3500
-     (Neg x5) -> let
-          x6 = d_C_quotRemNat x5 x3 x3250 x3500
-          x7 = d_OP_quotRemInteger_dot___hash_selFP2_hash_d x6 x3250 x3500
-          x8 = d_OP_quotRemInteger_dot___hash_selFP3_hash_m x6 x3250 x3500
-           in (OP_Tuple2 (d_C_neg x7 x3250 x3500) (d_C_neg x8 x3250 x3500))
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_5 x3 x1002 x3000 x3250 x3500) (nd_OP__casePT_5 x3 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_5 x3 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_5 x3 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_6 x6 x2 x3250 x3500 = case x2 of
-     Zero -> Zero
-     (Pos x7) -> Neg (d_OP_star_caret x6 x7 x3250 x3500)
-     (Neg x8) -> Pos (d_OP_star_caret x6 x8 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_6 x6 x1002 x3250 x3500) (d_OP__casePT_6 x6 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_6 x6 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_6 x6 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_6 x6 x2 x3000 x3250 x3500 = case x2 of
-     Zero -> Zero
-     (Pos x7) -> Neg (d_OP_star_caret x6 x7 x3250 x3500)
-     (Neg x8) -> Pos (d_OP_star_caret x6 x8 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_6 x6 x1002 x3000 x3250 x3500) (nd_OP__casePT_6 x6 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_6 x6 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_6 x6 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_7 x3 x2 x3250 x3500 = case x2 of
-     Zero -> Zero
-     (Pos x4) -> Pos (d_OP_star_caret x3 x4 x3250 x3500)
-     (Neg x5) -> Neg (d_OP_star_caret x3 x5 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_7 x3 x1002 x3250 x3500) (d_OP__casePT_7 x3 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_7 x3 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_7 x3 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_7 x3 x2 x3000 x3250 x3500 = case x2 of
-     Zero -> Zero
-     (Pos x4) -> Pos (d_OP_star_caret x3 x4 x3250 x3500)
-     (Neg x5) -> Neg (d_OP_star_caret x3 x5 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_7 x3 x1002 x3000 x3250 x3500) (nd_OP__casePT_7 x3 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_7 x3 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_7 x3 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_8 x1 x6 x2 x3250 x3500 = case x2 of
-     Zero -> x1
-     (Pos x7) -> d_OP_minus_caret x7 x6 x3250 x3500
-     (Neg x8) -> Neg (d_OP_plus_caret x6 x8 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_8 x1 x6 x1002 x3250 x3500) (d_OP__casePT_8 x1 x6 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_8 x1 x6 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_8 x1 x6 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_8 x1 x6 x2 x3000 x3250 x3500 = case x2 of
-     Zero -> x1
-     (Pos x7) -> d_OP_minus_caret x7 x6 x3250 x3500
-     (Neg x8) -> Neg (d_OP_plus_caret x6 x8 x3250 x3500)
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_8 x1 x6 x1002 x3000 x3250 x3500) (nd_OP__casePT_8 x1 x6 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_8 x1 x6 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_8 x1 x6 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_9 x1 x3 x2 x3250 x3500 = case x2 of
-     Zero -> x1
-     (Pos x4) -> Pos (d_OP_plus_caret x3 x4 x3250 x3500)
-     (Neg x5) -> d_OP_minus_caret x3 x5 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_9 x1 x3 x1002 x3250 x3500) (d_OP__casePT_9 x1 x3 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_9 x1 x3 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_9 x1 x3 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_9 x1 x3 x2 x3000 x3250 x3500 = case x2 of
-     Zero -> x1
-     (Pos x4) -> Pos (d_OP_plus_caret x3 x4 x3250 x3500)
-     (Neg x5) -> d_OP_minus_caret x3 x5 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_9 x1 x3 x1002 x3000 x3250 x3500) (nd_OP__casePT_9 x1 x3 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_9 x1 x3 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_9 x1 x3 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_10 x2 x3250 x3500 = case x2 of
-     IHi -> Zero
-     (O x3) -> Pos (d_C_pred (O x3) x3250 x3500)
-     (I x4) -> Pos (O x4)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_10 x1002 x3250 x3500) (d_OP__casePT_10 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_10 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_10 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_10 x2 x3000 x3250 x3500 = case x2 of
-     IHi -> Zero
-     (O x3) -> Pos (d_C_pred (O x3) x3250 x3500)
-     (I x4) -> Pos (O x4)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_10 x1002 x3000 x3250 x3500) (nd_OP__casePT_10 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_10 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_10 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_11 x3 x3250 x3500 = case x3 of
-     IHi -> Zero
-     (O x4) -> Neg (d_C_pred (O x4) x3250 x3500)
-     (I x5) -> Neg (O x5)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_11 x1002 x3250 x3500) (d_OP__casePT_11 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_11 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_11 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_11 x3 x3000 x3250 x3500 = case x3 of
-     IHi -> Zero
-     (O x4) -> Neg (d_C_pred (O x4) x3250 x3500)
-     (I x5) -> Neg (O x5)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_11 x1002 x3000 x3250 x3500) (nd_OP__casePT_11 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_11 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_11 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_12 x8 x2 x3250 x3500 = case x2 of
-     Zero -> C_LT
-     (Pos x9) -> C_LT
-     (Neg x10) -> d_C_cmpNat x10 x8 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_12 x8 x1002 x3250 x3500) (d_OP__casePT_12 x8 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_12 x8 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_12 x8 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_12 x8 x2 x3000 x3250 x3500 = case x2 of
-     Zero -> C_LT
-     (Pos x9) -> C_LT
-     (Neg x10) -> d_C_cmpNat x10 x8 x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_12 x8 x1002 x3000 x3250 x3500) (nd_OP__casePT_12 x8 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_12 x8 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_12 x8 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_13 x5 x2 x3250 x3500 = case x2 of
-     Zero -> C_GT
-     (Pos x6) -> d_C_cmpNat x5 x6 x3250 x3500
-     (Neg x7) -> C_GT
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_13 x5 x1002 x3250 x3500) (d_OP__casePT_13 x5 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_13 x5 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_13 x5 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_13 x5 x2 x3000 x3250 x3500 = case x2 of
-     Zero -> C_GT
-     (Pos x6) -> d_C_cmpNat x5 x6 x3250 x3500
-     (Neg x7) -> C_GT
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_13 x5 x1002 x3000 x3250 x3500) (nd_OP__casePT_13 x5 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_13 x5 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_13 x5 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_14 x2 x3250 x3500 = case x2 of
-     Zero -> C_EQ
-     (Pos x3) -> C_LT
-     (Neg x4) -> C_GT
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_14 x1002 x3250 x3500) (d_OP__casePT_14 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_14 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_14 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_14 x2 x3000 x3250 x3500 = case x2 of
-     Zero -> C_EQ
-     (Pos x3) -> C_LT
-     (Neg x4) -> C_GT
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_14 x1002 x3000 x3250 x3500) (nd_OP__casePT_14 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_14 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_14 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_23 x1 x2 x3 x3250 x3500 = case x3 of
-     C_True -> OP_Tuple2 (Pos x1) Zero
-     C_False -> d_OP__casePT_22 x1 x2 (d_C_eqNat x1 IHi x3250 x3500) x3250 x3500
-     (Choice_C_Bool x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_23 x1 x2 x1002 x3250 x3500) (d_OP__casePT_23 x1 x2 x1003 x3250 x3500)
-     (Choices_C_Bool x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_23 x1 x2 z x3250 x3500) x1002
-     (Guard_C_Bool x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_23 x1 x2 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Bool x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_23 x1 x2 x3 x3000 x3250 x3500 = case x3 of
-     C_True -> OP_Tuple2 (Pos x1) Zero
-     C_False -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_22 x1 x2 (d_C_eqNat x1 IHi x3250 x3500) x2000 x3250 x3500))
-     (Choice_C_Bool x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_23 x1 x2 x1002 x3000 x3250 x3500) (nd_OP__casePT_23 x1 x2 x1003 x3000 x3250 x3500)
-     (Choices_C_Bool x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_23 x1 x2 z x3000 x3250 x3500) x1002
-     (Guard_C_Bool x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_23 x1 x2 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Bool x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_22 x1 x2 x3 x3250 x3500 = case x3 of
-     C_True -> OP_Tuple2 Zero (Pos x2)
-     C_False -> d_OP__casePT_21 x1 x2 (d_C_otherwise x3250 x3500) x3250 x3500
-     (Choice_C_Bool x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_22 x1 x2 x1002 x3250 x3500) (d_OP__casePT_22 x1 x2 x1003 x3250 x3500)
-     (Choices_C_Bool x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_22 x1 x2 z x3250 x3500) x1002
-     (Guard_C_Bool x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_22 x1 x2 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Bool x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_22 x1 x2 x3 x3000 x3250 x3500 = case x3 of
-     C_True -> OP_Tuple2 Zero (Pos x2)
-     C_False -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_21 x1 x2 (d_C_otherwise x3250 x3500) x2000 x3250 x3500))
-     (Choice_C_Bool x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_22 x1 x2 x1002 x3000 x3250 x3500) (nd_OP__casePT_22 x1 x2 x1003 x3000 x3250 x3500)
-     (Choices_C_Bool x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_22 x1 x2 z x3000 x3250 x3500) x1002
-     (Guard_C_Bool x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_22 x1 x2 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Bool x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_21 x1 x2 x3 x3250 x3500 = case x3 of
-     C_True -> d_OP__casePT_20 x1 x2 (d_C_cmpNat x1 x2 x3250 x3500) x3250 x3500
-     C_False -> d_C_failed x3250 x3500
-     (Choice_C_Bool x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_21 x1 x2 x1002 x3250 x3500) (d_OP__casePT_21 x1 x2 x1003 x3250 x3500)
-     (Choices_C_Bool x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_21 x1 x2 z x3250 x3500) x1002
-     (Guard_C_Bool x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_21 x1 x2 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Bool x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_21 x1 x2 x3 x3000 x3250 x3500 = case x3 of
-     C_True -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_20 x1 x2 (d_C_cmpNat x1 x2 x3250 x3500) x2000 x3250 x3500))
-     C_False -> d_C_failed x3250 x3500
-     (Choice_C_Bool x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_21 x1 x2 x1002 x3000 x3250 x3500) (nd_OP__casePT_21 x1 x2 x1003 x3000 x3250 x3500)
-     (Choices_C_Bool x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_21 x1 x2 z x3000 x3250 x3500) x1002
-     (Guard_C_Bool x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_21 x1 x2 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Bool x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_20 x1 x2 x3 x3250 x3500 = case x3 of
-     C_EQ -> OP_Tuple2 (Pos IHi) Zero
-     C_LT -> OP_Tuple2 Zero (Pos x1)
-     C_GT -> d_OP__casePT_19 x1 x2 (d_C_quotRemNat (d_C_div2 x1 x3250 x3500) x2 x3250 x3500) x3250 x3500
-     (Choice_C_Ordering x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_20 x1 x2 x1002 x3250 x3500) (d_OP__casePT_20 x1 x2 x1003 x3250 x3500)
-     (Choices_C_Ordering x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_20 x1 x2 z x3250 x3500) x1002
-     (Guard_C_Ordering x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_20 x1 x2 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Ordering x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_20 x1 x2 x3 x3000 x3250 x3500 = case x3 of
-     C_EQ -> OP_Tuple2 (Pos IHi) Zero
-     C_LT -> OP_Tuple2 Zero (Pos x1)
-     C_GT -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_19 x1 x2 (d_C_quotRemNat (d_C_div2 x1 x3250 x3500) x2 x3250 x3500) x2000 x3250 x3500))
-     (Choice_C_Ordering x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_20 x1 x2 x1002 x3000 x3250 x3500) (nd_OP__casePT_20 x1 x2 x1003 x3000 x3250 x3500)
-     (Choices_C_Ordering x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_20 x1 x2 z x3000 x3250 x3500) x1002
-     (Guard_C_Ordering x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_20 x1 x2 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Ordering x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_19 x1 x2 x5 x3250 x3500 = case x5 of
-     (OP_Tuple2 x3 x4) -> d_OP__casePT_18 x1 x2 x4 x3 x3250 x3500
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_19 x1 x2 x1002 x3250 x3500) (d_OP__casePT_19 x1 x2 x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_19 x1 x2 z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_19 x1 x2 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_19 x1 x2 x5 x3000 x3250 x3500 = case x5 of
-     (OP_Tuple2 x3 x4) -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_18 x1 x2 x4 x3 x2000 x3250 x3500))
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_19 x1 x2 x1002 x3000 x3250 x3500) (nd_OP__casePT_19 x1 x2 x1003 x3000 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_19 x1 x2 z x3000 x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_19 x1 x2 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_18 x1 x2 x4 x3 x3250 x3500 = case x3 of
-     Zero -> OP_Tuple2 (Pos IHi) (d_OP_minus_caret x1 x2 x3250 x3500)
-     (Pos x5) -> d_OP__casePT_17 x1 x2 x5 x4 x3250 x3500
-     (Neg x12) -> d_C_failed x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_18 x1 x2 x4 x1002 x3250 x3500) (d_OP__casePT_18 x1 x2 x4 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_18 x1 x2 x4 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_18 x1 x2 x4 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_18 x1 x2 x4 x3 x3000 x3250 x3500 = case x3 of
-     Zero -> OP_Tuple2 (Pos IHi) (d_OP_minus_caret x1 x2 x3250 x3500)
-     (Pos x5) -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_17 x1 x2 x5 x4 x2000 x3250 x3500))
-     (Neg x12) -> d_C_failed x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_18 x1 x2 x4 x1002 x3000 x3250 x3500) (nd_OP__casePT_18 x1 x2 x4 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_18 x1 x2 x4 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_18 x1 x2 x4 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_17 x1 x2 x5 x4 x3250 x3500 = case x4 of
-     Zero -> OP_Tuple2 (Pos (O x5)) (d_C_mod2 x1 x3250 x3500)
-     (Pos x6) -> d_OP__casePT_16 x1 x2 x5 x6 (d_C_quotRemNat (d_OP_quotRemNat_dot_shift_dot_104 x1 x6 x3250 x3500) x2 x3250 x3500) x3250 x3500
-     (Neg x11) -> d_C_failed x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_17 x1 x2 x5 x1002 x3250 x3500) (d_OP__casePT_17 x1 x2 x5 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_17 x1 x2 x5 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_17 x1 x2 x5 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_17 x1 x2 x5 x4 x3000 x3250 x3500 = case x4 of
-     Zero -> OP_Tuple2 (Pos (O x5)) (d_C_mod2 x1 x3250 x3500)
-     (Pos x6) -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_16 x1 x2 x5 x6 (d_C_quotRemNat (d_OP_quotRemNat_dot_shift_dot_104 x1 x6 x3250 x3500) x2 x3250 x3500) x2000 x3250 x3500))
-     (Neg x11) -> d_C_failed x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_17 x1 x2 x5 x1002 x3000 x3250 x3500) (nd_OP__casePT_17 x1 x2 x5 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_17 x1 x2 x5 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_17 x1 x2 x5 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_16 x1 x2 x5 x6 x9 x3250 x3500 = case x9 of
-     (OP_Tuple2 x7 x8) -> d_OP__casePT_15 x5 x8 x7 x3250 x3500
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_16 x1 x2 x5 x6 x1002 x3250 x3500) (d_OP__casePT_16 x1 x2 x5 x6 x1003 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_16 x1 x2 x5 x6 z x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_16 x1 x2 x5 x6 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_16 x1 x2 x5 x6 x9 x3000 x3250 x3500 = case x9 of
-     (OP_Tuple2 x7 x8) -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_15 x5 x8 x7 x2000 x3250 x3500))
-     (Choice_OP_Tuple2 x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_16 x1 x2 x5 x6 x1002 x3000 x3250 x3500) (nd_OP__casePT_16 x1 x2 x5 x6 x1003 x3000 x3250 x3500)
-     (Choices_OP_Tuple2 x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_16 x1 x2 x5 x6 z x3000 x3250 x3500) x1002
-     (Guard_OP_Tuple2 x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_16 x1 x2 x5 x6 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_OP_Tuple2 x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_15 x5 x8 x7 x3250 x3500 = case x7 of
-     Zero -> OP_Tuple2 (Pos (O x5)) x8
-     (Pos x9) -> OP_Tuple2 (Pos (d_OP_plus_caret (O x5) x9 x3250 x3500)) x8
-     (Neg x10) -> d_C_failed x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_15 x5 x8 x1002 x3250 x3500) (d_OP__casePT_15 x5 x8 x1003 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_15 x5 x8 z x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_15 x5 x8 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_15 x5 x8 x7 x3000 x3250 x3500 = case x7 of
-     Zero -> OP_Tuple2 (Pos (O x5)) x8
-     (Pos x9) -> OP_Tuple2 (Pos (d_OP_plus_caret (O x5) x9 x3250 x3500)) x8
-     (Neg x10) -> d_C_failed x3250 x3500
-     (Choice_BinInt x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_15 x5 x8 x1002 x3000 x3250 x3500) (nd_OP__casePT_15 x5 x8 x1003 x3000 x3250 x3500)
-     (Choices_BinInt x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_15 x5 x8 z x3000 x3250 x3500) x1002
-     (Guard_BinInt x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_15 x5 x8 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_BinInt x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_24 x6 x2 x3250 x3500 = case x2 of
-     IHi -> Pos (O x6)
-     (O x7) -> d_C_inc (d_C_mult2 (d_OP_minus_caret x6 x7 x3250 x3500) x3250 x3500) x3250 x3500
-     (I x8) -> d_C_mult2 (d_OP_minus_caret x6 x8 x3250 x3500) x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_24 x6 x1002 x3250 x3500) (d_OP__casePT_24 x6 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_24 x6 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_24 x6 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_24 x6 x2 x3000 x3250 x3500 = case x2 of
-     IHi -> Pos (O x6)
-     (O x7) -> d_C_inc (d_C_mult2 (d_OP_minus_caret x6 x7 x3250 x3500) x3250 x3500) x3250 x3500
-     (I x8) -> d_C_mult2 (d_OP_minus_caret x6 x8 x3250 x3500) x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_24 x6 x1002 x3000 x3250 x3500) (nd_OP__casePT_24 x6 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_24 x6 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_24 x6 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_25 x1 x3 x2 x3250 x3500 = case x2 of
-     IHi -> Pos (d_C_pred x1 x3250 x3500)
-     (O x4) -> d_C_mult2 (d_OP_minus_caret x3 x4 x3250 x3500) x3250 x3500
-     (I x5) -> d_C_dec (d_C_mult2 (d_OP_minus_caret x3 x5 x3250 x3500) x3250 x3500) x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_25 x1 x3 x1002 x3250 x3500) (d_OP__casePT_25 x1 x3 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_25 x1 x3 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_25 x1 x3 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_25 x1 x3 x2 x3000 x3250 x3500 = case x2 of
-     IHi -> Pos (d_C_pred x1 x3250 x3500)
-     (O x4) -> d_C_mult2 (d_OP_minus_caret x3 x4 x3250 x3500) x3250 x3500
-     (I x5) -> d_C_dec (d_C_mult2 (d_OP_minus_caret x3 x5 x3250 x3500) x3250 x3500) x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_25 x1 x3 x1002 x3000 x3250 x3500) (nd_OP__casePT_25 x1 x3 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_25 x1 x3 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_25 x1 x3 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_26 x6 x2 x3250 x3500 = case x2 of
-     IHi -> O (d_C_succ x6 x3250 x3500)
-     (O x7) -> I (d_OP_plus_caret x6 x7 x3250 x3500)
-     (I x8) -> O (d_OP_plus_caret (d_C_succ x6 x3250 x3500) x8 x3250 x3500)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_26 x6 x1002 x3250 x3500) (d_OP__casePT_26 x6 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_26 x6 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_26 x6 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_26 x6 x2 x3000 x3250 x3500 = case x2 of
-     IHi -> O (d_C_succ x6 x3250 x3500)
-     (O x7) -> I (d_OP_plus_caret x6 x7 x3250 x3500)
-     (I x8) -> O (d_OP_plus_caret (d_C_succ x6 x3250 x3500) x8 x3250 x3500)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_26 x6 x1002 x3000 x3250 x3500) (nd_OP__casePT_26 x6 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_26 x6 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_26 x6 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_27 x3 x2 x3250 x3500 = case x2 of
-     IHi -> I x3
-     (O x4) -> O (d_OP_plus_caret x3 x4 x3250 x3500)
-     (I x5) -> I (d_OP_plus_caret x3 x5 x3250 x3500)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_27 x3 x1002 x3250 x3500) (d_OP__casePT_27 x3 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_27 x3 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_27 x3 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_27 x3 x2 x3000 x3250 x3500 = case x2 of
-     IHi -> I x3
-     (O x4) -> O (d_OP_plus_caret x3 x4 x3250 x3500)
-     (I x5) -> I (d_OP_plus_caret x3 x5 x3250 x3500)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_27 x3 x1002 x3000 x3250 x3500) (nd_OP__casePT_27 x3 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_27 x3 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_27 x3 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_28 x2 x3250 x3500 = case x2 of
-     IHi -> IHi
-     (O x3) -> I (d_C_pred x2 x3250 x3500)
-     (I x4) -> I (O x4)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_28 x1002 x3250 x3500) (d_OP__casePT_28 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_28 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_28 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_28 x2 x3000 x3250 x3500 = case x2 of
-     IHi -> IHi
-     (O x3) -> I (d_C_pred x2 x3250 x3500)
-     (I x4) -> I (O x4)
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_28 x1002 x3000 x3250 x3500) (nd_OP__casePT_28 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_28 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_28 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_30 x8 x2 x3250 x3500 = case x2 of
-     IHi -> C_GT
-     (O x9) -> d_OP__casePT_29 x8 x9 (d_C_cmpNat x8 x9 x3250 x3500) x3250 x3500
-     (I x10) -> d_C_cmpNat x8 x10 x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_30 x8 x1002 x3250 x3500) (d_OP__casePT_30 x8 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_30 x8 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_30 x8 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_30 x8 x2 x3000 x3250 x3500 = case x2 of
-     IHi -> C_GT
-     (O x9) -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_29 x8 x9 (d_C_cmpNat x8 x9 x3250 x3500) x2000 x3250 x3500))
-     (I x10) -> d_C_cmpNat x8 x10 x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_30 x8 x1002 x3000 x3250 x3500) (nd_OP__casePT_30 x8 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_30 x8 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_30 x8 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_29 x8 x9 x10 x3250 x3500 = case x10 of
-     C_EQ -> C_GT
-     C_LT -> C_LT
-     C_GT -> C_GT
-     (Choice_C_Ordering x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_29 x8 x9 x1002 x3250 x3500) (d_OP__casePT_29 x8 x9 x1003 x3250 x3500)
-     (Choices_C_Ordering x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_29 x8 x9 z x3250 x3500) x1002
-     (Guard_C_Ordering x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_29 x8 x9 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Ordering x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_29 x8 x9 x10 x3000 x3250 x3500 = case x10 of
-     C_EQ -> C_GT
-     C_LT -> C_LT
-     C_GT -> C_GT
-     (Choice_C_Ordering x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_29 x8 x9 x1002 x3000 x3250 x3500) (nd_OP__casePT_29 x8 x9 x1003 x3000 x3250 x3500)
-     (Choices_C_Ordering x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_29 x8 x9 z x3000 x3250 x3500) x1002
-     (Guard_C_Ordering x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_29 x8 x9 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Ordering x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_32 x5 x2 x3250 x3500 = case x2 of
-     IHi -> C_GT
-     (O x6) -> d_C_cmpNat x5 x6 x3250 x3500
-     (I x7) -> d_OP__casePT_31 x5 x7 (d_C_cmpNat x5 x7 x3250 x3500) x3250 x3500
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_32 x5 x1002 x3250 x3500) (d_OP__casePT_32 x5 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_32 x5 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_32 x5 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_32 x5 x2 x3000 x3250 x3500 = case x2 of
-     IHi -> C_GT
-     (O x6) -> d_C_cmpNat x5 x6 x3250 x3500
-     (I x7) -> let
-          x2000 = x3000
-           in (seq x2000 (nd_OP__casePT_31 x5 x7 (d_C_cmpNat x5 x7 x3250 x3500) x2000 x3250 x3500))
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_32 x5 x1002 x3000 x3250 x3500) (nd_OP__casePT_32 x5 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_32 x5 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_32 x5 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_31 x5 x7 x8 x3250 x3500 = case x8 of
-     C_EQ -> C_LT
-     C_LT -> C_LT
-     C_GT -> C_GT
-     (Choice_C_Ordering x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_31 x5 x7 x1002 x3250 x3500) (d_OP__casePT_31 x5 x7 x1003 x3250 x3500)
-     (Choices_C_Ordering x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_31 x5 x7 z x3250 x3500) x1002
-     (Guard_C_Ordering x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_31 x5 x7 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Ordering x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_31 x5 x7 x8 x3000 x3250 x3500 = case x8 of
-     C_EQ -> C_LT
-     C_LT -> C_LT
-     C_GT -> C_GT
-     (Choice_C_Ordering x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_31 x5 x7 x1002 x3000 x3250 x3500) (nd_OP__casePT_31 x5 x7 x1003 x3000 x3250 x3500)
-     (Choices_C_Ordering x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_31 x5 x7 z x3000 x3250 x3500) x1002
-     (Guard_C_Ordering x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_31 x5 x7 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_C_Ordering x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-d_OP__casePT_33 x2 x3250 x3500 = case x2 of
-     IHi -> C_EQ
-     (O x3) -> C_LT
-     (I x4) -> C_LT
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (d_OP__casePT_33 x1002 x3250 x3500) (d_OP__casePT_33 x1003 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> d_OP__casePT_33 z x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((d_OP__casePT_33 x1002 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
-
-nd_OP__casePT_33 x2 x3000 x3250 x3500 = case x2 of
-     IHi -> C_EQ
-     (O x3) -> C_LT
-     (I x4) -> C_LT
-     (Choice_Nat  x1000 x1001 x1002 x1003) -> narrow x1000 x1001 (nd_OP__casePT_33 x1002 x3000 x3250 x3500) (nd_OP__casePT_33 x1003 x3000 x3250 x3500)
-     (Choices_Nat  x1000 x1001 x1002) -> narrows x3500 x1000 x1001 (\z -> nd_OP__casePT_33 z x3000 x3250 x3500) x1002
-     (Guard_Nat  x1000 x1001 x1002) -> guardCons x1000 x1001 ((nd_OP__casePT_33 x1002 x3000 x3250) $! (addCs x1001 x3500))
-     (Fail_Nat  x1000 x1001) -> failCons x1000 x1001
-     _ -> failCons x3250 defFailInfo
+d_C_remInteger x1 x2 cd cs = d_C_snd (d_C_quotRemInteger x1 x2 cd
+  cs) cd cs
+
+d_C__casept_1 :: Nat -> BinInt -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_1 x12 x1 cd cs = case x1 of
+  Zero -> OP_Tuple2 Zero Zero
+  Pos x13 -> let x14 = d_C_quotRemNat x13 x12 cd cs
+                 x15 = d_OP_divModInteger_dot_uscore_hash_selFP14_hash_d x14
+                   cd cs
+                 x16 = d_OP_divModInteger_dot_uscore_hash_selFP15_hash_m x14
+                   cd cs
+                 x17 = OP_Tuple2 (d_C_neg (d_C_inc x15 cd cs) cd
+                   cs) (d_OP_minus_hash x16 (Pos x12) cd cs)
+    in d_C__casept_0 x17 x15 x16 cd cs
+  Neg x20 -> let x21 = d_C_quotRemNat x20 x12 cd cs
+                 x22 = d_OP_divModInteger_dot_uscore_hash_selFP17_hash_d x21
+                   cd cs
+                 x23 = d_OP_divModInteger_dot_uscore_hash_selFP18_hash_m x21
+                   cd cs
+    in OP_Tuple2 x22 (d_C_neg x23 cd cs)
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_1 x12 l cd cs) (d_C__casept_1
+    x12 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_1 x12 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_1 x12 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_1" [show x12, show
+    x1] info)
+  _ -> failCons cd (consFail "Prelude._casept_1" (showCons x1))
+
+d_C__casept_0 :: OP_Tuple2 BinInt BinInt -> BinInt -> BinInt
+  -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
+d_C__casept_0 x17 x15 x16 cd cs = case x16 of
+  Zero -> OP_Tuple2 (d_C_neg x15 cd cs) x16
+  Neg x18 -> x17
+  Pos x19 -> x17
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_0 x17 x15 l cd cs)
+    (d_C__casept_0 x17 x15 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_0 x17 x15 z cd cs)
+    xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_0 x17 x15 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_0" [show x17, show
+    x15, show x16] info)
+  _ -> failCons cd (consFail "Prelude._casept_0" (showCons x16))
+
+d_C__casept_3 :: Nat -> BinInt -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_3 x3 x1 cd cs = case x1 of
+  Zero -> OP_Tuple2 Zero Zero
+  Pos x4 -> d_C_quotRemNat x4 x3 cd cs
+  Neg x5 -> let x6 = d_C_quotRemNat x5 x3 cd cs
+                x7 = d_OP_divModInteger_dot_uscore_hash_selFP11_hash_d x6 cd
+                  cs
+                x8 = d_OP_divModInteger_dot_uscore_hash_selFP12_hash_m x6 cd
+                  cs
+                x9 = OP_Tuple2 (d_C_neg (d_C_inc x7 cd cs) cd
+                  cs) (d_OP_minus_hash (Pos x3) x8 cd cs)
+    in d_C__casept_2 x9 x7 x8 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_3 x3 l cd cs) (d_C__casept_3 x3
+    r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_3 x3 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_3 x3 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_3" [show x3, show x1]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_3" (showCons x1))
+
+d_C__casept_2 :: OP_Tuple2 BinInt BinInt -> BinInt -> BinInt
+  -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
+d_C__casept_2 x9 x7 x8 cd cs = case x8 of
+  Zero -> OP_Tuple2 (d_C_neg x7 cd cs) x8
+  Neg x10 -> x9
+  Pos x11 -> x9
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_2 x9 x7 l cd cs) (d_C__casept_2
+    x9 x7 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_2 x9 x7 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_2 x9 x7 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_2" [show x9, show x7
+    , show x8] info)
+  _ -> failCons cd (consFail "Prelude._casept_2" (showCons x8))
+
+d_C__casept_4 :: Nat -> BinInt -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_4 x9 x1 cd cs = case x1 of
+  Zero -> OP_Tuple2 Zero Zero
+  Pos x10 -> let x11 = d_C_quotRemNat x10 x9 cd cs
+                 x12 = d_OP_quotRemInteger_dot_uscore_hash_selFP5_hash_d x11
+                   cd cs
+                 x13 = d_OP_quotRemInteger_dot_uscore_hash_selFP6_hash_m x11
+                   cd cs
+    in OP_Tuple2 (d_C_neg x12 cd cs) x13
+  Neg x14 -> let x15 = d_C_quotRemNat x14 x9 cd cs
+                 x16 = d_OP_quotRemInteger_dot_uscore_hash_selFP8_hash_d x15
+                   cd cs
+                 x17 = d_OP_quotRemInteger_dot_uscore_hash_selFP9_hash_m x15
+                   cd cs
+    in OP_Tuple2 x16 (d_C_neg x17 cd cs)
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_4 x9 l cd cs) (d_C__casept_4 x9
+    r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_4 x9 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_4 x9 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_4" [show x9, show x1]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_4" (showCons x1))
+
+d_C__casept_5 :: Nat -> BinInt -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_5 x3 x1 cd cs = case x1 of
+  Zero -> OP_Tuple2 Zero Zero
+  Pos x4 -> d_C_quotRemNat x4 x3 cd cs
+  Neg x5 -> let x6 = d_C_quotRemNat x5 x3 cd cs
+                x7 = d_OP_quotRemInteger_dot_uscore_hash_selFP2_hash_d x6 cd
+                  cs
+                x8 = d_OP_quotRemInteger_dot_uscore_hash_selFP3_hash_m x6 cd
+                  cs
+    in OP_Tuple2 (d_C_neg x7 cd cs) (d_C_neg x8 cd cs)
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_5 x3 l cd cs) (d_C__casept_5 x3
+    r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_5 x3 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_5 x3 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_5" [show x3, show x1]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_5" (showCons x1))
+
+d_C__casept_6 :: Nat -> BinInt -> Cover -> ConstStore -> BinInt
+d_C__casept_6 x6 x2 cd cs = case x2 of
+  Zero -> Zero
+  Pos x7 -> Neg (d_OP_star_caret x6 x7 cd cs)
+  Neg x8 -> Pos (d_OP_star_caret x6 x8 cd cs)
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_6 x6 l cd cs) (d_C__casept_6 x6
+    r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_6 x6 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_6 x6 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_6" [show x6, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_6" (showCons x2))
+
+d_C__casept_7 :: Nat -> BinInt -> Cover -> ConstStore -> BinInt
+d_C__casept_7 x3 x2 cd cs = case x2 of
+  Zero -> Zero
+  Pos x4 -> Pos (d_OP_star_caret x3 x4 cd cs)
+  Neg x5 -> Neg (d_OP_star_caret x3 x5 cd cs)
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_7 x3 l cd cs) (d_C__casept_7 x3
+    r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_7 x3 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_7 x3 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_7" [show x3, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_7" (showCons x2))
+
+d_C__casept_8 :: Nat -> BinInt -> BinInt -> Cover -> ConstStore -> BinInt
+d_C__casept_8 x6 x1 x2 cd cs = case x2 of
+  Zero -> x1
+  Pos x7 -> d_OP_minus_caret x7 x6 cd cs
+  Neg x8 -> Neg (d_OP_plus_caret x6 x8 cd cs)
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_8 x6 x1 l cd cs) (d_C__casept_8
+    x6 x1 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_8 x6 x1 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_8 x6 x1 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_8" [show x6, show x1
+    , show x2] info)
+  _ -> failCons cd (consFail "Prelude._casept_8" (showCons x2))
+
+d_C__casept_9 :: Nat -> BinInt -> BinInt -> Cover -> ConstStore -> BinInt
+d_C__casept_9 x3 x1 x2 cd cs = case x2 of
+  Zero -> x1
+  Pos x4 -> Pos (d_OP_plus_caret x3 x4 cd cs)
+  Neg x5 -> d_OP_minus_caret x3 x5 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_9 x3 x1 l cd cs) (d_C__casept_9
+    x3 x1 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_9 x3 x1 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_9 x3 x1 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_9" [show x3, show x1
+    , show x2] info)
+  _ -> failCons cd (consFail "Prelude._casept_9" (showCons x2))
+
+d_C__casept_10 :: Nat -> Cover -> ConstStore -> BinInt
+d_C__casept_10 x2 cd cs = case x2 of
+  IHi -> Zero
+  O x3 -> Pos (d_C_pred (O x3) cd cs)
+  I x4 -> Pos (O x4)
+  Choice_Nat d i l r -> narrow d i (d_C__casept_10 l cd cs) (d_C__casept_10 r cd
+    cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_10 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_10 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_10" [show x2] info)
+  _ -> failCons cd (consFail "Prelude._casept_10" (showCons x2))
+
+d_C__casept_11 :: Nat -> Cover -> ConstStore -> BinInt
+d_C__casept_11 x3 cd cs = case x3 of
+  IHi -> Zero
+  O x4 -> Neg (d_C_pred (O x4) cd cs)
+  I x5 -> Neg (O x5)
+  Choice_Nat d i l r -> narrow d i (d_C__casept_11 l cd cs) (d_C__casept_11 r cd
+    cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_11 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_11 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_11" [show x3] info)
+  _ -> failCons cd (consFail "Prelude._casept_11" (showCons x3))
+
+d_C__casept_12 :: Nat -> BinInt -> Cover -> ConstStore -> C_Ordering
+d_C__casept_12 x8 x2 cd cs = case x2 of
+  Zero -> C_LT
+  Pos x9 -> C_LT
+  Neg x10 -> d_C_cmpNat x10 x8 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_12 x8 l cd cs) (d_C__casept_12
+    x8 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_12 x8 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_12 x8 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_12" [show x8, show
+    x2] info)
+  _ -> failCons cd (consFail "Prelude._casept_12" (showCons x2))
+
+d_C__casept_13 :: Nat -> BinInt -> Cover -> ConstStore -> C_Ordering
+d_C__casept_13 x5 x2 cd cs = case x2 of
+  Zero -> C_GT
+  Pos x6 -> d_C_cmpNat x5 x6 cd cs
+  Neg x7 -> C_GT
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_13 x5 l cd cs) (d_C__casept_13
+    x5 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_13 x5 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_13 x5 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_13" [show x5, show
+    x2] info)
+  _ -> failCons cd (consFail "Prelude._casept_13" (showCons x2))
+
+d_C__casept_14 :: BinInt -> Cover -> ConstStore -> C_Ordering
+d_C__casept_14 x2 cd cs = case x2 of
+  Zero -> C_EQ
+  Pos x3 -> C_LT
+  Neg x4 -> C_GT
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_14 l cd cs) (d_C__casept_14 r
+    cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_14 z cd cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_14 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_14" [show x2] info)
+  _ -> failCons cd (consFail "Prelude._casept_14" (showCons x2))
+
+d_C__casept_23 :: Nat -> Nat -> C_Bool -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_23 x2 x1 x3 cd cs = case x3 of
+  C_True -> OP_Tuple2 (Pos x1) Zero
+  C_False -> d_C__casept_22 x1 x2 (d_OP_eq_eq x1 IHi
+    cd cs) cd cs
+  Choice_C_Bool d i l r -> narrow d i (d_C__casept_23 x2 x1 l cd cs)
+    (d_C__casept_23 x2 x1 r cd cs)
+  Choices_C_Bool d i xs -> narrows cs d i (\z -> d_C__casept_23 x2
+    x1 z cd cs) xs
+  Guard_C_Bool d c e -> guardCons d c (d_C__casept_23 x2 x1 e cd $!
+    addCs c cs)
+  Fail_C_Bool d info -> failCons d (traceFail "Prelude._casept_23" [show
+    x2, show x1, show x3] info)
+  _ -> failCons cd (consFail "Prelude._casept_23" (showCons x3))
+
+d_C__casept_22 :: Nat -> Nat -> C_Bool -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_22 x1 x2 x3 cd cs = case x3 of
+  C_True -> OP_Tuple2 Zero (Pos IHi)
+  C_False -> d_C__casept_21 x2 x1 (d_C_otherwise cd
+    cs) cd cs
+  Choice_C_Bool d i l r -> narrow d i (d_C__casept_22 x1 x2 l cd cs)
+    (d_C__casept_22 x1 x2 r cd cs)
+  Choices_C_Bool d i xs -> narrows cs d i (\z -> d_C__casept_22 x1
+    x2 z cd cs) xs
+  Guard_C_Bool d c e -> guardCons d c (d_C__casept_22 x1 x2 e cd $!
+    addCs c cs)
+  Fail_C_Bool d info -> failCons d (traceFail "Prelude._casept_22" [show
+    x1, show x2, show x3] info)
+  _ -> failCons cd (consFail "Prelude._casept_22" (showCons x3))
+
+d_C__casept_21 :: Nat -> Nat -> C_Bool -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_21 x2 x1 x3 cd cs = case x3 of
+  C_True -> d_C__casept_20 x2 x1 (d_C_cmpNat x1 x2 cd cs) cd cs
+  C_False -> d_C_failed cd cs
+  Choice_C_Bool d i l r -> narrow d i (d_C__casept_21 x2 x1 l cd cs)
+    (d_C__casept_21 x2 x1 r cd cs)
+  Choices_C_Bool d i xs -> narrows cs d i (\z -> d_C__casept_21 x2
+    x1 z cd cs) xs
+  Guard_C_Bool d c e -> guardCons d c (d_C__casept_21 x2 x1 e cd $!
+    addCs c cs)
+  Fail_C_Bool d info -> failCons d (traceFail "Prelude._casept_21" [show
+    x2, show x1, show x3] info)
+  _ -> failCons cd (consFail "Prelude._casept_21" (showCons x3))
+
+d_C__casept_20 :: Nat -> Nat -> C_Ordering -> Cover
+  -> ConstStore -> OP_Tuple2 BinInt BinInt
+d_C__casept_20 x2 x1 x3 cd cs = case x3 of
+  C_EQ -> OP_Tuple2 (Pos IHi) Zero
+  C_LT -> OP_Tuple2 Zero (Pos x1)
+  C_GT -> d_C__casept_19 x2 x1 (d_C_quotRemNat (d_C_div2 x1 cd cs)
+    x2 cd cs) cd cs
+  Choice_C_Ordering d i l r -> narrow d i (d_C__casept_20 x2 x1 l cd
+    cs) (d_C__casept_20 x2 x1 r cd cs)
+  Choices_C_Ordering d i xs -> narrows cs d i (\z -> d_C__casept_20
+    x2 x1 z cd cs) xs
+  Guard_C_Ordering d c e -> guardCons d c (d_C__casept_20 x2 x1 e
+    cd $! addCs c cs)
+  Fail_C_Ordering d info -> failCons d (traceFail "Prelude._casept_20"
+    [show x2, show x1, show x3] info)
+  _ -> failCons cd (consFail "Prelude._casept_20" (showCons x3))
+
+d_C__casept_19 :: Nat -> Nat -> OP_Tuple2 BinInt BinInt
+  -> Cover -> ConstStore -> OP_Tuple2 BinInt BinInt
+d_C__casept_19 x2 x1 x5 cd cs = case x5 of
+  OP_Tuple2 x3 x4 -> d_C__casept_18 x4 x2 x1 x3 cd cs
+  Choice_OP_Tuple2 d i l r -> narrow d i (d_C__casept_19 x2 x1 l cd
+    cs) (d_C__casept_19 x2 x1 r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z -> d_C__casept_19
+    x2 x1 z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c (d_C__casept_19 x2 x1 e
+    cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail "Prelude._casept_19"
+    [show x2, show x1, show x5] info)
+  _ -> failCons cd (consFail "Prelude._casept_19" (showCons x5))
+
+d_C__casept_18 :: BinInt -> Nat -> Nat -> BinInt -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_18 x4 x2 x1 x3 cd cs = case x3 of
+  Neg x5 -> d_C_error (toCurryString
+    "quotRemNat: negative quotient") cd cs
+  Zero -> OP_Tuple2 (Pos IHi) (d_OP_minus_caret x1 x2 cd cs)
+  Pos x6 -> d_C__casept_17 x2 x1 x6 x4 cd cs
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_18 x4 x2 x1 l cd cs)
+    (d_C__casept_18 x4 x2 x1 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_18 x4 x2 x1 z cd
+    cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_18 x4 x2 x1 e cd $! addCs c
+    cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_18" [show x4, show x2
+    , show x1, show x3] info)
+  _ -> failCons cd (consFail "Prelude._casept_18" (showCons x3))
+
+d_C__casept_17 :: Nat -> Nat -> Nat -> BinInt -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_17 x2 x1 x6 x4 cd cs = case x4 of
+  Neg x7 -> d_C_error (toCurryString
+    "quotRemNat: negative remainder") cd cs
+  Zero -> OP_Tuple2 (Pos (O x6)) (d_C_mod2 x1 cd cs)
+  Pos x8 -> d_C__casept_16 x2 x8 x1 x6 (d_C_quotRemNat
+    (d_OP_quotRemNat_dot_shift_dot_104 x1 x8 cd cs) x2 cd cs) cd cs
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_17 x2 x1 x6 l cd cs)
+    (d_C__casept_17 x2 x1 x6 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_17 x2 x1 x6 z cd
+    cs) xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_17 x2 x1 x6 e cd $! addCs c
+    cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_17" [show x2, show x1
+    , show x6, show x4] info)
+  _ -> failCons cd (consFail "Prelude._casept_17" (showCons x4))
+
+d_C__casept_16 :: Nat -> Nat -> Nat -> Nat -> OP_Tuple2
+  BinInt BinInt -> Cover -> ConstStore -> OP_Tuple2 BinInt
+  BinInt
+d_C__casept_16 x2 x8 x1 x6 x11 cd cs = case x11 of
+  OP_Tuple2 x9 x10 -> d_C__casept_15 x10 x6 x9 cd cs
+  Choice_OP_Tuple2 d i l r -> narrow d i (d_C__casept_16 x2 x8 x1 x6
+    l cd cs) (d_C__casept_16 x2 x8 x1 x6 r cd cs)
+  Choices_OP_Tuple2 d i xs -> narrows cs d i (\z -> d_C__casept_16
+    x2 x8 x1 x6 z cd cs) xs
+  Guard_OP_Tuple2 d c e -> guardCons d c (d_C__casept_16 x2 x8 x1 x6
+    e cd $! addCs c cs)
+  Fail_OP_Tuple2 d info -> failCons d (traceFail "Prelude._casept_16"
+    [show x2, show x8, show x1, show x6, show x11] info)
+  _ -> failCons cd (consFail "Prelude._casept_16" (showCons x11))
+
+d_C__casept_15 :: BinInt -> Nat -> BinInt -> Cover -> ConstStore
+  -> OP_Tuple2 BinInt BinInt
+d_C__casept_15 x10 x6 x9 cd cs = case x9 of
+  Neg x11 -> d_C_error (toCurryString
+    "quotRemNat: negative quotient") cd cs
+  Zero -> OP_Tuple2 (Pos (O x6)) x10
+  Pos x12 -> OP_Tuple2 (Pos (d_OP_plus_caret (O x6) x12 cd
+    cs)) x10
+  Choice_BinInt d i l r -> narrow d i (d_C__casept_15 x10 x6 l cd cs)
+    (d_C__casept_15 x10 x6 r cd cs)
+  Choices_BinInt d i xs -> narrows cs d i (\z -> d_C__casept_15 x10 x6 z cd cs)
+    xs
+  Guard_BinInt d c e -> guardCons d c (d_C__casept_15 x10 x6 e cd $! addCs c cs)
+  Fail_BinInt d info -> failCons d (traceFail "Prelude._casept_15" [show x10, show
+    x6, show x9] info)
+  _ -> failCons cd (consFail "Prelude._casept_15" (showCons x9))
+
+d_C__casept_24 :: Nat -> Nat -> Cover -> ConstStore -> BinInt
+d_C__casept_24 x6 x2 cd cs = case x2 of
+  IHi -> Pos (O x6)
+  O x7 -> d_C_inc (d_C_mult2 (d_OP_minus_caret x6 x7 cd cs) cd cs) cd cs
+  I x8 -> d_C_mult2 (d_OP_minus_caret x6 x8 cd cs) cd cs
+  Choice_Nat d i l r -> narrow d i (d_C__casept_24 x6 l cd cs) (d_C__casept_24 x6
+    r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_24 x6 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_24 x6 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_24" [show x6, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_24" (showCons x2))
+
+d_C__casept_25 :: Nat -> Nat -> Nat -> Cover -> ConstStore -> BinInt
+d_C__casept_25 x3 x1 x2 cd cs = case x2 of
+  IHi -> Pos (d_C_pred x1 cd cs)
+  O x4 -> d_C_mult2 (d_OP_minus_caret x3 x4 cd cs) cd cs
+  I x5 -> d_C_dec (d_C_mult2 (d_OP_minus_caret x3 x5 cd cs) cd cs) cd cs
+  Choice_Nat d i l r -> narrow d i (d_C__casept_25 x3 x1 l cd cs) (d_C__casept_25
+    x3 x1 r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_25 x3 x1 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_25 x3 x1 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_25" [show x3, show x1
+    , show x2] info)
+  _ -> failCons cd (consFail "Prelude._casept_25" (showCons x2))
+
+d_C__casept_26 :: Nat -> Nat -> Cover -> ConstStore -> Nat
+d_C__casept_26 x6 x2 cd cs = case x2 of
+  IHi -> O (d_C_succ x6 cd cs)
+  O x7 -> I (d_OP_plus_caret x6 x7 cd cs)
+  I x8 -> O (d_OP_plus_caret (d_C_succ x6 cd cs) x8 cd cs)
+  Choice_Nat d i l r -> narrow d i (d_C__casept_26 x6 l cd cs) (d_C__casept_26 x6
+    r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_26 x6 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_26 x6 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_26" [show x6, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_26" (showCons x2))
+
+d_C__casept_27 :: Nat -> Nat -> Cover -> ConstStore -> Nat
+d_C__casept_27 x3 x2 cd cs = case x2 of
+  IHi -> I x3
+  O x4 -> O (d_OP_plus_caret x3 x4 cd cs)
+  I x5 -> I (d_OP_plus_caret x3 x5 cd cs)
+  Choice_Nat d i l r -> narrow d i (d_C__casept_27 x3 l cd cs) (d_C__casept_27 x3
+    r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_27 x3 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_27 x3 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_27" [show x3, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_27" (showCons x2))
+
+d_C__casept_28 :: Nat -> Cover -> ConstStore -> Nat
+d_C__casept_28 x2 cd cs = case x2 of
+  IHi -> IHi
+  O x3 -> I (d_C_pred x2 cd cs)
+  I x4 -> I (O x4)
+  Choice_Nat d i l r -> narrow d i (d_C__casept_28 l cd cs) (d_C__casept_28 r cd
+    cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_28 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_28 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_28" [show x2] info)
+  _ -> failCons cd (consFail "Prelude._casept_28" (showCons x2))
+
+d_C__casept_30 :: Nat -> Nat -> Cover -> ConstStore -> C_Ordering
+d_C__casept_30 x9 x2 cd cs = case x2 of
+  IHi -> C_GT
+  O x10 -> let x11 = d_C_cmpNat x9 x10 cd cs in d_C__casept_29 x11 cd cs
+  I x12 -> d_C_cmpNat x9 x12 cd cs
+  Choice_Nat d i l r -> narrow d i (d_C__casept_30 x9 l cd cs) (d_C__casept_30 x9
+    r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_30 x9 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_30 x9 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_30" [show x9, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_30" (showCons x2))
+
+d_C__casept_29 :: C_Ordering -> Cover -> ConstStore -> C_Ordering
+d_C__casept_29 x11 cd cs = case x11 of
+  C_EQ -> C_GT
+  C_LT -> x11
+  C_GT -> x11
+  Choice_C_Ordering d i l r -> narrow d i (d_C__casept_29 l cd cs)
+    (d_C__casept_29 r cd cs)
+  Choices_C_Ordering d i xs -> narrows cs d i (\z -> d_C__casept_29
+    z cd cs) xs
+  Guard_C_Ordering d c e -> guardCons d c (d_C__casept_29 e cd $!
+    addCs c cs)
+  Fail_C_Ordering d info -> failCons d (traceFail "Prelude._casept_29"
+    [show x11] info)
+  _ -> failCons cd (consFail "Prelude._casept_29" (showCons x11))
+
+d_C__casept_32 :: Nat -> Nat -> Cover -> ConstStore -> C_Ordering
+d_C__casept_32 x5 x2 cd cs = case x2 of
+  IHi -> C_GT
+  O x6 -> d_C_cmpNat x5 x6 cd cs
+  I x7 -> let x8 = d_C_cmpNat x5 x7 cd cs in d_C__casept_31 x8 cd cs
+  Choice_Nat d i l r -> narrow d i (d_C__casept_32 x5 l cd cs) (d_C__casept_32 x5
+    r cd cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_32 x5 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_32 x5 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_32" [show x5, show x2]
+    info)
+  _ -> failCons cd (consFail "Prelude._casept_32" (showCons x2))
+
+d_C__casept_31 :: C_Ordering -> Cover -> ConstStore -> C_Ordering
+d_C__casept_31 x8 cd cs = case x8 of
+  C_EQ -> C_LT
+  C_LT -> x8
+  C_GT -> x8
+  Choice_C_Ordering d i l r -> narrow d i (d_C__casept_31 l cd cs)
+    (d_C__casept_31 r cd cs)
+  Choices_C_Ordering d i xs -> narrows cs d i (\z -> d_C__casept_31
+    z cd cs) xs
+  Guard_C_Ordering d c e -> guardCons d c (d_C__casept_31 e cd $!
+    addCs c cs)
+  Fail_C_Ordering d info -> failCons d (traceFail "Prelude._casept_31"
+    [show x8] info)
+  _ -> failCons cd (consFail "Prelude._casept_31" (showCons x8))
+
+d_C__casept_33 :: Nat -> Cover -> ConstStore -> C_Ordering
+d_C__casept_33 x2 cd cs = case x2 of
+  IHi -> C_EQ
+  O x3 -> C_LT
+  I x4 -> C_LT
+  Choice_Nat d i l r -> narrow d i (d_C__casept_33 l cd cs) (d_C__casept_33 r cd
+    cs)
+  Choices_Nat d i xs -> narrows cs d i (\z -> d_C__casept_33 z cd cs) xs
+  Guard_Nat d c e -> guardCons d c (d_C__casept_33 e cd $! addCs c cs)
+  Fail_Nat d info -> failCons d (traceFail "Prelude._casept_33" [show x2] info)
+  _ -> failCons cd (consFail "Prelude._casept_33" (showCons x2))

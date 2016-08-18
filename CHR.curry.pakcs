@@ -11,8 +11,11 @@
 ---     > pakcs :l MyRules :add CHR :eval 'compileCHR "MyCHR" [rule1,rule2]' :q
 ---
 --- @author Michael Hanus
---- @version February 2015
+--- @version May 2016
+--- @category general
 ----------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
 
 module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
            true, fail, andCHR, allCHR, chrsToGoal,
@@ -20,20 +23,21 @@ module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
            (.=.), (./=.), (.<=.), (.>=.), (.>.), (.<.),
            nonvar, ground, anyPrim,
            solveCHR, runCHR, runCHRwithTrace,
-           compileCHR, chr2success
+           compileCHR, chr2curry
           ) where
 
-import Findall(rewriteSome)
-import Constraint(allC)
-import Unsafe -- for tracing
-import SetRBT
-import List
 import Char
-import FlatCurry
-import FlatCurryGoodies
-import FlatCurryShow(showCurryType)
-import XML
+import Findall           (rewriteSome)
+import FlatCurry.Types
+import FlatCurry.Files
+import FlatCurry.Goodies
+import FlatCurry.Pretty  (defaultOptions, ppTypeExp)
+import List
 import Prolog
+import Pretty            (pretty)
+import SetRBT
+import Unsafe -- for tracing
+import XML
 
 -------------------------------------------------------------------------------
 -- Operator definitions for writing CHRs:
@@ -180,7 +184,7 @@ data PrimConstraint a = Eq a a -- equality
                       | Compare (a -> a -> Bool) a a -- ordering constraint
                       | Ground a -- ground value
                       | Nonvar a -- not an unbound variable
-                      | AnyPrim (() -> Success) -- user-defined primitive
+                      | AnyPrim (() -> Bool) -- user-defined primitive
 
 --- Transforms a primitive constraint into a CHR goal.
 primToGoal :: PrimConstraint dom -> Goal dom chr
@@ -219,11 +223,11 @@ nonvar :: dom -> Goal dom chr
 nonvar x = primToGoal (Nonvar x)
 
 --- Embed user-defined primitive constraint.
-anyPrim :: (() -> Success) -> Goal dom chr
+anyPrim :: (() -> Bool) -> Goal dom chr
 anyPrim cf = primToGoal (AnyPrim cf)
 
 -- Evaluate primitive constraints.
-evalPrimCHR :: Ord dom => PrimConstraint dom -> Success
+evalPrimCHR :: Eq a => PrimConstraint a -> Bool
 evalPrimCHR (Eq x y)          = x=:=y
 evalPrimCHR (Neq x y)         = (x==y) =:= False
 evalPrimCHR Fail              = failed
@@ -242,14 +246,13 @@ evalPrimCHR (AnyPrim cf)      = cf ()
 --- a constraint solver in Curry. If user-defined CHR constraints remain
 --- after applying all CHR rules, a warning showing the residual
 --- constraints is issued.
-solveCHR :: (Ord dom, Show dom, Show chr) =>
-            [[dom] -> CHR dom chr] -> Goal dom chr -> Success
+solveCHR :: (Eq dom, Show chr) => [[dom] -> CHR dom chr] -> Goal dom chr -> Bool
 solveCHR prules goal =
   let residual = runCHR prules goal
    in if null residual
-      then success
+      then True
       else trace ("WARNING: residual CHR constraints: "++show residual++"\n")
-                 success
+                 True
 
 ------------------------------------------------------------------------
 -- The structure and operations for the history of the interpreter.
@@ -259,26 +262,32 @@ solveCHR prules goal =
 -- extendHistory = (:)
 -- inHistory     = elem
 type History = SetRBT ([Int],Int) -- entry: constraint indices and rule index
+
+emptyHistory :: Ord a => SetRBT a
 emptyHistory  = emptySetRBT (<=)
+
+extendHistory :: a -> SetRBT a -> SetRBT a
 extendHistory = insertRBT
+
+inHistory :: a -> SetRBT a -> Bool
 inHistory     = elemRBT
 
 ------------------------------------------------------------------------
 --- Interpret CHR rules (parameterized over domain variables)
 --- for a given CHR goal (second argument) and return the remaining
 --- CHR constraints.
-runCHR :: Ord dom => [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
+runCHR :: Eq dom => [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
 runCHR prules goal = evalCHR False prules goal
 
 --- Interpret CHR rules (parameterized over domain variables)
 --- for a given CHR goal (second argument) and return the remaining
 --- CHR constraints. Trace also the active and passive constraints
 --- as well as the applied rule number during computation.
-runCHRwithTrace :: Ord dom => [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
+runCHRwithTrace :: Eq dom => [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
 runCHRwithTrace prules goal = evalCHR True prules goal
 
 -- Interpreter for CHR (refined semantics):
-evalCHR :: Ord dom => Bool -> [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
+evalCHR :: Eq dom => Bool -> [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
 evalCHR withtrace urules (Goal goal)
    | evalConstr gidx emptyHistory chrgoal [] result
    = map snd result
@@ -291,7 +300,7 @@ evalCHR withtrace urules (Goal goal)
 
   (gidx,chrgoal) = numberCHR 0 goal
 
-  solvePrims = allC evalPrimCHR
+  solvePrims = all evalPrimCHR
 
   -- evaluate list of active constraints:
   evalConstr gi hist gl cstore finalcs = tracing (showAnyTerm (gl,cstore)) $
@@ -405,6 +414,7 @@ compileCHR currymod rules
   sourcemodname = fst (head rids)
 
 -- extract the qualified name of a rule:
+ruleId :: ([dom] -> CHR dom chr) -> QName
 ruleId rule =
   let rcallstring = showAnyQExpression rule -- "(partcall 1 qid [])"
       qid = takeWhile (not . isSpace) (drop (length "(partcall 1 ") rcallstring)
@@ -412,6 +422,7 @@ ruleId rule =
    in (mname, tail rname)
 
 -- compile all specifed CHR rules to CHR(Prolog):
+compileRules :: String -> String -> [String] -> IO ()
 compileRules modname chrmodname rids = do
   (Prog _ _ _ fdecls opdecls) <- readFlatCurry modname
   let pmodname = chrmodname++"_prim"
@@ -465,7 +476,7 @@ chrPrologPrimDefinition (qcname,carity) =
     (showCName ("prim_"++snd qcname))
     (map PlVar (map (\i->"X"++show i) [1..carity] ++ ["R"]))
     [PlLit (showQName qcname) (map (\i->PlVar ("X"++show i)) [1..carity]),
-     PlLit "=" [PlVar "R", PlAtom "Prelude.success"]]
+     PlLit "=" [PlVar "R", PlAtom "Prelude.True"]]
 
 
 -- show Curry module as interface to CHR solver implemented in Prolog:
@@ -475,7 +486,7 @@ showCHRModule orgmod chrmod opdecls constraints = unlines $
   ["module "++chrmod++exports++" where","",
   -- import original modules so that their code is available for
   -- evaluating primitive (Curry-defined) constraints
-   "import qualified CHR(chr2success)",
+   "import qualified CHR(chr2curry)",
    "import CHRcompiled",
    "import qualified "++orgmod,""] ++
   map showOpDecl chropdecls ++ [""] ++
@@ -496,17 +507,17 @@ showOpDecl (Op op fixity prec) = unwords [showFixity fixity,show prec,showOp op]
 
   showOp (_,on) = if isAlpha (head on) then '`':on++"`" else on
 
-
+showCurryConstraint :: ((QName,Int),TypeExpr) -> String
 showCurryConstraint (((_,cname),carity),ctype) =
   let cargtypes = argTypes carity ctype in
   showCName cname ++" :: "++ concatMap (++" -> ") cargtypes
-    ++"Goal "++ showCurryType showTCons True (resultType carity ctype) ++"\n"++
+    ++"Goal "++ showCurryType (resultType carity ctype) ++"\n"++
   showCName cname ++ concatMap (\i->" x"++show i) [1..carity] ++ " = Goal " ++
     take carity (repeat '(') ++
     showCName ("prim_"++cname) ++
     concatMap (\i->" $!! x"++show i++")") [1..carity] ++ "\n\n" ++
   showCName ("prim_"++cname) ++ " :: " ++
-            concatMap (++" -> ") cargtypes ++ "Success\n" ++
+            concatMap (++" -> ") cargtypes ++ "Bool\n" ++
   showCName ("prim_"++cname) ++ " external\n"
  where
    resultType arity tp =
@@ -517,11 +528,10 @@ showCurryConstraint (((_,cname),carity),ctype) =
 
    argTypes arity ftype = if arity==0 then [] else
      let FuncType atype rtype = ftype
-      in showCurryType showTCons True atype : argTypes (arity-1) rtype
-
-   showTCons (mtc,ntc) = if mtc=="Prelude" then ntc else mtc++"."++ntc
+      in showCurryType atype : argTypes (arity-1) rtype
 
 -- generate prim_c2p specification of external operations:
+constraints2xml :: String -> [(QName,Int)] -> XmlExp
 constraints2xml prologmod constraints =
   xml "primitives" (map constraint2xml constraints)
  where
@@ -532,6 +542,8 @@ constraints2xml prologmod constraints =
             xml "entry" [xtxt (showCName ("prim_"++cname))]]
 
 -- compile a single CHR rule:
+compileRule :: (QName -> TypeExpr) -> [(QName,Int)] -> Rule
+            -> ([(QName,Int)],String)
 compileRule getftype chrs (Rule _ rhs) =
   let (_,rchrs,trule) = exp2CHR 100 (firstBranch rhs)
    in (rchrs, trule ++ ".")
@@ -549,13 +561,13 @@ compileRule getftype chrs (Rule _ rhs) =
     | qf == (chrMod,"|>")   = let (j,chrs1,trule1) = exp2CHR i a1
                                   (k,_,tgoal2) = transGoal j a2
                                in (k, chrs1, trule1 ++" | "++ sg tgoal2)
-    | otherwise = error ("Cannot translate CHR rule: " ++ show exp)
+    | otherwise = error ("Cannot translate CHR rule: " ++ showFlatCurryExpr exp)
    where sg = showPlGoals
 
   transGoal i exp = case reduceApply exp of
     Comb FuncCall qf args -> if fst qf == chrMod then transCHRPred i qf args
                                                  else transUserPred i qf args
-    _ -> error ("Cannot translate CHR literal: " ++ show exp)
+    _ -> error ("Cannot translate CHR literal: " ++ showFlatCurryExpr exp)
 
   transCHRPred i (_,cname) args
    | cname=="/\\" =
@@ -576,7 +588,7 @@ compileRule getftype chrs (Rule _ rhs) =
                 then plit
                 else if isCHRType (getftype qf)
                      then let PlLit pn pargs = plit
-                           in PlLit "eval" [PlStruct "CHR.chr2success"
+                           in PlLit "eval" [PlStruct "CHR.chr2curry"
                                                      [PlStruct pn pargs]]
                      else error ("Operation '"++snd qf++
                                  "' is not a CHR constraint!")
@@ -595,7 +607,7 @@ firstBranch exp = case exp of
   Case _ _ (Branch _ bexp : brs) ->
       if null brs
       then firstBranch bexp
-      else error ("CHR rule with more than one branch: "++show exp)
+      else error ("CHR rule with more than one branch: "++showFlatCurryExpr exp)
   Free _ fexp                   -> firstBranch fexp
   _                             -> exp
 
@@ -629,7 +641,7 @@ transArg e = case e of
   Var i          -> PlVar ('X' : show i)
   Comb FuncCall qf args -> PlStruct (showQName qf) (map transArg args)
   Comb ConsCall qf args -> PlStruct (transCName qf) (map transArg args)
-  _ -> error ("Not yet translatable argument: "++show e)
+  _ -> error ("Not yet translatable argument: "++showFlatCurryExpr e)
  where
   transCName qf | qf == ("Prelude","[]") = "[]"
                 | qf == ("Prelude",":")  = "."
@@ -685,9 +697,19 @@ chrMod = "CHR"
 --- Transforms a primitive CHR constraint into a Curry constraint.
 --- Used in the generated CHR(Prolog) code to evaluated primitive
 --- constraints.
-chr2success :: Ord dom => Goal dom chr -> Success
-chr2success (Goal c) = case c of
-  [PrimCHR pc] -> evalPrimCHR pc
-  _            -> error "CHRcompiled.chr2success: unexpected argument!"
+chr2curry :: Eq dom => CHR.Goal dom chr -> Bool
+chr2curry (CHR.Goal c) = case c of
+  [CHR.PrimCHR pc] -> CHR.evalPrimCHR pc
+  _                -> error "CHRcompiled.chr2curry: unexpected argument!"
+
+----------------------------------------------------------------------
+
+-- Use FlatCurry pretty printer to show a non-top-level type expression.
+showCurryType :: TypeExpr -> String
+showCurryType te = '(' : pretty 78 (ppTypeExp defaultOptions te) ++ ")"
+
+-- Use FlatCurry pretty printer to show a non-top-level type expression.
+showFlatCurryExpr :: Expr -> String
+showFlatCurryExpr _ = error "TODO: CHR.showFlatCurryExpr"
 
 ----------------------------------------------------------------------

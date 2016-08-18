@@ -3,10 +3,9 @@
 --- Curry module tester "currytest".
 ---
 --- @author Michael Hanus
---- @version January 2015
+--- @version May 2014
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Assertion(-- for writing test cases:
                  Assertion,assertTrue,assertEqual,
@@ -26,42 +25,57 @@ import Distribution(curryCompiler)
 
 infixl 1 `seqStrActions`
 
---- Datatype of assertions.
---- Internally, each assertion consists of a name and an I/O action
---- to check the validity of the assertion.
-data Assertion = Assert String (IO (String,Bool))
+--- Datatype for defining test cases.
+--- @cons AssertTrue   s b     - assert (with name s) that b must be true
+--- @cons AssertEqual  s e1 e2 - assert (with name s) that e1 and e2 must
+---                              be equal (w.r.t. ==)
+--- @cons AssertValues s e vs  - assert (with name s) that vs is the multiset
+---                              of all values of e (i.e., all values of e are
+---                              compared with the elements in vs w.r.t. ==)
+--- @cons AssertSolutions s c vs - assert (with name s) that constraint
+---   abstraction c has the multiset of solutions vs
+---   (i.e., the solutions of c are compared with the elements in vs w.r.t. ==)
+--- @cons AssertIO     s a r   - assert (with name s) that I/O action a
+---                              yields the result value r
+--- @cons AssertEqualIO s a1 a2 - assert (with name s) that I/O actions a1 and
+---                               a2 yield equal (w.r.t. ==) results
+data Assertion a = AssertTrue      String Bool
+                 | AssertEqual     String a a
+                 | AssertValues    String a [a]
+                 | AssertSolutions String (a->Bool) [a]
+                 | AssertIO        String (IO a) a
+                 | AssertEqualIO   String (IO a) (IO a)
 
 --- `(assertTrue s b)` asserts (with name `s`) that `b` must be true.
-assertTrue :: String -> Bool -> Assertion
-assertTrue s b = Assert s (checkAssertTrue s b)
+assertTrue :: String -> Bool -> Assertion ()
+assertTrue s b = AssertTrue s b
 
 --- `(assertEqual s e1 e2)` asserts (with name `s`) that `e1` and `e2`
 --- must be equal (w.r.t. `==`).
-assertEqual :: (Show a,Eq a) => String -> a -> a -> Assertion
-assertEqual s x y = Assert s (checkAssertEqual s x y)
+assertEqual :: String -> a -> a -> Assertion a
+assertEqual s x y = AssertEqual s x y
 
 --- `(assertValues s e vs)` asserts (with name `s`) that `vs` is the multiset
 --- of all values of `e`. All values of `e` are
 --- compared with the elements in `vs` w.r.t. `==`.
-assertValues :: (Show a,Eq a) => String -> a -> [a] -> Assertion
-assertValues s x y = Assert s (checkAssertValues s x y)
+assertValues :: String -> a -> [a] -> Assertion a
+assertValues s x y = AssertValues s x y
 
 --- `(assertSolutions s c vs)` asserts (with name `s`) that constraint
 --- abstraction `c` has the multiset of solutions `vs`.
 --- The solutions of `c` are compared with the elements in `vs` w.r.t. `==`.
-assertSolutions :: (Show a,Eq a) => String -> (a->Success) -> [a] -> Assertion
-assertSolutions s x y = Assert s (checkAssertSolutions s x y)
+assertSolutions :: String -> (a->Bool) -> [a] -> Assertion a
+assertSolutions s x y = AssertSolutions s x y
 
 --- `(assertIO s a r)` asserts (with name `s`) that I/O action `a`
 --- yields the result value `r`.
-assertIO :: (Show a,Eq a) => String -> IO a -> a -> Assertion
-assertIO s x y = Assert s (checkAssertIO s x y)
+assertIO :: String -> IO a -> a -> Assertion a
+assertIO s x y = AssertIO s x y
 
 --- `(assertEqualIO s a1 a2)` asserts (with name `s`) that I/O actions `a1`
 --- and `a2` yield equal (w.r.t. `==`) results.
-assertEqualIO :: (Show a,Eq a) => String -> IO a -> IO a -> Assertion
-assertEqualIO s x y = Assert s (checkAssertEqualIO s x y)
-
+assertEqualIO :: String -> IO a -> IO a -> Assertion a
+assertEqualIO s x y = AssertEqualIO s x y
 
 --- Combines two actions and combines their results.
 --- Used by the currytest tool.
@@ -74,17 +88,29 @@ seqStrActions a1 a2 =
 --- Executes and checks an assertion, and process the result
 --- by an I/O action.
 --- Used by the currytest tool.
---- @param name      - the name of the operation defining the assertion
---- @param protocol  - an action to be applied after test execution
+--- @param protocol - an action to be applied after test execution
 --- @param assertion - an assertion to be tested
 --- @return a protocol string and a flag whether the test was successful
-checkAssertion :: String -> ((String,Bool) -> IO (String,Bool))
-               -> Assertion -> IO (String,Bool)
-checkAssertion asrtop prot (Assert asrtname asrtact) =
-  catchNDIO asrtop prot (catch asrtact returnError >>= prot)
+checkAssertion :: (Eq a, Show a) => String -> ((String,Bool)
+               -> IO (String,Bool)) -> Assertion a
+               -> IO (String,Bool)
+checkAssertion asrtop prot assrt = catchNDIO asrtop prot (execAsrt assrt)
  where
-  returnError err =
-    return ("FAILURE of "++asrtname++": "++showError err++"\n",False)
+  execAsrt (AssertTrue name cond) =
+    catch (checkAssertTrue name cond) (returnError name) >>= prot
+  execAsrt (AssertEqual name call result) =
+    catch (checkAssertEqual name call result) (returnError name) >>= prot
+  execAsrt (AssertValues name expr results) =
+    catch (checkAssertValues name expr results) (returnError name) >>= prot
+  execAsrt (AssertSolutions name constr results) =
+    catch (checkAssertSolutions name constr results) (returnError name) >>= prot
+  execAsrt (AssertIO name action result) =
+    catch (checkAssertIO name action result) (returnError name) >>= prot
+  execAsrt (AssertEqualIO name action1 action2) =
+    catch (checkAssertEqualIO name action1 action2) (returnError name) >>= prot
+  
+  returnError name err =
+    return ("FAILURE of "++name++": "++showError err++"\n",False)
   
 -- Execute I/O action for assertion checking and report any failure
 -- or non-determinism.
@@ -113,7 +139,7 @@ checkAssertTrue name cond = catchNDIO name return $
   else return ("FAILURE of "++name++": assertion not satisfied:\n",False)
 
 -- Checks equality assertion.
-checkAssertEqual :: (Show a,Eq a) => String -> a -> a -> IO (String,Bool)
+checkAssertEqual :: (Eq a, Show a) => String -> a -> a -> IO (String,Bool)
 checkAssertEqual name call result = catchNDIO name return $
   if call==result
   then return ("OK: "++name++"\n",True)
@@ -122,7 +148,7 @@ checkAssertEqual name call result = catchNDIO name return $
                "Expected answer: "++show result++"\n",False)
 
 -- Checks all values assertion.
-checkAssertValues :: (Show a, Eq a) => String -> a -> [a] -> IO (String,Bool)
+checkAssertValues :: (Eq a, Show a) => String -> a -> [a] -> IO (String,Bool)
 checkAssertValues name call results = do
   rs <- getAllValues call
   if null (rs \\ results) && null (results \\ rs)
@@ -132,7 +158,7 @@ checkAssertValues name call results = do
                 "Expected values: "++show results++"\n",False)
 
 -- Checks all solutions of a constraint abstraction.
-checkAssertSolutions :: (Show a, Eq a) => String -> (a->Success) -> [a] -> IO (String,Bool)
+checkAssertSolutions :: (Eq a, Show a) => String -> (a->Bool) -> [a] -> IO (String,Bool)
 checkAssertSolutions name constr results = do
   rs <- getAllSolutions constr
   if null (rs \\ results) && null (results \\ rs)
@@ -142,7 +168,7 @@ checkAssertSolutions name constr results = do
                 "Expected values: "++show results++"\n",False)
 
 -- Checks an IO assertion.
-checkAssertIO :: (Show a, Eq a) => String -> IO a -> a -> IO (String,Bool)
+checkAssertIO :: (Eq a, Show a) => String -> IO a -> a -> IO (String,Bool)
 checkAssertIO name action result = do
   r <- action
   if r==result
@@ -152,8 +178,7 @@ checkAssertIO name action result = do
                  "Expected answer: "++show result++"\n\n",False)
 
 -- Checks equality of results of two IO assertions.
-checkAssertEqualIO :: (Show a, Eq a) =>
-                      String -> IO a -> IO a -> IO (String,Bool)
+checkAssertEqualIO :: (Eq a, Show a) => String -> IO a -> IO a -> IO (String,Bool)
 checkAssertEqualIO name action1 action2 = do
   r1 <- action1
   r2 <- action2
@@ -180,7 +205,6 @@ writeAssertResult (result,flag) =
 --- Used by the currytest tool.
 data ProtocolMsg = TestModule String | TestCase String Bool | TestFinished
                  | TestCompileError
-  deriving Show
 
 --- Sends message to GUI for showing test of a module.
 --- Used by the currytest tool.
@@ -208,7 +232,8 @@ showTestCompileError portnum = sendToLocalSocket portnum TestCompileError
 sendToLocalSocket :: Int -> ProtocolMsg -> IO ()
 sendToLocalSocket portnum msg = do
   h <- connectToSocket "localhost" portnum
-  hPutStrLn h (show msg)
+  -- hPutStrLn h (show msg) -- TODO
+  hPutStrLn h (error "TODO: show Assertion.ProtocolMsg")
   hClose h
 
 -- end of module Assertion

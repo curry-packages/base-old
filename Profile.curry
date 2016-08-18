@@ -2,10 +2,9 @@
 --- Preliminary library to support profiling.
 ---
 --- @author Michael Hanus
---- @version December 2007
+--- @version November 2015
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Profile(ProcessInfo(..), getProcessInfos, showMemInfo, printMemInfo,
                garbageCollectorOff, garbageCollectorOn, garbageCollect,
@@ -26,11 +25,17 @@ import List(intersperse)
 --- @cons GarbageCollections - the number of garbage collections performed
 data ProcessInfo = RunTime | ElapsedTime | Memory | Code
                  | Stack | Heap | Choices | GarbageCollections
-  deriving Eq
 
 --- Returns various informations about the current state of the Curry process.
---- Note that the returned values are very implementation dependent
+--- Note that the returned values are implementation dependent
 --- so that one should interpret them with care!
+---
+--- Note for kics2 users:
+--- Since GHC version 7.x, one has to set the run-time option `-T`
+--- when this operation is used. This can be done by the kics2 command
+---
+---     :set rts -T
+---
 getProcessInfos :: IO [(ProcessInfo,Int)]
 getProcessInfos external
 

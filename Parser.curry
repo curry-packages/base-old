@@ -7,9 +7,8 @@
 ---
 --- @author Michael Hanus
 --- @version December 2012
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Parser where
 

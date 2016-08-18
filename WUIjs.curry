@@ -11,9 +11,8 @@
 ---
 --- @author Michael Hanus
 --- @version February, 2009
+--- @category web
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module WUIjs(--WuiState,cgiRef2state,state2cgiRef,value2state,state2value,
            --states2state,state2states,altstate2state,state2altstate,
@@ -225,12 +224,12 @@ transformWSpec (a2b,b2a) (WuiSpec wparamsa showhtmla readvaluea) =
              in (maybe Nothing (Just . a2b) mba,
                  setNoJSAccessInHtmlState errstate))
  where
-  transParamA2B :: WuiParams a -> WuiParams b
+  --transParamA2B :: WuiParams a -> WuiParams b
   transParamA2B (render,errmsg,legal,_) =
     -- since we can't transform JS check code for type a into b, we ignore it:
     (render, errmsg, legal . b2a, Nothing)
 
-  transParamB2A :: WuiParams b -> WuiParams a
+  --transParamB2A :: WuiParams b -> WuiParams a
   transParamB2A (render,errmsg,legal,_) =
     (render, errmsg, legal . a2b, jsConditionOf wparamsa)
 
@@ -1390,7 +1389,12 @@ wEither (WuiSpec rendera showa reada) (WuiSpec renderb showb readb) =
 --- A simple tree structure to demonstrate the construction of WUIs for tree
 --- types.
 data WTree a = WLeaf a | WNode [WTree a]
-  deriving Eq
+-- deriving Eq
+
+instance Eq a => Eq (WTree a) where
+  WLeaf x == t = case t of { WLeaf y -> x==y ; _ -> False }
+  WNode x == t = case t of { WNode y -> x==y ; _ -> False }
+
 
 --- WUI for tree types.
 --- The rendering specifies the rendering of inner nodes.

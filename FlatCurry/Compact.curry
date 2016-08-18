@@ -5,25 +5,26 @@
 --- a set of main functions.
 ---
 --- @author Michael Hanus, Carsten Heine
---- @version June 2009
+--- @version October 2015
+--- @category meta
 ------------------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+module FlatCurry.Compact(generateCompactFlatCurryFile,computeCompactFlatCurry,
+                         Option(..),RequiredSpec,requires,alwaysRequired,
+                         defaultRequired) where
 
-module CompactFlatCurry(generateCompactFlatCurryFile,computeCompactFlatCurry,
-                        Option(..),RequiredSpec,requires,alwaysRequired,
-                        defaultRequired) where
-
-import FlatCurry
+import FlatCurry.Types
+import FlatCurry.Files
 import SetRBT
 import TableRBT
 import Maybe
-import List(nub,union)
+import List             (nub, union)
 import FileGoodies
+import FilePath         (takeFileName, (</>))
 import Directory
-import Sort(cmpString,leqString)
+import Sort             (cmpString, leqString)
 import XML
-import Distribution(getLoadPathForFile)
+import Distribution     (lookupModuleSourceInLoadPath, stripCurrySuffix)
 
 infix 0 `requires`
 
@@ -45,7 +46,11 @@ data Option =
   | InitFuncs [QName]
   | Required [RequiredSpec]
   | Import String
-  deriving Eq
+-- deriving Eq
+
+instance Eq Option where
+  _ == _ = error "TODO: Eq FlatCurry.Compact.Option"
+
 
 isMainOption o = case o of
                    Main _ -> True
@@ -72,7 +77,6 @@ addImport2Options options =
 ------------------------------------------------------------------------------
 --- Data type to specify requirements of functions.
 data RequiredSpec = AlwaysReq QName | Requires QName QName
-  deriving Eq
 
 --- (fun `requires` reqfun) specifies that the use of the function "fun"
 --- implies the application of function "reqfun".
@@ -320,7 +324,7 @@ getCalledFuncs required loadedmnames progs functable loadedfnames loadedcnames
                        (extendFuncTable functable (moduleFuns newmod))
                        (foldr insertRBT loadedfnames reqnewfun) loadedcnames
                        loadedtnames ((m,f):fs ++ reqnewfun)
-  | lookupRBT (m,f) functable == Nothing
+  | isNothing (lookupRBT (m,f) functable)
    = -- this must be a data constructor: ingore it since already considered
      getCalledFuncs required loadedmnames progs
                     functable loadedfnames loadedcnames loadedtnames fs
@@ -488,36 +492,26 @@ leqQName (m1,n1) (m2,n2) = let cm = cmpString m1 m2
 readCurrentFlatCurry :: String -> IO Prog
 readCurrentFlatCurry modname = do
   putStr (modname++"...")
-  progname <- findSourceFileInLoadPath modname
-  fcyexists <- doesFileExist (flatCurryFileName progname)
-  if not fcyexists
-   then readFlatCurry progname >>= processPrimitives progname
-   else do
-     ctime <- getSourceModificationTime progname
-     ftime <- getModificationTime (flatCurryFileName progname)
-     if ctime>ftime
-      then readFlatCurry progname >>= processPrimitives progname
-      else readFlatCurryFile (flatCurryFileName progname)
-            >>= processPrimitives progname
-
-getSourceModificationTime progname = do
-  lexists <- doesFileExist (progname++".lcurry")
-  if lexists then getModificationTime (progname++".lcurry")
-             else getModificationTime (progname++".curry")
-
--- add a directory name for a Curry source file by looking up the
--- current load path (CURRYPATH):
-findSourceFileInLoadPath modname = do
-  loadpath <- getLoadPathForFile modname
-  mbfname <- lookupFileInPath (baseName modname) [".lcurry",".curry"] loadpath
-  maybe (error ("Curry file for module \""++modname++"\" not found!"))
-        (return . stripSuffix)
-        mbfname
+  mbsrc <- lookupModuleSourceInLoadPath modname
+  case mbsrc of
+    Nothing -> error ("Curry file for module \""++modname++"\" not found!")
+    Just (moddir,progname) -> do
+      let fcyname = flatCurryFileName (moddir </> takeFileName modname)
+      fcyexists <- doesFileExist fcyname
+      if not fcyexists
+       then readFlatCurry modname >>= processPrimitives progname
+       else do
+         ctime <- getModificationTime progname
+         ftime <- getModificationTime fcyname
+         if ctime>ftime
+          then readFlatCurry progname >>= processPrimitives progname
+          else readFlatCurryFile fcyname >>= processPrimitives progname
 
 -- read primitive specification and transform FlatCurry program accordingly:
 processPrimitives :: String -> Prog -> IO Prog
 processPrimitives progname prog = do
-  pspecs <- readPrimSpec (moduleName prog) (progname++".prim_c2p")
+  pspecs <- readPrimSpec (moduleName prog)
+                         (stripCurrySuffix progname ++ ".prim_c2p")
   return (mergePrimSpecIntoModule pspecs prog)
 
 mergePrimSpecIntoModule trans (Prog name imps types funcs ops) =

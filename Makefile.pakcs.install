@@ -1,7 +1,8 @@
 # directory containing the repository library files:
 LIBTRUNKDIR=$(ROOT)/lib-trunk
 # specific PAKCS libraries:
-PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry CLPFD.curry CLPR.curry CLP/R.curry CLP/FD.curry \
+PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry \
+                CLPFD.curry CLPR.curry CLP/FD.curry CLP/R.curry \
 	        Database.curry Dynamic.curry Findall.curry \
 		GlobalVariable.curry KeyDB.curry KeyDatabase.curry \
 		PlProfileData.curry Ports.curry 
@@ -15,18 +16,25 @@ CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	mkdir -p $(LIBDIR)/meta
+	mkdir -p $(LIBDIR)/AbstractCurry
+	mkdir -p $(LIBDIR)/FlatCurry/Annotated
 	mkdir -p $(LIBDIR)/CLP
-	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
+	mkdir -p $(LIBDIR)/Database/CDBI
+	mkdir -p $(LIBDIR)/Rewriting
+	mkdir -p $(LIBDIR)/Test
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
 $(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
 	cp $< $@
 
+$(LIBDIR)/test.sh: test.sh
+	cp $< $@
+
 .PHONY: sources
 sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
-	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY) index.html
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp $(LIBTRUNKDIR)/*.prim_c2p .
 	cp $(LIBTRUNKDIR)/CLP/*.prim_c2p CLP
 
@@ -93,17 +101,41 @@ Profile.curry: $(LIBTRUNKDIR)/Profile.curry.$(CURRYSYSTEM)
 Random.curry: $(LIBTRUNKDIR)/Random.curry.$(CURRYSYSTEM)
 	cp $< $@
 
+SearchTree.curry: $(LIBTRUNKDIR)/SearchTree.curry.$(CURRYSYSTEM)
+	cp $< $@
+
 SetFunctions.curry: $(LIBTRUNKDIR)/SetFunctions.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 Unsafe.curry: $(LIBTRUNKDIR)/Unsafe.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-%.curry: $(LIBTRUNKDIR)/%.curry
-	 cp $< $@
+ValueSequence.curry: $(LIBTRUNKDIR)/ValueSequence.curry.$(CURRYSYSTEM)
+	cp $< $@
 
-meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
-	 cp $< $@
+AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
+	cp $< $@
+
+FlatCurry/Annotated/%.curry: $(LIBTRUNKDIR)/FlatCurry/Annotated/%.curry
+	cp $< $@
+
+FlatCurry/%.curry: $(LIBTRUNKDIR)/FlatCurry/%.curry
+	cp $< $@
+
+Database/CDBI/%.curry: $(LIBTRUNKDIR)/Database/CDBI/%.curry
+	cp $< $@
+
+Database/%.curry: $(LIBTRUNKDIR)/Database/%.curry
+	cp $< $@
+
+Rewriting/%.curry: $(LIBTRUNKDIR)/Rewriting/%.curry
+	cp $< $@
+
+Test/%.curry: $(LIBTRUNKDIR)/Test/%.curry
+	cp $< $@
+
+%.curry: $(LIBTRUNKDIR)/%.curry
+	cp $< $@
 
 index.html: $(LIBTRUNKDIR)/index.html.$(CURRYSYSTEM)
 	 cp $< $@

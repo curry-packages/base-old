@@ -1,22 +1,23 @@
 ------------------------------------------------------------------------------
---- Library with some useful operations on lists, using type classes
+--- Library with some useful operations on lists.
 ---
---- @author Michael Hanus, Bjoern Peemoeller, Matthias Boehm
---- @version August 2013
+--- @author Michael Hanus, Bjoern Peemoeller
+--- @version Februar 2016
+--- @category general
 ------------------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 
 module List
   ( elemIndex, elemIndices, find, findIndex, findIndices
   , nub, nubBy, delete, deleteBy, (\\), union, intersect
-  , intersperse, intercalate, transpose, permutations, partition
+  , intersperse, intercalate, transpose, diagonal, permutations, partition
   , group, groupBy, splitOn, split, inits, tails, replace
   , isPrefixOf, isSuffixOf, isInfixOf
-  , sortBy, insertBy, sort, insert
+  , sortBy, insertBy
+  , unionBy, intersectBy
   , last, init
-  , sum, product, maximum, minimum
+  , sum, product, maximum, minimum, maximumBy, minimumBy
   , scanl, scanl1, scanr, scanr1
   , mapAccumL, mapAccumR
   , cycle, unfoldr
@@ -83,11 +84,22 @@ union []     ys        = ys
 union (x:xs) ys        = if x `elem` ys then union xs ys
                                         else x : union xs ys
 
+--- Computes the union of two lists according to the given equivalence relation
+unionBy :: (a -> a -> Bool) -> [a] -> [a] -> [a]
+unionBy eq xs ys = xs ++ foldl (flip (deleteBy eq)) (nubBy eq ys) xs
+
 --- Computes the intersection of two lists.
 intersect             :: Eq a => [a] -> [a] -> [a]
 intersect []     _     = []
 intersect (x:xs) ys    = if x `elem` ys then x : intersect xs ys
                                         else intersect xs ys
+
+--- Computes the intersection of two lists
+--- according to the given equivalence relation
+intersectBy :: (a -> a -> Bool) -> [a] -> [a] -> [a]
+intersectBy _  []       _        = []
+intersectBy _  (_:_)    []       = []
+intersectBy eq xs@(_:_) ys@(_:_) = [x | x <- xs, any (eq x) ys]
 
 --- Puts a separator element between all elements in a list.
 ---
@@ -110,6 +122,22 @@ transpose               :: [[a]] -> [[a]]
 transpose []             = []
 transpose ([]     : xss) = transpose xss
 transpose ((x:xs) : xss) = (x : map head xss) : transpose (xs : map tail xss)
+
+--- Diagonalization of a list of lists.
+--- Fairly merges (possibly infinite) list of (possibly infinite) lists.
+---
+--- @param xss - lists of lists
+--- @return fair enumeration of all elements of inner lists of given lists
+---
+diagonal :: [[a]] -> [a]
+diagonal = concat . foldr diags []
+ where
+  diags []     ys = ys
+  diags (x:xs) ys = [x] : merge xs ys
+
+  merge []       ys     = ys
+  merge xs@(_:_) []     = map (:[]) xs
+  merge (x:xs)   (y:ys) = (x:y) : merge xs ys
 
 --- Returns the list of all permutations of the argument.
 permutations           :: [a] -> [[a]]
@@ -220,21 +248,9 @@ isSuffixOf xs ys = isPrefixOf (reverse xs) (reverse ys)
 isInfixOf :: Eq a => [a] -> [a] -> Bool
 isInfixOf xs ys = any (isPrefixOf xs) (tails ys)
 
---- Sorts the given list
-sort :: Ord a => [a] -> [a]
-sort = foldr insert []
-
 --- Sorts a list w.r.t. an ordering relation by the insertion method.
 sortBy :: (a -> a -> Bool) -> [a] -> [a]
 sortBy le = foldr (insertBy le) []
-
---- Inserts an element in the list according to the ordering
-insert :: Ord a => a -> [a] -> [a]
-insert x [] = [x]
-
-insert x (y:ys) = if x <= y
-                    then x : y : ys
-                    else y : insert x ys
 
 --- Inserts an object into a list according to an ordering relation.
 --- @param le - an ordering relation (e.g., less-or-equal)
@@ -269,9 +285,25 @@ product ns = foldl (*) 1 ns
 maximum :: Ord a => [a] -> a
 maximum xs@(_:_) =  foldl1 max xs
 
+--- Returns the maximum of a non-empty list
+--- according to the given comparison function
+maximumBy :: (a -> a -> Ordering) -> [a] -> a
+maximumBy cmp xs@(_:_) = foldl1 maxBy xs
+  where maxBy x y = case cmp x y of
+          GT -> x
+          _  -> y
+
 --- Returns the minimum of a non-empty list.
 minimum :: Ord a => [a] -> a
-minimum xs@(_:_) =  foldl1 max xs
+minimum xs@(_:_) =  foldl1 min xs
+
+--- Returns the minimum of a non-empty list
+--- according to the given comparison function
+minimumBy :: (a -> a -> Ordering) -> [a] -> a
+minimumBy cmp xs@(_:_) = foldl1 minBy xs
+  where minBy x y = case cmp x y of
+          GT -> y
+          _  -> x
 
 --- `scanl` is similar to `foldl`, but returns a list of successive
 --- reduced values from the left:

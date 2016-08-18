@@ -6,6 +6,7 @@
 ---
 --- @author Michael Hanus
 --- @version April 2007
+--- @category general
 ------------------------------------------------------------------------------
 
 module Ports(Port,openPort,send,doSend,openNamedPort,
@@ -28,18 +29,18 @@ data Port a = internalPort String Int Int a
 ---            with the port messages
 --- @param s - a free variable which will be instantiated
 ---            to the stream of incoming messages
-openPort    :: Port a -> [a] -> Success
+openPort    :: Port a -> [a] -> Bool
 openPort p ms = (prim_openPort $! p) $!! ms
 
-prim_openPort :: Port a -> [a] -> Success
+prim_openPort :: Port a -> [a] -> Bool
 prim_openPort external
 
 
 --- Sends a message to a port.
-send        :: a -> Port a -> Success
+send        :: a -> Port a -> Bool
 send msg p = (prim_send $!! ensureNotFree msg) $# p
 
-prim_send :: a -> Port a -> Success
+prim_send :: a -> Port a -> Bool
 prim_send external
 
 --- I/O action that sends a message to a port.
@@ -50,7 +51,7 @@ doSend msg p = doSolve (send msg p)
 --- A constrained which is satisfied after some amount of time
 --- (currently only supported in TasteCurry).
 --- @param n - the satisfaction time in milliseconds
-after       :: Int -> Success
+after       :: Int -> Bool
 after external
 
 --- Checks whether port p is still reachable.
@@ -215,7 +216,7 @@ prim_choiceSPEP :: Port SP_Msg -> [msg] -> Either String [msg]
 prim_choiceSPEP external
 
 
---- Creates a new object (of type <code>State -> [msg] -> Success</code>)
+--- Creates a new object (of type <code>State -> [msg] -> Bool</code>)
 --- with an initial state and a port to which messages for this object
 --- can be sent.
 ---
@@ -223,18 +224,18 @@ prim_choiceSPEP external
 --- @param state - the initial state of the object
 --- @param port - a free variable which will be constrained to the port
 ---               for sending messages to the object
-newObject :: (state -> [msg] -> Success) -> state -> Port msg -> Success
+newObject :: (state -> [msg] -> Bool) -> state -> Port msg -> Bool
 newObject object state port = let msgs free in
   openPort port msgs &> object state (map ensureNotFree (ensureSpine msgs))
 
 
---- Creates a new object (of type <code>State -> [msg] -> Success</code>)
+--- Creates a new object (of type <code>State -> [msg] -> Bool</code>)
 --- with a symbolic port name to which messages for this object can be sent.
 --- @param object - an object template
 --- @param state - the initial state of the object
 --- @param portname - the symbolic name under which the object's port is
 ---                   accessible (any string without occurrences of '@')
-newNamedObject :: (state -> [_] -> Success) -> state -> String -> IO ()
+newNamedObject :: (state -> [_] -> Bool) -> state -> String -> IO ()
 newNamedObject object state portname = do
   msgs <- openNamedPort portname
   doSolve (object state msgs)

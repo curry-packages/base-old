@@ -5,12 +5,11 @@
 ---
 --- @author Sergio Antoy
 --- @version July 2014
+--- @category general
 ------------------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
-
 module Integer((^), pow, ilog, isqrt, factorial, binomial,
-               max3, min3, maxlist, minlist,
+               abs, max3, min3, maxlist, minlist,
                bitTrunc, bitAnd, bitOr, bitNot, bitXor,
                even, odd) where
 
@@ -99,6 +98,14 @@ binomial :: Int -> Int -> Int
 binomial n m | m > 0 && n >= m = aux m n `div` factorial m
   where aux x y = if x == 0 then 1 else y * aux (x-1) (y-1)
 
+--- The value of `abs n` is the absolute value of `n`.
+---
+--- @param n - The argument.
+--- @return the absolute value of `n`.
+
+abs :: Int -> Int
+abs n = if n<0 then -n else n
+
 --- Returns the maximum of the three arguments.
 ---
 --- @param n - Argument.
@@ -106,7 +113,7 @@ binomial n m | m > 0 && n >= m = aux m n `div` factorial m
 --- @param p - Argument.
 --- @return the maximum among `n`, `m` and `p`.
 
-max3 ::Ord a => a -> a -> a -> a
+max3 :: Ord a => a -> a -> a -> a
 max3 n m p = max n (max m p)
 
 --- Returns the minimum of the three arguments.
@@ -135,7 +142,7 @@ maxlist (n:m:ns) = max n (maxlist (m:ns))
 --- @param l - The list of values.
 --- @return the minimum element of `l`.
 
-minlist :: Ord a=> [a] -> a
+minlist :: Ord a => [a] -> a
 minlist [n] = n
 minlist (n:m:ns) = min n  (minlist (m:ns))
 

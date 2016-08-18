@@ -11,9 +11,8 @@
 ---
 --- @author  Michael Hanus, Bjoern Peemoeller, Fabian Reck
 --- @version July 2013
+--- @category algorithm
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module UnsafeSearchTree
   ( SearchTree (..), someSearchTree, getSearchTree
@@ -92,7 +91,7 @@ isDefined x = hasValue (someSearchTree x)
                               Or t1 t2 -> hasValue t1 || hasValue t2
 
 --- Shows the search tree as an intended line structure
-showSearchTree :: Show a => SearchTree a -> String
+showSearchTree :: SearchTree _ -> String
 showSearchTree st = showsST [] st ""
  where
   -- `showsST ctxt <SearchTree>`, where `ctxt` is a stack of boolean flags

@@ -2,17 +2,16 @@
 --- This library defines a representation of a search space as
 --- a tree and various search strategies on this tree.
 --- This module implements **strong encapsulation** as discussed in
---- [this paper](http://www.informatik.uni-kiel.de/~mh/papers/JFLP04_findall.html)
+--- [the JFLP'04 paper](http://www.informatik.uni-kiel.de/~mh/papers/JFLP04_findall.html).
 ---
 --- @author  Michael Hanus, Bjoern Peemoeller, Fabian Reck
---- @version September 2013
+--- @version February 2016
+--- @category algorithm
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module SearchTree
   ( SearchTree (..), someSearchTree, getSearchTree
-  , isDefined, showSearchTree, searchTreeSize
+  , isDefined, showSearchTree, searchTreeSize, limitSearchTree
   , Strategy
   , dfsStrategy, bfsStrategy, idsStrategy, idsStrategyWith, diagStrategy
   , allValuesWith
@@ -22,8 +21,9 @@ module SearchTree
   , someValue, someValueWith
   ) where
 
+import IO            (hFlush,stdout)
+import List          (diagonal)
 import ValueSequence
-import IO(hFlush,stdout)
 
 --- A search tree is a value, a failure, or a choice between two search trees.
 data SearchTree a = Value a
@@ -56,7 +56,7 @@ isDefined x = hasValue (someSearchTree x)
                               Or t1 t2 -> hasValue t1 || hasValue t2
 
 --- Shows the search tree as an intended line structure
-showSearchTree :: Show a => SearchTree a -> String
+showSearchTree :: SearchTree _ -> String
 showSearchTree st = showsST [] st ""
  where
   -- `showsST ctxt <SearchTree>`, where `ctxt` is a stack of boolean flags
@@ -94,13 +94,22 @@ showSearchTree st = showsST [] st ""
 --           tab j = showString $ replicate (3 * j) ' '
 
 
---- Return the size (number of Value/Fail/Or nodes) of the search tree
+--- Returns the size (number of Value/Fail/Or nodes) of the search tree.
 searchTreeSize :: SearchTree _ -> (Int, Int, Int)
 searchTreeSize (Value _)  = (1, 0, 0)
 searchTreeSize (Fail _)   = (0, 1, 0)
 searchTreeSize (Or t1 t2) = let (v1, f1, o1) = searchTreeSize t1
                                 (v2, f2, o2) = searchTreeSize t2
                              in (v1 + v2, f1 + f2, o1 + o2 + 1)
+
+--- Limit the depth of a search tree. Branches which a depth larger
+--- than the first argument are replace by `Fail (-1)`.
+limitSearchTree :: Int -> SearchTree a -> SearchTree a
+limitSearchTree _ v@(Value _) = v
+limitSearchTree _ f@(Fail _)  = f
+limitSearchTree n (Or t1 t2)  =
+  if n<0 then Fail (-1)
+         else Or (limitSearchTree (n-1) t1) (limitSearchTree (n-1) t2)
 
 ------------------------------------------------------------------------------
 -- Definition of various search strategies:
@@ -205,18 +214,6 @@ levels :: [SearchTree a] -> [[SearchTree a]]
 levels st | null st   = []
           | otherwise = st : levels [ u | Or x y <- st, u <- [x,y] ]
 
--- Diagonalization of a list of lists.
-diagonal :: [[a]] -> [a]
-diagonal = concat . foldr diags []
- where
-  diags []     ys = ys
-  diags (x:xs) ys = [x] : merge xs ys
-
-  merge []        ys      = ys
-  merge xs@(_:_)  []      = map (:[]) xs
-  merge (x:xs)    (y:ys)  = (x:y) : merge xs ys
-
-
 ------------------------------------------------------------------------------
 -- Operations to map search trees into list of values.
 ------------------------------------------------------------------------------
@@ -266,7 +263,7 @@ getAllValuesWith strategy exp = do
 --- and collect all values, e.g., 'dfsStrategy' or 'bfsStrategy'.
 --- Conceptually, all printed values are computed on a copy of the expression,
 --- i.e., the evaluation of the expression does not share any results.
-printAllValuesWith :: Show a => Strategy a -> a -> IO ()
+printAllValuesWith :: Strategy a -> a -> IO ()
 printAllValuesWith strategy exp =
   getAllValuesWith strategy exp >>= mapIO_ print
 
@@ -278,7 +275,7 @@ printAllValuesWith strategy exp =
 --- and collect all values, e.g., 'dfsStrategy' or 'bfsStrategy'.
 --- Conceptually, all printed values are computed on a copy of the expression,
 --- i.e., the evaluation of the expression does not share any results.
-printValuesWith :: Show a => Strategy a -> a -> IO ()
+printValuesWith :: Strategy a -> a -> IO ()
 printValuesWith strategy exp =
   getAllValuesWith strategy exp >>= printValues
  where

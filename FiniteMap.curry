@@ -11,9 +11,8 @@
 ---
 --- @author Frank Huch, Bernd Brassel
 --- @version March 2013
+--- @category algorithm
 -----------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module FiniteMap (
         FM,                -- abstract type
@@ -102,7 +101,8 @@ listToFM le = addListToFM (emptyFM le)
 addToFM :: Eq key => FM key elt -> key -> elt  -> FM key elt
 addToFM (FM le fm) key elt = FM le (addToFM' le fm key elt)
 
-addToFM' :: Eq key => (LeKey key) -> FiniteMap key elt -> key -> elt -> FiniteMap key elt
+addToFM' :: Eq key => (LeKey key) -> FiniteMap key elt -> key -> elt
+         -> FiniteMap key elt
 addToFM' le fm key elt = addToFM_C' le (\ _ new -> new) fm key elt
 
 addToFM_C' :: Eq key => (LeKey key) -> (elt -> elt -> elt)
@@ -143,19 +143,14 @@ addListToFM_C' le combiner fm key_elt_pairs
 --- @param key the key of the elements to be combined
 --- @param elt the new element
 --- @result a modified finite map
-addToFM_C :: Eq key => (elt -> elt -> elt)
-                    -> FM key elt
-                    -> key
-                    -> elt
-                    -> FM key elt
-addToFM_C combiner (FM le fm) key elt =  
+addToFM_C :: Eq key => (elt -> elt -> elt) -> FM key elt -> key -> elt
+                                 -> FM key elt
+addToFM_C combiner (FM le fm) key elt =
   FM le (addToFM_C' le combiner fm key elt)
 
 --- Combine with a list of tuples (key,element), cf. addToFM_C
-addListToFM_C :: Eq key => (elt -> elt -> elt)
-                        -> FM key elt
-                        -> [(key,elt)]
-                        -> FM key elt
+addListToFM_C :: Eq key => (elt -> elt -> elt) -> FM key elt -> [(key,elt)]
+              -> FM key elt
 addListToFM_C combiner (FM le fm) key_elt_pairs =
   FM le (addListToFM_C' le combiner fm key_elt_pairs)
 
@@ -165,7 +160,8 @@ addListToFM_C combiner (FM le fm) key_elt_pairs =
 delFromFM :: Eq key => FM key elt -> key   -> FM key elt
 delFromFM (FM le fm) del_key = FM le (delFromFM' le fm del_key)
 
-delFromFM' :: Eq key => (LeKey key) -> FiniteMap key elt -> key -> FiniteMap key elt
+delFromFM' :: Eq key => (LeKey key) -> FiniteMap key elt -> key
+           -> FiniteMap key elt
 delFromFM' _ EmptyFM _ = EmptyFM
 delFromFM' le (BranchFM key elt _ fm_l fm_r) del_key
   = if le del_key key
@@ -220,9 +216,7 @@ plusFM' le (BranchFM split_key1 elt1 s1 left1 right1)
 --- Efficiently combine key/element mappings of two maps into a single one,
 --- cf. addToFM_C
 plusFM_C :: Eq key => (elt -> elt -> elt)
-                   -> FM key elt
-                   -> FM key elt
-                   -> FM key elt
+         -> FM key elt -> FM key elt -> FM key elt
 plusFM_C combiner (FM le1 fm1) (FM _ fm2) =
   FM le1 (plusFM_C' le1 combiner fm1 fm2)
 
@@ -273,10 +267,8 @@ intersectFM' le fm1 fm2 = intersectFM_C' le (\ _ right -> right) fm1 fm2
 
 --- Filters only those keys that are bound in both of the given maps
 --- and combines the elements as in addToFM_C.
-intersectFM_C :: Eq key => (elt -> elt -> elt2)
-                        -> FM key elt
-                        -> FM key elt
-                        -> FM key elt2
+intersectFM_C :: Eq key => (elt -> elt2 -> elt3) -> FM key elt -> FM key elt2
+              -> FM key elt3
 intersectFM_C combiner (FM le1 fm1) (FM _ fm2) =
   FM le1 (intersectFM_C' le1 combiner fm1 fm2)
 
@@ -329,7 +321,7 @@ mapFM' le f (BranchFM key elt size fm_l fm_r)
 
 --- Yields a new finite map with only those key/element pairs matching the
 --- given predicate.
-filterFM :: Eq key => (key -> elt -> Bool) -> FM key elt -> FM key elt
+filterFM  :: Eq key => (key -> elt -> Bool) -> FM key elt -> FM key elt
 filterFM p (FM le fm) = FM le (filterFM' le p fm)
 
 filterFM' :: Eq key => LeKey key -> (key -> elt -> Bool)
@@ -398,21 +390,21 @@ keyOrder (FM lt _) = lt
 
 --- Retrieves the smallest key/element pair in the finite map
 --- according to the basic key ordering.
-minFM :: (Eq a, Eq b) => FM a b -> Maybe (a,b)
+minFM :: FM a b -> Maybe (a,b)
 minFM = min . tree
   where
    min EmptyFM            = Nothing
-   min (BranchFM k x _ l _) | l==EmptyFM = Just (k,x)
-                            | otherwise  = min l
+   min (BranchFM k x _ l _) | isBranchFM l = min l
+                            | otherwise    = Just (k,x)
 
 --- Retrieves the greatest key/element pair in the finite map
 --- according to the basic key ordering.
-maxFM :: (Eq a, Eq b) => FM a b -> Maybe (a,b)
+maxFM :: FM a b -> Maybe (a,b)
 maxFM = max . tree
   where
     max EmptyFM            = Nothing
-    max (BranchFM k x _ _ r) | r==EmptyFM = Just (k,x)
-                             | otherwise  = max r
+    max (BranchFM k x _ _ r) | isBranchFM r = max r
+                             | otherwise    = Just (k,x)
 
 
 
@@ -483,10 +475,13 @@ data FiniteMap key elt
     Int{-STRICT-}              -- Size >= 1
     (FiniteMap key elt)        -- Children
     (FiniteMap key elt)
-  deriving Eq
 
 isEmptyFM' :: FiniteMap _ _ -> Bool
 isEmptyFM' fm = sizeFM' fm == 0
+
+isBranchFM :: FiniteMap _ _ -> Bool
+isBranchFM (BranchFM _ _ _ _ _) = True
+isBranchFM EmptyFM              = False
 
 -------------------------------------------------------------------------
 --                                                                      -
@@ -599,11 +594,9 @@ mkBalBranch key elt fm_L fm_R
 
 
 mkVBalBranch :: Eq key => (LeKey key)
-                       -> key
-                       -> elt
-                       -> FiniteMap key elt
-                       -> FiniteMap key elt
-                       -> FiniteMap key elt
+             -> key -> elt
+             -> FiniteMap key elt -> FiniteMap key elt
+             -> FiniteMap key elt
 
 -- Assert: in any call to (mkVBalBranch_C comb key elt l r),
 --           (a) all keys in l are < all keys in r
@@ -689,10 +682,8 @@ glueVBal le fm_l fm_r =
 --                                                                        -
 -------------------------------------------------------------------------
 
-splitLT, splitGT :: Eq key => (LeKey key)
-                           -> FiniteMap key elt
-                           -> key
-                           -> FiniteMap key elt
+splitLT, splitGT :: Eq key => (LeKey key) -> FiniteMap key elt -> key
+                    -> FiniteMap key elt
 
 -- splitLT fm split_key  =  fm restricted to keys <  split_key
 -- splitGT fm split_key  =  fm restricted to keys >  split_key
@@ -762,3 +753,5 @@ elementOf = elemFM
 minusSet  = minusFM
 setToList = keysFM
 union = plusFM
+
+

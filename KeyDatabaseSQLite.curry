@@ -30,9 +30,8 @@
 ---
 --- @author Sebastian Fischer with changes by Michael Hanus
 --- @version August 2011
+--- @category database
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module KeyDatabaseSQLite (
 
@@ -198,7 +197,10 @@ t1 |>> t2 = t1 |>>= const t2
 sequenceT :: [Transaction a] -> Transaction [a]
 sequenceT = foldr seqT (returnT [])
  where
-  seqT t ts = t |>>= \x -> ts |>>= \xs -> returnT (x:xs)
+  -- seqT t ts = t |>>= \x -> ts |>>= \xs -> returnT (x:xs)
+  seqT t ts = do x  <- t
+                 xs <- ts
+                 return (x:xs)
 
 --- Executes a list of transactions sequentially, ignoring their
 --- results.
@@ -704,9 +706,15 @@ data TErrorKind = KeyNotExistsError
                 | MaxError
                 | UserDefinedError
                 | ExecutionError
-  deriving Show
 
 --- Transforms a transaction error into a string.
 showTError :: TError -> String
-showTError (TError k s) = "Transaction error " ++ show k ++ ": " ++ s
+--showTError (TError k s) = "Transaction error " ++ show k ++ ": " ++ s
+showTError (TError _ s) = "Transaction error " ++ {- show k ++ -} ": " ++ s
+
+------------------------------------------------------------------------------
+instance Monad Transaction where
+  a1 >>= a2 = a1 |>>= a2
+  a1 >>  a2 = a1 |>>  a2
+  return x = returnT x
 

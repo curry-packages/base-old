@@ -4,12 +4,12 @@
 ---
 --- @author Michael Hanus
 --- @version April 2005
+--- @category meta
 ------------------------------------------------------------------------------
 
+module FlatCurry.FlexRigid(FlexRigidResult(..),getFlexRigid) where
 
-module FlexRigid(FlexRigidResult(..),getFlexRigid) where
-
-import FlatCurry
+import FlatCurry.Types
 
 --- Datatype for representing a flex/rigid status of an expression.
 data FlexRigidResult = UnknownFR | ConflictFR | KnownFlex | KnownRigid

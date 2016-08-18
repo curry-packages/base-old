@@ -22,9 +22,9 @@
 ---
 --- @author Bernd Brassel
 --- @version April 2005
+--- @category meta
 ----------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module CurryStringClassifier
          (Tokens,Token(..), scan, plainCode, unscan,

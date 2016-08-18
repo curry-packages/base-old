@@ -1,14 +1,14 @@
 ------------------------------------------------------------------------
---- This module provides some useful functions to write programs
---- that generate AbstractCurry programs more compact and readable.
+--- This library provides some useful operations to write programs
+--- that generate AbstractCurry programs in a more compact and readable way.
 ---
---- @version February 2015
+--- @version February 2016
+--- @category meta
 ------------------------------------------------------------------------
 
-module AbstractCurryGoodies where
+module AbstractCurry.Build where
 
-import AbstractCurry
-import List(union)
+import AbstractCurry.Types
 
 infixr 9 ~>
 
@@ -59,6 +59,10 @@ floatType = baseType (pre "Float")
 boolType :: CTypeExpr
 boolType = baseType (pre "Bool")
 
+--- The type expression of the Char type.
+charType :: CTypeExpr
+charType = baseType (pre "Char")
+
 --- The type expression of the unit type.
 unitType :: CTypeExpr
 unitType = baseType (pre "()")
@@ -66,99 +70,6 @@ unitType = baseType (pre "()")
 --- The type expression of the Time.CalendarTime type.
 dateType :: CTypeExpr
 dateType = baseType ("Time", "CalendarTime")
-
-------------------------------------------------------------------------
--- Goodies to analyze type expressions
-
---- Returns the name of a given type declaration
-typeName :: CTypeDecl -> QName
-typeName (CType    n _ _ _) = n
-typeName (CTypeSyn n _ _ _) = n
-typeName (CNewType n _ _ _) = n
-
---- Returns the visibility of a given type declaration
-typeVis :: CTypeDecl -> CVisibility
-typeVis (CType    _ vis _ _) = vis
-typeVis (CTypeSyn _ vis _ _) = vis
-typeVis (CNewType _ vis _ _) = vis
-
---- Returns the constructors of a given type declaration
-typeCons :: CTypeDecl -> [CConsDecl]
-typeCons (CType    _ _ _ cs) = cs
-typeCons (CTypeSyn _ _ _ _ ) = []
-typeCons (CNewType _ _ _ c ) = [c]
-
---- Returns the name of a given function declaration
-funcName :: CFuncDecl -> QName
-funcName (CFunc     n _ _ _ _) = n
-funcName (CmtFunc _ n _ _ _ _) = n
-
---- Returns the visibility of a given function declaration
-funcVis :: CFuncDecl -> CVisibility
-funcVis (CFunc     _ _ vis _ _) = vis
-funcVis (CmtFunc _ _ _ vis _ _) = vis
-
---- Returns the visibility of a given constructor declaration
-consVis :: CConsDecl -> CVisibility
-consVis (CCons   _ vis _) = vis
-consVis (CRecord _ vis _) = vis
-
---- Returns true if the type expression is a base type.
-isBaseType :: CTypeExpr -> Bool
-isBaseType texp = case texp of
-  CTCons _ args -> null args
-  _             -> False
-
---- Returns true if the type expression contains type variables.
-isPolyType :: CTypeExpr -> Bool
-isPolyType (CTVar                _) = True
-isPolyType (CFuncType domain range) = isPolyType domain || isPolyType range
-isPolyType (CTCons      _ typelist) = any isPolyType typelist
-
---- Returns true if the type expression is a functional type.
-isFunctionalType :: CTypeExpr -> Bool
-isFunctionalType texp = case texp of
-  CFuncType _ _ -> True
-  _             -> False
-
---- Returns true if the type expression is (IO t).
-isIOType :: CTypeExpr -> Bool
-isIOType texp = case texp of
-  CTCons tc _ -> tc == pre "IO"
-  _           -> False
-
---- Returns true if the type expression is (IO t) with t/=() and
---- t is not functional
-isIOReturnType :: CTypeExpr -> Bool
-isIOReturnType (CTVar            _) = False
-isIOReturnType (CFuncType      _ _) = False
-isIOReturnType (CTCons tc typelist) =
-  tc==pre "IO" && head typelist /= CTCons (pre "()") []
-  && not (isFunctionalType (head typelist))
-
---- Returns all argument types from a functional type
-argTypes :: CTypeExpr -> [CTypeExpr]
-argTypes (CTVar         _) = []
-argTypes (CTCons      _ _) = []
-argTypes (CFuncType t1 t2) = t1 : argTypes t2
-
---- Return the result type from a (nested) functional type
-resultType :: CTypeExpr -> CTypeExpr
-resultType (CTVar          n) = CTVar n
-resultType (CTCons name args) = CTCons name args
-resultType (CFuncType   _ t2) = resultType t2
-
---- Returns all type variables occurring in a type expression.
-tvarsOfType :: CTypeExpr -> [CTVarIName]
-tvarsOfType (CTVar v) = [v]
-tvarsOfType (CFuncType t1 t2) = tvarsOfType t1 ++ tvarsOfType t2
-tvarsOfType (CTCons _ args) = concatMap tvarsOfType args
-
---- Returns all modules used in the given type.
-modsOfType :: CTypeExpr -> [String]
-modsOfType (CTVar            _) = []
-modsOfType (CFuncType    t1 t2) = modsOfType t1 `union` modsOfType t2
-modsOfType (CTCons (mod,_) tys) = foldr union [mod] $ map modsOfType tys
 
 ------------------------------------------------------------------------
 -- Goodies to construct function declarations
@@ -180,16 +91,31 @@ cmtfunc = CmtFunc
 simpleRule :: [CPattern] -> CExpr -> CRule
 simpleRule pats rhs = CRule pats (CSimpleRhs rhs [])
 
+--- Constructs a simple rule with a pattern list, an
+--- unconditional right-hand side, and local declarations.
+simpleRuleWithLocals :: [CPattern] -> CExpr -> [CLocalDecl] -> CRule
+simpleRuleWithLocals pats rhs ldecls = CRule pats (CSimpleRhs rhs ldecls)
+
+--- Constructs a rule with a possibly guarded right-hand side
+--- and local declarations.
+--- A simple right-hand side is constructed if there is only one
+--- `True` condition.
+guardedRule :: [CPattern] -> [(CExpr,CExpr)] -> [CLocalDecl] -> CRule
+guardedRule pats gs ldecls
+  | length gs == 1 && fst (head gs) == CSymbol (pre "True")
+              = CRule pats (CSimpleRhs (snd (head gs)) ldecls)
+  | otherwise = CRule pats (CGuardedRhs gs ldecls)
+
 --- Constructs a guarded expression with the trivial guard.
 noGuard :: CExpr -> (CExpr, CExpr)
-noGuard e = (CSymbol (pre "success"), e)
+noGuard e = (CSymbol (pre "True"), e)
 
 ------------------------------------------------------------------------
--- Goodies to construct function expressions and patterns
+-- Goodies to construct expressions and patterns
 
 --- An application of a qualified function name to a list of arguments.
 applyF :: QName -> [CExpr] -> CExpr
-applyF f es = foldl CApply (CSymbol f) es
+applyF f es = foldl CApply (CSymbol f) es 
 
 --- An application of an expression to a list of arguments.
 applyE :: CExpr -> [CExpr] -> CExpr
@@ -201,7 +127,7 @@ constF f = applyF f []
 
 --- An application of a variable to a list of arguments.
 applyV :: CVarIName -> [CExpr] -> CExpr
-applyV v es = foldl CApply (CVar v) es
+applyV v es = foldl CApply (CVar v) es 
 
 -- Applies the Just constructor to an AbstractCurry expression.
 applyJust :: CExpr -> CExpr
@@ -219,6 +145,10 @@ tupleExpr es | l==0 = constF (pre "()")
                                   es
  where l = length es
 
+-- Constructs a let declaration (with possibly empty local delcarations).
+letExpr :: [CLocalDecl] -> CExpr -> CExpr
+letExpr locals cexp = if null locals then cexp else CLetDecl locals cexp
+
 --- Constructs from a pattern and an expression a branch for a case expression.
 cBranch :: CPattern -> CExpr -> (CPattern, CRhs)
 cBranch pattern exp = (pattern, CSimpleRhs exp [])
@@ -233,7 +163,15 @@ tuplePattern ps
 
 --- Constructs, for given n, a list of n PVars starting from 0.
 pVars :: Int -> [CPattern]
-pVars n = [CPVar (i,"x"++show i) | i<-[0..n-1]]
+pVars n = [CPVar (i,"x"++show i) | i<-[0..n-1]] 
+
+--- Converts an integer into an AbstractCurry expression.
+pInt :: Int -> CPattern
+pInt x = CPLit (CIntc x)
+
+--- Converts a float into an AbstractCurry expression.
+pFloat :: Float -> CPattern
+pFloat x = CPLit (CFloatc x)
 
 --- Converts a character into a pattern.
 pChar :: Char -> CPattern
@@ -250,7 +188,7 @@ listPattern (p:ps) = CPComb (pre ":") [p, listPattern ps]
 
 --- Converts a string into a pattern representing this string.
 stringPattern :: String -> CPattern
-stringPattern = listPattern . map (CPLit . CCharc)
+stringPattern = CPLit . CStringc
 
 --- Converts a list of AbstractCurry expressions into an
 --- AbstractCurry representation of this list.
@@ -258,21 +196,21 @@ list2ac :: [CExpr] -> CExpr
 list2ac []     = constF (pre "[]")
 list2ac (c:cs) = applyF (pre ":") [c, list2ac cs]
 
+--- Converts an integer into an AbstractCurry expression.
+cInt :: Int -> CExpr
+cInt x = CLit (CIntc x)
+
+--- Converts a float into an AbstractCurry expression.
+cFloat :: Float -> CExpr
+cFloat x = CLit (CFloatc x)
+
 --- Converts a character into an AbstractCurry expression.
 cChar :: Char -> CExpr
 cChar x = CLit (CCharc x)
 
---- Converts a string into an AbstractCurry represention of this string.
+--- Converts a string into an AbstractCurry represention of this string.  
 string2ac :: String -> CExpr
 string2ac s = CLit (CStringc s)
-
---- Converts a string into a qualified name of the Prelude.
-pre :: String -> QName
-pre f = ("Prelude", f)
-
---- Tests whether a module name is the prelude.
-isPrelude :: String -> Bool
-isPrelude m = m=="Prelude"
 
 --- Converts an index i into a variable named xi.
 toVar :: Int -> CExpr

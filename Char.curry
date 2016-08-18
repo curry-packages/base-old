@@ -1,11 +1,10 @@
 ------------------------------------------------------------------------------
 --- Library with some useful functions on characters.
 ---
---- @author Michael Hanus, Björn Peemöller
+--- @author Michael Hanus, Bjoern Peemoeller
 --- @version January 2015
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Char
   ( isAscii, isLatin1, isAsciiUpper, isAsciiLower, isControl

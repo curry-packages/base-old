@@ -1,11 +1,10 @@
 ------------------------------------------------------------------------------
 --- Library with some functions for reading and converting numeric tokens.
 --
---- @author Michael Hanus, Frank Huch, Björn Peemöller
+--- @author Michael Hanus, Frank Huch, Bjoern Peemoeller
 --- @version November 2014
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module ReadNumeric
   ( readInt, readNat, readHex, readOct

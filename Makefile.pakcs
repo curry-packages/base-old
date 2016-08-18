@@ -1,7 +1,7 @@
-# precompile all modules of the library
-# to avoid recompilation when they are used:
+# Makefile for various compilations of the system libraries,
+# in particular, to generate the documentation
 
-CYMAKEPARAMS = --extended -X TypeClassExtensions --no-verb --no-warn --no-overlap-warn -i. -imeta
+CYMAKEPARAMS = --extended -Wnone -i.
 
 PAKCS=$(ROOT)/bin/pakcs
 
@@ -15,105 +15,119 @@ TEXDOCDIR := $(DOCDIR)/src/lib
 CURRYDOC=$(ROOT)/bin/currydoc
 
 # Curry library files
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry meta/*.curry CLP/*.curry))
-# lib names without meta/ prefix
-LIB_NAMES = `echo $(LIB_CURRY) | sed 's|meta/||g'`
-# generated files:
-LIB_FCY   = `echo $(LIB_CURRY:%.curry=.curry/%.fcy) | sed 's|\.curry/meta/|meta/.curry/|g'`
-LIB_ACY   = `echo $(LIB_CURRY:%.curry=.curry/%.acy) | sed 's|\.curry/meta/|meta/.curry/|g'`
-LIB_PL    = `echo $(LIB_CURRY:%.curry=.curry/pakcs/%.pl) | sed 's|\.curry/pakcs/meta/|meta/.curry/pakcs/|g'`
-# HTML documentation files
-LIB_HTMLI = $(LIB_CURRY:.curry=.html)
-LIB_HTML  = $(LIB_HTMLI:CLP/%.html=CLP.%.html)
-# LaTeX documentation files
-LIB_TEXI  = $(LIB_CURRY:.curry=.tex)
-LIB_TEX   = $(LIB_TEXI:CLP/%.tex=CLP.%.tex)
+LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry CLP/*.curry Database/*.curry Database/CDBI/*.curry Rewriting/*.curry Test/*.curry))
+# lib names without directory prefix
+LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
+# lib names included in library documentation page (without directory prefix)
+LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(LIB_NAMES))
+# Generated files:
+LIB_FCY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.fcy), $(lib))
+LIB_ACY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.acy), $(lib))
+LIB_PL    = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs/%.pl), $(lib))
+LIB_HTML  = $(foreach lib, $(LIB_CURRY:.curry=.html), $(LIBDOCDIR)/$(subst /,.,$(lib)))
+LIB_TEX   = $(foreach lib, $(LIB_CURRY:.curry=.tex),  $(TEXDOCDIR)/$(subst /,.,$(lib)))
 
-EXCLUDES  = SearchTree.curry ValueSequence.curry UnsafeSearchTree.curry
+ALLLIBS      = AllLibraries
+# Modules not included as regular libraries:
+EXCLUDES     = $(ALLLIBS).curry UnsafeSearchTree.curry
+# Modules not included in library documentation index page:
+DOCEXCLUDES  = CHRcompiled CPNS HtmlCgi WUIjs
 
 .PHONY: all
-all: fcy acy
+all: $(ALLLIBS).curry fcy acy
+
+# create a program importing all libraries in order to re-compile them
+# so that all auxiliary files are up-to-date
+$(ALLLIBS).curry: $(LIB_CURRY) Makefile
+	rm -f $@
+	for i in $(filter-out Prelude, $(LIB_NAMES)) ; do echo "import $$i" >> $@ ; done
 
 .PHONY: allsources
 allsources:
 	@echo $(LIB_CURRY)
 
+# clean all generated files
+.PHONY: clean
+clean:
+	rm -f "$(LIBDOCDIR)"/*
+	rm -f "$(TEXDOCDIR)"/*
+	rm -fr .curry
+
+# clean all generated Prolog files
+.PHONY: cleanpl
+cleanpl:
+	rm -f .curry/pakcs/*.pl .curry/pakcs/*.po
+
 ##########################################################################
 # generate the FlatCurry files of all libraries:
 .PHONY: fcy
-fcy:
-	$(MAKE) $(LIB_FCY)
+fcy: $(LIB_FCY)
 
 # generate the AbstractCurry files of all libraries:
 .PHONY: acy
-acy:
-	$(MAKE) $(LIB_ACY)
+acy: $(LIB_ACY)
 
 # generate the compile Prolog target files of all libraries:
 .PHONY: pl
-pl:
-	@$(MAKE) $(LIB_PL)
+pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
 
-# generate all FlatCurry files:
-.curry/CLP/%.fcy: CLP/%.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) CLP.$*
-
+# generate FlatCurry file in subdirectory .curry:
 .curry/%.fcy: %.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
+	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*)
 
-meta/.curry/%.fcy: meta/%.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $*
-
-# generate all AbstractCurry files:
-.curry/CLP/%.acy: CLP/%.curry
-	"$(CYMAKE)" --acy $(CYMAKEPARAMS) CLP.$*
-
+# generate all AbstractCurry files in subdirectory .curry:
 .curry/%.acy: %.curry
-	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
-
-meta/.curry/%.acy: meta/%.curry
-	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $*
+	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $(subst /,.,$*)
 
 # generate all Prolog translations:
-.curry/pakcs/CLP/%.pl: .curry/CLP/%.fcy
-	rm -f $@ && "$(PAKCS)" --quiet -c CLP.$*
-
 .curry/pakcs/%.pl: .curry/%.fcy
-	rm -f $@ && "$(PAKCS)" --quiet -c $*
-
-meta/.curry/pakcs/%.pl: meta/.curry/%.fcy
-	rm -f $@ && "$(PAKCS)" --quiet -c $*
+	rm -f $@ && "$(PAKCS)" --quiet :compile $(subst /,.,$*) :quit
 
 ##############################################################################
 # create HTML documentation files for system libraries
 ##############################################################################
 
+INDEXHTML    = $(LIBDOCDIR)/index.html
+HTMLEXCLUDES = $(INDEXHTML) $(foreach file, findex.html cindex.html PAKCS_libs.html, $(LIBDOCDIR)/$(file))
+
 .PHONY: doc
 doc: $(LIB_CURRY)
 	@mkdir -p "$(LIBDOCDIR)"
-	@cd "$(LIBDOCDIR)" && rm -f meta DOINDEX && ln -s . meta
-	@cd "$(LIBDOCDIR)" && $(MAKE) -f ../Makefile $(LIB_HTML)
-	@if [ -f "$(LIBDOCDIR)/DOINDEX" ] ; then $(MAKE) htmlindex ; fi
-	@cd "$(LIBDOCDIR)" && rm -f meta DOINDEX
+	@$(MAKE) $(LIB_HTML)
+	@$(MAKE) $(INDEXHTML)
 
-.PHONY: htmlindex
-htmlindex:
+$(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	@echo "Generating index pages for Curry libraries:"
-	@echo $(LIB_NAMES)
-	@"$(CURRYDOC)" --onlyindexhtml "$(LIBDOCDIR)" $(LIB_NAMES)
+	@echo $(LIB_DOCNAMES)
+	"$(CURRYDOC)" --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
-# generate individual documentations for libraries:
-meta/%.html: ../meta/%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
+# generate individual documentations for libraries
+$(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" AbstractCurry.$*
 
-CLP.%.html: ../CLP/%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
+$(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.Annotated.$*
 
-%.html: ../%.curry
-	@touch DOINDEX
-	cd .. && "$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
+$(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.$*
+
+$(LIBDOCDIR)/CLP.%.html: CLP/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
+
+$(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
+
+$(LIBDOCDIR)/Database.%.html: Database/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.$*
+
+$(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Rewriting.$*
+
+$(LIBDOCDIR)/Test.%.html: Test/%.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Test.$*
+
+$(LIBDOCDIR)/%.html: %.curry
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
@@ -122,35 +136,33 @@ CLP.%.html: ../CLP/%.curry
 .PHONY: texdoc
 texdoc: $(LIB_CURRY)
 	@mkdir -p "$(TEXDOCDIR)"
-	@if [ ! -f "$(TEXDOCDIR)/LAST" ] ; then touch "$(TEXDOCDIR)/LAST" ; fi
-	@cd "$(TEXDOCDIR)" && rm -f meta && ln -s . meta
-	@cd "$(TEXDOCDIR)" && $(MAKE) -f $(ROOT)/lib/Makefile $(LIB_TEX)
-	@cd "$(TEXDOCDIR)" && rm -f meta
+	$(MAKE) $(LIB_TEX)
 
-# generate individual LaTeX documentations for libraries:
-meta/%.tex: $(LIBDIR)/meta/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
-	touch LAST
+# generate individual LaTeX documentations for libraries
+$(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$*
 
-CLP.%.tex: $(LIBDIR)/CLP/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$*
-	touch LAST
+$(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.Annotated.$*
 
-%.tex: $(LIBDIR)/%.curry
-	cd $(LIBDIR) && "$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
-	touch LAST
+$(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.$*
 
+$(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$*
 
-# clean all generated files
-.PHONY: clean
-clean:
-	rm -f "$(LIBDOCDIR)"/*
-	rm -f "$(TEXDOCDIR)"/*
-	../bin/cleancurry
-	cd meta && ../../bin/cleancurry
+$(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
 
-# clean all generated Prolog files
-.PHONY: cleanpl
-cleanpl:
-	rm -f .curry/pakcs/*.pl .curry/pakcs/*.po meta/.curry/pakcs/*.pl meta/.curry/pakcs/*.po \
-	      *.pl *.po meta/*.pl meta/*.po
+$(TEXDOCDIR)/Database.%.tex: Database/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.$*
+
+$(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Rewriting.$*
+
+$(TEXDOCDIR)/Test.%.tex: Test/%.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Test.$*
+
+$(TEXDOCDIR)/%.tex: %.curry
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
+

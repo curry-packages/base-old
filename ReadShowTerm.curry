@@ -3,9 +3,8 @@
 ---
 --- @author Michael Hanus
 --- @version April 2005
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module ReadShowTerm(showTerm,showQTerm,readQTerm,readsQTerm,
                     readsUnqualifiedTerm,readUnqualifiedTerm,readsTerm,readTerm,
@@ -74,9 +73,7 @@ readUnqualifiedTerm prefixes s = case result of
   [(term,tail)]
      -> if all isSpace tail then term
         else error ("ReadShowTerm.readUnqualifiedTerm: no parse, unmatched string after term: "++tail)
-  [] ->  error ("ReadShowTerm.readUnqualifiedTerm: no parse"
-                ++ "\nprefixes: " ++ show prefixes
-                ++ "\nstring: " ++ show s)
+  [] ->  error "ReadShowTerm.readUnqualifiedTerm: no parse"
   _  ->  error "ReadShowTerm.readUnqualifiedTerm: ambiguous parse"
  where result = readsUnqualifiedTerm prefixes s
 

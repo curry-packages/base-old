@@ -5,9 +5,8 @@
 ---
 --- @author Michael Hanus
 --- @version September 2004
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module CSV(showCSV,readCSV,readCSVWithDelims,
            writeCSVFile,readCSVFile,readCSVFileWithDelims) where

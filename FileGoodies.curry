@@ -3,9 +3,8 @@
 ---
 --- @author Michael Hanus, Bernd Brassel
 --- @version June 2009
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module FileGoodies(separatorChar,pathSeparatorChar,suffixSeparatorChar,
                    isAbsolute,dirName,baseName,splitDirectoryBaseName,

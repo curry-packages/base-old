@@ -6,9 +6,8 @@
 ---
 --- @author Sebastian Fischer
 --- @version February 2008
+--- @category algorithm
 ---------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Traversal (
 

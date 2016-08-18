@@ -3,23 +3,123 @@
 --- characters, strings, and lists.
 ---
 --- @author Michael Hanus
---- @version February 2004
+--- @version April 2016
+--- @category algorithm
 ------------------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+{-# OPTIONS_CYMAKE -Wno-overlapping #-}
 
-module Sort(quickSort,mergeSort,
-            cmpChar, cmpList, cmpString,
-            leqChar, leqCharIgnoreCase,leqList,
-            leqString,leqStringIgnoreCase,leqLexGerman) where
+module Sort( sort, sortBy, sorted, sortedBy
+           , permSort, permSortBy, insertionSort, insertionSortBy
+           , quickSort, quickSortBy, mergeSort, mergeSortBy
+           , cmpChar, cmpList, cmpString
+           , leqChar, leqCharIgnoreCase, leqList
+           , leqString, leqStringIgnoreCase, leqLexGerman
+           ) where
 
 import Char
+import Test.Prop
 
---- Quicksort.
-quickSort :: (a -> a -> Bool) -> [a] -> [a]
-quickSort _   []     = []
-quickSort leq (x:xs) = let (l,r) = split x xs
-                        in quickSort leq l ++ (x:quickSort leq r)
+--- The default sorting operation, mergeSort, with standard ordering `<=`.
+sort :: Ord a => [a] -> [a]
+sort = sortBy (<=)
+
+-- Postcondition: input and output lists have same length and output is sorted.
+sort'post :: Ord a => [a] -> [a] -> Bool
+sort'post xs ys = length xs == length ys && sorted ys
+
+-- Specification via permutation sort:
+sort'spec :: Ord a => [a] -> [a]
+sort'spec xs = permSort xs
+
+
+--- The default sorting operation: mergeSort
+sortBy :: (a -> a -> Bool) -> [a] -> [a]
+sortBy = mergeSortBy
+
+--- `sorted xs` is satisfied if the elements `xs` are in ascending order.
+sorted :: Ord a => [a] -> Bool
+sorted = sortedBy (<=)
+
+--- `sortedBy leq xs` is satisfied if all adjacent elements of the list `xs`
+--- satisfy the ordering predicate `leq`.
+sortedBy :: (a -> a -> Bool) -> [a] -> Bool
+sortedBy _   []       = True
+sortedBy _   [_]      = True
+sortedBy leq (x:y:ys) = leq x y && sortedBy leq (y:ys)
+
+
+------------------------------------------------------------------------------
+--- Permutation sort with standard ordering `<=`.
+--- Sorts a list by finding a sorted permutation
+--- of the input. This is not a usable way to sort a list but it can be used
+--- as a specification of other sorting algorithms.
+permSort :: Ord a => [a] -> [a]
+permSort = permSortBy (<=)
+
+--- Permutation sort with ordering as first parameter.
+--- Sorts a list by finding a sorted permutation
+--- of the input. This is not a usable way to sort a list but it can be used
+--- as a specification of other sorting algorithms.
+permSortBy :: Eq a => (a -> a -> Bool) -> [a] -> [a]
+permSortBy leq xs | ys == perm xs && sortedBy leq ys = ys  where ys free
+
+--- Computes a permutation of a list.
+perm :: [a] -> [a]
+perm []     = []
+perm (x:xs) = insert (perm xs)
+ where insert ys     = x : ys
+       insert (y:ys) = y : insert ys
+
+------------------------------------------------------------------------------
+--- Insertion sort with standard ordering `<=`.
+--- The list is sorted by repeated sorted insertion of the elements
+--- into the already sorted part of the list.
+insertionSort  :: Ord a => [a] -> [a]
+insertionSort = insertionSortBy (<=)
+
+-- Postcondition: input and output lists have same length and output is sorted.
+insertionSort'post :: Ord a => [a] -> [a] -> Bool
+insertionSort'post xs ys = length xs == length ys && sorted ys
+
+-- Specification via permutation sort:
+insertionSort'spec :: Ord a => [a] -> [a]
+insertionSort'spec = permSort
+
+
+--- Insertion sort with ordering as first parameter.
+--- The list is sorted by repeated sorted insertion of the elements
+--- into the already sorted part of the list.
+insertionSortBy  :: (a -> a -> Bool) -> [a] -> [a]
+insertionSortBy _ [] = []
+insertionSortBy leq (x:xs) = insert (insertionSortBy leq xs)
+ where
+  insert [] = [x]
+  insert zs@(y:ys) | leq x y   = x : zs
+                   | otherwise = y : insert ys
+
+
+------------------------------------------------------------------------------
+--- Quicksort with standard ordering `<=`.
+--- The classical quicksort algorithm on lists.
+quickSort :: Ord a => [a] -> [a]
+quickSort = quickSortBy (<=)
+
+-- Postcondition: input and output lists have same length and output is sorted.
+quickSort'post :: Ord a => [a] -> [a] -> Bool
+quickSort'post xs ys = length xs == length ys && sorted ys
+
+-- Specification via permutation sort:
+quickSort'spec :: Ord a => [a] -> [a]
+quickSort'spec = permSort
+
+
+--- Quicksort with ordering as first parameter.
+--- The classical quicksort algorithm on lists.
+quickSortBy :: (a -> a -> Bool) -> [a] -> [a]
+quickSortBy _   []     = []
+quickSortBy leq (x:xs) = let (l,r) = split x xs
+                          in quickSortBy leq l ++ (x : quickSortBy leq r)
  where
   split _ [] = ([],[])
   split e (y:ys) | leq y e   = (y:l,r)
@@ -27,9 +127,23 @@ quickSort leq (x:xs) = let (l,r) = split x xs
               where (l,r) = split e ys
 
 
---- Bottom-up mergesort.
-mergeSort :: (a -> a -> Bool) -> [a] -> [a]
-mergeSort leq zs =  mergeLists (genRuns zs)
+------------------------------------------------------------------------------
+--- Bottom-up mergesort with standard ordering `<=`.
+mergeSort :: Ord a => [a] -> [a]
+mergeSort = mergeSortBy (<=)
+
+-- Postcondition: input and output lists have same length and output is sorted.
+mergeSort'post :: Ord a => [a] -> [a] -> Bool
+mergeSort'post xs ys = length xs == length ys && sorted ys
+
+-- Specification via permutation sort:
+mergeSort'spec :: Ord a => [a] -> [a]
+mergeSort'spec = permSort
+
+
+--- Bottom-up mergesort with ordering as first parameter.
+mergeSortBy :: (a -> a -> Bool) -> [a] -> [a]
+mergeSortBy leq zs =  mergeLists (genRuns zs)
  where
   -- generate runs of length 2:
   genRuns []               =  []
@@ -56,7 +170,7 @@ merge leq (x:xs) (y:ys) | leq x y   = x : merge leq xs (y:ys)
                         | otherwise = y : merge leq (x:xs) ys
 
 
---------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- Comparing lists, characters and strings
 
 --- Less-or-equal on lists.

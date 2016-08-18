@@ -11,10 +11,8 @@
 ---
 --- @author Jasper Sikorra - jsi@informatik.uni-kiel.de
 --- @version March 2014
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
-
 module Format(showChar,showInt,showFloat,showString) where
 
 import Char
@@ -345,7 +343,10 @@ convertPrecision = maybe 1 id
 
 --- FILLING A STRING WITH APPROPRIATE ALIGNMENT
 data Alignment = LeftAlign | RightAlign
-  deriving Eq
+
+instance Eq Alignment where
+  LeftAlign == x = case x of { LeftAlign -> True ; _ -> False }
+  RightAlign == x = case x of { RightAlign -> True ; _ -> False }
 
 fillWithCharsLeftAlign :: Int -> Char -> String -> String
 fillWithCharsLeftAlign  = fillWithChars LeftAlign

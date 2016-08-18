@@ -3,7 +3,7 @@
 --- obtaining lists of solutions to constraints.
 --- These operations are useful to encapsulate
 --- non-deterministic operations between I/O actions in
---- order to connects the worlds of logic and functional programming
+--- order to connect the worlds of logic and functional programming
 --- and to avoid non-determinism failures on the I/O level.
 ---
 --- In contrast the "old" concept of encapsulated search
@@ -11,9 +11,9 @@
 --- the operations to encapsulate search in this module
 --- are I/O actions in order to avoid some anomalities
 --- in the old concept.
+---
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module AllSolutions(getAllValues,getOneValue,getAllSolutions,getOneSolution,
                     getAllFailures)  where
@@ -43,13 +43,13 @@ getOneValue x = do
 --- of the constraint does not share any results. Moreover, this
 --- evaluation suspends if the constraints contain unbound variables.
 --- Similar to Prolog's findall.
-getAllSolutions :: (a->Success) -> IO [a]
+getAllSolutions :: (a->Bool) -> IO [a]
 getAllSolutions c = getAllValues (let x free in (x,c x)) >>= return . map fst
 
 --- Gets one solution to a constraint (currently, via an incomplete
 --- left-to-right strategy). Returns Nothing if the search space
 --- is finitely failed.
-getOneSolution :: (a->Success) -> IO (Maybe a)
+getOneSolution :: (a->Bool) -> IO (Maybe a)
 getOneSolution c = do
   sols <- getAllSolutions c
   return (if null sols then Nothing else Just (head sols))
@@ -58,17 +58,17 @@ getOneSolution c = do
 --- @param x - an expression (a generator evaluable to various values)
 --- @param c - a constraint that should not be satisfied
 --- @return A list of all values of e such that (c e) is not provable
-getAllFailures :: a -> (a->Success) -> IO [a]
+getAllFailures :: a -> (a->Bool) -> IO [a]
 getAllFailures generator test =
  do xs <- getAllValues generator
     failures <- mapIO (naf test) xs
     return $ concat failures
 
 -- (naf c x) returns [x] if (c x) fails, and [] otherwise.
-naf :: (a -> Success) -> a -> IO [a]
+naf :: (a -> Bool) -> a -> IO [a]
 naf c x = getOneSolution (lambda c x) >>= returner x
 
-lambda :: (a -> Success) -> a -> () -> Success
+lambda :: (a -> Bool) -> a -> () -> Bool
 lambda c x _ = c x
 
 returner :: a -> Maybe b -> IO [a]

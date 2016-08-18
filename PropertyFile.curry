@@ -1,15 +1,14 @@
 ------------------------------------------------------------------------------
 --- A library to read and update files containing properties in the usual
 --- equational syntax, i.e., a property is defined by a line of the form
---- prop=value where prop starts with a letter.
---- All other lines (e.g., blank lines or lines starting with '#' are
+--- `prop=value` where `prop` starts with a letter.
+--- All other lines (e.g., blank lines or lines starting with `#` are
 --- considered as comment lines and are ignored.
 ---
 --- @author Michael Hanus
 --- @version August 2006
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module PropertyFile(readPropertyFile,updatePropertyFile) where
 

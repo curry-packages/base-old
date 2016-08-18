@@ -3,8 +3,7 @@
 ---
 --- @author Michael Hanus
 --- @version January 2013
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+--- @category general
 
 module Directory
   ( doesFileExist, doesDirectoryExist, fileSize, getModificationTime

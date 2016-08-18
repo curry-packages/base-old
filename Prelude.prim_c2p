@@ -93,10 +93,6 @@
   <library>prim_standard</library>
   <entry>prim_ifVar[raw]</entry>
  </primitive>
- <primitive name="success" arity="0">
-  <library>prim_standard</library>
-  <entry>prim_success</entry>
- </primitive>
  <primitive name="&amp;" arity="2">
   <library>prim_standard</library>
   <entry>prim_concurrent_and[raw]</entry>
@@ -117,15 +113,15 @@
   <library>prim_standard</library>
   <entry>prim_failure[raw]</entry>
  </primitive>
- <primitive name="&gt;&gt;=" arity="2">
+ <primitive name="&gt;&gt;=$" arity="2">
   <library>prim_standard</library>
   <entry>prim_Monad_bind[raw]</entry>
  </primitive>
- <primitive name="&gt;&gt;" arity="2">
+ <primitive name="&gt;&gt;$" arity="2">
   <library>prim_standard</library>
   <entry>prim_Monad_seq[raw]</entry>
  </primitive>
- <primitive name="return" arity="1">
+ <primitive name="returnIO" arity="1">
   <library>prim_standard</library>
   <entry>prim_return[raw]</entry>
  </primitive>

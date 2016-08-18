@@ -5,9 +5,8 @@
 ---
 --- @author Michael Hanus
 --- @version May 2007
+--- @category web
 ---------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Mail(sendMail,MailOption(..),sendMailWithOptions) where
 
@@ -57,6 +56,7 @@ sendMailWithOptions from subject options contents = do
 --- Executes a command to send an email and pass the contents via stdin.
 --- Note that \r characters in the contents are removed due to problems
 --- with such contents in some Unix environments.
+execMailCmd :: String -> String -> IO ()
 execMailCmd cmd contents = do
   (sin,_,_) <- execCmd cmd
   hPutStrLn sin (filter isUnixChar contents)

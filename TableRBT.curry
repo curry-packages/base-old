@@ -8,9 +8,8 @@
 --- 
 --- @author Johannes Koj, Michael Hanus, Bernd Brassel
 --- @version March 2005
+--- @category algorithm
 ----------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module TableRBT where
 
@@ -48,7 +47,7 @@ updateRBT k e = RBT.update (k,e)
 tableRBT2list :: TableRBT key a -> [(key,a)]
 tableRBT2list = RBT.tree2list
 
-deleteRBT :: (Eq a,Eq key) => key -> TableRBT key a -> TableRBT key a
+deleteRBT :: key -> TableRBT key a -> TableRBT key a
 deleteRBT key = RBT.delete (key,failed)
 
 -- end of TableRBT

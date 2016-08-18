@@ -1,12 +1,10 @@
 --- ----------------------------------------------------------------------------
 --- This module provides some utility functions for function application.
 ---
---- @author Björn Peemöller
+--- @author Bjoern Peemoeller
 --- @version July 2013
+--- @category general
 --- ----------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
-
 module Function where
 
 --- `fix f` is the least fixed point of the function `f`,

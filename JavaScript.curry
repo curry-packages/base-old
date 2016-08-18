@@ -3,9 +3,8 @@
 ---
 --- @author Michael Hanus
 --- @version January 22, 2007
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module JavaScript(JSExp(..),JSStat(..),JSBranch(..),JSFDecl(..),
                   showJSExp,showJSStat,showJSFDecl,
@@ -33,8 +32,11 @@ data JSExp = JSString String
            | JSFCall  String [JSExp]
            | JSApply  JSExp JSExp
            | JSLambda [Int] [JSStat]
-  deriving Eq
+-- deriving Eq
 
+instance Eq JSExp where
+  _ == _ = error "TODO: Eq JavaScript.JSExp"
+  
 --- Type of JavaScript statements.
 --- @cons JSAssign  - assignment
 --- @cons JSIf      - conditional
@@ -48,18 +50,16 @@ data JSStat = JSAssign  JSExp JSExp
             | JSPCall   String [JSExp]
             | JSReturn  JSExp
             | JSVarDecl Int
-  deriving Eq
 
 -- Type of branches in a switch statement.
 --- @cons JSCase    - case branch
 --- @cons JSDefault - default branch
 data JSBranch = JSCase String [JSStat]
               | JSDefault [JSStat]
-  deriving Eq
 
 -- Type of JavaScript function declarations.
 data JSFDecl = JSFDecl String [Int] [JSStat]
-  deriving Eq
+
 
 ------------------------------------------------------------------------------
 --- Shows a JavaScript expression as a string in JavaScript syntax.

@@ -6,9 +6,8 @@
 ---
 --- @author Johannes Koj, Michael Hanus, Bernd Brassel
 --- @version March 2013
+--- @category algorithm
 ----------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module SetRBT where
 
@@ -46,7 +45,7 @@ insertMultiRBT e = RBT.setInsertEquivalence (==)
 
 --- delete an element from a set.
 --- Deletes only a single element from a multi set
-deleteRBT :: Eq a => a -> SetRBT a -> SetRBT a
+deleteRBT :: a -> SetRBT a -> SetRBT a
 deleteRBT = RBT.delete
 
 --- Transforms a (red-black tree) set into an ordered list of its elements.
@@ -70,4 +69,4 @@ intersectRBT s1 s2 = foldr insertRBT (RBT.newTreeLike s1)
 --- Generic sort based on insertion into red-black trees.
 --- The first argument is the order for the elements.
 sortRBT  :: Eq a => (a -> a -> Bool) -> [a] -> [a]
-sortRBT = RBT.sort
+sortRBT = RBT.sortBy

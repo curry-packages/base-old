@@ -10,24 +10,49 @@ CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	mkdir -p $(LIBDIR)/meta
-	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile
+	mkdir -p $(LIBDIR)/AbstractCurry
+	mkdir -p $(LIBDIR)/FlatCurry/Annotated
+	mkdir -p $(LIBDIR)/Database/CDBI
+	mkdir -p $(LIBDIR)/Rewriting
+	mkdir -p $(LIBDIR)/Test
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
 $(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
 	cp $< $@
 
+$(LIBDIR)/test.sh: test.sh
+	cp $< $@
+
 .PHONY: sources
 sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
-	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY) index.html
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp -p $(LIBTRUNKDIR)/*.hs .
 
-%.curry: $(LIBTRUNKDIR)/%.curry
-	 cp $< $@
+AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
+	cp $< $@
 
-meta/%.curry: $(LIBTRUNKDIR)/meta/%.curry
-	 cp $< $@
+FlatCurry/Annotated/%.curry: $(LIBTRUNKDIR)/FlatCurry/Annotated/%.curry
+	cp $< $@
+
+FlatCurry/%.curry: $(LIBTRUNKDIR)/FlatCurry/%.curry
+	cp $< $@
+
+Database/CDBI/%.curry: $(LIBTRUNKDIR)/Database/CDBI/%.curry
+	cp $< $@
+
+Database/%.curry: $(LIBTRUNKDIR)/Database/%.curry
+	cp $< $@
+
+Rewriting/%.curry: $(LIBTRUNKDIR)/Rewriting/%.curry
+	cp $< $@
+
+Test/%.curry: $(LIBTRUNKDIR)/Test/%.curry
+	cp $< $@
+
+%.curry: $(LIBTRUNKDIR)/%.curry
+	cp $< $@
 
 index.html: $(LIBTRUNKDIR)/index.html.$(CURRYSYSTEM)
 	 cp $< $@

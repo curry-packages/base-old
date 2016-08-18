@@ -1,14 +1,12 @@
 --------------------------------------------------------------------------------
 --- This module contains functions to obtain information concerning the current
---- distribution of the Curry implementation.
---- Most of the information is based on the external constants
---- <b>curryCompiler...</b>.
+--- distribution of the Curry implementation, e.g.,
+--- compiler version, load paths, front end.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version November 2014
+--- @version August 2016
+--- @category general
 --------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Distribution (
   curryCompiler,curryCompilerMajorVersion,curryCompilerMinorVersion,
@@ -20,8 +18,6 @@ module Distribution (
   joinModuleIdentifiers, splitModuleIdentifiers, splitModuleFileName,
   inCurrySubdirModule,
 
-  findFileInLoadPath,lookupFileInLoadPath,
-  readFirstFileInLoadPath,getLoadPath,getLoadPathForFile,
   getLoadPathForModule, lookupModuleSourceInLoadPath,
 
   FrontendTarget(..),
@@ -203,57 +199,10 @@ addCurrySubdir dir = dir </> currySubdir
 --- system libraries.
 getSysLibPath :: IO [String]
 getSysLibPath = case curryCompiler of
-  "pakcs" -> return [installDir </> "lib", installDir </> "lib" </> "meta"]
+  "pakcs" -> return [installDir </> "lib"]
   "kics"  -> return [installDir </> "src" </> "lib"]
-  "kics2" -> return [installDir </> "lib", installDir </> "lib" </> "meta"]
+  "kics2" -> return [installDir </> "lib"]
   _       -> error "Distribution.getSysLibPath: unknown curryCompiler"
-
---- Adds a directory name to a file by looking up the current load path.
---- An error message is delivered if there is no such file.
-lookupFileInLoadPath :: String -> IO (Maybe String)
-lookupFileInLoadPath fn =
-  getLoadPathForFile fn >>= lookupFileInPath (takeFileName fn) [""]
-
---- Adds a directory name to a file by looking up the current load path.
---- An error message is delivered if there is no such file.
-findFileInLoadPath :: String -> IO String
-findFileInLoadPath fn =
-  getLoadPathForFile fn >>= getFileInPath (takeFileName fn) [""]
-
---- Returns the contents of the file found first in the current load path.
---- An error message is delivered if there is no such file.
-readFirstFileInLoadPath :: String -> IO String
-readFirstFileInLoadPath fn = findFileInLoadPath fn >>= readFile
-
---- Returns the current path (list of directory names) that is
---- used for loading modules.
-getLoadPath :: IO [String]
-getLoadPath = getLoadPathForFile "xxx"
-
---- Returns the current path (list of directory names) that is
---- used for loading modules w.r.t. a given main module file.
---- The directory prefix of the module file (or "." if there is
---- no such prefix) is the first element of the load path and the
---- remaining elements are determined by the environment variable
---- CURRYRPATH and the entry "libraries" of the system's rc file.
-getLoadPathForFile :: String -> IO [String]
-getLoadPathForFile file = do
-  syslib <- getSysLibPath
-  mblib  <- getRcVar "libraries"
-  let fileDir = dropFileName file
-  if curryCompiler `elem` ["pakcs","kics","kics2"] then
-    do currypath <- getEnviron "CURRYPATH"
-       let llib      = maybe [] splitSearchPath mblib
-           curryDirs = [fileDir, normalise (currySubdir </> fileDir)]
-       return $ curryDirs ++ (addCurrySubdirs
-                  (fileDir : (if null currypath
-                              then []
-                              else splitSearchPath currypath) ++
-                              llib ++ syslib))
-
-    else error "Distribution.getLoadPathForFile: unknown curryCompiler"
- where
-  addCurrySubdirs = concatMap (\ d -> [d, addCurrySubdir d])
 
 --- Returns the current path (list of directory names) that is
 --- used for loading modules w.r.t. a given module path.
@@ -309,7 +258,8 @@ lookupModuleSourceInLoadPath modpath =
 --- @cons UACY - Untyped (without type checking) AbstractCurry file ending with .uacy
 --- @cons HTML - colored HTML representation of source program
 --- @cons CY   - source representation employed by the frontend
-data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY
+--- @cons TOKS - token stream of source program
+data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY | TOKS
 
 --- Abstract data type for representing parameters supported by the front end
 --- of the Curry compiler.
@@ -438,14 +388,13 @@ callFrontendWithParams target params modpath = do
   let lf      = maybe "" id (logfile params)
       syscall = parsecurry ++ " " ++ showFrontendTarget target
                            ++ " " ++ showFrontendParams
-                           ++ " -X TypeClassExtensions "
                            ++ " " ++ takeFileName modpath
   retcode <- if null lf
              then system syscall
              else system (syscall ++ " > " ++ lf ++ " 2>&1")
   if retcode == 0
    then done
-   else ioError (userError $ "Illegal source program: "++modpath)
+   else ioError (userError "Illegal source program")
  where
    callParseCurry = do
      path <- maybe (getLoadPathForModule modpath) return (fullPath params)
@@ -460,6 +409,7 @@ callFrontendWithParams target params modpath = do
    showFrontendTarget UACY = "--uacy"
    showFrontendTarget HTML = "--html"
    showFrontendTarget CY   = "--parse-only"
+   showFrontendTarget TOKS = "--tokens"
 
    showFrontendParams = unwords
     [ if quiet       params then runQuiet     else ""

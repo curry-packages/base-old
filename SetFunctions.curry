@@ -35,9 +35,8 @@
 ---
 --- @author Michael Hanus, Fabian Reck
 --- @version June 2014
+--- @category general
 ------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module SetFunctions
   (set0,set1,set2,set3,set4,set5,set6,set7
@@ -48,7 +47,7 @@ module SetFunctions
   ,values2list,printValues,sortValues,sortValuesBy
   ) where
 
-import Sort(mergeSort)
+import Sort(mergeSortBy)
 import SearchTree
 import List(delete)
 
@@ -172,7 +171,7 @@ notEmpty :: Values _ -> Bool
 notEmpty vs = not (isEmpty vs)
 
 --- Is some value an element of a multiset of values?
-valueOf :: Eq a => a -> Values a -> Bool
+valueOf :: a -> Values a -> Bool
 valueOf e (Values s) = e `elem` s
 
 --- Chooses (non-deterministically) some value in a multiset of values
@@ -184,7 +183,7 @@ valueOf e (Values s) = e `elem` s
 --- then `(set1 chooseValue)` is the identity on value sets, i.e.,
 --- `(set1 chooseValue s)` contains the same elements as the
 --- value set `s`.
-choose :: Eq a => Values a -> (a,Values a)
+choose :: Values a -> (a,Values a)
 choose (Values vs) = (x, Values xs)
   where x = foldr1 (?) vs
         xs = delete x vs
@@ -194,7 +193,7 @@ choose (Values vs) = (x, Values xs)
 --- Thus, `(set1 chooseValue)` is the identity on value sets, i.e.,
 --- `(set1 chooseValue s)` contains the same elements as the
 --- value set `s`.
-chooseValue :: Eq a => Values a -> a
+chooseValue :: Values a -> a
 chooseValue s = fst (choose s)
 
 --- Selects (indeterministically) some value in a multiset of values
@@ -258,13 +257,13 @@ values2list :: Values a -> IO [a]
 values2list (Values s) = return s
 
 --- Prints all elements of a multiset of values.
-printValues :: Show a => Values a -> IO ()
+printValues :: Values _ -> IO ()
 printValues s = values2list s >>= mapIO_ print
 
 --- Transforms a multiset of values into a list sorted by
 --- the standard term ordering. As a consequence, the multiset of values
 --- is completely evaluated.
-sortValues :: Ord a => Values a -> [a]
+sortValues :: Values a -> [a]
 sortValues = sortValuesBy (<=)
 
 --- Transforms a multiset of values into a list sorted by a given ordering
@@ -273,6 +272,6 @@ sortValues = sortValuesBy (<=)
 --- In order to ensure that the result of this operation is independent of the
 --- evaluation order, the given ordering must be a total order.
 sortValuesBy :: (a -> a -> Bool) -> Values a -> [a]
-sortValuesBy leq (Values s) = mergeSort leq s
+sortValuesBy leq (Values s) = mergeSortBy leq s
 
 ------------------------------------------------------------------------

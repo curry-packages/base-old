@@ -12,9 +12,8 @@
 ---
 --- @author Michael Hanus
 --- @version February 2008
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module NamedSocket(Socket,
                    listenOn, socketAccept, waitForSocketAccept,

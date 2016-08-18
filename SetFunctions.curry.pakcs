@@ -38,6 +38,7 @@
 ---
 --- @author Michael Hanus
 --- @version July 2014
+--- @category general
 ------------------------------------------------------------------------
 
 module SetFunctions
@@ -49,9 +50,8 @@ module SetFunctions
   ) where
 
 import Findall
-import Sort(mergeSort)
+import Sort(mergeSortBy)
 import List(delete)
-import Maybe(isNothing)
 
 --- Combinator to transform a 0-ary function into a corresponding set function.
 set0 :: b -> Values b
@@ -130,11 +130,11 @@ someValue e =
    in if null xs then Nothing else Just (head xs)
 
 --- Is a multiset of values empty?
-isEmpty :: Values _ -> Bool
-isEmpty (Values firstval _) = isNothing firstval
+isEmpty :: Eq a => Values a -> Bool
+isEmpty (Values firstval _) = firstval == Nothing
 
 --- Is a multiset of values not empty?
-notEmpty :: Values _ -> Bool
+notEmpty :: Eq a => Values a -> Bool
 notEmpty vs = not (isEmpty vs)
 
 --- Is some value an element of a multiset of values?
@@ -243,6 +243,6 @@ sortValues = sortValuesBy (<=)
 --- In order to ensure that the result of this operation is independent of the
 --- evaluation order, the given ordering must be a total order.
 sortValuesBy :: (a -> a -> Bool) -> Values a -> [a]
-sortValuesBy leq (Values _ s) = mergeSort leq s
+sortValuesBy leq (Values _ s) = mergeSortBy leq s
 
 ------------------------------------------------------------------------

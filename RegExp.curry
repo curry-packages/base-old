@@ -5,12 +5,11 @@
 ---
 --- @author Jasper Sikorra
 --- @version January 2013
+--- @category general
 ------------------------------------------------------------------------------
 -- TODO
 -- - Stard and End are not implemented
 -- - No function to match only a part of a lists
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module RegExp(match, RegExp, ORegExp(..)) where
 
@@ -98,7 +97,8 @@ matchtimes s n m r rgx | m == 0 = match s rgx
   where
     mr = concat (replicate n r)
 
-tryeachRestricted :: Ord a => Int -> [Bool] -> [[a]] -> RegExp a -> RegExp a -> Bool
+tryeachRestricted :: Ord a => Int -> [Bool] -> [[a]] -> RegExp a -> RegExp a
+                  -> Bool
 tryeachRestricted _      []     []     _   _   = False
 tryeachRestricted m      (b:bs) (t:ts) r  rgx  =
   (||)

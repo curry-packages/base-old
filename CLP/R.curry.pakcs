@@ -13,7 +13,13 @@ infix  4 <., >., <=., >=.
 
 --- Abstract type to represent floats used in constraints.
 data CFloat = CF Float
- deriving (Eq,Ord)
+-- deriving (Eq,Ord)
+
+instance Eq CFloat where
+  (CF f1) == (CF f2) = f1 == f2
+
+instance Ord CFloat where
+  compare (CF f1) (CF f2) = compare f1 f2
 
 instance Show CFloat where
   show (CF f) = show f
@@ -38,7 +44,7 @@ instance Num CFloat where
 instance Fractional CFloat where
   x / y = x /. y
 
-  fromFloat x = CF x
+  fromRational x = CF x
 
 --- Addition on floats in arithmetic constraints.
 
@@ -150,4 +156,4 @@ maximize :: (a -> Success) -> (a -> Float) -> a -> Success
 maximize g f x = maximumFor g f =:= x
 
 
--- end of CLPR
+-- end of CLP.R

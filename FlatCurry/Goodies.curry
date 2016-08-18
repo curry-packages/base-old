@@ -12,14 +12,13 @@
 --- is abstracted away, which hopefully makes the code more clear and brief.
 ---
 --- @author Sebastian Fischer
---- @version January 2006
+--- @version October 2015
+--- @category meta
 ----------------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+module FlatCurry.Goodies where
 
-module FlatCurryGoodies where
-
-import FlatCurry
+import FlatCurry.Types
 
 type Update a b = (b -> b) -> a -> a
 

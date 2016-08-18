@@ -4,6 +4,7 @@
 ---
 --- @author Bjoern Peemoeller
 --- @version November 2011
+--- @category general
 ------------------------------------------------------------------------------
 
 --
@@ -29,8 +30,6 @@
 -- The examples in code format descibed by each function are used to generate
 -- tests, and should give clear semantics for the functions.
 -----------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module FilePath
   (

@@ -8,9 +8,8 @@
 ---
 --- @author Michael Hanus
 --- @version September 2012
+--- @category web
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module HtmlCgi(CgiServerMsg(..),runCgiServerCmd,
                cgiServerRegistry,registerCgiServer,unregisterCgiServer,
@@ -97,7 +96,11 @@ submitForm = do
 
 -- load balance types:
 data LoadBalance = NoBalance | Standard | Multiple
-  deriving Eq
+
+instance Eq LoadBalance where
+  NoBalance == x = case x of { NoBalance -> True ; _ -> False }
+  Standard == x = case x of { Standard -> True ; _ -> False }
+  Multiple == x = case x of { Multiple -> True ; _ -> False }
 
 --- Executes a specific command for a cgi server.
 runCgiServerCmd :: String -> CgiServerMsg -> IO ()

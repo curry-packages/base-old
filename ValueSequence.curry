@@ -13,9 +13,8 @@
 ---
 --- @author  Fabian Reck
 --- @version July 2013
+--- @category algorithm
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module ValueSequence(ValueSequence, emptyVS, addVS, failVS, (|++|), vsToList)
  where

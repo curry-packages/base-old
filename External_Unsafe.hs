@@ -1,6 +1,6 @@
 import System.IO.Unsafe (unsafePerformIO)
 
-import Debug (internalError)
+import KiCS2Debug (internalError)
 
 external_d_C_unsafePerformIO :: Curry_Prelude.C_IO a -> Cover -> ConstStore -> a
 external_d_C_unsafePerformIO io cd cs = unsafePerformIO (toIO errSupply cd cs io)

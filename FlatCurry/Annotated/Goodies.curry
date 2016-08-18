@@ -11,16 +11,15 @@
 --- part of such transformations - descend in fairly complex term structures -
 --- is abstracted away, which hopefully makes the code more clear and brief.
 ---
---- @author Sebastian Fischer, Björn Peemöller
---- @version June 2013
+--- @author Sebastian Fischer, Bjoern Peemoeller
+--- @version October 2015
+--- @category meta
 --------------------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
+module FlatCurry.Annotated.Goodies where
 
-module AnnotatedFlatCurryGoodies where
-
-import AnnotatedFlatCurry
-import qualified FlatCurry as FC
+import FlatCurry.Annotated.Types
+import qualified FlatCurry.Types as FC
 
 type Update a b = (b -> b) -> a -> a
 

@@ -1,11 +1,10 @@
 ------------------------------------------------------------------------------
---- Library for debugging operations.
+--- This library contains some useful operation for debugging programs.
 ---
---- @author Björn Peemöller
+--- @author Bjoern Peemoeller
 --- @version September 2014
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Debug
   ( trace, traceId, traceShow, traceShowId, traceIO

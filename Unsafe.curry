@@ -3,11 +3,10 @@
 --- These operations should be carefully used (e.g., for testing or debugging).
 --- These operations should not be used in application programs!
 ---
---- @author Michael Hanus, Björn Peemöller
+--- @author Michael Hanus, Bjoern Peemoeller
 --- @version September 2013
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Unsafe
   ( unsafePerformIO, trace

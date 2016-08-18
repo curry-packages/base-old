@@ -3,9 +3,8 @@
 ---
 --- @author Michael Hanus
 --- @version December 2007
+--- @category general
 ------------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions #-}
 
 module Profile(ProcessInfo(..), getProcessInfos, showMemInfo, printMemInfo,
                garbageCollectorOff, garbageCollectorOn, garbageCollect,
@@ -26,8 +25,26 @@ import List(intersperse)
 --- @cons GarbageCollections - the number of garbage collections performed
 data ProcessInfo = RunTime | ElapsedTime | Memory | Code
                  | Stack | Heap | Choices | GarbageCollections
-  deriving Eq
 
+instance Eq ProcessInfo where
+  pi1 == pi2 = case pi1 of
+    RunTime -> case pi2 of RunTime -> True
+                           _       -> False
+    ElapsedTime -> case pi2 of ElapsedTime -> True
+                               _       -> False
+    Memory -> case pi2 of Memory -> True
+                          _       -> False
+    Code -> case pi2 of Code -> True
+                        _       -> False
+    Stack -> case pi2 of Stack -> True
+                         _       -> False
+    Heap -> case pi2 of Heap -> True
+                        _       -> False
+    Choices -> case pi2 of Choices -> True
+                           _       -> False
+    GarbageCollections -> case pi2 of GarbageCollections -> True
+                                      _       -> False
+                           
 --- Returns various informations about the current state of the Curry process.
 --- Note that the returned values are very implementation dependent
 --- so that one should interpret them with care!

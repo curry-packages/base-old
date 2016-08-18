@@ -2,9 +2,10 @@
 --- The standard prelude of Curry (with type classes).
 --- All top-level functions, data types, classes and methods defined
 --- in this module are always available in any Curry program.
+---
+--- @category general
 ----------------------------------------------------------------------------
-
-{-# OPTIONS_CYMAKE -X TypeClassExtensions -Wno-incomplete-patterns -Wno-overlapping #-}
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
 
 module Prelude
   (
@@ -19,7 +20,8 @@ module Prelude
   , Num(..), Fractional(..), Real(..), Integral(..)
   -- data types
   , Bool (..) , Char (..) , Int (..) , Float (..), String , Ordering (..)
-  , Success (..), Maybe (..), Either (..), IO (..), IOError (..)
+  , Success, Maybe (..), Either (..), IO (..), IOError (..)
+  , DET
   -- functions
   , (.), id, const, curry, uncurry, flip, until, seq, ensureNotFree
   , ensureSpine, ($), ($!), ($!!), ($#), ($##), error
@@ -34,12 +36,16 @@ module Prelude
   , writeFile, appendFile
   , putStr, putStrLn, getLine, userError, ioError, showError
   , catch, doSolve, sequenceIO, sequenceIO_, mapIO
-  , mapIO_, (?), unknown
+  , mapIO_, (?), anyOf, unknown
   , when, unless, forIO, forIO_, liftIO, foldIO
   , normalForm, groundNormalForm, apply, cond, (=:<=), (=:<<=)
   , enumFrom_, enumFromTo_, enumFromThen_, enumFromThenTo_, negate_, negateFloat
+  , PEVAL
   , letrec
+  , Monad(..)
+  , Functor(..)
   ) where
+
 
 -- Lines beginning with "--++" are part of the prelude
 -- but cannot parsed by the compiler
@@ -57,14 +63,13 @@ infix  4 `elem`, `notElem`
 infixr 3 &&
 infixr 2 ||
 infixl 1 >>, >>=
-infixr 0 $, $!, $!!, $#, $##, `seq`, &&>, &, &>, ?
+infixr 0 $, $!, $!!, $#, $##, `seq`, &, &>, ?
 
 
 -- externally defined types for numbers and characters
 data Int
 data Float
 data Char
-
 
 type String = [Char]
 
@@ -190,11 +195,24 @@ solve :: Bool -> Bool
 solve True = True
 
 --- Conditional expression.
---- An expression like `(c &&> e)` is evaluated by evaluating the first
+--- An expression like `(c &> e)` is evaluated by evaluating the first
 --- argument to `True` and then evaluating `e`.
 --- The expression has no value if the condition does not evaluate to `True`.
-(&&>) :: Bool -> a -> a
-True &&> x = x
+(&>) :: Bool -> a -> a
+True &> x = x
+
+--- The equational constraint.
+--- `(e1 =:= e2)` is satisfiable if both sides `e1` and `e2` can be
+--- reduced to a unifiable data term (i.e., a term without defined
+--- function symbols).
+(=:=)   :: a -> a -> Bool
+(=:=) external
+
+--- Concurrent conjunction.
+--- An expression like `(c1 & c2)` is evaluated by evaluating
+--- the `c1` and `c2` in a concurrent manner.
+(&)     :: Bool -> Bool -> Bool
+(&) external
 
 -- used for comparison of standard types like Int, Float and Char
 eqChar :: Char -> Char -> Bool
@@ -217,7 +235,28 @@ prim_eqFloat external
 
 --- Ordering type. Useful as a result of comparison functions.
 data Ordering = LT | EQ | GT
-  deriving (Eq, Ord)
+
+instance Eq Ordering where
+  LT == LT = True
+  LT == EQ = False
+  LT == GT = False
+  EQ == LT = False
+  EQ == EQ = True
+  EQ == GT = False
+  GT == LT = False
+  GT == EG = False
+  GT == GT = True
+
+instance Ord Ordering where
+  compare LT LT = EQ
+  compare LT EQ = LT
+  compare LT GT = LT
+  compare EQ LT = GT
+  compare EQ EQ = EQ
+  compare EQ GT = LT
+  compare GT LT = GT
+  compare GT EQ = GT
+  compare GT GT = EQ
 
 -- used for comparison of standard types like Int, Float and Char
 ltEqChar :: Char -> Char -> Bool
@@ -280,9 +319,15 @@ null (_:_)      = False
 (x:xs) ++ ys    = x : xs++ys
 
 --- Computes the length of a list.
-length          :: [_] -> Int
-length []       = 0
-length (_:xs)   = 1 + length xs
+--length          :: [_] -> Int
+--length []       = 0
+--length (_:xs)   = 1 + length xs
+
+length :: [_] -> Int
+length xs = len xs 0
+  where
+    len []     n = n
+    len (_:ys) n = let np1 = n + 1 in len ys $!! np1
 
 --- List index (subscript) operator, head has index 0.
 (!!)            :: [a] -> Int -> a
@@ -521,6 +566,8 @@ prim_ord external
 --- Converts a Unicode value into a character, fails iff the value is out of bounds
 chr :: Int -> Char
 chr n | n >= 0 = prim_chr $# n
+-- chr n | n < 0 || n > 1114111 = failed
+--       | otherwise = prim_chr $# n
 
 prim_chr :: Int -> Char
 prim_chr external
@@ -552,7 +599,7 @@ prim_Int_times external
 --- Integer division. The value is the integer quotient of its arguments
 --- and always truncated towards negative infinity.
 --- Thus, the value of <code>13 `div` 5</code> is <code>2</code>,
---- and the value of <code>-15 `div` 4</code> is <code>-4</code>.
+--- and the value of <code>-15 `div` 4</code> is <code>-3</code>.
 div_   :: Int -> Int -> Int
 x `div_` y = (prim_Int_div $# y) $# x
 
@@ -612,33 +659,12 @@ negateFloat x = prim_negateFloat $# x
 prim_negateFloat :: Float -> Float
 prim_negateFloat external
 
-
--- Constraints
-data Success -- = Success
-
---- The equational constraint.
---- (e1 =:= e2) is satisfiable if both sides e1 and e2 can be
---- reduced to a unifiable data term (i.e., a term without defined
---- function symbols).
-(=:=)   :: a -> a -> Success
-(=:=) external
+-- Constraints (included for backward compatibility)
+type Success = Bool
 
 --- The always satisfiable constraint.
 success :: Success
-success external
-
---- Concurrent conjunction on constraints.
---- An expression like (c1 & c2) is evaluated by evaluating
---- the constraints c1 and c2 in a concurrent manner.
-(&)     :: Success -> Success -> Success
-(&) external
-
---- Constrained expression.
---- An expression like (c &> e) is evaluated by first solving
---- constraint c and then evaluating e.
-(&>)          :: Success -> a -> a
-c &> x | c = x
-
+success = True
 
 -- Maybe type
 
@@ -662,28 +688,28 @@ either _ g (Right x) = g x
 
 data IO _  -- conceptually: World -> (a,World)
 
---- Sequential composition of actions.
+--- Sequential composition of IO actions.
 --- @param a - An action
 --- @param fa - A function from a value into an action
 --- @return An action that first performs a (yielding result r)
 ---         and then performs (fa r)
-(>>=)             :: IO a -> (a -> IO b) -> IO b
-(>>=) external
+(>>=$)             :: IO a -> (a -> IO b) -> IO b
+(>>=$) external
 
---- The empty action that directly returns its argument.
-return            :: a -> IO a
-return external
+--- The empty IO action that directly returns its argument.
+returnIO            :: a -> IO a
+returnIO external
 
---- Sequential composition of actions.
---- @param a1 - An action
---- @param a2 - An action
---- @return An action that first performs a1 and then a2
-(>>)              :: IO _ -> IO b        -> IO b
-a >> b            = a >>= (\_ -> b)
+--- Sequential composition of IO actions.
+--- @param a1 - An IO action
+--- @param a2 - An IO action
+--- @return An IO action that first performs a1 and then a2
+(>>$) :: IO _ -> IO b -> IO b
+a >>$ b = a >>=$ (\_ -> b)
 
---- The empty action that returns nothing.
-done              :: IO ()
-done              = return ()
+--- The empty IO action that returns nothing.
+done :: IO ()
+done = return ()
 
 --- An action that puts its character argument on standard output.
 putChar           :: Char -> IO ()
@@ -797,8 +823,8 @@ print t = putStrLn (show t)
 
 --- Solves a constraint as an I/O action.
 --- Note: the constraint should be always solvable in a deterministic way
-doSolve :: Success -> IO ()
-doSolve constraint | constraint = done
+doSolve :: Bool -> IO ()
+doSolve b | b = done
 
 
 -- IO monad auxiliary functions:
@@ -874,12 +900,18 @@ when p act = if p then act else done
 x ? _ = x
 _ ? y = y
 
+-- Returns non-deterministically any element of a list.
+anyOf :: [a] -> a
+anyOf = foldr1 (?)
 
 --- Evaluates to a fresh free variable.
 unknown :: _
 unknown = let x free in x
 
 ----------------------------------------------------------------
+--- Identity type synonym used to mark deterministic operations.
+type DET a = a
+
 --- Identity function used by the partial evaluator
 --- to mark expressions to be partially evaluated.
 PEVAL   :: a -> a
@@ -901,22 +933,22 @@ apply external
 
 -- Only for internal use:
 -- Representation of conditional rules in FlatCurry.
-cond :: Success -> a -> a
+cond :: Bool -> a -> a
 cond external
 
 -- Only for internal use:
 -- letrec ones (1:ones) -> bind ones to (1:ones)
-letrec :: a -> a -> Success
+letrec :: a -> a -> Bool
 letrec external
 
 --- Non-strict equational constraint. Used to implement functional patterns.
-(=:<=) :: a -> a -> Success
+(=:<=) :: a -> a -> Bool
 (=:<=) external
 
 --- Non-strict equational constraint for linear functional patterns.
 --- Thus, it must be ensured that the first argument is always (after evalutation
 --- by narrowing) a linear pattern. Experimental.
-(=:<<=) :: a -> a -> Success
+(=:<<=) :: a -> a -> Bool
 (=:<<=) external
 
 --- internal function to implement =:<=
@@ -985,8 +1017,8 @@ instance Eq a => Eq (Maybe a) where
   Nothing == Just _  = False
   Just x  == Just y  = x == y
 
-instance Eq Success where
-  _ == _ = True
+--instance Eq Success where
+--  _ == _ = True
 
 instance (Eq a, Eq b) => Eq (Either a b) where
   Left x  == Left y  = x == y
@@ -1039,8 +1071,8 @@ instance Ord Int where
 instance Ord Float where
   f1 <= f2 = f1 `ltEqFloat` f2
 
-instance Ord Success where
-  _ <= _ = True
+--instance Ord Success where
+--  _ <= _ = True
 
 instance Ord a => Ord (Maybe a) where
   Nothing <= Nothing = True
@@ -1180,11 +1212,14 @@ showTuple ss = showChar '('
              . foldr1 (\s r -> s . showChar ',' . r) ss
              . showChar ')'
 
+appPrec :: Int
 appPrec = 10
+
+appPrec1 :: Int
 appPrec1 = 11
 
-instance Show Success where
-  showsPrec _ _ = showString "Success"
+--instance Show Success where
+--  showsPrec _ _ = showString "Success"
 
 -- -------------------------------------------------------------------------
 -- Read class and related instances and functions
@@ -1207,6 +1242,7 @@ reads = readsPrec minPrec
 -- read :: Read a => String -> a
 -- read s =
 
+minPrec :: Int
 minPrec = 0
 
 
@@ -1423,7 +1459,7 @@ instance Num Float where
 
   fromInteger x = i2f x
 
--- minimal definition: fromFloat and (recip or (/))
+-- minimal definition: fromRational and (recip or (/))
 class Num a => Fractional a where
 
   (/) :: a -> a -> a
@@ -1432,14 +1468,13 @@ class Num a => Fractional a where
   recip x = 1/x
   x / y = x * recip y
 
-  fromFloat :: Float -> a
-  -- fromRational :: Rational -> a
+  fromRational :: Float -> a -- since we have no type Rational
 
 instance Fractional Float where
   x / y = x /. y
   recip x = 1.0/x
 
-  fromFloat x = x
+  fromRational x = x
 
 class (Num a, Ord a) => Real a where
   -- toRational :: a -> Rational
@@ -1512,3 +1547,27 @@ prim_i2f :: Int -> Float
 prim_i2f external
 
 -- the end of the standard prelude
+
+class Functor f where
+  fmap :: (a -> b) -> f a -> f b
+
+instance Functor [] where
+  fmap = map
+
+class Monad m where
+  (>>=) :: m a -> (a -> m b) -> m b
+  (>>) :: m a -> m b -> m b
+  m >> k = m >>= \_ -> k
+  return :: a -> m a
+  fail :: String -> m a
+  fail s = error s
+
+instance Monad IO where
+  a1 >>= a2 = a1 >>=$ a2
+  a1 >>  a2 = a1 >>$  a2
+  return x = returnIO x
+
+instance Monad Maybe where
+  Nothing >>= _ = Nothing
+  (Just x) >>= f = f x
+  return = Just
