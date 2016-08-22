@@ -11,7 +11,7 @@
 --- ----------------------------------------------------------------------------
 module Database.CDBI.Connection
   ( -- Basis types and operations
-    SQLValue(..), SQLType(..), SQLResult, printSQLResults
+    SQLValue(..), SQLType(..), SQLResult, fromSQLResult, printSQLResults
   , DBAction, DBError (..), DBErrorKind (..), Connection (..)
     -- DBActions
   , runInTransaction, fail, ok, (>+), (>+=), executeRaw, execute, select
@@ -42,6 +42,19 @@ dbDebug = False
 --- The result of SQL-related actions. It is either a `DBError` or some value.
 type SQLResult a = Either DBError a
 
+--- Gets the value of an 'SQLResult'. If there is no result value
+--- but a database error, the error is raised.
+fromSQLResult :: SQLResult a -> a
+fromSQLResult (Left  err) = error $ "Database connection error: " ++ show err
+fromSQLResult (Right val) = val
+
+--- Print an 'SQLResult' list, i.e., print either the 'DBError'
+--- or the list of result elements.
+printSQLResults :: Show a => SQLResult [a] -> IO ()
+printSQLResults (Left  err) = putStrLn $ show err
+printSQLResults (Right res) = mapIO_ print res
+
+
 --- `DBError`s are composed of an `DBErrorKind` and a `String`
 --- describing the error more explicitly.
 data DBError = DBError DBErrorKind String
@@ -58,12 +71,6 @@ data DBErrorKind
   | NoLineError
   | LockedDBError
   | UnknownError
-
---- Print an 'SQLResult' list, i.e., print either the 'DBError'
---- or the list of result elements.
-printSQLResults :: Show a => SQLResult [a] -> IO ()
-printSQLResults (Left  err) = putStrLn $ show err
-printSQLResults (Right res) = mapIO_ print res
 
 --- Data type for SQL values, used during the communication with the database.
 data SQLValue
@@ -354,10 +361,10 @@ parseLinesUntil stop conn@(SQLiteConnection _) = next
               Left err -> fail err conn
               Right xs -> ok ([]:xs) conn
       Left err  -> readRawConnection conn >> fail err conn
-      Right val ->
-        if val == "index" then next else
-        if val == stop    then ok [[]] conn
-         else do
+      Right val
+        | val == "index" -> next
+        | val == stop -> ok [[]] conn
+        | otherwise -> do
             rest <- next
             case rest of
               Left  err         -> fail err conn

@@ -242,10 +242,8 @@ solveFD options cvars constr =
   let domconstr = all (\ (FDVar l u v) -> C.domain [v] l u) (allFDVars constr)
       tconstr = trC constr
       allvars = map getFDVal cvars
-      --labelvars = C.labeling (map trO options) allvars
-   in --(domconstr & tconstr & labelvars) &> allvars
-      -- Workaround to avoid cymake internal error:
-      (domconstr & tconstr & (C.labeling (map trO options) allvars)) &> allvars
+      labelvars = C.labeling (map trO options) allvars
+   in (domconstr & tconstr & labelvars) &> allvars
 
 --- Computes all solutions for the FD variables (second
 --- argument) w.r.t. constraint (third argument), where
