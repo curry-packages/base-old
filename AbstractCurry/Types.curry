@@ -80,6 +80,9 @@ data CTypeDecl
   | CTypeSyn QName CVisibility [CTVarIName] CTypeExpr
   | CNewType QName CVisibility [CTVarIName] CConsDecl
 
+instance Eq CTypeDecl where
+  _ == _ = error "TODO: Eq AbstractCurry.Types.CTypeDecl"
+
 --- The type for representing type variables.
 --- They are represented by (i,n) where i is a type variable index
 --- which is unique inside a function and n is a name (if possible,
@@ -97,6 +100,9 @@ data CConsDecl
 --- the label, the visibility and its corresponding type.
 data CFieldDecl = CField QName CVisibility CTypeExpr
 
+instance Eq CFieldDecl where
+  _ == _ = error "TODO: Eq AbstractCurry.Types.CFieldDecl"
+
 --- Type expression.
 --- A type expression is either a type variable, a function type,
 --- or a type constructor application.
@@ -113,6 +119,9 @@ data CTypeExpr
 
 instance Eq CTypeExpr where
   _ == _ = error "TODO: Eq AbstractCurry.Types.CTypeExpr"
+
+instance Show CTypeExpr where
+  show _ = error "TODO: Show AbstractCurry.Types.CTypeExpr"
 
 --- Labeled record fields
 type CField a = (QName, a)
@@ -172,6 +181,9 @@ data CLocalDecl
   | CLocalPat  CPattern CRhs -- local pattern declaration
   | CLocalVars [CVarIName]   -- local free variable declaration
 
+instance Eq CLocalDecl where
+  _ == _ = error "TODO: Eq AbstractCurry.Types.CLocalDecl"
+
 --- Data types for representing object variables.
 --- Object variables occurring in expressions are represented by (Var i)
 --- where i is a variable index.
@@ -214,6 +226,9 @@ data CLiteral
   | CFloatc Float
   | CCharc  Char
   | CStringc String
+
+instance Eq CLiteral where
+  _ == _ = error "TODO: Eq AbstractCurry.Types.CLiteral"
 
 --- Data type for representing statements in do expressions and
 --- list comprehensions.

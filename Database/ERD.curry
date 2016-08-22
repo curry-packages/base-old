@@ -23,6 +23,9 @@ import Time
 --- Data type to represent entity/relationship diagrams.
 data ERD = ERD ERDName [Entity] [Relationship]
 
+instance Show ERD where
+  show _ = error "TODO: Show Database.ERD.ERD"
+
 type ERDName = String -- used as the name of the generated module
 
 
@@ -40,6 +43,12 @@ type AName = String
 data Key = NoKey
          | PKey
          | Unique
+
+instance Eq Key where
+  _ == _ = error "TODO: Eq Database.ERD.Key"
+
+instance Show Key where
+  show _ = error "TODO: Show Database.ERD.Key"
 
 type Null = Bool
 

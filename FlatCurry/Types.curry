@@ -24,6 +24,9 @@ module FlatCurry.Types where
 --- contained in this module, respectively.
 data Prog = Prog String [String] [TypeDecl] [FuncDecl] [OpDecl]
 
+instance Eq Prog where
+  _ == _ = error "TODO: Eq FlatCurry.Types.Prog"
+
 --- The data type for representing qualified names.
 --- In FlatCurry all names are qualified to avoid name clashes.
 --- The first component is the module name and the second component the
@@ -67,6 +70,9 @@ type TVarIndex = Int
 data TypeDecl
   = Type    QName Visibility [TVarIndex] [ConsDecl]
   | TypeSyn QName Visibility [TVarIndex] TypeExpr
+
+instance Eq TypeDecl where
+  _ == _ = error "TODO: Eq FlatCurry.Types.TypeDecl"
 
 --- A constructor declaration consists of the name and arity of the
 --- constructor and a list of the argument types of the constructor.
@@ -169,6 +175,12 @@ instance Eq CaseType where
 ---                      missing arguments
 data CombType = FuncCall | ConsCall | FuncPartCall Arity | ConsPartCall Arity
 
+instance Eq CombType where
+  FuncCall == x = case x of { FuncCall -> True ; _ -> False }
+  ConsCall == x = case x of { ConsCall -> True ; _ -> False }
+  FuncPartCall i == x = case x of { FuncPartCall j -> i==j ; _ -> False }
+  ConsPartCall i == x = case x of { ConsPartCall j -> i==j ; _ -> False }
+
 --- Data type for representing expressions.
 ---
 --- Remarks:
@@ -224,6 +236,9 @@ data Expr
   | Case CaseType Expr [BranchExpr]
   | Typed Expr TypeExpr
 
+instance Eq Expr where
+  _ == _ = error "TODO: Eq FlatCurry.Types.Expr"
+
 --- Data type for representing branches in a case expression.
 ---
 --- Branches "(m.c x1...xn) -> e" in case expressions are represented as
@@ -237,6 +252,9 @@ data Expr
 --- for integers as branch patterns (similarly for other literals
 --- like float or character constants).
 data BranchExpr = Branch Pattern Expr
+
+instance Eq BranchExpr where
+  _ == _ = error "TODO: Eq FlatCurry.Types.BranchExpr"
 
 --- Data type for representing patterns in case expressions.
 data Pattern
