@@ -18,7 +18,7 @@ module Distribution (
   joinModuleIdentifiers, splitModuleIdentifiers, splitModuleFileName,
   inCurrySubdirModule,
 
-  getLoadPathForModule, lookupModuleSourceInLoadPath,
+  sysLibPath, getLoadPathForModule, lookupModuleSourceInLoadPath,
 
   FrontendTarget(..),
 
@@ -197,11 +197,11 @@ addCurrySubdir dir = dir </> currySubdir
 
 --- Returns the current path (list of directory names) of the
 --- system libraries.
-getSysLibPath :: IO [String]
-getSysLibPath = case curryCompiler of
-  "pakcs" -> return [installDir </> "lib"]
-  "kics"  -> return [installDir </> "src" </> "lib"]
-  "kics2" -> return [installDir </> "lib"]
+sysLibPath :: [String]
+sysLibPath = case curryCompiler of
+  "pakcs" -> [installDir </> "lib"]
+  "kics"  -> [installDir </> "src" </> "lib"]
+  "kics2" -> [installDir </> "lib"]
   _       -> error "Distribution.getSysLibPath: unknown curryCompiler"
 
 --- Returns the current path (list of directory names) that is
@@ -212,7 +212,6 @@ getSysLibPath = case curryCompiler of
 --- CURRYRPATH and the entry "libraries" of the system's rc file.
 getLoadPathForModule :: ModulePath -> IO [String]
 getLoadPathForModule modpath = do
-  syslib <- getSysLibPath
   mblib  <- getRcVar "libraries"
   let fileDir = dropFileName modpath
   if curryCompiler `elem` ["pakcs","kics","kics2"] then
@@ -222,7 +221,7 @@ getLoadPathForModule modpath = do
        return $ (fileDir : (if null currypath
                             then []
                             else splitSearchPath currypath) ++
-                           llib ++ syslib)
+                           llib ++ sysLibPath)
     else error "Distribution.getLoadPathForModule: unknown curryCompiler"
 
 --- Returns a directory name and the actual source file name for a module
