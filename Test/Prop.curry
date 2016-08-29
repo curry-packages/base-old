@@ -197,7 +197,8 @@ solutionOf pred = pred x &> x where x free
 --- The property `is x p` is satisfied if `x` has a deterministic value
 --- which satisfies `p`.
 is :: a -> (a -> Bool) -> Prop
-is x f = test x (\xs -> case xs of [y] -> f y; _ -> False)
+is x f = test x (\xs -> case xs of [y] -> f y
+                                   _   -> False)
 
 --- The property `isAlways x p` is satisfied if all values of `x` satisfy `p`.
 isAlways :: a -> (a -> Bool) -> Prop

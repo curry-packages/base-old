@@ -232,8 +232,8 @@ cookieForm t cs he = HtmlForm t (map (\(n,v)->FormCookie n v []) cs) he
 --- @param form - the form to add cookies to
 --- @return a new HTML form
 addCookies :: [(String,String)] -> HtmlForm -> HtmlForm
-addCookies cs (HtmlForm t as hs) =
-  HtmlForm t (map (\ (n,v) -> FormCookie n v []) cs++as) hs
+addCookies cs (HtmlForm t fas hs) =
+  HtmlForm t (map (\ (n,v) -> FormCookie n v []) cs ++ fas) hs
 addCookies _ (HtmlAnswer _ _) =
   error "addCookies: cannot add cookie to Html answer"
 

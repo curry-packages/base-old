@@ -54,8 +54,8 @@ unify' s (((TermVar      i), b@(TermCons _ _)):e) = elim s i b e
 unify' s ((a@(TermCons _ _), (TermVar      i)):e) = elim s i a e
 unify' s ((TermVar        i, b@(TermVar   i')):e) | i == i'   = unify' s e
                                                   | otherwise = elim s i b e
-unify' s ((a@(TermCons ac as), b@(TermCons bc bs)):e)
-  | ac == bc  = unify' s ((zip as bs) ++ e)
+unify' s ((a@(TermCons ac xs), b@(TermCons bc ys)):e)
+  | ac == bc  = unify' s ((zip xs ys) ++ e)
   | otherwise = Left (Clash a b)
 
 elim :: TermEqs f -> VarIdx -> Term f -> TermEqs f

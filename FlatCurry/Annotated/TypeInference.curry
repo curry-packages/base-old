@@ -607,10 +607,10 @@ toQName str = (fst split, snd split)
 --- @return a tuple of the lists before and after the split
 splitFirst :: [a] -> a -> ([a], [a])
 splitFirst []     _ = ([], [])
-splitFirst (a:as) c
-  | a == c    = ([], as)
-  | otherwise = (a : fst rest, snd rest)
-    where rest = splitFirst as c
+splitFirst (x:xs) c
+  | x == c    = ([], xs)
+  | otherwise = (x : fst rest, snd rest)
+    where rest = splitFirst xs c
 
 --- Formats a unification error with the given message.
 ppUnificationError :: UnificationError String -> P.Doc
@@ -679,7 +679,7 @@ normExpr (AComb t ct f es) = flip AComb ct <$> normType t
                                            <*> normSnd f <*> mapES normExpr es
 normExpr (ALet  t    ds e) = ALet <$> normType t <*> mapES normBinding ds
                                                  <*> normExpr e
-  where normBinding (v, b) = (,) <$> normSnd  v <*> normExpr b
+  where normBinding (v, b) = (\x y -> (x,y)) <$> normSnd  v <*> normExpr b
 normExpr (AOr   t     a b) = AOr <$> normType t <*> normExpr a <*> normExpr b
 normExpr (ACase t ct e bs) = flip ACase ct <$> normType t <*> normExpr e
                                            <*> mapES normBranch bs

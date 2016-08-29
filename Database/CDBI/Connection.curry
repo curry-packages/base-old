@@ -120,7 +120,7 @@ runInTransaction act conn = do
 --- @return A `DBAction` that wille execute both `DBAction`s.
 --- The result is the result of the second `DBAction`.
 (>+=) :: DBAction a -> (a -> DBAction b) -> DBAction b
-(m >+= f) conn = do
+m >+= f = \conn -> do
   v1 <- m conn
   case v1 of
     Right val -> f val conn

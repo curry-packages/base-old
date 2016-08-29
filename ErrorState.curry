@@ -30,9 +30,9 @@ failES e _ = Left e
 
 --- Bind of the `ES` monad
 (>+=) :: ES e s a -> (a -> ES e s b) -> ES e s b
-(m >+= f) s = case m s of
-  Left  e       -> Left e
-  Right (x, s') -> f x s'
+m >+= f = \s -> case m s of
+                  Left  e       -> Left e
+                  Right (x, s') -> f x s'
 
 --- Sequence operator of the `ES` monad
 (>+) :: ES e s a -> ES e s b -> ES e s b

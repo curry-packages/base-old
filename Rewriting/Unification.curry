@@ -147,8 +147,8 @@ unify' r s ((a, b) : eqs) = case (a, b) of
                                  | otherwise -> elim   r s i b eqs
   -- If both constructors have the same name, equate their arguments.
   -- Otherwise fail with a clash.
-  (RTermCons ca as, RTermCons cb bs)
-    | ca == cb  -> unify' r s (zip as bs ++ eqs)
+  (RTermCons ca xs, RTermCons cb ys)
+    | ca == cb  -> unify' r s (zip xs ys ++ eqs)
     | otherwise -> Left $ Clash (rTermToTerm r a) (rTermToTerm r b)
   -- If we encounter a Ref, simply dereference it and try again.
   _  -> unify' r s ((deref r a, deref r b) : eqs)
