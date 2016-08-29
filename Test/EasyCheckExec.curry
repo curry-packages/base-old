@@ -341,7 +341,10 @@ easyCheck5' :: (_ -> _ -> _ -> _ -> _ -> Prop) -> Result
 easyCheck5' = easyCheck' . suc (suc (suc (suc (suc id))))
 
 nth :: Int -> String
-nth n = case n of 1 -> "first"; 2 -> "second"; 3 -> "third"; _ -> show n++ "th"
+nth n = case n of 1 -> "first"
+                  2 -> "second"
+                  3 -> "third"
+                  _ -> show n++ "th"
 
 done :: Config -> String -> Int -> [[String]] -> Bool -> IO Bool
 done config mesg ntest stamps status = do
