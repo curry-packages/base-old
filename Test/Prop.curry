@@ -198,6 +198,8 @@ solutionOf pred = pred x &> x where x free
 --- which satisfies `p`.
 is :: Show a => a -> (a -> Bool) -> Prop
 is x f = test x (\xs -> case xs of [y] -> f y; _ -> False)
+is x f = test x (\xs -> case xs of [y] -> f y
+                                   _   -> False)
 
 --- The property `isAlways x p` is satisfied if all values of `x` satisfy `p`.
 isAlways :: Show a => a -> (a -> Bool) -> Prop

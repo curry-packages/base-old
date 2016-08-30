@@ -5,9 +5,11 @@
 --- a set of main functions.
 ---
 --- @author Michael Hanus, Carsten Heine
---- @version October 2015
+--- @version August 2016
 --- @category meta
 ------------------------------------------------------------------------------
+
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 
 module FlatCurry.Compact(generateCompactFlatCurryFile,computeCompactFlatCurry,
                          Option(..),RequiredSpec,requires,alwaysRequired,
@@ -52,6 +54,7 @@ instance Eq Option where
   _ == _ = error "TODO: Eq FlatCurry.Compact.Option"
 
 
+isMainOption :: Option -> Bool
 isMainOption o = case o of
                    Main _ -> True
                    _      -> False
@@ -110,10 +113,12 @@ defaultRequired =
    ("Ports","prim_choiceSPEP")       `requires` ("Ports","basicServerLoop"),
    ("Dynamic","getDynamicKnowledge") `requires` ("Dynamic","isKnownAtTime") ]
 
+prelude :: String
 prelude = "Prelude"
 
 --- Get functions that are required in a module w.r.t.
 --- a requirement specification.
+getRequiredInModule :: [RequiredSpec] -> String -> [QName]
 getRequiredInModule reqspecs mod = concatMap getImpReq reqspecs
  where
   getImpReq (AlwaysReq (mf,f)) = if mf==mod then [(mf,f)] else []
@@ -121,12 +126,14 @@ getRequiredInModule reqspecs mod = concatMap getImpReq reqspecs
 
 --- Get functions that are implicitly required by a function w.r.t.
 --- a requirement specification.
+getImplicitlyRequired :: [RequiredSpec] -> QName -> [QName]
 getImplicitlyRequired reqspecs fun = concatMap getImpReq reqspecs
  where
   getImpReq (AlwaysReq _) = []
   getImpReq (Requires f reqf) = if f==fun then [reqf] else []
 
 --- The basic types that are always required in a FlatCurry program.
+defaultRequiredTypes :: [QName]
 defaultRequiredTypes =
   [(prelude,"()"),(prelude,"Int"),(prelude,"Float"),(prelude,"Char"),
    (prelude,"Success"),(prelude,"IO")]
@@ -430,6 +437,7 @@ allTypesOfTExpr (FuncType texp1 texp2) =
 allTypesOfTExpr (TCons tcons args) =
   union [tcons] (unionMap allTypesOfTExpr args)
 
+unionMap :: (a -> [b]) -> [a] -> [b]
 unionMap f = foldr union [] . map f
 
 
@@ -514,9 +522,11 @@ processPrimitives progname prog = do
                          (stripCurrySuffix progname ++ ".prim_c2p")
   return (mergePrimSpecIntoModule pspecs prog)
 
+mergePrimSpecIntoModule :: [(QName,QName)] -> Prog -> Prog
 mergePrimSpecIntoModule trans (Prog name imps types funcs ops) =
   Prog name imps types (concatMap (mergePrimSpecIntoFunc trans) funcs) ops
 
+mergePrimSpecIntoFunc :: [(QName,QName)] -> FuncDecl -> [FuncDecl]
 mergePrimSpecIntoFunc trans (Func name ar vis tp rule) =
  let fname = lookup name trans in
  if fname==Nothing
@@ -536,6 +546,7 @@ readPrimSpec mod xmlfilename = do
            return (xml2primtrans mod xmldoc)
    else return []
 
+xml2primtrans :: String -> XmlExp -> [(QName,QName)]
 xml2primtrans mod (XElem "primitives" [] primitives) = map xml2prim primitives
  where
    xml2prim (XElem "primitive" (("name",fname):_)

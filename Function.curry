@@ -27,11 +27,11 @@ second f (x, y) = (x, f y)
 
 --- Apply two functions to the two components of a tuple.
 (***) :: (a -> b) -> (c -> d) -> (a, c) -> (b, d)
-(f *** g) (x, y) = (f x, g y)
+f *** g = \ (x, y) -> (f x, g y)
 
 --- Apply two functions to a value and returns a tuple of the results.
 (&&&) :: (a -> b) -> (a -> c) -> a -> (b, c)
-(f &&& g) x = (f x, g x)
+f &&& g = \x -> (f x, g x)
 
 --- Apply a function to both components of a tuple.
 both :: (a -> b) -> (a, a) -> (b, b)

@@ -18,19 +18,19 @@ module Distribution (
   joinModuleIdentifiers, splitModuleIdentifiers, splitModuleFileName,
   inCurrySubdirModule,
 
-  getLoadPathForModule, lookupModuleSourceInLoadPath,
+  sysLibPath, getLoadPathForModule, lookupModuleSourceInLoadPath,
 
   FrontendTarget(..),
 
   FrontendParams, defaultParams, rcParams,
   quiet, extended, overlapWarn, fullPath, htmldir, logfile, specials,
   setQuiet, setExtended, setOverlapWarn, setFullPath, setHtmlDir, setLogfile,
-  setSpecials,
+  addTarget, setSpecials,
 
   callFrontend,callFrontendWithParams
   ) where
 
-import List         (split)
+import List         (nub, split)
 import Char         (toLower)
 import Directory    (doesFileExist)
 import FileGoodies  (lookupFileInPath, getFileInPath, fileSuffix, stripSuffix)
@@ -197,11 +197,11 @@ addCurrySubdir dir = dir </> currySubdir
 
 --- Returns the current path (list of directory names) of the
 --- system libraries.
-getSysLibPath :: IO [String]
-getSysLibPath = case curryCompiler of
-  "pakcs" -> return [installDir </> "lib"]
-  "kics"  -> return [installDir </> "src" </> "lib"]
-  "kics2" -> return [installDir </> "lib"]
+sysLibPath :: [String]
+sysLibPath = case curryCompiler of
+  "pakcs" -> [installDir </> "lib"]
+  "kics"  -> [installDir </> "src" </> "lib"]
+  "kics2" -> [installDir </> "lib"]
   _       -> error "Distribution.getSysLibPath: unknown curryCompiler"
 
 --- Returns the current path (list of directory names) that is
@@ -212,7 +212,6 @@ getSysLibPath = case curryCompiler of
 --- CURRYRPATH and the entry "libraries" of the system's rc file.
 getLoadPathForModule :: ModulePath -> IO [String]
 getLoadPathForModule modpath = do
-  syslib <- getSysLibPath
   mblib  <- getRcVar "libraries"
   let fileDir = dropFileName modpath
   if curryCompiler `elem` ["pakcs","kics","kics2"] then
@@ -222,7 +221,7 @@ getLoadPathForModule modpath = do
        return $ (fileDir : (if null currypath
                             then []
                             else splitSearchPath currypath) ++
-                           llib ++ syslib)
+                           llib ++ sysLibPath)
     else error "Distribution.getLoadPathForModule: unknown curryCompiler"
 
 --- Returns a directory name and the actual source file name for a module
@@ -272,6 +271,7 @@ data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY | TOKS
 --   FullPath dirs - the complete list of directory names for loading modules
 --   HtmlDir file  - output directory (only relevant for HTML target)
 --   LogFile file  - store all output (including errors) of the front end in file
+--   Targets       - additional targets for the front end
 --   Specials      - additional special parameters (use with care!)
 data FrontendParams =
   FrontendParams Bool
@@ -280,11 +280,12 @@ data FrontendParams =
                  (Maybe [String])
                  (Maybe String)
                  (Maybe String)
+                 [FrontendTarget]
                  String
 
 --- The default parameters of the front end.
 defaultParams :: FrontendParams
-defaultParams = FrontendParams False True True Nothing Nothing Nothing ""
+defaultParams = FrontendParams False True True Nothing Nothing Nothing [] ""
 
 --- The default parameters of the front end as configured by the compiler
 --- specific resource configuration file.
@@ -297,70 +298,81 @@ rcParams = do
 
 --- Set quiet mode of the front end.
 setQuiet :: Bool -> FrontendParams -> FrontendParams
-setQuiet s (FrontendParams _ v w x y z sp) = FrontendParams s v w x y z sp
+setQuiet s (FrontendParams _ v w x y z ts sp) = FrontendParams s v w x y z ts sp
 
 --- Set extended mode of the front end.
 setExtended :: Bool -> FrontendParams -> FrontendParams
-setExtended s (FrontendParams a _ w x y z sp) = FrontendParams a s w x y z sp
+setExtended s (FrontendParams a _ w x y z ts sp) =
+  FrontendParams a s w x y z ts sp
 
 --- Set overlap warn mode of the front end.
 setOverlapWarn :: Bool -> FrontendParams -> FrontendParams
-setOverlapWarn s (FrontendParams a b _ x y z sp) = FrontendParams a b s x y z sp
+setOverlapWarn s (FrontendParams a b _ x y z ts sp) =
+  FrontendParams a b s x y z ts sp
 
 --- Set the full path of the front end.
 --- If this parameter is set, the front end searches all modules
 --- in this path (instead of using the default path).
 setFullPath ::  [String] -> FrontendParams -> FrontendParams
-setFullPath s (FrontendParams a b c _ y z sp) =
-  FrontendParams a b c (Just s) y z sp
+setFullPath s (FrontendParams a b c _ y z ts sp) =
+  FrontendParams a b c (Just s) y z ts sp
 
 --- Set the htmldir parameter of the front end.
 --- Relevant for HTML generation.
 setHtmlDir ::  String -> FrontendParams -> FrontendParams
-setHtmlDir  s (FrontendParams a b c d _ z sp) =
-  FrontendParams a b c d (Just s) z sp
+setHtmlDir  s (FrontendParams a b c d _ z ts sp) =
+  FrontendParams a b c d (Just s) z ts sp
 
 --- Set the logfile parameter of the front end.
 --- If this parameter is set, all messages produced by the front end
 --- are stored in this file.
 setLogfile ::  String -> FrontendParams -> FrontendParams
-setLogfile  s (FrontendParams a b c d e _ sp) =
-  FrontendParams a b c d e (Just s) sp
+setLogfile  s (FrontendParams a b c d e _ ts sp) =
+  FrontendParams a b c d e (Just s) ts sp
 
 --- Set additional specials parameters of the front end.
 --- These parameters are specific for the current front end and
 --- should be used with care, since their form might change in the future.
 setSpecials :: String -> FrontendParams -> FrontendParams
-setSpecials sp (FrontendParams a b c d e z _) =
-  FrontendParams a b c d e z sp
+setSpecials sp (FrontendParams a b c d e z ts _) =
+  FrontendParams a b c d e z ts sp
+
+--- Add an additional front end target.
+addTarget :: FrontendTarget -> FrontendParams -> FrontendParams
+addTarget t (FrontendParams a b c d e z ts sp) =
+  FrontendParams a b c d e z (t:ts) sp
 
 --- Returns the value of the "quiet" parameter.
 quiet :: FrontendParams -> Bool
-quiet (FrontendParams x _ _ _ _ _ _) = x
+quiet (FrontendParams x _ _ _ _ _ _ _) = x
 
 --- Returns the value of the "extended" parameter.
 extended :: FrontendParams -> Bool
-extended (FrontendParams _ x _ _ _ _ _) = x
+extended (FrontendParams _ x _ _ _ _ _ _) = x
 
 --- Returns the value of the "overlapWarn" parameter.
 overlapWarn :: FrontendParams -> Bool
-overlapWarn (FrontendParams _ _ x _ _ _ _) = x
+overlapWarn (FrontendParams _ _ x _ _ _ _ _) = x
 
 --- Returns the full path parameter of the front end.
 fullPath :: FrontendParams -> Maybe [String]
-fullPath (FrontendParams _ _ _ x _ _ _) = x
+fullPath (FrontendParams _ _ _ x _ _ _ _) = x
 
 --- Returns the htmldir parameter of the front end.
 htmldir :: FrontendParams -> Maybe String
-htmldir  (FrontendParams _ _ _ _ x _ _) = x
+htmldir  (FrontendParams _ _ _ _ x _ _ _) = x
 
 --- Returns the logfile parameter of the front end.
 logfile :: FrontendParams -> Maybe String
-logfile  (FrontendParams _ _ _ _ _ x _) = x
+logfile  (FrontendParams _ _ _ _ _ x _ _) = x
 
 --- Returns the special parameters of the front end.
 specials :: FrontendParams -> String
-specials (FrontendParams _ _ _ _ _ _ x) = x
+specials (FrontendParams _ _ _ _ _ _ _ x) = x
+
+--- Returns the special parameters of the front end.
+targets :: FrontendParams -> [FrontendTarget]
+targets (FrontendParams _ _ _ _ _ _ x _) = x
 
 --- In order to make sure that compiler generated files (like .fcy, .fint, .acy)
 --- are up to date, one can call the front end of the Curry compiler
@@ -386,9 +398,9 @@ callFrontendWithParams :: FrontendTarget -> FrontendParams -> ModulePath
 callFrontendWithParams target params modpath = do
   parsecurry <- callParseCurry
   let lf      = maybe "" id (logfile params)
-      syscall = parsecurry ++ " " ++ showFrontendTarget target
-                           ++ " " ++ showFrontendParams
-                           ++ " " ++ takeFileName modpath
+      tgts    = nub (target : targets params)
+      syscall = unwords $ [parsecurry] ++ map showFrontendTarget tgts ++
+                          [showFrontendParams, takeFileName modpath]
   retcode <- if null lf
              then system syscall
              else system (syscall ++ " > " ++ lf ++ " 2>&1")
