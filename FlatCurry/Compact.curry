@@ -437,7 +437,7 @@ allTypesOfTExpr (FuncType texp1 texp2) =
 allTypesOfTExpr (TCons tcons args) =
   union [tcons] (unionMap allTypesOfTExpr args)
 
-unionMap :: (a -> [b]) -> [a] -> [b]
+unionMap :: Eq b => (a -> [b]) -> [a] -> [b]
 unionMap f = foldr union [] . map f
 
 

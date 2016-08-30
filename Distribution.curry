@@ -260,6 +260,9 @@ lookupModuleSourceInLoadPath modpath =
 --- @cons TOKS - token stream of source program
 data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY | TOKS
 
+instance Eq FrontendTarget where
+  _ == _ = error "TODO: Eq Distribution.FrontendTarget"
+
 --- Abstract data type for representing parameters supported by the front end
 --- of the Curry compiler.
 -- The parameters are of the form
