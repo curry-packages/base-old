@@ -161,7 +161,8 @@ data CaseType = Rigid | Flex       -- type of a case expression
 -- deriving Eq
 
 instance Eq CaseType where
-  _ == _ = error "TODO: Eq FlatCurry.Types.CaseType"
+  Rigid == x = case x of { Rigid -> True ; _ -> False }
+  Flex  == x = case x of { Flex  -> True ; _ -> False }
 
 --- Data type for classifying combinations
 --- (i.e., a function/constructor applied to some arguments).
