@@ -147,7 +147,7 @@ data Color = Red | Black | DoublyBlack
 instance Eq Color where
   Red == x = case x of { Red -> True ; _ -> False }
   Black == x = case x of { Black -> True ; _ -> False }
-  DoublyBack == x = case x of { DoublyBack -> True ; _ -> False }
+  DoublyBlack == x = case x of { DoublyBlack -> True ; _ -> False }
 
 --- The structure of red-black trees.
 data Tree a = Tree Color a (Tree a) (Tree a)
