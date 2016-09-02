@@ -11,12 +11,13 @@
 ---     Curry syntax (`showCurryType`, `showCurryExpr`,...).
 ---
 --- @author Michael Hanus
---- @version October 2015
+--- @version September 2016
 --- @category meta
 ------------------------------------------------------------------------------
 
 module FlatCurry.Show(showFlatProg,showFlatType,showFlatFunc,
-                      showCurryType,showCurryExpr,showCurryId,showCurryVar)
+                      showCurryType,isClassContext,
+                      showCurryExpr,showCurryId,showCurryVar)
    where
 
 import FlatCurry.Types
@@ -139,11 +140,14 @@ showCurryType :: ((String,String) -> String) -> Bool -> TypeExpr -> String
 showCurryType tf nested texp = case texp of
   FuncType t1 t2 -> maybe (showCurryType_ tf nested texp)
                           (\ (cn,cv) -> showBracketsIf nested $
-                                cn ++ " " ++ showCurryType_ tf False cv ++
+                                cn ++ " " ++ showCurryType_ tf True cv ++
                                 " => " ++ showCurryType tf False t2)
                           (isClassContext t1)
   _              -> showCurryType_ tf nested texp
 
+--- Tests whether a FlatCurry type is a class context.
+--- If it is the case, return the class name and the type parameter
+--- of the context.
 isClassContext :: TypeExpr -> Maybe (String,TypeExpr)
 isClassContext texp = case texp of
   TCons (_,tc) [a] -> if take 6 tc == "_Dict#" then Just (drop 6 tc, a)
