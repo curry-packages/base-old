@@ -169,6 +169,12 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 .curry/kics2/Database/Curry_%.hs: Database/%.curry
 	$(COMP) -v0 -i. Database.$*
 
+.curry/kics2/Rewriting/Curry_Trace_%.hs: Rewriting/%.curry
+	$(COMP) -v0 -i. --trace-failure Rewriting.$*
+
+.curry/kics2/Rewriting/Curry_%.hs: Rewriting/%.curry
+	$(COMP) -v0 -i. Rewriting.$*
+
 .curry/kics2/Test/Curry_Trace_%.hs: Test/%.curry
 	$(COMP) -v0 -i. --trace-failure Test.$*
 
