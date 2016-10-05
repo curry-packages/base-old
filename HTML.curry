@@ -16,7 +16,7 @@
 --- is a shell script stored in *pakcshome*/bin).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
---- @version November 2014
+--- @version October 2016
 --- @category web
 ------------------------------------------------------------------------------
 
@@ -52,19 +52,20 @@ module HTML(HtmlExp(..),HtmlPage(..),PageParam(..),
             germanLatexDoc,htmlSpecialChars2tex,
             addSound,addCookies) where
 
-import System
 import Char
-import List
-import Time
+import Directory    (getHomeDirectory)
+import Distribution (installDir)
 import HtmlCgi
-import NamedSocket
-import ReadNumeric(readNat,readHex)
-import ReadShowTerm(showQTerm,readsQTerm)
---import Unsafe(showAnyQExpression) -- to show status of cgi server
-import Distribution(installDir)
 import IO
+import NamedSocket
+import List
 import Profile
-import Random(getRandomSeed,nextInt)
+import Random       (getRandomSeed, nextInt)
+import ReadNumeric  (readNat, readHex)
+import ReadShowTerm (showQTerm, readsQTerm)
+import System
+import Time
+--import Unsafe(showAnyQExpression) -- to show status of cgi server
 
 infixl 0 `addAttr`
 infixl 0 `addAttrs`
@@ -1830,7 +1831,7 @@ intFormMain :: String -> String -> String -> String ->
 intFormMain baseurl basecgi reldir cginame forever urlparam hformact = do
   pid      <- getPID
   user     <- getEnviron "USER"
-  home     <- getEnviron "HOME"
+  home     <- getHomeDirectory
   let portname = "intcgi_" ++ show pid
   socket <- listenOn portname
   let cgiprogname = if null cginame then "cgitest_"++show pid++".cgi"
