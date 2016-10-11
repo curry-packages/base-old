@@ -142,28 +142,28 @@ texdoc: $(LIB_CURRY)
 # In case of failures (which might occur due to memory problems in SWI-Prolog)
 # an empty LaTeX file is generated so that the make process does not die.
 $(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$* || touch $@
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$* || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.Annotated.$* || touch $@
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.Annotated.$* || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.$* || touch $@
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.$* || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$* || touch $@
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$* || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$* || touch $@
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$* || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Database.%.tex: Database/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.$* || touch $@
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.$* || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Rewriting.$* || touch $@
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Rewriting.$* || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Test.%.tex: Test/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Test.$* || touch $@
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Test.$* || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/%.tex: %.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $* || touch $@
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $* || (rm -f $@ && touch $@)
