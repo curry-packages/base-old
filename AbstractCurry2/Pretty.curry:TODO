@@ -45,10 +45,7 @@ data Qualification
                 --   identifiers and those of Prelude.
     | OnDemand  -- ^ Fully qualify only identifiers which need to be.
     | None      -- ^ Do not qualify any function.
--- deriving Eq
-
-instance Eq Qualification where
-  _ == _ = error "TODO: Eq AbstractCurry.Pretty.Qualification"
+ deriving Eq
 
 --- The choice for a generally preferred layout.
 --- @cons PreferNestedLayout - prefer a layout where the arguments of

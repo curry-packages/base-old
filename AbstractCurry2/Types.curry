@@ -39,10 +39,7 @@ type QName = (MName, String)
 data CVisibility
   = Public    -- exported entity
   | Private   -- private entity
--- deriving Eq
-
-instance Eq CVisibility where
-  _ == _ = error "TODO: Eq AbstractCurry.Types.CVisbility"
+  deriving Eq
   
 
 --- Data type for representing a Curry module in the intermediate form.
@@ -130,9 +127,7 @@ data CTypeDecl
   = CType    QName CVisibility [CTVarIName] [CConsDecl] [QName]
   | CTypeSyn QName CVisibility [CTVarIName] CTypeExpr
   | CNewType QName CVisibility [CTVarIName] CConsDecl [QName]
-
-instance Eq CTypeDecl where
-  _ == _ = error "TODO: Eq AbstractCurry.Types.CTypeDecl"
+  deriving Eq
 
 --- The type for representing type variables.
 --- They are represented by (i,n) where i is a type variable index
@@ -147,19 +142,19 @@ type CTVarIName = (Int, String)
 data CConsDecl
   = CCons   [CTVarIName] CContext QName CVisibility [CTypeExpr]
   | CRecord [CTVarIName] CContext QName CVisibility [CFieldDecl]
+  deriving Eq
 
 --- A record field declaration consists of the name of the
 --- the label, the visibility and its corresponding type.
 data CFieldDecl = CField QName CVisibility CTypeExpr
-
-instance Eq CFieldDecl where
-  _ == _ = error "TODO: Eq AbstractCurry.Types.CFieldDecl"
+  deriving Eq
 
 --- Class constraint.
 type CConstraint = (QName, CTypeExpr)
 
 --- Context.
 data CContext = CContext [CConstraint]
+  deriving Eq
 
 --- Type expression.
 --- A type expression is either a type variable, a function type,
@@ -173,16 +168,11 @@ data CTypeExpr
   | CFuncType CTypeExpr CTypeExpr  -- function type t1->t2
   | CTCons QName [CTypeExpr]       -- type constructor
   | CTApply CTypeExpr CTypeExpr    -- type application
--- deriving Eq
-
-instance Eq CTypeExpr where
-  _ == _ = error "TODO: Eq AbstractCurry.Types.CTypeExpr"
-
-instance Show CTypeExpr where
-  show _ = error "TODO: Show AbstractCurry.Types.CTypeExpr"
+  deriving (Eq, Show)
 
 --- Qualified type expression.
 data CQualTypeExpr = CQualType CContext CTypeExpr
+  deriving Eq
 
 --- Labeled record fields
 type CField a = (QName, a)
@@ -197,6 +187,7 @@ data CFixity
   = CInfixOp   -- non-associative infix operator
   | CInfixlOp  -- left-associative infix operator
   | CInfixrOp  -- right-associative infix operator
+  deriving Eq
 
 --- Function arity
 type Arity = Int
@@ -223,10 +214,12 @@ type Arity = Int
 data CFuncDecl
   = CFunc          QName Arity CVisibility CQualTypeExpr [CRule]
   | CmtFunc String QName Arity CVisibility CQualTypeExpr [CRule]
+  deriving Eq
 
 --- The general form of a function rule. It consists of a list of patterns
 --- (left-hand side) and the right-hand side for these patterns.
 data CRule = CRule [CPattern] CRhs
+  deriving Eq
 
 --- Right-hand-side of a 'CRule' or a `case` expression.
 --- It is either a simple unconditional right-hand side or
@@ -235,15 +228,14 @@ data CRule = CRule [CPattern] CRhs
 data CRhs
   = CSimpleRhs  CExpr            [CLocalDecl] -- expr where decls
   | CGuardedRhs [(CExpr, CExpr)] [CLocalDecl] -- | cond = expr where decls
+  deriving Eq
 
 --- Data type for representing local (let/where) declarations
 data CLocalDecl
   = CLocalFunc CFuncDecl     -- local function declaration
   | CLocalPat  CPattern CRhs -- local pattern declaration
   | CLocalVars [CVarIName]   -- local free variable declaration
-
-instance Eq CLocalDecl where
-  _ == _ = error "TODO: Eq AbstractCurry.Types.CLocalDecl"
+  deriving Eq
 
 --- Data types for representing object variables.
 --- Object variables occurring in expressions are represented by (Var i)
@@ -260,6 +252,7 @@ data CPattern
   | CPFuncComb QName [CPattern]        -- function pattern (extended Curry)
   | CPLazy     CPattern                -- lazy pattern (extended Curry)
   | CPRecord   QName [CField CPattern] -- record pattern (extended Curry)
+  deriving Eq
 
 --- Data type for representing Curry expressions.
 data CExpr
@@ -275,10 +268,7 @@ data CExpr
  | CTyped     CExpr CQualTypeExpr                    -- typed expression
  | CRecConstr QName [CField CExpr]               -- record construction (extended Curry)
  | CRecUpdate CExpr [CField CExpr]               -- record update (extended Curry)
--- deriving Eq
-
-instance Eq CExpr where
-  _ == _ = error "TODO: Eq AbstractCurry.Types.CExpr"
+ deriving Eq
 
 --- Data type for representing literals occurring in an expression.
 --- It is either an integer, a float, or a character constant.
@@ -287,9 +277,7 @@ data CLiteral
   | CFloatc Float
   | CCharc  Char
   | CStringc String
-
-instance Eq CLiteral where
-  _ == _ = error "TODO: Eq AbstractCurry.Types.CLiteral"
+ deriving Eq
 
 --- Data type for representing statements in do expressions and
 --- list comprehensions.
@@ -297,11 +285,13 @@ data CStatement
   = CSExpr CExpr         -- an expression (I/O action or boolean)
   | CSPat CPattern CExpr -- a pattern definition
   | CSLet [CLocalDecl]   -- a local let declaration
+  deriving Eq
 
 --- Type of case expressions
 data CCaseType
   = CRigid -- rigid case expression
   | CFlex  -- flexible case expression
+  deriving Eq
 
 ---------------------------------------------------------------------------
 --- The name of the standard prelude.
