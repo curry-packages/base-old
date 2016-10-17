@@ -343,10 +343,7 @@ convertPrecision = maybe 1 id
 
 --- FILLING A STRING WITH APPROPRIATE ALIGNMENT
 data Alignment = LeftAlign | RightAlign
-
-instance Eq Alignment where
-  LeftAlign == x = case x of { LeftAlign -> True ; _ -> False }
-  RightAlign == x = case x of { RightAlign -> True ; _ -> False }
+ deriving Eq
 
 fillWithCharsLeftAlign :: Int -> Char -> String -> String
 fillWithCharsLeftAlign  = fillWithChars LeftAlign

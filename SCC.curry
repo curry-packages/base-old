@@ -26,11 +26,7 @@ module SCC (scc) where
 import SetRBT (emptySetRBT, elemRBT, insertRBT)
 
 data Node a b = Node Int [b] [b] a
--- deriving Eq
-
-instance (Eq a, Eq b) => Eq (Node a b) where
-  Node k1 bs1 fs1 n1 == Node k2 bs2 fs2 n2 =
-    k1==k2 && bs1==bs2 && fs1==fs2 && n1==n2
+ deriving Eq
 
 cmpNode :: Node a b -> Node a b -> Bool
 cmpNode n1 n2 = key n1 < key n2

@@ -39,7 +39,7 @@ type QName = (MName, String)
 data CVisibility
   = Public    -- exported entity
   | Private   -- private entity
-  deriving Eq
+  deriving (Eq, Show)
   
 
 --- Data type for representing a Curry module in the intermediate form.
@@ -58,9 +58,11 @@ data CVisibility
 ---       opdecls: Operator precedence declarations
 data CurryProg = CurryProg MName [MName] (Maybe CDefaultDecl) [CClassDecl]
                            [CInstanceDecl] [CTypeDecl] [CFuncDecl] [COpDecl]
+  deriving (Eq, Show)
 
 --- Data type for representing default declarations.
 data CDefaultDecl = CDefaultDecl [CTypeExpr]
+  deriving (Eq, Show)
 
 --- Data type for representing classes declarations.
 ---
@@ -84,6 +86,7 @@ data CDefaultDecl = CDefaultDecl [CTypeExpr]
 ---       Regardless of whether typed or untyped abstract curry is generated,
 ---       the methods' declarations are always typed.
 data CClassDecl = CClass QName CVisibility CContext CTVarIName [CFuncDecl]
+  deriving (Eq, Show)
 
 --- Data type for representing instance declarations.
 ---
@@ -100,6 +103,7 @@ data CClassDecl = CClass QName CVisibility CContext CTVarIName [CFuncDecl]
 ---       The methods' types use the instance's type variable indices
 ---       (if typed abstract curry is generated).
 data CInstanceDecl = CInstance QName CContext CTypeExpr [CFuncDecl]
+  deriving (Eq, Show)
 
 --- Data type for representing definitions of algebraic data types
 --- and type synonyms.
@@ -127,7 +131,7 @@ data CTypeDecl
   = CType    QName CVisibility [CTVarIName] [CConsDecl] [QName]
   | CTypeSyn QName CVisibility [CTVarIName] CTypeExpr
   | CNewType QName CVisibility [CTVarIName] CConsDecl [QName]
-  deriving Eq
+  deriving (Eq, Show)
 
 --- The type for representing type variables.
 --- They are represented by (i,n) where i is a type variable index
@@ -142,19 +146,19 @@ type CTVarIName = (Int, String)
 data CConsDecl
   = CCons   [CTVarIName] CContext QName CVisibility [CTypeExpr]
   | CRecord [CTVarIName] CContext QName CVisibility [CFieldDecl]
-  deriving Eq
+  deriving (Eq, Show)
 
 --- A record field declaration consists of the name of the
 --- the label, the visibility and its corresponding type.
 data CFieldDecl = CField QName CVisibility CTypeExpr
-  deriving Eq
+  deriving (Eq, Show)
 
 --- Class constraint.
 type CConstraint = (QName, CTypeExpr)
 
 --- Context.
 data CContext = CContext [CConstraint]
-  deriving Eq
+  deriving (Eq, Show)
 
 --- Type expression.
 --- A type expression is either a type variable, a function type,
@@ -172,7 +176,7 @@ data CTypeExpr
 
 --- Qualified type expression.
 data CQualTypeExpr = CQualType CContext CTypeExpr
-  deriving Eq
+  deriving (Eq, Show)
 
 --- Labeled record fields
 type CField a = (QName, a)
@@ -181,13 +185,14 @@ type CField a = (QName, a)
 --- An operator declaration "fix p n" in Curry corresponds to the
 --- AbstractCurry term (COp n fix p).
 data COpDecl = COp QName CFixity Int
+  deriving (Eq, Show)
 
 --- Data type for operator associativity
 data CFixity
   = CInfixOp   -- non-associative infix operator
   | CInfixlOp  -- left-associative infix operator
   | CInfixrOp  -- right-associative infix operator
-  deriving Eq
+  deriving (Eq, Show)
 
 --- Function arity
 type Arity = Int
@@ -214,12 +219,12 @@ type Arity = Int
 data CFuncDecl
   = CFunc          QName Arity CVisibility CQualTypeExpr [CRule]
   | CmtFunc String QName Arity CVisibility CQualTypeExpr [CRule]
-  deriving Eq
+  deriving (Eq, Show)
 
 --- The general form of a function rule. It consists of a list of patterns
 --- (left-hand side) and the right-hand side for these patterns.
 data CRule = CRule [CPattern] CRhs
-  deriving Eq
+  deriving (Eq, Show)
 
 --- Right-hand-side of a 'CRule' or a `case` expression.
 --- It is either a simple unconditional right-hand side or
@@ -228,14 +233,14 @@ data CRule = CRule [CPattern] CRhs
 data CRhs
   = CSimpleRhs  CExpr            [CLocalDecl] -- expr where decls
   | CGuardedRhs [(CExpr, CExpr)] [CLocalDecl] -- | cond = expr where decls
-  deriving Eq
+  deriving (Eq, Show)
 
 --- Data type for representing local (let/where) declarations
 data CLocalDecl
   = CLocalFunc CFuncDecl     -- local function declaration
   | CLocalPat  CPattern CRhs -- local pattern declaration
   | CLocalVars [CVarIName]   -- local free variable declaration
-  deriving Eq
+  deriving (Eq, Show)
 
 --- Data types for representing object variables.
 --- Object variables occurring in expressions are represented by (Var i)
@@ -252,7 +257,7 @@ data CPattern
   | CPFuncComb QName [CPattern]        -- function pattern (extended Curry)
   | CPLazy     CPattern                -- lazy pattern (extended Curry)
   | CPRecord   QName [CField CPattern] -- record pattern (extended Curry)
-  deriving Eq
+  deriving (Eq, Show)
 
 --- Data type for representing Curry expressions.
 data CExpr
@@ -268,7 +273,7 @@ data CExpr
  | CTyped     CExpr CQualTypeExpr                    -- typed expression
  | CRecConstr QName [CField CExpr]               -- record construction (extended Curry)
  | CRecUpdate CExpr [CField CExpr]               -- record update (extended Curry)
- deriving Eq
+ deriving (Eq, Show)
 
 --- Data type for representing literals occurring in an expression.
 --- It is either an integer, a float, or a character constant.
@@ -277,7 +282,7 @@ data CLiteral
   | CFloatc Float
   | CCharc  Char
   | CStringc String
- deriving Eq
+ deriving (Eq, Show)
 
 --- Data type for representing statements in do expressions and
 --- list comprehensions.
@@ -285,13 +290,13 @@ data CStatement
   = CSExpr CExpr         -- an expression (I/O action or boolean)
   | CSPat CPattern CExpr -- a pattern definition
   | CSLet [CLocalDecl]   -- a local let declaration
-  deriving Eq
+  deriving (Eq, Show)
 
 --- Type of case expressions
 data CCaseType
   = CRigid -- rigid case expression
   | CFlex  -- flexible case expression
-  deriving Eq
+  deriving (Eq, Show)
 
 ---------------------------------------------------------------------------
 --- The name of the standard prelude.

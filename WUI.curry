@@ -862,11 +862,7 @@ wEither (WuiSpec rendera showa reada) (WuiSpec renderb showb readb) =
 --- A simple tree structure to demonstrate the construction of WUIs for tree
 --- types.
 data WTree a = WLeaf a | WNode [WTree a]
--- deriving Eq
-
-instance Eq a => Eq (WTree a) where
-  WLeaf x == t = case t of { WLeaf y -> x==y ; _ -> False }
-  WNode x == t = case t of { WNode y -> x==y ; _ -> False }
+ deriving Eq
 
 
 --- WUI for tree types.

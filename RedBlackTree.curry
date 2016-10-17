@@ -143,11 +143,7 @@ rbt (RedBlackTree _ _ _ t) = t
 
 --- The colors of a node in a red-black tree.
 data Color = Red | Black | DoublyBlack
-
-instance Eq Color where
-  Red == x = case x of { Red -> True ; _ -> False }
-  Black == x = case x of { Black -> True ; _ -> False }
-  DoublyBlack == x = case x of { DoublyBlack -> True ; _ -> False }
+ deriving Eq
 
 --- The structure of red-black trees.
 data Tree a = Tree Color a (Tree a) (Tree a)

@@ -13,13 +13,7 @@ module Nat
 
 --- Natural numbers defined in Peano representation.
 data Nat = Z | S Nat
--- deriving Eq
-
-instance Eq Nat where
-  Z   == Z   = True
-  Z   == S _ = False
-  S _ == Z   = False
-  S m == S n = m == n
+ deriving Eq
 
 --- Transforms a natural number into a standard integer.
 fromNat :: Nat -> Int

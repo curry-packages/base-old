@@ -168,15 +168,7 @@ data Event = DefaultEvent
            | MouseButton3
            | KeyPress
            | Return
--- deriving Eq
-
-instance Eq Event where
-  DefaultEvent == x = case x of { DefaultEvent -> True ; _ -> False }
-  MouseButton1 == x = case x of { MouseButton1 -> True ; _ -> False }
-  MouseButton2 == x = case x of { MouseButton2 -> True ; _ -> False }
-  MouseButton3 == x = case x of { MouseButton3 -> True ; _ -> False }
-  KeyPress == x = case x of { KeyPress -> True ; _ -> False }
-  Return == x = case x of { Return -> True ; _ -> False }
+ deriving Eq
 
 -- translate event into corresponding Tcl string (except for DefaultEvent)
 -- with a leading blank:
