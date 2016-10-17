@@ -53,9 +53,9 @@ instance Generable (C_ValueSequence a) where
   generate = error "SearchTree: ValueSequence: generate"
 
 instance NormalForm (C_ValueSequence a) where
- ($!!)    = error "SearchTree: ValueSequence: ($!!)"
- ($##)    = error "SearchTree: ValueSequence: ($##)"
- searchNF = error "SearchTree: ValueSequence: searchNF"
+ ($!!)          = error "SearchTree: ValueSequence: ($!!)"
+ ($##)          = error "SearchTree: ValueSequence: ($##)"
+ searchNF _ _ _ = error "SearchTree: ValueSequence: searchNF"
 
 external_d_C_emptyVS :: Cover -> ConstStore -> C_ValueSequence a
 external_d_C_emptyVS _ _ = EmptyVS

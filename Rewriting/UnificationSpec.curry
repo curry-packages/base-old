@@ -1,114 +1,120 @@
 ------------------------------------------------------------------------------
 --- Library for specifying the unification on first-order terms.
 ---
---- This library implements a general unification algorithm.
---- Because the algorithm is easy to understand, but rather slow,
---- it serves as a specification for more elaborate implementations.
+--- This library implements a general unification algorithm. Because the
+--- algorithm is easy to understand, but rather slow, it serves as a
+--- specification for more elaborate implementations.
 ---
---- @author  Michael Hanus, Jonas Oberschweiber, Bjoern Peemoeller
---- @version November 2015
+--- @author Michael Hanus, Jan-Hendrik Matthes, Jonas Oberschweiber,
+---         Bjoern Peemoeller
+--- @version August 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
-module Rewriting.UnificationSpec ( UnificationError (..), unify ) where
+module Rewriting.UnificationSpec
+  ( UnificationError (..)
+  , showUnificationError, unify, unifiable
+  ) where
 
-import FiniteMap
+import Either (isRight)
+import Function (both)
+import Rewriting.Substitution (Subst, emptySubst, extendSubst)
 import Rewriting.Term
-import Rewriting.Substitution
 
 -- ---------------------------------------------------------------------------
--- unification
+-- Representation of unification errors
 -- ---------------------------------------------------------------------------
 
---- The data type for the different kinds of errors that can occur during
---- unification.
+--- Representation of a unification error, parameterized over the kind of
+--- function symbols, e.g., strings.
 ---
---- @cons Clash t1 t2    - Two term constructors with different names
----                        are supposed to be equal.
---- @cons OccurCheck v t - A term is supposed to be equal to a term
----                        in which it occurs as a subterm.
-data UnificationError f = Clash (Term f) (Term f)
-                        | OccurCheck VarIdx (Term f)
+--- @cons Clash t1 t2    - The constructor term `t1` is supposed to be equal
+---                        to the constructor term `t2` but has a different
+---                        constructor.
+--- @cons OccurCheck v t - The variable `v` is supposed to be equal to the
+---                        term `t` in which it occurs as a subterm.
+data UnificationError f = Clash (Term f) (Term f) | OccurCheck VarIdx (Term f)
 
---- Unifies the given equations.
----
---- @param eqs - the equations to unify
---- @return either a UnificationError or a substitution
+-- ---------------------------------------------------------------------------
+-- Pretty-printing of unification errors
+-- ---------------------------------------------------------------------------
+
+--- Transforms a unification error into a string representation.
+showUnificationError :: (f -> String) -> UnificationError f -> String
+showUnificationError s (Clash t1 t2)    = "Clash: " ++ (showTerm s t1)
+                                            ++ " is not equal to "
+                                            ++ (showTerm s t2) ++ "."
+showUnificationError s (OccurCheck v t) = "OccurCheck: " ++ (showVarIdx v)
+                                            ++ " occurs in " ++ (showTerm s t)
+                                            ++ "."
+
+-- ---------------------------------------------------------------------------
+-- Functions for unification on first-order terms
+-- ---------------------------------------------------------------------------
+
+--- Unifies a list of term equations. Returns either a unification error or a
+--- substitution.
 unify :: (Eq f, Show f) => TermEqs f -> Either (UnificationError f) (Subst f)
-unify ts = either Left (Right . eqsToSubst) (unify' [] ts)
+unify = (either Left (Right . eqsToSubst)) . (unify' [])
+  where
+    eqsToSubst []              = emptySubst
+    eqsToSubst (eq@(l, r):eqs)
+      = case l of
+          (TermVar v)    -> extendSubst (eqsToSubst eqs) v r
+          (TermCons _ _) ->
+            case r of
+              (TermVar v)    -> extendSubst (eqsToSubst eqs) v l
+              (TermCons _ _) -> error ("eqsToSubst: " ++ (show eq))
 
-eqsToSubst :: Show f => TermEqs f -> Subst f
-eqsToSubst []            = emptySubst
-eqsToSubst ((a, b) : ts) = case a of
-  TermVar n      -> extendSubst (eqsToSubst ts) n b
-  TermCons _ _   -> case b of
-    TermVar n    -> extendSubst (eqsToSubst ts) n a
-    _            -> error $ "eqsToSubst: " ++ show (a, b)
+--- Checks whether a list of term equations can be unified.
+unifiable :: (Eq f, Show f) => TermEqs f -> Bool
+unifiable = isRight . unify
 
---- Auxiliary unification operation.
---- @param sub - the current substitution represented by term equations
---- @param eqs - the equations to unify
-unify' :: Eq f => TermEqs f -> TermEqs f -> Either (UnificationError f) (TermEqs f)
-unify' s [] = Right s
-unify' s (((TermVar      i), b@(TermCons _ _)):e) = elim s i b e
-unify' s ((a@(TermCons _ _), (TermVar      i)):e) = elim s i a e
-unify' s ((TermVar        i, b@(TermVar   i')):e) | i == i'   = unify' s e
-                                                  | otherwise = elim s i b e
-unify' s ((a@(TermCons ac xs), b@(TermCons bc ys)):e)
-  | ac == bc  = unify' s ((zip xs ys) ++ e)
-  | otherwise = Left (Clash a b)
+--- Unifies a list of term equations. The first argument specifies the current
+--- substitution represented by term equations. Returns either a unification
+--- error or a substitution represented by term equations.
+unify' :: Eq f => TermEqs f -> TermEqs f
+       -> Either (UnificationError f) (TermEqs f)
+unify' sub []                                               = Right sub
+unify' sub ((TermVar v, r@(TermCons _ _)):eqs)              = elim sub v r eqs
+unify' sub ((l@(TermCons _ _), TermVar v):eqs)              = elim sub v l eqs
+unify' sub ((TermVar v, r@(TermVar v')):eqs) | v == v'      = unify' sub eqs
+                                             | otherwise    = elim sub v r eqs
+unify' sub ((l@(TermCons c1 ts1), r@(TermCons c2 ts2)):eqs)
+  | c1 == c2  = unify' sub ((zip ts1 ts2) ++ eqs)
+  | otherwise = Left (Clash l r)
 
+--- Substitutes a variable by a term inside a substitution and a list of term
+--- equations that have yet to be unified. Also adds a mapping from that
+--- variable to that term to the substitution.
 elim :: Eq f => TermEqs f -> VarIdx -> Term f -> TermEqs f
      -> Either (UnificationError f) (TermEqs f)
-elim s i t e
-  | dependsOn (TermVar i) t = Left (OccurCheck i t)
-  | otherwise               = unify' s' (substitute' i t e)
-    where s' = (TermVar i, t) : map (\(x, y) -> (x, termSubstitute' i t y)) s
+elim sub v t eqs | dependsOn (TermVar v) t = Left (OccurCheck v t)
+                 | otherwise               = unify' sub' (substitute v t eqs)
+  where
+    sub' = (TermVar v, t):(map (\(l, r) -> (l, termSubstitute v t r)) sub)
 
---- Substitutes a variable with the given index by a term inside another term.
----
---- @param i - the index of the variable to substitute
---- @param t - the term to substitute
---- @param subj - the term to substitute in
---- @return the resulting term
-termSubstitute' :: VarIdx -> Term f -> Term f -> Term f
-termSubstitute' b s v@(TermVar n)
-    | n == b    = s
-    | otherwise = v
-termSubstitute' b s (TermCons t vars) = TermCons t (termsSubstitute' b s vars)
+--- Substitutes a variable by a term inside another term.
+termSubstitute :: VarIdx -> Term f -> Term f -> Term f
+termSubstitute v t x@(TermVar v') | v == v'   = t
+                                  | otherwise = x
+termSubstitute v t (TermCons c ts) = TermCons c (termsSubstitute v t ts)
 
---- Substitute a variable with the given index by a term inside a list of terms.
----
---- @param i - the index of the variable to substitute
---- @param t - the term to substitute
---- @param subjs - the terms to substitute in
---- @return the resulting terms
-termsSubstitute' :: VarIdx -> Term f -> [Term f] -> [Term f]
-termsSubstitute' i t ts = map (termSubstitute' i t) ts
+--- Substitutes a variable by a term inside a list of terms.
+termsSubstitute :: VarIdx -> Term f -> [Term f] -> [Term f]
+termsSubstitute v t = map (termSubstitute v t)
 
---- Substitute a variable with the given index by a term inside a list of equations.
----
---- @param i - the index of the variable to substitute
---- @param t - the term to substitute
---- @param eqs - the equations to substitute in
---- @return the resulting equations
-substitute' :: VarIdx -> Term f -> TermEqs f -> TermEqs f
-substitute' i t ts = map (substituteSingle' i t) ts
+--- Substitutes a variable by a term inside a list of term equations.
+substitute :: VarIdx -> Term f -> TermEqs f -> TermEqs f
+substitute v t = map (substituteSingle v t)
 
---- Substitute a variable with the given index by a term inside a single equation.
----
---- @param i - the index of the variable to substitute
---- @param t - the term to substitute
---- @param eq - the equation to substitute in
---- @return the resulting equation
-substituteSingle' :: VarIdx -> Term f -> TermEq f -> TermEq f
-substituteSingle' i t (a, b) = (termSubstitute' i t a, termSubstitute' i t b)
+--- Substitutes a variable by a term inside a term equation.
+substituteSingle :: VarIdx -> Term f -> TermEq f -> TermEq f
+substituteSingle v t = both (termSubstitute v t)
 
---- Checks wether the first term occurs as a subterm of the second term.
---- @param a - the term to search for
---- @param b - the term to search in
---- @return whether the first term is found in the second term
+--- Checks whether the first term occurs as a subterm of the second term.
 dependsOn :: Eq f => Term f -> Term f -> Bool
-dependsOn a b = and [(not (a == b)), dependsOn' a b]
- where dependsOn' c v@(TermVar _) = c == v
-       dependsOn' c (TermCons _ vars) = any id (map (dependsOn' c) vars)
+dependsOn l r = and [not (l == r), dependsOn' l r]
+  where
+    dependsOn' t v@(TermVar _)   = t == v
+    dependsOn' t (TermCons _ ts) = any id (map (dependsOn' t) ts)

@@ -7,7 +7,7 @@
 --- @category meta
 ------------------------------------------------------------------------
 
-module AbstractCurry.Select
+module AbstractCurry2.Select
   ( progName, imports, functions, constructors, types, publicFuncNames
   , publicConsNames, publicTypeNames
 
@@ -26,7 +26,7 @@ module AbstractCurry.Select
   , isPrelude
   ) where
 
-import AbstractCurry.Types
+import AbstractCurry2.Types
 import List(union)
 
 ------------------------------------------------------------------------
@@ -71,21 +71,21 @@ publicTypeNames = map typeName . filter ((== Public) . typeVis) . types
 
 --- Returns the name of a given type declaration
 typeName :: CTypeDecl -> QName
-typeName (CType    n _ _ _) = n
-typeName (CTypeSyn n _ _ _) = n
-typeName (CNewType n _ _ _) = n
+typeName (CType    n _ _ _ _) = n
+typeName (CTypeSyn n _ _ _  ) = n
+typeName (CNewType n _ _ _ _) = n
 
 --- Returns the visibility of a given type declaration
 typeVis :: CTypeDecl -> CVisibility
-typeVis (CType    _ vis _ _) = vis
-typeVis (CTypeSyn _ vis _ _) = vis
-typeVis (CNewType _ vis _ _) = vis
+typeVis (CType    _ vis _ _ _) = vis
+typeVis (CTypeSyn _ vis _ _  ) = vis
+typeVis (CNewType _ vis _ _ _) = vis
 
 --- Returns the constructors of a given type declaration.
 typeCons :: CTypeDecl -> [CConsDecl]
-typeCons (CType    _ _ _ cs) = cs
-typeCons (CTypeSyn _ _ _ _ ) = []
-typeCons (CNewType _ _ _ c ) = [c]
+typeCons (CType    _ _ _ cs _) = cs
+typeCons (CTypeSyn _ _ _ _   ) = []
+typeCons (CNewType _ _ _ c  _) = [c]
 
 --- Returns the name of a given constructor declaration.
 consName :: CConsDecl -> QName

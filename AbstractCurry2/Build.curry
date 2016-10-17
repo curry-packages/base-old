@@ -6,9 +6,9 @@
 --- @category meta
 ------------------------------------------------------------------------
 
-module AbstractCurry.Build where
+module AbstractCurry2.Build where
 
-import AbstractCurry.Types
+import AbstractCurry2.Types
 
 infixr 9 ~>
 

@@ -9,12 +9,12 @@
 --- Assumption: an abstract Curry program is stored in file with
 --- extension .acy
 ---
---- @author Michael Hanus, Bjoern Peemoeller
---- @version September 2015
+--- @author Michael Hanus, Bjoern Peemoeller, Finn Teegen
+--- @version October 2016
 --- @category meta
 -- ---------------------------------------------------------------------------
 
-module AbstractCurry.Types where
+module AbstractCurry2.Types where
 
 -- ---------------------------------------------------------------------------
 -- Definition of data types for representing abstract Curry programs:
@@ -110,10 +110,12 @@ data CInstanceDecl = CInstance QName CContext CTypeExpr [CFuncDecl]
 --- A data type definition of the form
 ---
 ---     data t x1...xn = ...| forall y1...ym . cx => c t1....tkc |...
+---       deriving (d1,...,dp)
 ---
 --- is represented by the Curry term
 ---
----     (CType t v [i1,...,in] [...(CCons [l1,...,lm] cx c kc v [t1,...,tkc])...])
+---     (CType t v [i1,...,in]
+---            [...(CCons [l1,...,lm] cx c kc v [t1,...,tkc])...] [d1,...,dp]))
 ---
 --- where each `ij` is the index of the type variable `xj`, each 'lj' is the
 --- index of the existentially quantified type variable 'yj' and 'v' is the
@@ -125,9 +127,9 @@ data CInstanceDecl = CInstance QName CContext CTypeExpr [CFuncDecl]
 --- Thus, a data type declaration consists of the name of the data type,
 --- a list of type parameters and a list of constructor declarations.
 data CTypeDecl
-  = CType    QName CVisibility [CTVarIName] [CConsDecl]
+  = CType    QName CVisibility [CTVarIName] [CConsDecl] [QName]
   | CTypeSyn QName CVisibility [CTVarIName] CTypeExpr
-  | CNewType QName CVisibility [CTVarIName] CConsDecl
+  | CNewType QName CVisibility [CTVarIName] CConsDecl [QName]
 
 instance Eq CTypeDecl where
   _ == _ = error "TODO: Eq AbstractCurry.Types.CTypeDecl"

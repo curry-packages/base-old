@@ -32,7 +32,7 @@ module Distribution (
 
 import List         (nub, split)
 import Char         (toLower)
-import Directory    (doesFileExist)
+import Directory    (doesFileExist, getHomeDirectory)
 import FileGoodies  (lookupFileInPath, getFileInPath, fileSuffix, stripSuffix)
 import FilePath     ( FilePath, (</>), (<.>), addTrailingPathSeparator
                     , dropFileName, joinPath, normalise, splitDirectories
@@ -90,7 +90,7 @@ installDir external
 --- current distribution. This file must have the usual format of
 --- property files (see description in module PropertyFile).
 rcFileName :: IO String
-rcFileName = getEnviron "HOME" >>= return . (</> rcFile)
+rcFileName = getHomeDirectory >>= return . (</> rcFile)
   where rcFile = '.' : curryCompiler ++ "rc"
 
 --- Returns the current configuration parameters of the distribution.

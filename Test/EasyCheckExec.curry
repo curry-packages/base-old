@@ -31,6 +31,7 @@ module Test.EasyCheckExec (
 
 import AllSolutions ( getAllValues )
 import Distribution ( curryCompiler )
+import IO           ( hFlush, stdout )
 import List         ( group, intersperse, nub )
 import Sort         ( leqList, leqString, sortBy )
 import Test.EasyCheck
@@ -300,6 +301,7 @@ tests config msg (t:ts) ntest nfail stamps
   = done config (msg ++ ":\n Arguments exhausted after") ntest stamps False
   | otherwise = do
       putStr (every config ntest (args t))
+      hFlush stdout
       case result t of
         Undef -> tests config msg ts ntest (nfail+1) stamps
         Ok    -> tests config msg ts (ntest+1) nfail (stamp t : stamps)

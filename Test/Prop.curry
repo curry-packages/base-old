@@ -241,11 +241,11 @@ _ # _ =  propUndefinedError "#"
 
 --- The property `x #< n` is satisfied if `x` has less than `n` values.
 (#<) :: (Eq a, Show a) => a -> Int -> Prop
-x #< n = propUndefinedError "#<"
+_ #< _ = propUndefinedError "#<"
 
 --- The property `x #> n` is satisfied if `x` has more than `n` values.
 (#>) :: (Eq a, Show a) => a -> Int -> Prop
-x #> n = propUndefinedError "#>"
+_ #> _ = propUndefinedError "#>"
 
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satisfy property `p y`.

@@ -11,10 +11,10 @@
 --- @category meta
 -- ---------------------------------------------------------------------------
 
-module AbstractCurry.Files where
+module AbstractCurry2.Files where
 
-import AbstractCurry.Select (imports)
-import AbstractCurry.Types
+import AbstractCurry2.Select (imports)
+import AbstractCurry2.Types
 import Char                 (isSpace)
 import Directory            (doesFileExist, getModificationTime)
 import Distribution
@@ -97,10 +97,11 @@ tryParse fn = do
       if line1 /= "{- "++version++" -}"
         then cancel $ "Could not parse AbstractCurry file '" ++ fn
                    ++ "': incompatible versions"
-        else case readsUnqualifiedTerm ["AbstractCurry.Types","Prelude"] lines of
-          [(p,tl)]  | all isSpace tl -> return (Right p)
-          _ -> cancel $ "Could not parse AbstractCurry file '" ++ fn
-                        ++ "': no parse"
+        else
+          case readsUnqualifiedTerm ["AbstractCurry2.Types","Prelude"] lines of
+            [(p,tl)]  | all isSpace tl -> return (Right p)
+            _ -> cancel $ "Could not parse AbstractCurry file '" ++ fn
+                          ++ "': no parse"
  where cancel str = return (Left str)
 
 --- I/O action which parses a Curry program and returns the corresponding
@@ -184,7 +185,7 @@ readAbstractCurryFile filename = do
      filecontents <- readFile fname
      let (line1,lines) = break (=='\n') filecontents
      if line1 == "{- "++version++" -}"
-      then return (readUnqualifiedTerm ["AbstractCurry.Types","Prelude"] lines)
+      then return (readUnqualifiedTerm ["AbstractCurry2.Types","Prelude"] lines)
       else error $ "AbstractCurry: incompatible file found: "++fname
 
 --- Tries to read an AbstractCurry file and returns
@@ -208,12 +209,13 @@ tryReadACYFile fn = do
     let (line1,lines) = break (=='\n') src
     if line1 /= "{- "++version++" -}"
       then error $ "AbstractCurry: incompatible file found: "++fn
-      else case readsUnqualifiedTerm ["AbstractCurry.Types","Prelude"] lines of
-        []       -> cancel
-        [(p,tl)] -> if all isSpace tl
-                      then return $ Just p
-                      else cancel
-        _        -> cancel
+      else
+        case readsUnqualifiedTerm ["AbstractCurry2.Types","Prelude"] lines of
+          []       -> cancel
+          [(p,tl)] -> if all isSpace tl
+                        then return $ Just p
+                        else cancel
+          _        -> cancel
   cancel = return Nothing
 
 --- Writes an AbstractCurry program into a file in ".acy" format.

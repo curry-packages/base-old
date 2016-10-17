@@ -12,10 +12,10 @@
 --- @category meta
 ----------------------------------------------------------------------------
 
-module AbstractCurry.Transform where
+module AbstractCurry2.Transform where
 
-import AbstractCurry.Types
-import AbstractCurry.Select
+import AbstractCurry2.Types
+import AbstractCurry2.Select
 import List (nub, union)
 
 --- This type synonym is useful to denote the type of an update,
@@ -52,13 +52,16 @@ updCProgName f = updCProg f id id id id
 -- CTypeDecl
 
 --- Transforms a type declaration.
-trCTypeDecl :: (QName -> CVisibility -> [CTVarIName] -> [CConsDecl] -> a)
-            -> (QName -> CVisibility -> [CTVarIName] -> CTypeExpr  -> a)
-            -> (QName -> CVisibility -> [CTVarIName] -> CConsDecl  -> a)
-            -> CTypeDecl -> a
-trCTypeDecl typ _ _   (CType name vis params cs)     = typ   name vis params cs
+trCTypeDecl ::
+    (QName -> CVisibility -> [CTVarIName] -> [CConsDecl] -> [QName] -> a)
+ -> (QName -> CVisibility -> [CTVarIName] -> CTypeExpr   -> a)
+ -> (QName -> CVisibility -> [CTVarIName] -> CConsDecl   -> [QName] -> a)
+ -> CTypeDecl -> a
+trCTypeDecl typ _ _   (CType name vis params cs dvs) =
+ typ name vis params cs dvs
 trCTypeDecl _ tsyn _  (CTypeSyn name vis params syn) = tsyn  name vis params syn
-trCTypeDecl _ _ tntyp (CNewType name vis params nt)  = tntyp name vis params nt
+trCTypeDecl _ _ tntyp (CNewType name vis params nt dvs) =
+ tntyp name vis params nt dvs
 
 --- update type declaration
 updCTypeDecl :: (QName -> QName)

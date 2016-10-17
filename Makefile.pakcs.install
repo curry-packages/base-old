@@ -17,6 +17,7 @@ CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
 install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/AbstractCurry
+	mkdir -p $(LIBDIR)/AbstractCurry2
 	mkdir -p $(LIBDIR)/FlatCurry/Annotated
 	mkdir -p $(LIBDIR)/CLP
 	mkdir -p $(LIBDIR)/Database/CDBI
@@ -114,6 +115,9 @@ ValueSequence.curry: $(LIBTRUNKDIR)/ValueSequence.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
+	cp $< $@
+
+AbstractCurry2/%.curry: $(LIBTRUNKDIR)/AbstractCurry2/%.curry
 	cp $< $@
 
 FlatCurry/Annotated/%.curry: $(LIBTRUNKDIR)/FlatCurry/Annotated/%.curry

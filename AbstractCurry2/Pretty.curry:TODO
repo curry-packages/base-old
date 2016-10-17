@@ -8,7 +8,7 @@
 --- @category meta
 --- --------------------------------------------------------------------------
 
-module AbstractCurry.Pretty
+module AbstractCurry2.Pretty
     ( Qualification, Options, LayoutChoice(..)
 
     , defaultOptions
@@ -29,9 +29,9 @@ module AbstractCurry.Pretty
 
 import Pretty hiding        ( list, listSpaced, tupled, tupledSpaced, set
                             , setSpaced )
-import AbstractCurry.Select hiding (varsOfLDecl, varsOfFDecl, varsOfStat)
-import AbstractCurry.Types
-import AbstractCurry.Transform (typesOfCurryProg, funcsOfCurryProg)
+import AbstractCurry2.Select hiding (varsOfLDecl, varsOfFDecl, varsOfStat)
+import AbstractCurry2.Types
+import AbstractCurry2.Transform (typesOfCurryProg, funcsOfCurryProg)
 import Function                (on)
 import List                    (partition, union, scanl, last, nub, (\\))
 import Maybe                   (isJust, fromJust)
