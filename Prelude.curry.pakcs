@@ -14,7 +14,7 @@ module Prelude
   , elem, notElem, lookup
   , Ord(..)
   , Show(..), print, shows, showChar, showString, showParen
-  , Read (..)
+  , Read (..), lex, read, reads, readParen
   , Bounded (..), Enum (..), boundedEnumFrom, boundedEnumFromThen
   , asTypeOf
   , Num(..), Fractional(..), Real(..), Integral(..)
@@ -992,7 +992,7 @@ instance Eq a => Eq [a] where
 
 instance Eq () where
   () == () = True
-  
+
 instance (Eq a, Eq b) => Eq (a, b) where
   (a, b) == (a', b') = a == a' && b == b'
 
@@ -1206,7 +1206,7 @@ instance (Show a, Show b) => Show (Either a b) where
     (showString "Left " . showsPrec appPrec1 x)
   showsPrec p (Right y) = showParen (p > appPrec)
     (showString "Right " . showsPrec appPrec1 y)
-  
+
 showTuple :: [ShowS] -> ShowS
 showTuple ss = showChar '('
              . foldr1 (\s r -> s . showChar ',' . r) ss
@@ -1232,20 +1232,134 @@ class Read a where
   readsPrec :: Int -> ReadS a
 
   readList :: ReadS [a]
+  readList = readParen False (\r -> [pr | ("[",s)  <- lex r
+                                        , pr       <- readl s])
+    where readl s = [([], t) | ("]", t) <- lex s] ++
+                      [(x : xs, u) | (x, t) <- reads s, (xs, u) <- readl' t]
+          readl' s = [([], t) | ("]", t) <- lex s] ++
+                       [(x : xs, v) | (",", t)  <- lex s, (x, u) <- reads t
+                                    , (xs,v) <- readl' u]
 
 reads :: Read a => ReadS a
-reads = readsPrec minPrec
+reads = readsPrec 0
 
--- readParen :: Bool -> ReadS a -> ReadS a
--- readParen b =
+readParen :: Bool -> ReadS a -> ReadS a
+readParen b g = if b then mandatory else optional
+  where optional r = g r ++ mandatory r
+        mandatory r =
+          [(x, u) | ("(", s) <- lex r, (x, t) <- optional s, (")", u) <- lex t]
 
--- read :: Read a => String -> a
--- read s =
+read :: (Read a) => String -> a
+read s =  case [x | (x, t) <- reads s, ("", "") <- lex t] of
+  [x] -> x
+  [] -> error "Prelude.read: no parse"
+  _ -> error "Prelude.read: ambiguous parse"
 
-minPrec :: Int
-minPrec = 0
+lex :: ReadS String
+lex s = case s of
+    "" -> [("","")]
+    (c:s)
+      | isSpace c -> lex $ dropWhile isSpace s
+    ('\'':s) ->
+      [('\'' : ch ++ "'", t) | (ch, '\'' : t)  <- lexLitChar s, ch /= "'"]
+    ('"':s) -> [('"' : str, t) | (str, t) <- lexString s]
+    (c:s)
+      | isSingle c -> [([c], s)]
+      | isSym c -> [(c : sym, t) | (sym, t) <- [span isSym s]]
+      | isAlpha c -> [(c : nam, t) | (nam, t) <- [span isIdChar s]]
+      | isDigit c ->
+        [(c : ds ++ fe, t)| (ds, s) <- [span isDigit s], (fe, t)  <- lexFracExp s]
+      | otherwise -> []
+  where
+  isSingle c = c `elem` ",;()[]{}_`"
+  isSym c = c `elem` "!@#$%&⋆+./<=>?\\^|:-~"
+  isIdChar c = isAlphaNum c || c `elem` "_'"
+  lexFracExp s = case s of
+    ('.':c:cs)
+      | isDigit c ->
+        [('.' : ds ++ e, u) | (ds, t) <- lexDigits (c : cs), (e, u)  <- lexExp t]
+    s -> lexExp s
+  lexExp s = case s of
+    (e:s) | e `elem` "eE" ->
+      [(e : c : ds, u) | (c:t)  <- [s], c `elem` "+-"
+                       , (ds, u) <- lexDigits t] ++
+        [(e : ds, t) | (ds, t) <- lexDigits s]
+    s -> [("", s)]
+  lexString s = case s of
+    ('"':s) -> [("\"", s)]
+    s -> [(ch ++ str, u) | (ch, t) <- lexStrItem s, (str, u) <- lexString t]
+  lexStrItem s = case s of
+    ('\\':'&':s) -> [("\\&", s)]
+    ('\\':c:s)
+      | isSpace c -> [("\\&", t) | '\\':t <- [dropWhile isSpace s]]
+    s -> lexLitChar s
 
+lexLitChar :: ReadS String
+lexLitChar s = case s of
+    "" -> []
+    ('\\':s) -> map (prefix '\\') (lexEsc s)
+    (c:s) -> [([c], s)]
+  where
+  lexEsc s = case s of
+    (c:s)
+      | c `elem` "abfnrtv\\\"'" -> [([c], s)]
+    ('^':c:s)
+      | c >= '@' && c <= '_'    -> [(['^',c], s)]
+    ('b':s) -> [prefix 'b' (span isBinDigit s)]
+    ('o':s) -> [prefix 'o' (span isOctDigit s)]
+    ('x':s) -> [prefix 'x' (span isHexDigit s)]
+    s@(d:_)
+      | isDigit d -> [span isDigit s]
+    s@(c:_)
+      | isUpper c -> [span isCharName s]
+    _ -> []
+  isCharName c = isUpper c || isDigit c
+  prefix c (t, s) = (c : t, s)
 
+lexDigits :: ReadS String
+lexDigits = nonNull isDigit
+
+nonNull :: (Char -> Bool) -> ReadS String
+nonNull p s = [(cs, t) | (cs@(_:_), t) <- [span p s]]
+
+--- Returns true if the argument is an uppercase letter.
+isUpper         :: Char -> Bool
+isUpper c       =  c >= 'A' && c <= 'Z'
+
+--- Returns true if the argument is an lowercase letter.
+isLower         :: Char -> Bool
+isLower c       =  c >= 'a' && c <= 'z'
+
+--- Returns true if the argument is a letter.
+isAlpha         :: Char -> Bool
+isAlpha c       =  isUpper c || isLower c
+
+--- Returns true if the argument is a decimal digit.
+isDigit         :: Char -> Bool
+isDigit c       =  c >= '0' && c <= '9'
+
+--- Returns true if the argument is a letter or digit.
+isAlphaNum      :: Char -> Bool
+isAlphaNum c    =  isAlpha c || isDigit c
+
+--- Returns true if the argument is a binary digit.
+isBinDigit     :: Char -> Bool
+isBinDigit c   =  c >= '0' || c <= '1'
+
+--- Returns true if the argument is an octal digit.
+isOctDigit     :: Char -> Bool
+isOctDigit c    =  c >= '0' && c <= '7'
+
+--- Returns true if the argument is a hexadecimal digit.
+isHexDigit      :: Char -> Bool
+isHexDigit c     = isDigit c || c >= 'A' && c <= 'F'
+                             || c >= 'a' && c <= 'f'
+
+--- Returns true if the argument is a white space.
+isSpace         :: Char -> Bool
+isSpace c       =  c == ' '    || c == '\t' || c == '\n' ||
+                   c == '\r'   || c == '\f' || c == '\v' ||
+                   c == '\xa0' || ord c `elem` [5760,6158,8192,8239,8287,12288]
 
 -- -------------------------------------------------------------------------
 -- Bounded and Enum classes and instances
@@ -1257,10 +1371,10 @@ class Bounded a where
 class Enum a where
   succ :: a -> a
   pred :: a -> a
-  
+
   toEnum   :: Int -> a
   fromEnum :: a -> Int
-  
+
   enumFrom       :: a -> [a]
   enumFromThen   :: a -> a -> [a]
   enumFromTo     :: a -> a -> [a]
@@ -1276,7 +1390,7 @@ class Enum a where
 instance Bounded () where
   minBound = ()
   maxBound = ()
-  
+
 instance Enum () where
   succ _      = error "Prelude.Enum.().succ: bad argument"
   pred _      = error "Prelude.Enum.().pred: bad argument"
@@ -1293,7 +1407,7 @@ instance Enum () where
 instance Bounded Bool where
   minBound = False
   maxBound = True
-  
+
 instance Enum Bool where
   succ False = True
   succ True  = error "Prelude.Enum.Bool.succ: bad argument"
@@ -1435,7 +1549,7 @@ instance Num Int where
 
   abs x | x >= 0 = x
         | otherwise = negate x
-  
+
   signum x | x > 0     = 1
            | x == 0    = 0
            | otherwise = -1
@@ -1486,7 +1600,7 @@ class Real a => Integral a where
   rem  :: a -> a -> a
 
   divMod  :: a -> a -> (a, a)
-  quotRem :: a -> a -> (a,a) 
+  quotRem :: a -> a -> (a, a)
 
   n `div`  d = q where (q, _) = divMod n d
   n `mod`  d = r where (_, r) = divMod n d
