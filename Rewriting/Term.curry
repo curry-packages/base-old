@@ -36,13 +36,7 @@ type VarIdx = Int
 --- @cons TermCons c ts - The constructor term with constructor `c` and
 ---                       argument terms `ts`.
 data Term f = TermVar VarIdx | TermCons f [Term f]
--- deriving (Eq, Show)
-
-instance Eq a => Eq (Term a) where
-  _ == _ = error "TODO: Eq Rewriting.Term.Term"
-
-instance Show a => Show (Term a) where
-  show _ = error "TODO: Show Rewriting.Term.Term"
+ deriving (Eq, Show)
 
 --- A term equation represented as a pair of terms and parameterized over the
 --- kind of function symbols, e.g., strings.

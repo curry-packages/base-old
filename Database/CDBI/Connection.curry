@@ -58,9 +58,7 @@ printSQLResults (Right res) = mapIO_ print res
 --- `DBError`s are composed of an `DBErrorKind` and a `String`
 --- describing the error more explicitly.
 data DBError = DBError DBErrorKind String
-
-instance Show DBError where
-  show _ = error "TODO: Show DBError"
+  deriving Show
 
 --- The different kinds of errors.
 data DBErrorKind
@@ -71,6 +69,7 @@ data DBErrorKind
   | NoLineError
   | LockedDBError
   | UnknownError
+  deriving Show
 
 --- Data type for SQL values, used during the communication with the database.
 data SQLValue
@@ -81,10 +80,7 @@ data SQLValue
   | SQLBool   Bool
   | SQLDate   ClockTime
   | SQLNull
-  
-
-instance Show SQLValue where
-  show _ = error "TODO: Show SQLValue"
+  deriving Show
 
 --- Type identifiers for `SQLValue`s, necessary to determine the type
 --- of the value a column should be converted to.

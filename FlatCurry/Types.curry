@@ -23,9 +23,7 @@ module FlatCurry.Types where
 --- data type, function, and operator declarations
 --- contained in this module, respectively.
 data Prog = Prog String [String] [TypeDecl] [FuncDecl] [OpDecl]
-
-instance Eq Prog where
-  _ == _ = error "TODO: Eq FlatCurry.Types.Prog"
+  deriving Eq
 
 --- The data type for representing qualified names.
 --- In FlatCurry all names are qualified to avoid name clashes.
@@ -37,13 +35,7 @@ type QName = (String, String)
 data Visibility
   = Public    -- public (exported) entity
   | Private   -- private entity
--- deriving Eq
-
-instance Eq Visibility where
-  Public  == Public  = True
-  Public  == Private = False
-  Private == Public  = False
-  Private == Private = True
+ deriving (Eq, Show)
   
 --- The data type for representing type variables.
 --- They are represented by `(TVar i)` where `i` is a type variable index.
@@ -70,13 +62,12 @@ type TVarIndex = Int
 data TypeDecl
   = Type    QName Visibility [TVarIndex] [ConsDecl]
   | TypeSyn QName Visibility [TVarIndex] TypeExpr
-
-instance Eq TypeDecl where
-  _ == _ = error "TODO: Eq FlatCurry.Types.TypeDecl"
+  deriving Eq
 
 --- A constructor declaration consists of the name and arity of the
 --- constructor and a list of the argument types of the constructor.
 data ConsDecl = Cons QName Int Visibility [TypeExpr]
+  deriving Eq
 
 --- Data type for type expressions.
 --- A type expression is either a type variable, a function type,
@@ -90,27 +81,17 @@ data TypeExpr
   | FuncType TypeExpr TypeExpr     -- function type t1->t2
   | TCons QName [TypeExpr]         -- type constructor application
                                    -- TCons module name typeargs
--- deriving (Eq,Show)
-
-instance Eq TypeExpr where
-  TVar x1 == x = case x of { TVar y1 -> x1 == y1 ; _ -> False }
-  FuncType x1 x2 == x = case x of { FuncType y1 y2 -> x1 == y1 && x2 == y2 ; _ -> False }
-  TCons x1 x2 == x = case x of { TCons y1 y2 -> x1 == y1 && x2 == y2 ; _ -> False }
-
-instance Show TypeExpr where
-  show _ = error "TODO: Show FlatCurry.Types.TypeExpr"
+ deriving (Eq,Show)
 
 --- Data type for operator declarations.
 --- An operator declaration `fix p n` in Curry corresponds to the
 --- FlatCurry term `(Op n fix p)`.
 data OpDecl = Op QName Fixity Int
+  deriving Eq
 
 --- Data types for the different choices for the fixity of an operator.
 data Fixity = InfixOp | InfixlOp | InfixrOp
--- deriving Show
-
-instance Show Fixity where
-  show _ = error "TODO: Show FlatCurry.Types.Fixity"
+ deriving (Eq,Show)
 
 --- Data type for representing object variables.
 --- Object variables occurring in expressions are represented by `(Var i)`
@@ -144,25 +125,19 @@ type Arity = Int
 ---
 --- Thus, a function declaration consists of the name, arity, type, and rule.
 data FuncDecl = Func QName Arity Visibility TypeExpr Rule
--- deriving Eq
-
-instance Eq FuncDecl where
-  _ == _ = error "TODO: Eq FlatCurry.Types.FuncDecl"
+ deriving Eq
 
 --- A rule is either a list of formal parameters together with an expression
 --- or an "External" tag.
 data Rule
   = Rule [VarIndex] Expr
   | External String
+  deriving Eq
 
 --- Data type for classifying case expressions.
 --- Case expressions can be either flexible or rigid in Curry.
 data CaseType = Rigid | Flex       -- type of a case expression
--- deriving Eq
-
-instance Eq CaseType where
-  Rigid == x = case x of { Rigid -> True ; _ -> False }
-  Flex  == x = case x of { Flex  -> True ; _ -> False }
+ deriving (Eq, Show)
 
 --- Data type for classifying combinations
 --- (i.e., a function/constructor applied to some arguments).
@@ -175,12 +150,7 @@ instance Eq CaseType where
 ---                      are provided) where the parameter is the number of
 ---                      missing arguments
 data CombType = FuncCall | ConsCall | FuncPartCall Arity | ConsPartCall Arity
-
-instance Eq CombType where
-  FuncCall == x = case x of { FuncCall -> True ; _ -> False }
-  ConsCall == x = case x of { ConsCall -> True ; _ -> False }
-  FuncPartCall i == x = case x of { FuncPartCall j -> i==j ; _ -> False }
-  ConsPartCall i == x = case x of { ConsPartCall j -> i==j ; _ -> False }
+ deriving (Eq, Show)
 
 --- Data type for representing expressions.
 ---
@@ -236,9 +206,7 @@ data Expr
   | Or Expr Expr
   | Case CaseType Expr [BranchExpr]
   | Typed Expr TypeExpr
-
-instance Eq Expr where
-  _ == _ = error "TODO: Eq FlatCurry.Types.Expr"
+  deriving Eq
 
 --- Data type for representing branches in a case expression.
 ---
@@ -253,14 +221,13 @@ instance Eq Expr where
 --- for integers as branch patterns (similarly for other literals
 --- like float or character constants).
 data BranchExpr = Branch Pattern Expr
-
-instance Eq BranchExpr where
-  _ == _ = error "TODO: Eq FlatCurry.Types.BranchExpr"
+  deriving Eq
 
 --- Data type for representing patterns in case expressions.
 data Pattern
   = Pattern QName [VarIndex]
   | LPattern Literal
+  deriving Eq
 
 --- Data type for representing literals occurring in an expression
 --- or case branch. It is either an integer, a float, or a character constant.
@@ -268,6 +235,7 @@ data Literal
   = Intc   Int
   | Floatc Float
   | Charc  Char
+  deriving (Eq, Show)
 
 -----------------------------------------------------------------------
 --- Translates a given qualified type name into external name relative to

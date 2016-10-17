@@ -31,11 +31,7 @@ import Rewriting.UnificationSpec (UnificationError (..), showUnificationError)
 --- an additional `Ref` constructor. This `Ref` constructor is used to
 --- represent references into a reference table.
 data RTerm f = Ref VarIdx | RTermVar VarIdx | RTermCons f [RTerm f]
--- deriving (Eq, Show)
-
-instance Eq a => Eq (RTerm a) where
-  _ == _ = error "TODO: Eq Rewriting.Unification.RTerm"
-
+ deriving (Eq, Show)
 
 --- A reference table used to store the values referenced by `Ref` terms
 --- represented as a finite map from variables to `RTerm`s and parameterized

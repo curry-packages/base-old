@@ -48,11 +48,7 @@ data Option =
   | InitFuncs [QName]
   | Required [RequiredSpec]
   | Import String
--- deriving Eq
-
-instance Eq Option where
-  _ == _ = error "TODO: Eq FlatCurry.Compact.Option"
-
+  deriving Eq
 
 isMainOption :: Option -> Bool
 isMainOption o = case o of
@@ -80,6 +76,7 @@ addImport2Options options =
 ------------------------------------------------------------------------------
 --- Data type to specify requirements of functions.
 data RequiredSpec = AlwaysReq QName | Requires QName QName
+  deriving Eq
 
 --- (fun `requires` reqfun) specifies that the use of the function "fun"
 --- implies the application of function "reqfun".

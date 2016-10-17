@@ -17,27 +17,14 @@ module Time(ClockTime,
 
 --- ClockTime represents a clock time in some internal representation.
 data ClockTime = CTime Int
--- deriving (Eq, Ord)
-
-instance Eq ClockTime where
-  CTime t1 == CTime t2 = t1 == t2
-
-instance Ord ClockTime where
-  compare (CTime t1) (CTime t2) = compare t1 t2
+ deriving (Eq, Ord, Show)
 
 --- A calendar time is presented in the following form:
 --- (CalendarTime year month day hour minute second timezone)
 --- where timezone is an integer representing the timezone as a difference
 --- to UTC time in seconds.
 data CalendarTime = CalendarTime Int Int Int Int Int Int Int
--- deriving (Eq, Show)
-
-instance Eq CalendarTime where
- CalendarTime y1 mo1 d1 h1 mi1 s1 tz1 == CalendarTime y2 mo2 d2 h2 mi2 s2 tz2 =
-   y1==y2 && mo1==mo2 && d1==d2 && h1==h2 && mi1==mi2 && s1==s2 && tz1==tz2
-
-instance Show CalendarTime where
-  show _ = error "TODO: Show Time.CalendarTime"
+ deriving (Eq, Show)
 
 --- The year of a calendar time.
 ctYear :: CalendarTime -> Int
