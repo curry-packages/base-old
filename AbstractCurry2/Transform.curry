@@ -36,17 +36,21 @@ trCProg prog (CurryProg name imps dfltdecl clsdecls instdecls types funcs ops) =
 --- Updates an AbstractCurry program.
 updCProg :: (String      -> String)      ->
             ([String]    -> [String])    ->
+            (Maybe CDefaultDecl -> Maybe CDefaultDecl) ->
+            ([CClassDecl] -> [CClassDecl]) ->
+            ([CInstanceDecl] -> [CInstanceDecl]) ->
             ([CTypeDecl] -> [CTypeDecl]) ->
             ([CFuncDecl] -> [CFuncDecl]) ->
             ([COpDecl]   -> [COpDecl])   -> CurryProg -> CurryProg
-updCProg fn fi ft ff fo = trCProg prog
+updCProg fn fi fdft fcl fci ft ff fo = trCProg prog
  where
-  prog name imps types funcs ops =
-    CurryProg (fn name) (fi imps) (ft types) (ff funcs) (fo ops)
+  prog name imps dfltdecl clsdecls instdecls types funcs ops =
+    CurryProg (fn name) (fi imps) (fdft dfltdecl) (fcl clsdecls) (fci instdecls)
+              (ft types) (ff funcs) (fo ops)
 
 --- Updates the name of a Curry program.
 updCProgName :: Update CurryProg String
-updCProgName f = updCProg f id id id id
+updCProgName f = updCProg f id id id id id id id
 
 ----------------------------------------------------------------------------
 -- CTypeDecl
@@ -70,16 +74,19 @@ updCTypeDecl :: (QName -> QName)
              -> ([CConsDecl]  -> [CConsDecl])
              -> (CTypeExpr    -> CTypeExpr)
              -> (CConsDecl    -> CConsDecl)
+             -> ([QName]      -> [QName])
              -> CTypeDecl -> CTypeDecl
-updCTypeDecl fn fv fp fc fs ft = trCTypeDecl typ tsyn tntyp
+updCTypeDecl fn fv fp fc fs ft fd = trCTypeDecl typ tsyn tntyp
  where
-  typ   name vis params cs   = CType    (fn name) (fv vis) (fp params) (fc cs)
+  typ   name vis params cs der =
+    CType    (fn name) (fv vis) (fp params) (fc cs) (fd der)
   tsyn  name vis params syn  = CTypeSyn (fn name) (fv vis) (fp params) (fs syn)
-  tntyp name vis params ntyp = CNewType (fn name) (fv vis) (fp params) (ft ntyp)
+  tntyp name vis params ntyp der =
+    CNewType (fn name) (fv vis) (fp params) (ft ntyp) (fd der)
 
 --- Updates the name of a type declaration.
 updCTypeDeclName :: Update CTypeDecl QName
-updCTypeDeclName f = updCTypeDecl f id id id id id
+updCTypeDeclName f = updCTypeDecl f id id id id id id
 
 
 ----------------------------------------------------------------------------
@@ -112,7 +119,7 @@ updCConsDecl fqv fc fn fv fts ffs = trCConsDecl cons rec
 
 --- Updates the name of a constructor declaration.
 updCConsDeclName :: Update CConsDecl QName
-updCConsDeclName f = updCConsDecl f id id id
+updCConsDeclName f = updCConsDecl id id f id id id
 
 ----------------------------------------------------------------------------
 -- CFieldDecl
@@ -142,16 +149,18 @@ updCFieldDeclName f = updCFieldDecl f id id
 trCTypeExpr :: (CTVarIName -> a)
             -> (QName -> [a] -> a)
             -> (a -> a -> a)
+            -> (a -> a -> a)
             -> CTypeExpr -> a
-trCTypeExpr tvar tcons functype texp = trTE texp
+trCTypeExpr tvar tcons functype applytype texp = trTE texp
  where
   trTE (CTVar n)           = tvar n
   trTE (CTCons name args)  = tcons name (map trTE args)
-  trTE (CFuncType from to) = functype (trTE from) (trTE to)
+  trTE (CFuncType from to) = functype  (trTE from) (trTE to)
+  trTE (CTApply   from to) = applytype (trTE from) (trTE to)
 
 --- Updates all type constructor applications in a type expression.
 updTConsApp :: (QName -> [CTypeExpr] -> CTypeExpr) -> CTypeExpr -> CTypeExpr
-updTConsApp tcons = trCTypeExpr CTVar tcons CFuncType
+updTConsApp tcons = trCTypeExpr CTVar tcons CFuncType CTApply
 
 ----------------------------------------------------------------------------
 -- COpDecl
@@ -175,8 +184,9 @@ updCOpName f = updCOpDecl f id id
 -- CFuncDecl
 
 --- Transforms a function declaration
-trCFuncDecl :: (String -> QName -> Int -> CVisibility -> CTypeExpr -> [CRule] -> a)
-            -> CFuncDecl -> a
+trCFuncDecl ::
+    (String -> QName -> Int -> CVisibility -> CQualTypeExpr -> [CRule] -> a)
+    -> CFuncDecl -> a
 trCFuncDecl func (CFunc      name arity vis t rs) = func "" name arity vis t rs
 trCFuncDecl func (CmtFunc cm name arity vis t rs) = func cm name arity vis t rs
 
@@ -185,7 +195,7 @@ updCFuncDecl :: (String -> String)
              -> (QName -> QName)
              -> (Int -> Int)
              -> (CVisibility -> CVisibility)
-             -> (CTypeExpr -> CTypeExpr)
+             -> (CQualTypeExpr -> CQualTypeExpr)
              -> ([CRule] -> [CRule])
              -> CFuncDecl -> CFuncDecl
 updCFuncDecl fc fn fa fv ft fr = trCFuncDecl func
@@ -303,7 +313,7 @@ trExpr :: (CVarIName -> a)
        -> ([CStatement] -> a)
        -> (a -> [CStatement] -> a)
        -> (CCaseType -> a -> [(CPattern, CRhs)] -> a)
-       -> (a -> CTypeExpr -> a)
+       -> (a -> CQualTypeExpr -> a)
        -> (QName -> [CField a] -> a)
        -> (a -> [CField a] -> a)
        -> CExpr -> a
@@ -360,9 +370,24 @@ updQNamesInCProg :: Update CurryProg QName
 updQNamesInCProg f =
   updCProg id
            id 
+           (updQNamesInCDefaultDecl f)
+           (map (updQNamesInCClassDecl f))
+           (map (updQNamesInCInstanceDecl f))
            (map (updQNamesInCTypeDecl f))
            (map (updQNamesInCFuncDecl f))
            (map (updCOpName f))
+
+--- Updates all qualified names in a default declaration.
+updQNamesInCDefaultDecl :: Update (Maybe CDefaultDecl) QName
+updQNamesInCDefaultDecl = error "TODO: AbstractCurry2.Transform"
+
+--- Updates all qualified names in a class declaration.
+updQNamesInCClassDecl :: Update CClassDecl QName
+updQNamesInCClassDecl = error "TODO: AbstractCurry2.Transform"
+
+--- Updates all qualified names in an instance declaration.
+updQNamesInCInstanceDecl :: Update CInstanceDecl QName
+updQNamesInCInstanceDecl = error "TODO: AbstractCurry2.Transform"
 
 --- Updates all qualified names in a type declaration.
 updQNamesInCTypeDecl :: Update CTypeDecl QName
@@ -371,26 +396,37 @@ updQNamesInCTypeDecl f =
                (map (updQNamesInCConsDecl f))
                (updQNamesInCTypeExpr f)
                (updQNamesInCConsDecl f)
+               (map f)
 
 --- Updates all qualified names in a constructor declaration.
 updQNamesInCConsDecl :: Update CConsDecl QName
 updQNamesInCConsDecl f =
-  updCConsDecl f id
+  updCConsDecl id (updQNamesInCContext f) f id
                (map (updQNamesInCTypeExpr f))
                (map (updQNamesInCFieldDecl f))
+
+--- Updates all qualified names in a constructor declaration.
+updQNamesInCContext :: Update CContext QName
+updQNamesInCContext = error "TODO: AbstractCurry2.Transform"
 
 --- Updates all qualified names in a record field declaration.
 updQNamesInCFieldDecl :: Update CFieldDecl QName
 updQNamesInCFieldDecl f = updCFieldDecl f id (updQNamesInCTypeExpr f)
 
 --- Updates all qualified names in a type expression.
-updQNamesInCTypeExpr :: (QName -> QName) -> CTypeExpr -> CTypeExpr
+updQNamesInCQualTypeExpr :: Update CQualTypeExpr QName
+updQNamesInCQualTypeExpr = error "TODO: AbstractCurry2.Transform"
+
+--- Updates all qualified names in a type expression.
+updQNamesInCTypeExpr :: Update CTypeExpr QName
 updQNamesInCTypeExpr f = updTConsApp (\name args -> CTCons (f name) args)
 
 --- Updates all qualified names in a function declaration.
 updQNamesInCFuncDecl :: Update CFuncDecl QName
 updQNamesInCFuncDecl f =
-  updCFuncDecl id f id id (updQNamesInCTypeExpr f) (map (updQNamesInCRule f))
+  updCFuncDecl id f id id
+               (updQNamesInCQualTypeExpr f)
+               (map (updQNamesInCRule f))
 
 --- Updates all qualified names in a function declaration.
 updQNamesInCRule :: Update CRule QName
@@ -435,7 +471,7 @@ updQNamesInCExpr f =
   lcomp exp stms = CListComp exp (map (updQNamesInCStatement f) stms)
   ccase ct exp bs = CCase ct exp
     (map (\ (pat,rhs) -> (updQNamesInCPattern f pat, updQNamesInCRhs f rhs)) bs)
-  ctyped exp texp = CTyped exp (updQNamesInCTypeExpr f texp)
+  ctyped exp texp = CTyped exp (updQNamesInCQualTypeExpr f texp)
   reccon rec fields = CRecConstr (f rec) (map (\ (l,e) -> (f l,e)) fields)
   recupd exp fields = CRecUpdate exp (map (\ (l,e) -> (f l,e)) fields)
   
@@ -443,21 +479,22 @@ updQNamesInCExpr f =
 --- Extracts all type names occurring in a program.
 typesOfCurryProg :: CurryProg -> [QName]
 typesOfCurryProg =
-  trCProg (\_ _ types funcs _ ->
+  trCProg (\_ _ dfts cls insts types funcs _ ->
               foldr union [] (map (nub . typesOfCTypeDecl) types) ++
               foldr union [] (map (nub . typesOfCFuncDecl) funcs))
 
 --- Extracts all type names occurring in a type declaration.
+--- Class names are ignored.
 typesOfCTypeDecl :: CTypeDecl -> [QName]
 typesOfCTypeDecl =
-  trCTypeDecl (\qn _ _ cdecls -> qn : concatMap typesOfConsDecl cdecls)
-              (\qn _ _ texp   -> qn : typesOfTypeExpr texp)
-              (\qn _ _ cdecl  -> qn : typesOfConsDecl cdecl)
+  trCTypeDecl (\qn _ _ cdecls _ -> qn : concatMap typesOfConsDecl cdecls)
+              (\qn _ _ texp     -> qn : typesOfTypeExpr texp)
+              (\qn _ _ cdecl  _ -> qn : typesOfConsDecl cdecl)
 
 typesOfConsDecl :: CConsDecl -> [QName]
 typesOfConsDecl =
-  trCConsDecl (\_ _ texps   -> concatMap typesOfTypeExpr texps)
-              (\_ _ fddecls -> concatMap typesOfFieldDecl fddecls)
+  trCConsDecl (\_ ctxt _ _ texps   -> concatMap typesOfTypeExpr texps)
+              (\_ ctxt _ _ fddecls -> concatMap typesOfFieldDecl fddecls)
 
 typesOfFieldDecl :: CFieldDecl -> [QName]
 typesOfFieldDecl = trCFieldDecl (\_ _ texp -> typesOfTypeExpr texp)
@@ -466,30 +503,34 @@ typesOfTypeExpr :: CTypeExpr -> [QName]
 typesOfTypeExpr = trCTypeExpr (\_ -> [])
                               (\qn targs -> qn : concat targs)
                               (++)
+                              (++)
+
+typesOfQualTypeExpr :: CQualTypeExpr -> [QName]
+typesOfQualTypeExpr = error "TODO: AbstractCurry2.Transform"
 
 typesOfCFuncDecl :: CFuncDecl -> [QName]
 typesOfCFuncDecl =
-  trCFuncDecl (\_ _ _ _ texp _ -> typesOfTypeExpr texp)
+  trCFuncDecl (\_ _ _ _ texp _ -> typesOfQualTypeExpr texp)
   -- type annotations in expressions are currently ignored
 
 ----------------------------------------------------------------------------
 --- Extracts all function (and constructor) names occurring in a program.
 funcsOfCurryProg :: CurryProg -> [QName]
 funcsOfCurryProg =
-  trCProg (\_ _ types funcs _ ->
+  trCProg (\_ _ dfts cls insts types funcs _ ->
               foldr union [] (map (nub . funcsOfCTypeDecl) types) ++
               foldr union [] (map (nub . funcsOfCFuncDecl) funcs))
 
 funcsOfCTypeDecl :: CTypeDecl -> [QName]
 funcsOfCTypeDecl =
-  trCTypeDecl (\_ _ _ cdecls -> concatMap funcsOfConsDecl cdecls)
-              (\_ _ _ _      -> [])
-              (\_ _ _ cdecl  -> funcsOfConsDecl cdecl)
+  trCTypeDecl (\_ _ _ cdecls _ -> concatMap funcsOfConsDecl cdecls)
+              (\_ _ _ _        -> [])
+              (\_ _ _ cdecl  _ -> funcsOfConsDecl cdecl)
 
 funcsOfConsDecl :: CConsDecl -> [QName]
 funcsOfConsDecl =
-  trCConsDecl (\qn _ _       -> [qn])
-              (\qn _ fddecls -> qn : concatMap funcsOfFieldDecl fddecls)
+  trCConsDecl (\_ _ qn _ _       -> [qn])
+              (\_ _ qn _ fddecls -> qn : concatMap funcsOfFieldDecl fddecls)
 
 funcsOfFieldDecl :: CFieldDecl -> [QName]
 funcsOfFieldDecl = trCFieldDecl (\qn _ _ -> [qn])

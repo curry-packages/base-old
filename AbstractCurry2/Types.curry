@@ -130,7 +130,7 @@ data CInstanceDecl = CInstance QName CContext CTypeExpr [CFuncDecl]
 data CTypeDecl
   = CType    QName CVisibility [CTVarIName] [CConsDecl] [QName]
   | CTypeSyn QName CVisibility [CTVarIName] CTypeExpr
-  | CNewType QName CVisibility [CTVarIName] CConsDecl [QName]
+  | CNewType QName CVisibility [CTVarIName] CConsDecl   [QName]
   deriving (Eq, Show)
 
 --- The type for representing type variables.
@@ -261,18 +261,18 @@ data CPattern
 
 --- Data type for representing Curry expressions.
 data CExpr
- = CVar       CVarIName                          -- variable (unique index / name)
- | CLit       CLiteral                           -- literal (Integer/Float/Char constant)
- | CSymbol    QName                              -- a defined symbol with module and name
+ = CVar       CVarIName                    -- variable (unique index / name)
+ | CLit       CLiteral                     -- literal (Int/Float/Char constant)
+ | CSymbol    QName                        -- a defined symbol (qualified name)
  | CApply     CExpr CExpr                        -- application (e1 e2)
  | CLambda    [CPattern] CExpr                   -- lambda abstraction
  | CLetDecl   [CLocalDecl] CExpr                 -- local let declarations
  | CDoExpr    [CStatement]                       -- do expression
  | CListComp  CExpr [CStatement]                 -- list comprehension
  | CCase      CCaseType CExpr [(CPattern, CRhs)] -- case expression
- | CTyped     CExpr CQualTypeExpr                    -- typed expression
- | CRecConstr QName [CField CExpr]               -- record construction (extended Curry)
- | CRecUpdate CExpr [CField CExpr]               -- record update (extended Curry)
+ | CTyped     CExpr CQualTypeExpr                -- typed expression
+ | CRecConstr QName [CField CExpr]         -- record construction
+ | CRecUpdate CExpr [CField CExpr]         -- record update
  deriving (Eq, Show)
 
 --- Data type for representing literals occurring in an expression.
