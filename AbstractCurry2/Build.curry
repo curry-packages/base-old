@@ -21,27 +21,29 @@ t1 ~> t2 = CFuncType t1 t2
 
 --- A base type.
 baseType :: QName -> CTypeExpr
-baseType t = CTCons t []
+baseType t = CTCons t
 
 --- Constructs a list type from an element type.
 listType :: CTypeExpr -> CTypeExpr
-listType a = CTCons (pre "[]") [a]
+listType a = CTApply (CTCons (pre "[]")) a
 
 --- Constructs a tuple type from list of component types.
 tupleType :: [CTypeExpr] -> CTypeExpr
-tupleType ts | l==0 = baseType (pre "()")
-             | l==1 = head ts
-             | otherwise = CTCons (pre ('(' : take (l-1) (repeat ',') ++ ")"))
-                                  ts
+tupleType ts
+ | l==0 = baseType (pre "()")
+ | l==1 = head ts
+ | otherwise = foldl CTApply
+                     (CTCons (pre ('(' : take (l-1) (repeat ',') ++ ")")))
+                     ts
  where l = length ts
 
 --- Constructs an IO type from a type.
 ioType :: CTypeExpr -> CTypeExpr
-ioType a = CTCons (pre "IO") [a]
+ioType a = CTApply (CTCons (pre "IO")) a
 
 --- Constructs a Maybe type from element type.
 maybeType :: CTypeExpr -> CTypeExpr
-maybeType a = CTCons (pre "Maybe") [a]
+maybeType a = CTApply (CTCons (pre "Maybe")) a
 
 --- The type expression of the String type.
 stringType :: CTypeExpr

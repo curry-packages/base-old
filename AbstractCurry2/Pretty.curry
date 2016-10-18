@@ -288,15 +288,24 @@ ppCFixity CInfixrOp = text "infixr"
 --- Pretty-print type declarations, like `data ... = ...`, `type ... = ...` or
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
-ppCTypeDecl opts (CType qn _ tVars cDecls derivings)
-    = hsep [ text "data", ppType qn, ppCTVarINames opts tVars
-           , if null cDecls then empty else ppCConsDecls opts cDecls]
+ppCTypeDecl opts (CType qn _ tVars cDecls derivings) =
+  hsep [ text "data", ppType qn, ppCTVarINames opts tVars
+       , if null cDecls then empty else ppCConsDecls opts cDecls]
+  <$!$> ppDeriving opts derivings
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
     = hsep [ text "type", ppType qn, ppCTVarINames opts tVars
            , align $ equals <+> ppCTypeExpr opts tExp]
-ppCTypeDecl opts (CNewType qn _ tVars cDecl derivings)
-    = hsep [ text "newtype", ppType qn, ppCTVarINames opts tVars, equals
-           , ppCConsDecl opts cDecl]
+ppCTypeDecl opts (CNewType qn _ tVars cDecl derivings) =
+  hsep [ text "newtype", ppType qn, ppCTVarINames opts tVars, equals
+       , ppCConsDecl opts cDecl]
+  <$!$> ppDeriving opts derivings
+
+--- Pretty-print deriving clause.
+ppDeriving :: Options -> [QName] -> Doc
+ppDeriving _    []   = empty
+ppDeriving opts [cn] = text " deriving" <+> ppQType opts cn
+ppDeriving opts cls@(_:_:_) =
+  text " deriving" <+> alignedTupled (map (ppQType opts) cls)
 
 --- Pretty-print a list of constructor declarations, including the `=` sign.
 ppCConsDecls :: Options -> [CConsDecl] -> Doc
@@ -342,12 +351,22 @@ ppCFuncSignature opts qn tExp
                 $ sep [ genericPPName parsIfInfix qn
                       , align $ doubleColon <+> ppCQualTypeExpr opts tExp ]
  where
-  isUntyped te = te == CQualType (CContext []) (CTCons (pre "untyped") [])
+  isUntyped te = te == CQualType (CContext []) (CTCons (pre "untyped"))
 
 --- Pretty-print a qualified type expression.
 --- TODO: pretty print context
 ppCQualTypeExpr :: Options -> CQualTypeExpr -> Doc
-ppCQualTypeExpr opts (CQualType ctxt texp) = ppCTypeExpr opts texp
+ppCQualTypeExpr opts (CQualType (CContext []) texp) = ppCTypeExpr opts texp
+ppCQualTypeExpr opts (CQualType (CContext [clscon]) texp) =
+  ppCConstraint opts clscon <+> text "=>" <+> ppCTypeExpr opts texp
+ppCQualTypeExpr opts (CQualType (CContext ctxt@(_:_:_)) texp) =
+ alignedTupled (map (ppCConstraint opts) ctxt) <+>
+ text "=>" <+> ppCTypeExpr opts texp
+
+--- Pretty-print a single class constraint.
+ppCConstraint :: Options -> CConstraint -> Doc
+ppCConstraint opts (cn,texp) =
+  ppQType opts cn <+> ppCTypeExpr' prefAppPrec opts texp
 
 --- Pretty-print a type expression.
 ppCTypeExpr :: Options -> CTypeExpr -> Doc
@@ -363,15 +382,32 @@ ppCTypeExpr' _ opts (CTVar     tvar) = ppCTVarIName opts tvar
 ppCTypeExpr' p opts (CFuncType tExp1 tExp2) =
     parensIf (p > tlPrec)
   $ sep [ ppCTypeExpr' 1 opts tExp1, rarrow <+> ppCTypeExpr opts tExp2]
-ppCTypeExpr' p opts (CTCons qn tExps)
-    | null tExps     = ppQType opts qn
-    | isListCons qn  = brackets . (ppCTypeExpr opts) . head $ tExps -- assume singleton
-    | isTupleCons qn = alignedTupled $ map (ppCTypeExpr opts) tExps
+ppCTypeExpr' _ opts (CTCons qn) = ppQType opts qn
+
+ppCTypeExpr' p opts texp@(CTApply tcon targ) =
+  maybe (parensIf (p >= 2) $ ppCTypeExpr' 2 opts tcon
+                         <+> ppCTypeExpr' 2 opts targ)
+        (\qn -> ppCTypeTConApply qn (argsOfApply texp))
+        (funOfApply texp)
+ where
+  ppCTypeTConApply qn targs
+    | isListCons qn  = brackets . ppCTypeExpr opts . head $ targs -- assume singleton
+    | isTupleCons qn = alignedTupled $ map (ppCTypeExpr opts) targs
     | otherwise      = parensIf (p >= 2)
                      $ ppQType opts qn
-                   <+> hsepMap (ppCTypeExpr' 2 opts) tExps
+                   <+> hsepMap (ppCTypeExpr' 2 opts) targs
 
---- Pretty-print a list of type variables horizontally separating them by `space`.
+  funOfApply te = case te of CTApply (CTCons qn) _ -> Just qn
+                             CTApply tc _          -> funOfApply tc
+                             _                     -> Nothing
+                                 
+  argsOfApply te = case te of
+    CTApply (CTCons _) ta -> [ta]
+    CTApply tc         ta -> argsOfApply tc ++ [ta]
+    _                     -> [] -- should not occur
+
+--- Pretty-print a list of type variables horizontally separating them
+--- by `space`.
 ppCTVarINames :: Options -> [CTVarIName] -> Doc
 ppCTVarINames opts = hsepMap (ppCTVarIName opts)
 

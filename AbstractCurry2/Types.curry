@@ -170,7 +170,7 @@ data CContext = CContext [CConstraint]
 data CTypeExpr
   = CTVar CTVarIName               -- type variable
   | CFuncType CTypeExpr CTypeExpr  -- function type t1->t2
-  | CTCons QName [CTypeExpr]       -- type constructor
+  | CTCons QName                   -- type constructor
   | CTApply CTypeExpr CTypeExpr    -- type application
   deriving (Eq, Show)
 

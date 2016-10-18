@@ -100,14 +100,15 @@ consVis (CRecord _ _ _ vis _) = vis
 --- Returns true if the type expression is a base type.
 isBaseType :: CTypeExpr -> Bool
 isBaseType texp = case texp of
-  CTCons _ args -> null args
-  _             -> False
+  CTCons _ -> True
+  _        -> False
 
 --- Returns true if the type expression contains type variables.
 isPolyType :: CTypeExpr -> Bool
 isPolyType (CTVar                _) = True
 isPolyType (CFuncType domain range) = isPolyType domain || isPolyType range
-isPolyType (CTCons      _ typelist) = any isPolyType typelist
+isPolyType (CTCons    _)            = False
+isPolyType (CTApply tcon texp)      = isPolyType tcon || isPolyType texp
 
 --- Returns true if the type expression is a functional type.
 isFunctionalType :: CTypeExpr -> Bool
@@ -118,41 +119,42 @@ isFunctionalType texp = case texp of
 --- Returns true if the type expression is (IO t).
 isIOType :: CTypeExpr -> Bool
 isIOType texp = case texp of
-  CTCons tc _ -> tc == pre "IO"
-  _           -> False
+  CTApply (CTCons tc) _ -> tc == pre "IO"
+  _                     -> False
 
 --- Returns true if the type expression is (IO t) with t/=() and
 --- t is not functional
 isIOReturnType :: CTypeExpr -> Bool
-isIOReturnType (CTVar            _) = False
-isIOReturnType (CFuncType      _ _) = False
-isIOReturnType (CTCons tc typelist) =
-  tc==pre "IO" && head typelist /= CTCons (pre "()") []
-  && not (isFunctionalType (head typelist))
+isIOReturnType (CTVar     _)   = False
+isIOReturnType (CFuncType _ _) = False
+isIOReturnType (CTCons    _)   = False
+isIOReturnType (CTApply tcon targ) =
+  tcon == CTCons (pre "IO") && targ /= CTCons (pre "()")
+  && not (isFunctionalType targ)
 
 --- Returns all argument types from a functional type
 argTypes :: CTypeExpr -> [CTypeExpr]
-argTypes (CTVar         _) = []
-argTypes (CTCons      _ _) = []
-argTypes (CFuncType t1 t2) = t1 : argTypes t2
+argTypes texp = case texp of CFuncType t1 t2 -> t1 : argTypes t2
+                             _               -> []
 
 --- Return the result type from a (nested) functional type
 resultType :: CTypeExpr -> CTypeExpr
-resultType (CTVar          n) = CTVar n
-resultType (CTCons name args) = CTCons name args
-resultType (CFuncType   _ t2) = resultType t2
+resultType texp = case texp of CFuncType _ t2 -> resultType t2
+                               _              -> texp
 
 --- Returns all type variables occurring in a type expression.
 tvarsOfType :: CTypeExpr -> [CTVarIName]
 tvarsOfType (CTVar v) = [v]
 tvarsOfType (CFuncType t1 t2) = tvarsOfType t1 ++ tvarsOfType t2
-tvarsOfType (CTCons _ args) = concatMap tvarsOfType args
+tvarsOfType (CTCons _)        = []
+tvarsOfType (CTApply t1 t2)   = tvarsOfType t1 ++ tvarsOfType t2
 
 --- Returns all type constructors used in the given type.
 tconsOfType :: CTypeExpr -> [QName]
 tconsOfType (CTVar            _) = []
 tconsOfType (CFuncType t1 t2) = tconsOfType t1 `union` tconsOfType t2
-tconsOfType (CTCons tc tys)   = foldr union [tc] $ map tconsOfType tys
+tconsOfType (CTCons tc)       = [tc]
+tconsOfType (CTApply t1 t2)   = tconsOfType t1 `union` tconsOfType t2
 
 --- Returns all modules used in the given type.
 modsOfType :: CTypeExpr -> [String]
