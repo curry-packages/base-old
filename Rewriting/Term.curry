@@ -61,7 +61,6 @@ showVarIdx v | v >= 0    = if q == 0 then [c] else c:(show q)
 showTerm :: (f -> String) -> Term f -> String
 showTerm s = showTerm' False
   where
-    showTerm' :: Bool -> Term f -> String
     showTerm' _ (TermVar v)     = showVarIdx v
     showTerm' b (TermCons c ts)
       = case ts of
@@ -161,7 +160,7 @@ normalizeTerm :: Term f -> Term f
 normalizeTerm t = normalize t
   where
     sub = listToFM (<) (zip (tVars t) (map TermVar [0..]))
-    normalize :: Term f -> Term f
+
     normalize t'@(TermVar v)  = fromMaybe t' (lookupFM sub v)
     normalize (TermCons c ts) = TermCons c (map normalize ts)
 

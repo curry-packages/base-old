@@ -103,31 +103,31 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 
 # generate individual documentations for libraries
 $(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" AbstractCurry.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.Annotated.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/CLP.%.html: CLP/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Database.%.html: Database/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Rewriting.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Test.%.html: Test/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Test.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/%.html: %.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
@@ -142,28 +142,28 @@ texdoc: $(LIB_CURRY)
 # In case of failures (which might occur due to memory problems in SWI-Prolog)
 # an empty LaTeX file is generated so that the make process does not die.
 $(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$* || (rm -f $@ && touch $@)
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.Annotated.$* || (rm -f $@ && touch $@)
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.$* || (rm -f $@ && touch $@)
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$* || (rm -f $@ && touch $@)
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$* || (rm -f $@ && touch $@)
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Database.%.tex: Database/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.$* || (rm -f $@ && touch $@)
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Rewriting.$* || (rm -f $@ && touch $@)
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Test.%.tex: Test/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Test.$* || (rm -f $@ && touch $@)
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/%.tex: %.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $* || (rm -f $@ && touch $@)
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
