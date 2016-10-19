@@ -1405,7 +1405,7 @@ ConfigButton cmd confs = PlainButton (Command cmd : confs)
 --- The argument contains the configuration options for the text edit widget.
 TextEditScroll :: [ConfItem] -> Widget
 TextEditScroll confs =
-   Matrix [] [[TextEdit ([WRef txtref, Fill]++confs),
+   matrix [[TextEdit ([WRef txtref, Fill]++confs),
                ScrollV txtref [FillY]],
               [ScrollH txtref [FillX]]]     where txtref free
 
@@ -1414,7 +1414,7 @@ TextEditScroll confs =
 --- The argument contains the configuration options for the list box widget.
 ListBoxScroll :: [ConfItem] -> Widget
 ListBoxScroll confs =
-   Matrix [] [[ListBox ([WRef lbref, Fill]++confs),
+   matrix [[ListBox ([WRef lbref, Fill]++confs),
                ScrollV lbref [FillY]],
               [ScrollH lbref [FillX]]]     where lbref free
 
@@ -1423,9 +1423,9 @@ ListBoxScroll confs =
 --- The argument contains the configuration options for the text edit widget.
 CanvasScroll :: [ConfItem] -> Widget
 CanvasScroll confs =
-   Col []
-     [Row [] [Canvas ([WRef cref, Fill]++confs),
-              ScrollV cref [FillY]],
+   col
+     [row [Canvas ([WRef cref, Fill]++confs),
+           ScrollV cref [FillY]],
       ScrollH cref [FillX]]     where cref free
 
 
@@ -1433,7 +1433,7 @@ CanvasScroll confs =
 --- The argument contains the configuration options for the entry widget.
 EntryScroll :: [ConfItem] -> Widget
 EntryScroll confs =
-   Col []
+   col
     [Entry ([WRef entryref, FillX]++confs),
      ScrollH entryref [Width 10, FillX]]
   where entryref free
