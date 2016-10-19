@@ -25,7 +25,7 @@ module Prelude
   -- functions
   , (.), id, const, curry, uncurry, flip, until, seq, ensureNotFree
   , ensureSpine, ($), ($!), ($!!), ($#), ($##), error
-  , failed, (&&), (||), not, otherwise, if_then_else
+  , failed, (&&), (||), not, otherwise, if_then_else, solve
   , fst, snd, head, tail, null, (++), length, (!!), map, foldl, foldl1
   , foldr, foldr1, filter, zip, zip3, zipWith, zipWith3, unzip, unzip3
   , concat, concatMap, iterate, repeat, replicate, take, drop, splitAt
