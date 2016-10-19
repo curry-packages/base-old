@@ -209,31 +209,31 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 
 # generate individual documentations for libraries
 $(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" AbstractCurry.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.Annotated.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" FlatCurry.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/CLP.%.html: CLP/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" CLP.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.CDBI.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Database.%.html: Database/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Database.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Rewriting.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Test.%.html: Test/%.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" Test.$*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/%.html: %.curry
-	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $*
+	"$(CURRYDOC)" --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
@@ -246,29 +246,29 @@ texdoc: $(LIB_CURRY)
 
 # generate individual LaTeX documentations for libraries
 $(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" AbstractCurry.$*
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.Annotated.$*
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" FlatCurry.$*
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" CLP.$*
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.CDBI.$*
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Database.%.tex: Database/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Database.$*
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Rewriting.$*
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Test.%.tex: Test/%.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" Test.$*
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/%.tex: %.curry
-	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $*
+	"$(CURRYDOC)" --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
