@@ -15,6 +15,11 @@ infixr 9 ~>
 ------------------------------------------------------------------------
 -- Goodies to construct type expressions
 
+--- A type application of a qualified type constructor name to a list of
+--- argument types.
+applyTC :: QName -> [CTypeExpr] -> CTypeExpr
+applyTC f es = foldl CTApply (CTCons f) es 
+
 --- A function type.
 (~>) :: CTypeExpr -> CTypeExpr -> CTypeExpr
 t1 ~> t2 = CFuncType t1 t2
@@ -72,6 +77,10 @@ unitType = baseType (pre "()")
 --- The type expression of the Time.CalendarTime type.
 dateType :: CTypeExpr
 dateType = baseType ("Time", "CalendarTime")
+
+--- A qualified type with empty class constraints.
+emptyClassType :: CTypeExpr -> CQualTypeExpr
+emptyClassType te = CQualType (CContext []) te
 
 ------------------------------------------------------------------------
 -- Goodies to construct function declarations

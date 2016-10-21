@@ -3,7 +3,7 @@
 --- in AbstractCurry programs, i.e., it provides a collection of
 --- selector functions for AbstractCurry.
 ---
---- @version May 2016
+--- @version October 2016
 --- @category meta
 ------------------------------------------------------------------------
 
@@ -11,10 +11,11 @@ module AbstractCurry2.Select
   ( progName, imports, functions, constructors, types, publicFuncNames
   , publicConsNames, publicTypeNames
 
+  , typeOfQualType, classConstraintsOfQualType
   , typeName, typeVis, typeCons
   , consName, consVis
   , isBaseType, isPolyType, isFunctionalType, isIOType, isIOReturnType
-  , argTypes, resultType, tvarsOfType, tconsOfType, modsOfType
+  , argTypes, resultType, tvarsOfType, tconsOfType, modsOfType, tconsArgsOfType
 
   , funcName, funcArity, funcComment, funcVis, funcType, funcRules
   , ruleRHS, ldeclsOfRule
@@ -69,13 +70,21 @@ publicTypeNames = map typeName . filter ((== Public) . typeVis) . types
 ------------------------------------------------------------------------
 -- Selectors for type expressions
 
+--- Returns the type expression of a qualified type.
+typeOfQualType :: CQualTypeExpr -> CTypeExpr
+typeOfQualType (CQualType _ te) = te
+
+--- Returns the class constraints of a qualified type.
+classConstraintsOfQualType :: CQualTypeExpr -> [CConstraint]
+classConstraintsOfQualType (CQualType (CContext cc) _) = cc
+
 --- Returns the name of a given type declaration
 typeName :: CTypeDecl -> QName
 typeName (CType    n _ _ _ _) = n
 typeName (CTypeSyn n _ _ _  ) = n
 typeName (CNewType n _ _ _ _) = n
 
---- Returns the visibility of a given type declaration
+--- Returns the visibility of a given type declaration.
 typeVis :: CTypeDecl -> CVisibility
 typeVis (CType    _ vis _ _ _) = vis
 typeVis (CTypeSyn _ vis _ _  ) = vis
@@ -159,6 +168,17 @@ tconsOfType (CTApply t1 t2)   = tconsOfType t1 `union` tconsOfType t2
 --- Returns all modules used in the given type.
 modsOfType :: CTypeExpr -> [String]
 modsOfType = map fst . tconsOfType
+
+--- Transforms a type constructor application into a pair of the type
+--- constructor and the argument types, if possible.
+tconsArgsOfType :: CTypeExpr -> Maybe (QName,[CTypeExpr])
+tconsArgsOfType (CTVar       _) = Nothing
+tconsArgsOfType (CFuncType _ _) = Nothing
+tconsArgsOfType (CTCons tc)     = Just (tc,[])
+tconsArgsOfType (CTApply te ta) =
+  maybe Nothing
+        (\ (tc,targs) -> Just (tc,targs++[ta]))
+        (tconsArgsOfType te)
 
 ------------------------------------------------------------------------
 -- Selectors for function definitions

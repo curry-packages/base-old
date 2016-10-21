@@ -14,8 +14,8 @@ module Rewriting.Files
   , fromFuncDecl, fromRule, fromLiteral, fromPattern, fromRhs, fromExpr
   ) where
 
-import AbstractCurry.Files (tryReadCurryFile)
-import AbstractCurry.Types
+import AbstractCurry2.Files (tryReadCurryFile)
+import AbstractCurry2.Types
 import FiniteMap (FM, listToFM)
 import Rewriting.Rules (Rule, TRS, rCons)
 import Rewriting.Substitution
@@ -79,7 +79,7 @@ readCurryProgram fn = do res <- tryReadCurryFile fn
 --- where every function gets assigned the corresponding term rewriting system
 --- and every type has a corresponding type declaration.
 fromCurryProg :: CurryProg -> RWData
-fromCurryProg (CurryProg _ _ ts fs _)
+fromCurryProg (CurryProg _ _ _ _ _ ts fs _)
   = (listToFM (<) (map fromFuncDecl fs), ts)
 
 --- Transforms an abstract curry function declaration into a pair with
