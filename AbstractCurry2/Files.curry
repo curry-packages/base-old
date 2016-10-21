@@ -105,7 +105,9 @@ tryParse fn = do
  where cancel str = return (Left str)
 
 --- I/O action which parses a Curry program and returns the corresponding
---- untyped Abstract Curry program.
+--- untyped abstract Curry program.
+--- An untyped abstract Curry program has functions of type `Prelude.untyped`
+--- if the source code does not contain a type signature for this function.
 --- Thus, the argument is the file name without suffix ".curry"
 --- or ".lcurry") and the result is a Curry term representing this
 --- program.
@@ -115,7 +117,7 @@ readUntypedCurry prog =
 
 --- I/O action which reads a typed Curry program from a file (with extension
 --- ".acy") with respect to some parser options.
---- This I/O action is used by the standard action <CODE>readCurry</CODE>.
+--- This I/O action is used by the standard action `readCurry`.
 --- It is currently predefined only in Curry2Prolog.
 --- @param progfile - the program file name (without suffix ".curry")
 --- @param options - parameters passed to the front end

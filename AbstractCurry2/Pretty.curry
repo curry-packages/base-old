@@ -22,7 +22,7 @@ module AbstractCurry2.Pretty
     , ppMName, ppExports, ppImports
 
     , ppCOpDecl, ppCTypeDecl, ppCFuncDecl, ppCFuncDeclWithoutSig, ppCRhs
-    , ppCFuncSignature, ppCTypeExpr, ppCRules, ppCRule
+    , ppCFuncSignature, ppCQualTypeExpr, ppCTypeExpr, ppCRules, ppCRule
     , ppCPattern, ppCLiteral, ppCExpr
     , ppCStatement, ppQFunc, ppFunc, ppQType, ppType)
     where
@@ -210,7 +210,10 @@ prettyCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 --- This is necessary to avoid errors w.r.t. names re-exported by modules.
 ppCurryProg :: Options -> CurryProg -> Doc
 ppCurryProg opts cprog@(CurryProg m ms dfltdecl clsdecls instdecls ts fs os) =
- vsepBlank
+ if dfltdecl/=Nothing || not (null clsdecls) || not (null instdecls)
+ then error "AbstractCurry2.Pretty.ppCurryProg: not yet implemented"
+ else
+  vsepBlank
     [ (nest' opts' $ sep [ text "module" <+> ppMName m, ppExports opts' ts fs])
        </> where_
     , ppImports opts' allImports
@@ -316,8 +319,16 @@ ppCConsDecls opts cDecls =
 --- Pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
 ppCConsDecl opts (CCons   ctvars ctxt qn _ tExps ) =
+ let CContext cons = ctxt in
+ if not (null ctvars) || not (null cons)
+ then error "AbstractCurry2.Pretty.ppCConsDecl: not yet implemented"
+ else
   ppFunc qn <+> hsepMap (ppCTypeExpr' 2 opts) tExps
 ppCConsDecl opts (CRecord ctvars ctxt qn _ fDecls) =
+ let CContext cons = ctxt in
+ if not (null ctvars) || not (null cons)
+ then error "AbstractCurry2.Pretty.ppCConsDecl: not yet implemented"
+ else
   ppFunc qn <+> alignedSetSpaced (map (ppCFieldDecl opts) fDecls)
 
 --- Pretty-print a record field declaration (`field :: type`).
