@@ -4,7 +4,7 @@
 --- This library provides a pretty-printer for AbstractCurry modules.
 ---
 --- @author  Yannik Potdevin (with changes by Michael Hanus)
---- @version March 2016
+--- @version October 2016
 --- @category meta
 --- --------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ module AbstractCurry.Pretty
     , ppMName, ppExports, ppImports
 
     , ppCOpDecl, ppCTypeDecl, ppCFuncDecl, ppCFuncDeclWithoutSig, ppCRhs
-    , ppCFuncSignature, ppCTypeExpr, ppCRules, ppCRule
+    , ppCFuncSignature, ppCQualTypeExpr, ppCTypeExpr, ppCRules, ppCRule
     , ppCPattern, ppCLiteral, ppCExpr
     , ppCStatement, ppQFunc, ppFunc, ppQType, ppType)
     where
@@ -45,10 +45,7 @@ data Qualification
                 --   identifiers and those of Prelude.
     | OnDemand  -- ^ Fully qualify only identifiers which need to be.
     | None      -- ^ Do not qualify any function.
--- deriving Eq
-
-instance Eq Qualification where
-  _ == _ = error "TODO: Eq AbstractCurry.Pretty.Qualification"
+ deriving Eq
 
 --- The choice for a generally preferred layout.
 --- @cons PreferNestedLayout - prefer a layout where the arguments of
@@ -212,7 +209,11 @@ prettyCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 --- in the program if qualified pretty printing is used.
 --- This is necessary to avoid errors w.r.t. names re-exported by modules.
 ppCurryProg :: Options -> CurryProg -> Doc
-ppCurryProg opts cprog@(CurryProg m ms ts fs os) = vsepBlank
+ppCurryProg opts cprog@(CurryProg m ms dfltdecl clsdecls instdecls ts fs os) =
+ if dfltdecl/=Nothing || not (null clsdecls) || not (null instdecls)
+ then error "AbstractCurry.Pretty.ppCurryProg: not yet implemented"
+ else
+  vsepBlank
     [ (nest' opts' $ sep [ text "module" <+> ppMName m, ppExports opts' ts fs])
        </> where_
     , ppImports opts' allImports
@@ -290,15 +291,24 @@ ppCFixity CInfixrOp = text "infixr"
 --- Pretty-print type declarations, like `data ... = ...`, `type ... = ...` or
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
-ppCTypeDecl opts (CType qn _ tVars cDecls)
-    = hsep [ text "data", ppType qn, ppCTVarINames opts tVars
-           , if null cDecls then empty else ppCConsDecls opts cDecls]
+ppCTypeDecl opts (CType qn _ tVars cDecls derivings) =
+  hsep [ text "data", ppType qn, ppCTVarINames opts tVars
+       , if null cDecls then empty else ppCConsDecls opts cDecls]
+  <$!$> ppDeriving opts derivings
 ppCTypeDecl opts (CTypeSyn qn _ tVars tExp)
     = hsep [ text "type", ppType qn, ppCTVarINames opts tVars
            , align $ equals <+> ppCTypeExpr opts tExp]
-ppCTypeDecl opts (CNewType qn _ tVars cDecl)
-    = hsep [ text "newtype", ppType qn, ppCTVarINames opts tVars, equals
-           , ppCConsDecl opts cDecl]
+ppCTypeDecl opts (CNewType qn _ tVars cDecl derivings) =
+  hsep [ text "newtype", ppType qn, ppCTVarINames opts tVars, equals
+       , ppCConsDecl opts cDecl]
+  <$!$> ppDeriving opts derivings
+
+--- Pretty-print deriving clause.
+ppDeriving :: Options -> [QName] -> Doc
+ppDeriving _    []   = empty
+ppDeriving opts [cn] = text " deriving" <+> ppQType opts cn
+ppDeriving opts cls@(_:_:_) =
+  text " deriving" <+> alignedTupled (map (ppQType opts) cls)
 
 --- Pretty-print a list of constructor declarations, including the `=` sign.
 ppCConsDecls :: Options -> [CConsDecl] -> Doc
@@ -308,10 +318,18 @@ ppCConsDecls opts cDecls =
 
 --- Pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
-ppCConsDecl opts (CCons   qn _ tExps ) = ppFunc qn
-                                     <+> hsepMap (ppCTypeExpr' 2 opts) tExps
-ppCConsDecl opts (CRecord qn _ fDecls) =
-    ppFunc qn <+> alignedSetSpaced (map (ppCFieldDecl opts) fDecls)
+ppCConsDecl opts (CCons   ctvars ctxt qn _ tExps ) =
+ let CContext cons = ctxt in
+ if not (null ctvars) || not (null cons)
+ then error "AbstractCurry.Pretty.ppCConsDecl: not yet implemented"
+ else
+  ppFunc qn <+> hsepMap (ppCTypeExpr' 2 opts) tExps
+ppCConsDecl opts (CRecord ctvars ctxt qn _ fDecls) =
+ let CContext cons = ctxt in
+ if not (null ctvars) || not (null cons)
+ then error "AbstractCurry.Pretty.ppCConsDecl: not yet implemented"
+ else
+  ppFunc qn <+> alignedSetSpaced (map (ppCFieldDecl opts) fDecls)
 
 --- Pretty-print a record field declaration (`field :: type`).
 ppCFieldDecl :: Options -> CFieldDecl -> Doc
@@ -337,13 +355,28 @@ ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs) =
     <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
 
 --- Pretty-print a function signature according to given options.
-ppCFuncSignature :: Options -> QName -> CTypeExpr -> Doc
+ppCFuncSignature :: Options -> QName -> CQualTypeExpr -> Doc
 ppCFuncSignature opts qn tExp
     | isUntyped tExp = empty
     | otherwise = nest' opts
                 $ sep [ genericPPName parsIfInfix qn
-                      , align $ doubleColon <+> ppCTypeExpr opts tExp ]
-    where isUntyped te = te == CTCons (pre "untyped") []
+                      , align $ doubleColon <+> ppCQualTypeExpr opts tExp ]
+ where
+  isUntyped te = te == CQualType (CContext []) (CTCons (pre "untyped"))
+
+--- Pretty-print a qualified type expression.
+ppCQualTypeExpr :: Options -> CQualTypeExpr -> Doc
+ppCQualTypeExpr opts (CQualType (CContext []) texp) = ppCTypeExpr opts texp
+ppCQualTypeExpr opts (CQualType (CContext [clscon]) texp) =
+  ppCConstraint opts clscon <+> text "=>" <+> ppCTypeExpr opts texp
+ppCQualTypeExpr opts (CQualType (CContext ctxt@(_:_:_)) texp) =
+ alignedTupled (map (ppCConstraint opts) ctxt) <+>
+ text "=>" <+> ppCTypeExpr opts texp
+
+--- Pretty-print a single class constraint.
+ppCConstraint :: Options -> CConstraint -> Doc
+ppCConstraint opts (cn,texp) =
+  ppQType opts cn <+> ppCTypeExpr' prefAppPrec opts texp
 
 --- Pretty-print a type expression.
 ppCTypeExpr :: Options -> CTypeExpr -> Doc
@@ -359,15 +392,32 @@ ppCTypeExpr' _ opts (CTVar     tvar) = ppCTVarIName opts tvar
 ppCTypeExpr' p opts (CFuncType tExp1 tExp2) =
     parensIf (p > tlPrec)
   $ sep [ ppCTypeExpr' 1 opts tExp1, rarrow <+> ppCTypeExpr opts tExp2]
-ppCTypeExpr' p opts (CTCons qn tExps)
-    | null tExps     = ppQType opts qn
-    | isListCons qn  = brackets . (ppCTypeExpr opts) . head $ tExps -- assume singleton
-    | isTupleCons qn = alignedTupled $ map (ppCTypeExpr opts) tExps
+ppCTypeExpr' _ opts (CTCons qn) = ppQType opts qn
+
+ppCTypeExpr' p opts texp@(CTApply tcon targ) =
+  maybe (parensIf (p >= 2) $ ppCTypeExpr' 2 opts tcon
+                         <+> ppCTypeExpr' 2 opts targ)
+        (\qn -> ppCTypeTConApply qn (argsOfApply texp))
+        (funOfApply texp)
+ where
+  ppCTypeTConApply qn targs
+    | isListCons qn  = brackets . ppCTypeExpr opts . head $ targs -- assume singleton
+    | isTupleCons qn = alignedTupled $ map (ppCTypeExpr opts) targs
     | otherwise      = parensIf (p >= 2)
                      $ ppQType opts qn
-                   <+> hsepMap (ppCTypeExpr' 2 opts) tExps
+                   <+> hsepMap (ppCTypeExpr' 2 opts) targs
 
---- Pretty-print a list of type variables horizontally separating them by `space`.
+  funOfApply te = case te of CTApply (CTCons qn) _ -> Just qn
+                             CTApply tc _          -> funOfApply tc
+                             _                     -> Nothing
+                                 
+  argsOfApply te = case te of
+    CTApply (CTCons _) ta -> [ta]
+    CTApply tc         ta -> argsOfApply tc ++ [ta]
+    _                     -> [] -- should not occur
+
+--- Pretty-print a list of type variables horizontally separating them
+--- by `space`.
 ppCTVarINames :: Options -> [CTVarIName] -> Doc
 ppCTVarINames opts = hsepMap (ppCTVarIName opts)
 
@@ -638,7 +688,7 @@ ppCExpr' p opts (CCase cType exp cases) =
         , ppCases opts cases]
 ppCExpr' p opts (CTyped exp tExp) =
     parensIf (p > tlPrec)
-  $ hsep [ppCExpr opts exp, doubleColon, ppCTypeExpr opts tExp]
+  $ hsep [ppCExpr opts exp, doubleColon, ppCQualTypeExpr opts tExp]
 ppCExpr' _ opts (CRecConstr qn rFields) =
     ppQFunc opts qn <+> ppRecordFields opts rFields
 ppCExpr' p opts (CRecUpdate exp rFields) = ppCExpr' p opts exp

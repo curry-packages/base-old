@@ -4,7 +4,7 @@
 --- rewriting system and every type has a corresponding type declaration.
 ---
 --- @author Jan-Hendrik Matthes
---- @version August 2016
+--- @version October 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
@@ -14,8 +14,8 @@ module Rewriting.Files
   , fromFuncDecl, fromRule, fromLiteral, fromPattern, fromRhs, fromExpr
   ) where
 
-import AbstractCurry2.Files (tryReadCurryFile)
-import AbstractCurry2.Types
+import AbstractCurry.Files (tryReadCurryFile)
+import AbstractCurry.Types
 import FiniteMap (FM, listToFM)
 import Rewriting.Rules (Rule, TRS, rCons)
 import Rewriting.Substitution
