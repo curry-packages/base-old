@@ -2,7 +2,7 @@
 --- This library provides some useful operations to write programs
 --- that generate AbstractCurry programs in a more compact and readable way.
 ---
---- @version February 2016
+--- @version October 2016
 --- @category meta
 ------------------------------------------------------------------------
 
@@ -11,6 +11,23 @@ module AbstractCurry2.Build where
 import AbstractCurry2.Types
 
 infixr 9 ~>
+
+------------------------------------------------------------------------
+-- Goodies to construct type declarations
+
+--- Constructs a simple `CurryProg` without type classes and instances.
+simpleCurryProg :: String -> [String] -> [CTypeDecl] -> [CFuncDecl] -> [COpDecl]
+                -> CurryProg
+simpleCurryProg name imps types funcs ops =
+  CurryProg name imps Nothing [] [] types funcs ops
+
+------------------------------------------------------------------------
+-- Goodies to construct type declarations
+
+--- Constructs a simple constructor declaration without quantified
+--- type variables and type class constraints.
+simpleCCons :: QName -> CVisibility -> [CTypeExpr] -> CConsDecl
+simpleCCons = CCons [] (CContext [])
 
 ------------------------------------------------------------------------
 -- Goodies to construct type expressions
@@ -96,6 +113,16 @@ cfunc = CFunc
 cmtfunc :: String -> QName -> Int -> CVisibility -> CQualTypeExpr -> [CRule]
         -> CFuncDecl
 cmtfunc = CmtFunc
+
+-- Constructs a `CFunc` with simple (unqualified) type expression.
+stFunc :: QName -> Int -> CVisibility -> CTypeExpr -> [CRule] -> CFuncDecl
+stFunc name arity vis texp rs = cfunc name arity vis (emptyClassType texp) rs
+
+-- Constructs a `CmtFunc` with simple (unqualified) type expression.
+stCmtFunc :: String -> QName -> Int -> CVisibility -> CTypeExpr -> [CRule]
+          -> CFuncDecl
+stCmtFunc cm name arity vis texp rs =
+  cmtfunc cm name arity vis (emptyClassType texp) rs
 
 --- Constructs a simple rule with a pattern list and an
 --- unconditional right-hand side.
