@@ -13,7 +13,7 @@
 --- Volume 2: _Seminumerical Algorithms_, section 3.2.1.
 ---
 --- @author Sergio Antoy (with extensions by Michael Hanus)
---- @version February 2016
+--- @version October 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
@@ -22,7 +22,6 @@ module Random
   , shuffle
   ) where
 
-import Integer ( abs )
 import System  ( getCPUTime )
 import Time
 
@@ -138,7 +137,7 @@ shuffleWithLen (r:rs) len xs
   | len == 0  = []
   | otherwise = z : shuffleWithLen rs (len-1) (ys++zs)
  where
-  (ys,z:zs) = splitAt (Integer.abs r `mod` len) xs
+  (ys,z:zs) = splitAt (abs r `mod` len) xs
 
 {-     Simple tests and examples
 

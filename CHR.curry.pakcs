@@ -18,7 +18,7 @@
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
 
 module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
-           true, fail, andCHR, allCHR, chrsToGoal,
+           true, false, andCHR, allCHR, chrsToGoal,
            toGoal1, toGoal2, toGoal3, toGoal4, toGoal5, toGoal6,
            (.=.), (./=.), (.<=.), (.>=.), (.>.), (.<.),
            nonvar, ground, anyPrim,
@@ -121,9 +121,9 @@ data Goal dom chr = Goal [CHRconstr dom chr]
 true :: Goal dom chr 
 true = Goal []
 
---- The always failing constraint.
-fail :: Goal dom chr 
-fail = primToGoal Fail
+--- The always unsatisfiable constraint.
+false :: Goal dom chr 
+false = primToGoal Fail
 
 --- Join a list of CHR goals into a single CHR goal (by conjunction).
 andCHR :: [Goal dom chr] -> Goal dom chr
@@ -561,13 +561,13 @@ compileRule getftype chrs (Rule _ rhs) =
     | qf == (chrMod,"|>")   = let (j,chrs1,trule1) = exp2CHR i a1
                                   (k,_,tgoal2) = transGoal j a2
                                in (k, chrs1, trule1 ++" | "++ sg tgoal2)
-    | otherwise = error ("Cannot translate CHR rule: " ++ showFlatCurryExpr exp)
+    | otherwise = error ("Cannot translate CHR rule: " ++ show exp)
    where sg = showPlGoals
 
   transGoal i exp = case reduceApply exp of
     Comb FuncCall qf args -> if fst qf == chrMod then transCHRPred i qf args
                                                  else transUserPred i qf args
-    _ -> error ("Cannot translate CHR literal: " ++ showFlatCurryExpr exp)
+    _ -> error ("Cannot translate CHR literal: " ++ show exp)
 
   transCHRPred i (_,cname) args
    | cname=="/\\" =
@@ -577,7 +577,7 @@ compileRule getftype chrs (Rule _ rhs) =
    | cname=="nonvar" = (i, [], [PlLit "nonvar" [transArg (args!!0)]])
    | cname=="ground" = (i, [], [PlLit "ground" [transArg (args!!0)]])
    | cname=="true"   = (i, [], [PlLit "true" []])
-   | cname=="fail"   = (i, [], [PlLit "fail" []])
+   | cname=="false"  = (i, [], [PlLit "fail" []])
    | otherwise = maybe (error $ "Illegal CHR constraint: CHR."++cname)
                        (\chr2pl -> (i, [], [chr2pl (map transArg args)]))
                        (lookup cname chrPrims)
@@ -607,7 +607,7 @@ firstBranch exp = case exp of
   Case _ _ (Branch _ bexp : brs) ->
       if null brs
       then firstBranch bexp
-      else error ("CHR rule with more than one branch: "++showFlatCurryExpr exp)
+      else error ("CHR rule with more than one branch: "++show exp)
   Free _ fexp                   -> firstBranch fexp
   _                             -> exp
 
@@ -641,7 +641,7 @@ transArg e = case e of
   Var i          -> PlVar ('X' : show i)
   Comb FuncCall qf args -> PlStruct (showQName qf) (map transArg args)
   Comb ConsCall qf args -> PlStruct (transCName qf) (map transArg args)
-  _ -> error ("Not yet translatable argument: "++showFlatCurryExpr e)
+  _ -> error ("Not yet translatable argument: "++show e)
  where
   transCName qf | qf == ("Prelude","[]") = "[]"
                 | qf == ("Prelude",":")  = "."
@@ -707,9 +707,5 @@ chr2curry (CHR.Goal c) = case c of
 -- Use FlatCurry pretty printer to show a non-top-level type expression.
 showCurryType :: TypeExpr -> String
 showCurryType te = '(' : pretty 78 (ppTypeExp defaultOptions te) ++ ")"
-
--- Use FlatCurry pretty printer to show a non-top-level type expression.
-showFlatCurryExpr :: Expr -> String
-showFlatCurryExpr _ = error "TODO: CHR.showFlatCurryExpr"
 
 ----------------------------------------------------------------------

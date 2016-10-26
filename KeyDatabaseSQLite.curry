@@ -695,6 +695,7 @@ updStack char stack =
 
 --- The type of errors that might occur during a transaction.
 data TError = TError TErrorKind String
+ deriving (Eq,Show)
 
 --- The various kinds of transaction errors.
 data TErrorKind = KeyNotExistsError
@@ -706,11 +707,11 @@ data TErrorKind = KeyNotExistsError
                 | MaxError
                 | UserDefinedError
                 | ExecutionError
+ deriving (Eq,Show)
 
 --- Transforms a transaction error into a string.
 showTError :: TError -> String
---showTError (TError k s) = "Transaction error " ++ show k ++ ": " ++ s
-showTError (TError _ s) = "Transaction error " ++ {- show k ++ -} ": " ++ s
+showTError (TError k s) = "Transaction error " ++ show k ++ ": " ++ s
 
 ------------------------------------------------------------------------------
 instance Monad Transaction where

@@ -18,6 +18,7 @@ infixr 2 .||
 infix  1 ./=, .==
 
 data Boolean = B Int  -- abstract
+ deriving (Eq,Show)
 
 --- The always satisfied constraint
 true :: Boolean
