@@ -14,7 +14,7 @@ module Prelude
   , elem, notElem, lookup
   , Ord(..)
   , Show(..), print, shows, showChar, showString, showParen
-  , Read (..), lex, read, reads, readParen
+  , Read (..), ReadS, lex, read, reads, readParen
   , Bounded (..), Enum (..), boundedEnumFrom, boundedEnumFromThen
   , asTypeOf
   , Num(..), Fractional(..), Real(..), Integral(..)
@@ -161,6 +161,7 @@ failed external
 -- Boolean values
 -- already defined as builtin, since it is required for if-then-else
 data Bool = False | True
+ deriving Read
 
 --- Sequential conjunction on Booleans.
 (&&)            :: Bool -> Bool -> Bool
@@ -235,6 +236,7 @@ prim_eqFloat external
 
 --- Ordering type. Useful as a result of comparison functions.
 data Ordering = LT | EQ | GT
+ deriving Read
 
 instance Eq Ordering where
   LT == LT = True
@@ -669,6 +671,7 @@ success = True
 -- Maybe type
 
 data Maybe a = Nothing | Just a
+ deriving Read
 
 maybe              :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
@@ -678,6 +681,7 @@ maybe _ f (Just x) = f x
 -- Either type
 
 data Either a b = Left a | Right b
+ deriving Read
 
 either               :: (a -> c) -> (b -> c) -> Either a b -> c
 either f _ (Left x)  = f x
@@ -783,6 +787,7 @@ data IOError
   | UserError   String -- user-specified error
   | FailError   String -- failing computation
   | NondetError String -- non-deterministic computation
+ deriving (Eq,Show,Read)
 
 --- A user error value is created by providing a description of the
 --- error situation as a string.
@@ -1017,9 +1022,6 @@ instance Eq a => Eq (Maybe a) where
   Nothing == Just _  = False
   Just x  == Just y  = x == y
 
---instance Eq Success where
---  _ == _ = True
-
 instance (Eq a, Eq b) => Eq (Either a b) where
   Left x  == Left y  = x == y
   Left _  == Right _ = False
@@ -1070,9 +1072,6 @@ instance Ord Int where
 
 instance Ord Float where
   f1 <= f2 = f1 `ltEqFloat` f2
-
---instance Ord Success where
---  _ <= _ = True
 
 instance Ord a => Ord (Maybe a) where
   Nothing <= Nothing = True
@@ -1218,9 +1217,6 @@ appPrec = 10
 appPrec1 :: Int
 appPrec1 = 11
 
---instance Show Success where
---  showsPrec _ _ = showString "Success"
-
 -- -------------------------------------------------------------------------
 -- Read class and related instances and functions
 -- -------------------------------------------------------------------------
@@ -1254,6 +1250,32 @@ read s =  case [x | (x, t) <- reads s, ("", "") <- lex t] of
   [x] -> x
   [] -> error "Prelude.read: no parse"
   _ -> error "Prelude.read: ambiguous parse"
+
+instance Read Int where
+  readsPrec _ s = [ (i,t) | (x,t) <- lexDigits s, (i,[]) <- read_ x ]
+
+instance Read Float where
+  readsPrec _ s = [ (f,t) | (x,t) <- lex s, not (null x), isDigit (head x)
+                          , (f,[]) <- readFloat x ]
+   where
+    readFloat x = if all isDigit x then [ (i2f i, t) | (i,t) <- read_ x ]
+                                   else read_ x
+
+instance Read Char where
+  readsPrec _ s = [ (c,t) | (x,t) <- lex s, not (null x), head x == '''
+                          , (c,[]) <- read_ x ]
+
+-- Primitive operation to read arbitrary literals.
+read_ :: ReadS _
+read_ s = prim_readLiteral $## s
+
+prim_readLiteral :: String -> [(_,String)]
+prim_readLiteral external
+
+instance Read a => Read [a] where
+  readsPrec _ = readList
+
+-- The following definitions are necessary to implement instances of Read.
 
 lex :: ReadS String
 lex s = case s of

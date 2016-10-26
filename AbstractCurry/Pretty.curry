@@ -210,14 +210,14 @@ prettyCurryProg opts cprog = pretty (pageWidth opts) $ ppCurryProg opts cprog
 --- This is necessary to avoid errors w.r.t. names re-exported by modules.
 ppCurryProg :: Options -> CurryProg -> Doc
 ppCurryProg opts cprog@(CurryProg m ms dfltdecl clsdecls instdecls ts fs os) =
- if dfltdecl/=Nothing || not (null clsdecls) || not (null instdecls)
- then error "AbstractCurry.Pretty.ppCurryProg: not yet implemented"
- else
   vsepBlank
     [ (nest' opts' $ sep [ text "module" <+> ppMName m, ppExports opts' ts fs])
        </> where_
     , ppImports opts' allImports
     , vcatMap (ppCOpDecl opts') os
+    , ppCDefaultDecl opts' dfltdecl
+    , vsepBlankMap (ppCClassDecl opts') clsdecls
+    , vsepBlankMap (ppCInstanceDecl opts') instdecls
     , vsepBlankMap (ppCTypeDecl opts') ts
     , vsepBlankMap (ppCFuncDecl opts') fs ]
  where
@@ -288,6 +288,26 @@ ppCFixity CInfixOp  = text "infix"
 ppCFixity CInfixlOp = text "infixl"
 ppCFixity CInfixrOp = text "infixr"
 
+--- Pretty-print operator precedence declarations.
+ppCDefaultDecl :: Options -> Maybe CDefaultDecl -> Doc
+ppCDefaultDecl _ Nothing = empty
+ppCDefaultDecl opts (Just (CDefaultDecl texps)) =
+  text "default" <+> filledTupled (map (ppCTypeExpr opts) texps)
+
+--- Pretty-print a class declaration.
+ppCClassDecl :: Options -> CClassDecl -> Doc
+ppCClassDecl opts (CClass qn _ ctxt tvar funcs) =
+  hsep [ text "class", ppCContext opts ctxt, ppType qn, ppCTVarIName opts tvar
+       , text "where"]
+  <$!$> indent' opts (vsepBlankMap (ppCFuncClassDecl opts) funcs)
+
+--- Pretty-print an instance declaration.
+ppCInstanceDecl :: Options -> CInstanceDecl -> Doc
+ppCInstanceDecl opts (CInstance qn ctxt texp funcs) =
+  hsep [ text "instance", ppCContext opts ctxt
+       , ppType qn, ppCTypeExpr opts texp, text "where"]
+  <$!$> indent' opts (vsepBlankMap (ppCFuncDeclWithoutSig opts) funcs)
+
 --- Pretty-print type declarations, like `data ... = ...`, `type ... = ...` or
 --- `newtype ... = ...`.
 ppCTypeDecl :: Options -> CTypeDecl -> Doc
@@ -319,17 +339,17 @@ ppCConsDecls opts cDecls =
 --- Pretty-print a constructor declaration.
 ppCConsDecl :: Options -> CConsDecl -> Doc
 ppCConsDecl opts (CCons   ctvars ctxt qn _ tExps ) =
- let CContext cons = ctxt in
- if not (null ctvars) || not (null cons)
- then error "AbstractCurry.Pretty.ppCConsDecl: not yet implemented"
- else
-  ppFunc qn <+> hsepMap (ppCTypeExpr' 2 opts) tExps
+  hsep [ ppForallTVars opts ctvars, ppCContext opts ctxt
+       , ppFunc qn, hsepMap (ppCTypeExpr' 2 opts) tExps]
 ppCConsDecl opts (CRecord ctvars ctxt qn _ fDecls) =
- let CContext cons = ctxt in
- if not (null ctvars) || not (null cons)
- then error "AbstractCurry.Pretty.ppCConsDecl: not yet implemented"
- else
-  ppFunc qn <+> alignedSetSpaced (map (ppCFieldDecl opts) fDecls)
+  hsep [ ppForallTVars opts ctvars, ppCContext opts ctxt
+       , ppFunc qn <+> alignedSetSpaced (map (ppCFieldDecl opts) fDecls)]
+
+--- Pretty-print a variable (existiantial) quantifiction.
+ppForallTVars :: Options -> [CTVarIName] -> Doc
+ppForallTVars _ [] = empty
+ppForallTVars opts tvars@(_:_) =
+  text "forall" <+> hsep (map (ppCTVarIName opts) tvars) <+> text "."
 
 --- Pretty-print a record field declaration (`field :: type`).
 ppCFieldDecl :: Options -> CFieldDecl -> Doc
@@ -337,13 +357,25 @@ ppCFieldDecl opts (CField qn _ tExp) = hsep [ ppFunc qn
                                             , doubleColon
                                             , ppCTypeExpr opts tExp ]
 
+--- Pretty-print a document comment.
+ppCDocComment :: String -> Doc
+ppCDocComment cmt = vsepMap (text . ("--- " ++)) (lines cmt)
+
+--- Pretty-print a function declaration occurring in a class declaration.
+ppCFuncClassDecl :: Options -> CFuncDecl -> Doc
+ppCFuncClassDecl opts fDecl@(CFunc qn _ _ tExp rs) =
+    ppCFuncSignature opts qn tExp
+    <$!$> ppCRulesWithoutExternal funcDeclOpts qn rs
+ where funcDeclOpts = addFuncNamesToOpts (funcNamesOfFDecl fDecl) opts
+ppCFuncClassDecl opts (CmtFunc cmt qn a v tExp rs) =
+    ppCDocComment cmt <$!$> ppCFuncClassDecl opts (CFunc qn a v tExp rs)
+
 --- Pretty-print a function declaration.
 ppCFuncDecl :: Options -> CFuncDecl -> Doc
 ppCFuncDecl opts fDecl@(CFunc qn _ _ tExp _) =
     ppCFuncSignature opts qn tExp <$!$> ppCFuncDeclWithoutSig opts fDecl
 ppCFuncDecl opts (CmtFunc cmt qn a v tExp rs) =
-    vsepMap (text . ("--- " ++)) (lines cmt)
-    <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
+    ppCDocComment cmt <$!$> ppCFuncDecl opts (CFunc qn a v tExp rs)
 
 --- Pretty-print a function declaration without signature.
 ppCFuncDeclWithoutSig :: Options -> CFuncDecl -> Doc
@@ -351,8 +383,7 @@ ppCFuncDeclWithoutSig opts fDecl@(CFunc qn _ _ _ rs) =
     ppCRules funcDeclOpts qn rs
     where funcDeclOpts = addFuncNamesToOpts (funcNamesOfFDecl fDecl) opts
 ppCFuncDeclWithoutSig opts (CmtFunc cmt qn a v tExp rs) =
-    vsepMap (text . ("--- " ++)) (lines cmt)
-    <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
+    ppCDocComment cmt <$!$> ppCFuncDeclWithoutSig opts (CFunc qn a v tExp rs)
 
 --- Pretty-print a function signature according to given options.
 ppCFuncSignature :: Options -> QName -> CQualTypeExpr -> Doc
@@ -366,12 +397,16 @@ ppCFuncSignature opts qn tExp
 
 --- Pretty-print a qualified type expression.
 ppCQualTypeExpr :: Options -> CQualTypeExpr -> Doc
-ppCQualTypeExpr opts (CQualType (CContext []) texp) = ppCTypeExpr opts texp
-ppCQualTypeExpr opts (CQualType (CContext [clscon]) texp) =
-  ppCConstraint opts clscon <+> text "=>" <+> ppCTypeExpr opts texp
-ppCQualTypeExpr opts (CQualType (CContext ctxt@(_:_:_)) texp) =
- alignedTupled (map (ppCConstraint opts) ctxt) <+>
- text "=>" <+> ppCTypeExpr opts texp
+ppCQualTypeExpr opts (CQualType clsctxt texp) =
+  ppCContext opts clsctxt <+> ppCTypeExpr opts texp
+
+--- Pretty-print a class context.
+ppCContext :: Options -> CContext -> Doc
+ppCContext _ (CContext []) = empty
+ppCContext opts (CContext [clscon]) =
+  ppCConstraint opts clscon <+> text "=>"
+ppCContext opts (CContext ctxt@(_:_:_)) =
+  alignedTupled (map (ppCConstraint opts) ctxt) <+> text "=>"
 
 --- Pretty-print a single class constraint.
 ppCConstraint :: Options -> CConstraint -> Doc
@@ -426,10 +461,17 @@ ppCTVarIName :: Options -> CTVarIName -> Doc
 ppCTVarIName _ (_, tvar) = text tvar
 
 --- Pretty-print a list of function rules, concatenated vertically.
+--- If there are no rules, an external rule is printed.
 ppCRules :: Options -> QName -> [CRule] -> Doc
 ppCRules opts qn rs
     | null rs   = genericPPName parsIfInfix qn <+> text "external"
     | otherwise = vcatMap (ppCRule opts qn) rs
+
+--- Pretty-print a list of function rules, concatenated vertically.
+--- If there are no rules, an empty document is returned.
+ppCRulesWithoutExternal :: Options -> QName -> [CRule] -> Doc
+ppCRulesWithoutExternal opts qn rs =
+  if null rs then empty else vcatMap (ppCRule opts qn) rs
 
 --- Pretty-print a rule of a function. Given a function
 --- `f x y = x * y`, then `x y = x * y` is a rule consisting of `x y` as list of
