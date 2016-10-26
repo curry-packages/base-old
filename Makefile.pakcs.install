@@ -3,8 +3,7 @@ LIBTRUNKDIR=$(ROOT)/lib-trunk
 # specific PAKCS libraries:
 PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry \
                 CLPFD.curry CLPR.curry CLP/FD.curry CLP/R.curry \
-	        Database.curry Dynamic.curry Findall.curry \
-		GlobalVariable.curry KeyDB.curry KeyDatabase.curry \
+	        Findall.curry GlobalVariable.curry \
 		PlProfileData.curry Ports.curry 
 # get all library files from standard makefile and add PAKCS specific libs:
 LIB_CURRY = `cd $(LIBTRUNKDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
