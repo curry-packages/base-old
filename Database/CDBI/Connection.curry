@@ -58,7 +58,7 @@ printSQLResults (Right res) = mapIO_ print res
 --- `DBError`s are composed of an `DBErrorKind` and a `String`
 --- describing the error more explicitly.
 data DBError = DBError DBErrorKind String
-  deriving Show
+ deriving (Eq,Show)
 
 --- The different kinds of errors.
 data DBErrorKind
@@ -69,7 +69,7 @@ data DBErrorKind
   | NoLineError
   | LockedDBError
   | UnknownError
-  deriving Show
+ deriving (Eq,Show)
 
 --- Data type for SQL values, used during the communication with the database.
 data SQLValue
