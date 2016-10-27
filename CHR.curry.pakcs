@@ -448,7 +448,7 @@ compileRules modname chrmodname rids = do
            map (\ (p,a) ->
                   PlDirective
                      [PlLit "chr_constraint"
-                            [PlStruct "/" [PlAtom (showQName p), PlInt a]]])
+                            [PlStruct "/" [PlAtom (showPlName p), PlInt a]]])
                allchrs) ++
         ["","% CHR rules:"] ++ trules ++ ["","% Curry/Prolog interface:"] ++
         map (showPlClause . chrPrologPrimDefinition) allchrs ++
@@ -475,7 +475,7 @@ chrPrologPrimDefinition (qcname,carity) =
   PlClause
     (showCName ("prim_"++snd qcname))
     (map PlVar (map (\i->"X"++show i) [1..carity] ++ ["R"]))
-    [PlLit (showQName qcname) (map (\i->PlVar ("X"++show i)) [1..carity]),
+    [PlLit (showPlName qcname) (map (\i->PlVar ("X"++show i)) [1..carity]),
      PlLit "=" [PlVar "R", PlAtom "Prelude.True"]]
 
 
@@ -625,34 +625,34 @@ reduceApply exp = case exp of
 chrPrims :: [(String,[PlTerm] -> PlGoal)]
 chrPrims =
  [(".=.", \args -> PlLit "sunif" args),
-  ("./=.",\args -> PlLit "sunif" [PlStruct "Prelude.==" args, pfalse]),
-  (".>=.",\args -> PlLit "sunif" [PlStruct "Prelude.>=" args, ptrue]),
-  (".<=.",\args -> PlLit "sunif" [PlStruct "Prelude.<=" args, ptrue]),
-  (".>.", \args -> PlLit "sunif" [PlStruct "Prelude.>"  args, ptrue]),
-  (".<.", \args -> PlLit "sunif" [PlStruct "Prelude.<"  args, ptrue])]
- where ptrue  = PlAtom "Prelude.True"
-       pfalse = PlAtom "Prelude.False"
+  ("./=.",\args -> PlLit "sunif" [relApply "Prelude.==" args, pfalse]),
+  (".>=.",\args -> PlLit "sunif" [relApply "Prelude.>=" args, ptrue]),
+  (".<=.",\args -> PlLit "sunif" [relApply "Prelude.<=" args, ptrue]),
+  (".>.", \args -> PlLit "sunif" [relApply "Prelude.>"  args, ptrue]),
+  (".<.", \args -> PlLit "sunif" [relApply "Prelude.<"  args, ptrue])]
+ where
+  ptrue  = PlAtom "Prelude.True"
+  pfalse = PlAtom "Prelude.False"
+  relApply rel args = foldl (\f x -> PlStruct "Prelude.apply" [f,x])
+                            (PlStruct rel [head args])
+                            (tail args)
 
 -- Translate an argument of a CHR constraint:
 transArg :: Expr -> PlTerm
 transArg e = case e of
-  Lit (Intc i)   -> PlInt i
-  Lit (Floatc f) -> PlFloat f
-  Var i          -> PlVar ('X' : show i)
-  Comb FuncCall qf args -> PlStruct (showQName qf) (map transArg args)
-  Comb ConsCall qf args -> PlStruct (transCName qf) (map transArg args)
-  _ -> error ("Not yet translatable argument: "++show e)
- where
-  transCName qf | qf == ("Prelude","[]") = "[]"
-                | qf == ("Prelude",":")  = "."
-                | otherwise              = showQName qf
+  Lit (Intc i)          -> PlInt i
+  Lit (Floatc f)        -> PlFloat f
+  Var i                 -> PlVar ('X' : show i)
+  Comb FuncCall qf args -> PlStruct (showPlName qf) (map transArg args)
+  Comb ConsCall qf args -> PlStruct (showPlName qf) (map transArg args)
+  _                     -> error ("Not yet translatable argument: "++show e)
 
 -- Flatten a CHR literal: if arguments contain function calls,
 -- add unification constraints for these arguments.
 flattenLiteral :: Int -> QName -> [Expr] -> (Int,[PlGoal],PlGoal)
 flattenLiteral i qf args =
   let (j,flits,fargs) = flattenArgs i args
-   in (j, flits, PlLit (showQName qf) (map transArg fargs))
+   in (j, flits, PlLit (showPlName qf) (map transArg fargs))
 
 -- Replace non-variable arguments by equalities for new variables.
 -- The first argument and result is a counter for indexing new variables.
@@ -673,11 +673,11 @@ flattenArgs i (arg:args) =
     Comb ConsCall _ cargs -> any funcArg cargs
     _     -> True
 
--- Show a qualified name:
+-- Shows a qualified name:
 showQName :: QName -> String
 showQName (mname,fname) = mname++"."++fname
 
--- Show a name in Curry syntax, i.e., encode special characters as alphanum.
+-- Shows a name in Curry syntax, i.e., encode special characters as alphanum.
 showCName :: String -> String
 showCName s
   | all (\c -> isAlphaNum c || c=='_') s = s
@@ -686,6 +686,22 @@ showCName s
                                         else 'X':show (ord c))
                                  s
   | otherwise = "("++s++")"
+
+-- Shows a qualified name in PAKCS Prolog syntax, i.e.,
+-- encode special characters.
+showPlName :: QName -> String
+showPlName qn@(mn,fn)
+  | qn == ("Prelude","[]") = "[]"
+  | qn == ("Prelude",":")  = "."
+  | all (\c -> isAlphaNum c || c=='_') fn = showQName qn
+  | length fn > 1 && head fn == '_' = mn ++ '.' : concatMap encodeChar fn
+  | otherwise = showQName qn
+ where
+  encodeChar c = if isAlphaNum c || c=='_' || c=='.'
+                   then [c]
+                   else let oc = ord c
+                         in [''', intToDigit (oc `div` 16),
+                                  intToDigit (oc `mod` 16)]
 
 -- The name of the Curry CHR module:
 chrMod :: String

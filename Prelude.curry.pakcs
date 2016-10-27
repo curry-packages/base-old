@@ -1251,19 +1251,37 @@ read s =  case [x | (x, t) <- reads s, ("", "") <- lex t] of
   [] -> error "Prelude.read: no parse"
   _ -> error "Prelude.read: ambiguous parse"
 
+instance Read () where
+  readsPrec _ = readParen False (\r -> [ ((), t) | ("(", s) <- lex r
+                                                 , (")", t) <- lex s ])
+
 instance Read Int where
-  readsPrec _ s = [ (i,t) | (x,t) <- lexDigits s, (i,[]) <- read_ x ]
+  readsPrec _ = readParen False $ readNumber
+                  (\s -> [(i,t) | (x,t) <- lexDigits s, (i,[]) <- read_ x])
 
 instance Read Float where
-  readsPrec _ s = [ (f,t) | (x,t) <- lex s, not (null x), isDigit (head x)
-                          , (f,[]) <- readFloat x ]
+  readsPrec _ = readParen False $ readNumber
+                  (\s -> [ (f,t) | (x,t) <- lex s, not (null x)
+                                 , isDigit (head x), (f,[]) <- readFloat x ])
    where
     readFloat x = if all isDigit x then [ (i2f i, t) | (i,t) <- read_ x ]
                                    else read_ x
 
+readNumber :: Num a => ReadS a -> ReadS a
+readNumber p r = do
+  x <- lex r
+  case x of
+    ("-", s) -> map (\(n, s) -> (negate n, s)) $ p s
+    _        -> p r
+
 instance Read Char where
-  readsPrec _ s = [ (c,t) | (x,t) <- lex s, not (null x), head x == '''
-                          , (c,[]) <- read_ x ]
+  readsPrec _ = readParen False
+                  (\s -> [ (c, t) | (x, t) <- lex s, not (null x), head x == '''
+                                  , (c, []) <- read_ x ])
+
+  readList = readParen False
+               (\s -> [ (cs, t) | (x, t) <- lex s, not (null x), head x == '"'
+                                , (cs, []) <- read_ x ])
 
 -- Primitive operation to read arbitrary literals.
 read_ :: ReadS _
@@ -1274,6 +1292,48 @@ prim_readLiteral external
 
 instance Read a => Read [a] where
   readsPrec _ = readList
+
+instance (Read a, Read b) => Read (a, b) where
+  readsPrec _ = readParen False (\r -> [ ((a, b), w) | ("(", s) <- lex r
+                                                     , (a, t) <- reads s
+                                                     , (",", u) <- lex t
+                                                     , (b, v) <- reads u
+                                                     , (")", w) <- lex v ])
+
+instance (Read a, Read b, Read c) => Read (a, b, c) where
+  readsPrec _ = readParen False (\r -> [ ((a, b, c), y) | ("(", s) <- lex r
+                                                        , (a, t) <- reads s
+                                                        , (",", u) <- lex t
+                                                        , (b, v) <- reads u
+                                                        , (",", w) <- lex v
+                                                        , (c, x) <- reads w
+                                                        , (")", y) <- lex x ])
+
+instance (Read a, Read b, Read c, Read d) => Read (a, b, c, d) where
+  readsPrec _ = readParen False
+                  (\q -> [ ((a, b, c, d), z) | ("(", r) <- lex q
+                                             , (a, s) <- reads r
+                                             , (",", t) <- lex s
+                                             , (b, u) <- reads t
+                                             , (",", v) <- lex u
+                                             , (c, w) <- reads v
+                                             , (",", x) <- lex w
+                                             , (d, y) <- reads x
+                                             , (")", z) <- lex y ])
+
+instance (Read a, Read b, Read c, Read d, Read e) => Read (a, b, c, d, e) where
+  readsPrec _ = readParen False
+                  (\o -> [ ((a, b, c, d, e), z) | ("(", p) <- lex o
+                                                , (a, q) <- reads p
+                                                , (",", r) <- lex q
+                                                , (b, s) <- reads r
+                                                , (",", t) <- lex s
+                                                , (c, u) <- reads t
+                                                , (",", v) <- lex u
+                                                , (d, w) <- reads v
+                                                , (",", x) <- lex w
+                                                , (e, y) <- reads x
+                                                , (")", z) <- lex y ])
 
 -- The following definitions are necessary to implement instances of Read.
 
@@ -1707,3 +1767,8 @@ instance Monad Maybe where
   Nothing >>= _ = Nothing
   (Just x) >>= f = f x
   return = Just
+
+instance Monad [] where
+  xs >>= f = [y | x <- xs, y <- f x]
+  return x = [x]
+  fail _ = []
