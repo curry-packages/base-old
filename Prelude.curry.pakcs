@@ -161,7 +161,7 @@ failed external
 -- Boolean values
 -- already defined as builtin, since it is required for if-then-else
 data Bool = False | True
- deriving Read
+ deriving (Eq, Ord, Show, Read)
 
 --- Sequential conjunction on Booleans.
 (&&)            :: Bool -> Bool -> Bool
@@ -236,29 +236,7 @@ prim_eqFloat external
 
 --- Ordering type. Useful as a result of comparison functions.
 data Ordering = LT | EQ | GT
- deriving Read
-
-instance Eq Ordering where
-  LT == LT = True
-  LT == EQ = False
-  LT == GT = False
-  EQ == LT = False
-  EQ == EQ = True
-  EQ == GT = False
-  GT == LT = False
-  GT == EQ = False
-  GT == GT = True
-
-instance Ord Ordering where
-  compare LT LT = EQ
-  compare LT EQ = LT
-  compare LT GT = LT
-  compare EQ LT = GT
-  compare EQ EQ = EQ
-  compare EQ GT = LT
-  compare GT LT = GT
-  compare GT EQ = GT
-  compare GT GT = EQ
+ deriving (Eq, Ord, Show, Read)
 
 -- used for comparison of standard types like Int, Float and Char
 ltEqChar :: Char -> Char -> Bool
@@ -671,7 +649,7 @@ success = True
 -- Maybe type
 
 data Maybe a = Nothing | Just a
- deriving Read
+ deriving (Eq, Ord, Show, Read)
 
 maybe              :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
@@ -681,7 +659,7 @@ maybe _ f (Just x) = f x
 -- Either type
 
 data Either a b = Left a | Right b
- deriving Read
+ deriving (Eq, Ord, Show, Read)
 
 either               :: (a -> c) -> (b -> c) -> Either a b -> c
 either f _ (Left x)  = f x
@@ -974,12 +952,6 @@ class Eq a where
   x == y = not (x /= y)
   x /= y = not (x == y)
 
-instance Eq Bool where
-  False == False  = True
-  False == True   = False
-  True  == False  = False
-  True  == True   = True
-
 instance Eq Char where
   c == c' = c `eqChar` c'
 
@@ -1016,18 +988,6 @@ instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq (a, b, c, d, e, f) where
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq (a, b, c, d, e, f, g) where
   (a, b, c, d, e, f, g) == (a', b', c', d', e', f', g') = a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g'
 
-instance Eq a => Eq (Maybe a) where
-  Nothing == Nothing = True
-  Just _  == Nothing = False
-  Nothing == Just _  = False
-  Just x  == Just y  = x == y
-
-instance (Eq a, Eq b) => Eq (Either a b) where
-  Left x  == Left y  = x == y
-  Left _  == Right _ = False
-  Right _ == Left _  = False
-  Right x == Right y = x == y
-
 -- -------------------------------------------------------------------------
 -- Ord class and related instances and functions
 -- -------------------------------------------------------------------------
@@ -1058,12 +1018,6 @@ class Eq a => Ord a where
   max x y | x >= y    = x
           | otherwise = y
 
-instance Ord Bool where
-  False <= False = True
-  False <= True  = True
-  True  <= False = False
-  True  <= True  = True
-
 instance Ord Char where
   c1 <= c2 = c1 `ltEqChar` c2
 
@@ -1072,18 +1026,6 @@ instance Ord Int where
 
 instance Ord Float where
   f1 <= f2 = f1 `ltEqFloat` f2
-
-instance Ord a => Ord (Maybe a) where
-  Nothing <= Nothing = True
-  Nothing <= Just _  = True
-  Just _  <= Nothing = False
-  Just x  <= Just y  = x <= y
-
-instance (Ord a, Ord b) => Ord (Either a b) where
-  Left x  <= Left y  = x <= y
-  Left _  <= Right _ = True
-  Right _ <= Left _  = False
-  Right x <= Right y = x <= y
 
 instance Ord a => Ord [a] where
   []    <= []    = True
@@ -1172,16 +1114,6 @@ instance (Show a, Show b, Show c, Show d, Show e) => Show (a, b, c, d, e) where
 instance Show a => Show [a] where
   showsPrec _ = showList
 
-instance Show Bool where
-  showsPrec _ True = showString "True"
-  showsPrec _ False = showString "False"
-
-instance Show Ordering where
-  showsPrec _ LT = showString "LT"
-  showsPrec _ EQ = showString "EQ"
-  showsPrec _ GT = showString "GT"
-
-
 instance Show Char where
   -- TODO: own implementation instead of passing to original Prelude functions?
   showsPrec _ c = showString (show_ c)
@@ -1193,18 +1125,6 @@ instance Show Int where
 
 instance Show Float where
   showsPrec _ f = showString $ show_ f
-
-instance Show a => Show (Maybe a) where
-  showsPrec _ Nothing = showString "Nothing"
-  showsPrec p (Just x) = showParen (p > appPrec)
-    (showString "Just " . showsPrec appPrec1 x)
-
-
-instance (Show a, Show b) => Show (Either a b) where
-  showsPrec p (Left x) = showParen (p > appPrec)
-    (showString "Left " . showsPrec appPrec1 x)
-  showsPrec p (Right y) = showParen (p > appPrec)
-    (showString "Right " . showsPrec appPrec1 y)
 
 showTuple :: [ShowS] -> ShowS
 showTuple ss = showChar '('
