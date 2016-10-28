@@ -33,7 +33,7 @@
 --- @category database
 ------------------------------------------------------------------------------
 
-module KeyDatabaseSQLite (
+module Database.KeyDatabaseSQLite (
 
   Key, KeyPred,
 
@@ -181,7 +181,7 @@ failT = errorT . TError UserDefinedError
 --- If the first transaction is aborted with an error, the second
 --- transaction is not executed.
 (|>>=) :: Transaction a -> (a -> Transaction b) -> Transaction b
-(Trans action) |>>= f = Trans $
+Trans action |>>= f = Trans $
   do result <- action
      case result of
        Error err -> return $ Error err
@@ -228,7 +228,9 @@ type ColName = String
 --- Result type of database predicates.
 data Dynamic = DBInfo DBFile TableName [ColName]
 
+--- The general type of database keys.
 type Key = Int
+
 type KeyPred a = Key -> a -> Dynamic -- for interface compatibility
 
 dbInfo :: KeyPred a -> (DBFile,(TableName,[ColName]))
