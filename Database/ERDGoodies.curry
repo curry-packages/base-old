@@ -3,7 +3,7 @@
 --- entity/relationship diagrams
 ---
 --- @author Michael Hanus
---- @version June 2016
+--- @version October 2016
 --- @category database
 ------------------------------------------------------------------------------
 
@@ -14,12 +14,19 @@ module Database.ERDGoodies
   , isForeignKey, isNullAttribute
   , cardMinimum, cardMaximum
   , showERD, combineIds
+  , storeERDFromProgram, writeERDTermFile
   ) where
 
 import Char(isUpper)
 import Database.ERD
+import Distribution(installDir,stripCurrySuffix)
+import FlatCurry.Types
+import FlatCurry.Files
+import FlatCurry.Goodies
+import IOExts (evalCmd)
 import List(intersperse)
 import Maybe
+import System(system)
 
 --- The name of an ERD.
 erdName :: ERD -> String
@@ -127,3 +134,42 @@ combineIds (name:names) = name ++ concatMap maybeAddUnderscore names
  where
   maybeAddUnderscore [] = "_"
   maybeAddUnderscore s@(c:_) = if isUpper c then s else '_' : s
+
+------------------------------------------------------------------------------
+-- Auxiliaries to generate ERD term file from a ERD definition given
+-- in a Curry program.
+
+--- Writes the ERD defined in a Curry program (as a top-level operation
+--- of type `Database.ERD.ERD`) in a term file and return the name of
+--- the term file.
+storeERDFromProgram :: String -> IO String
+storeERDFromProgram progfile = do
+  putStrLn $ "Creating ERD term file from program `" ++ progfile ++ "'..."
+  let progname = stripCurrySuffix progfile
+  prog <- readFlatCurry progname
+  let funcs = progFuncs prog
+      erdfuncs = filter hasERDType funcs
+  case erdfuncs of
+    [] -> error $ "No definition of ER model found in program " ++ progfile
+    [fd] -> do let cmd = installDir++"/bin/curry"
+                   args = [":set","v0",":load",progname
+                          ,":add","Database.ERDGoodies"
+                          ,":eval","writeERDTermFile "++snd (funcName fd)
+                          ,":quit"]
+               (ecode,outstr,errstr) <- evalCmd cmd args ""
+               if ecode > 0
+                 then error $ "ERROR in ERD term file generation:\n" ++ errstr
+                 else return (head (lines outstr))
+    _ -> error $ "Multiple ER model definitions found in program " ++ progfile
+
+hasERDType fdecl = funcType fdecl == TCons ("Database.ERD","ERD") []
+
+--- Writes an ERD term into a file with name `ERDMODELNAME.erdterm`
+--- and prints the name of the generated file.
+writeERDTermFile :: ERD -> IO ()
+writeERDTermFile erd = do
+  let termfile = erdName erd ++ ".erdterm"
+  writeFile termfile (showERD 0 erd)
+  putStrLn termfile
+
+------------------------------------------------------------------------------
