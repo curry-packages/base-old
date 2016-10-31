@@ -411,7 +411,7 @@ callFrontendWithParams target params modpath = do
  where
    callParseCurry = do
      path <- maybe (getLoadPathForModule modpath) return (fullPath params)
-     return (quote (installDir </> "bin" </> "cymake")
+     return (quote (installDir </> "bin" </> curryCompiler ++ "-cymake")
              ++ concatMap ((" -i" ++) . quote) path)
 
    quote s = '"' : s ++ "\""
