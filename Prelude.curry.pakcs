@@ -1118,13 +1118,19 @@ instance Show Char where
   -- TODO: own implementation instead of passing to original Prelude functions?
   showsPrec _ c = showString (show_ c)
 
-  showList cs = showString (show_ cs)
+  showList cs | null cs   = showString "\"\""
+              | otherwise = showString (show_ cs)
 
 instance Show Int where
-  showsPrec _ i = showString $ show_ i
+  showsPrec = showSigned (showString . show_)
 
 instance Show Float where
-  showsPrec _ f = showString $ show_ f
+  showsPrec = showSigned (showString . show_)
+
+showSigned :: Real a => (a -> ShowS) -> Int -> a -> ShowS
+showSigned showPos p x
+  | x < 0     = showParen (p > 6) (showChar '-' . showPos (-x))
+  | otherwise = showPos x
 
 showTuple :: [ShowS] -> ShowS
 showTuple ss = showChar '('
@@ -1148,7 +1154,10 @@ class Read a where
   readsPrec :: Int -> ReadS a
 
   readList :: ReadS [a]
-  readList = readParen False (\r -> [pr | ("[",s)  <- lex r
+  readList = readListDefault
+
+readListDefault :: Read a => ReadS [a]
+readListDefault = readParen False (\r -> [pr | ("[",s)  <- lex r
                                         , pr       <- readl s])
     where readl s = [([], t) | ("]", t) <- lex s] ++
                       [(x : xs, u) | (x, t) <- reads s, (xs, u) <- readl' t]
@@ -1176,32 +1185,32 @@ instance Read () where
                                                  , (")", t) <- lex s ])
 
 instance Read Int where
-  readsPrec _ = readParen False $ readNumber
+  readsPrec _ = readParen False $ readSigned
                   (\s -> [(i,t) | (x,t) <- lexDigits s, (i,[]) <- read_ x])
 
 instance Read Float where
-  readsPrec _ = readParen False $ readNumber
+  readsPrec _ = readParen False $ readSigned
                   (\s -> [ (f,t) | (x,t) <- lex s, not (null x)
                                  , isDigit (head x), (f,[]) <- readFloat x ])
    where
     readFloat x = if all isDigit x then [ (i2f i, t) | (i,t) <- read_ x ]
                                    else read_ x
 
-readNumber :: Num a => ReadS a -> ReadS a
-readNumber p r = do
-  x <- lex r
-  case x of
-    ("-", s) -> map (\(n, s) -> (negate n, s)) $ p s
-    _        -> p r
+readSigned :: Real a => ReadS a -> ReadS a
+readSigned p = readParen False read'
+  where read' r = read'' r ++ [(-x, t) | ("-", s) <- lex r, (x, t) <- read'' s]
+        read'' r = [(n, s) | (str, s) <- lex r, (n, "") <- p str]
 
 instance Read Char where
   readsPrec _ = readParen False
                   (\s -> [ (c, t) | (x, t) <- lex s, not (null x), head x == '''
                                   , (c, []) <- read_ x ])
 
-  readList = readParen False
-               (\s -> [ (cs, t) | (x, t) <- lex s, not (null x), head x == '"'
-                                , (cs, []) <- read_ x ])
+  readList s = readParen False
+                 (\s -> [ (cs, t) | (x, t) <- lex s, not (null x), head x == '"'
+                                  , (cs, []) <- read_ x ]) s
+               ++
+               readListDefault s
 
 -- Primitive operation to read arbitrary literals.
 read_ :: ReadS _
@@ -1610,6 +1619,9 @@ class Real a => Integral a where
   n `rem`  d = r where (_, r) = n `quotRem` d
 
 instance Real Int where
+  -- no class methods to implement
+
+instance Real Float where
   -- no class methods to implement
 
 instance Integral Int where
