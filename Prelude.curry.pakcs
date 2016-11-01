@@ -1186,15 +1186,17 @@ instance Read () where
 
 instance Read Int where
   readsPrec _ = readParen False $ readSigned
-                  (\s -> [(i,t) | (x,t) <- lexDigits s, (i,[]) <- read_ x])
+                  (\s -> [(i,t) | (x,t) <- lexDigits s
+                                , (i,[]) <- readNatLiteral x])
 
 instance Read Float where
   readsPrec _ = readParen False $ readSigned
                   (\s -> [ (f,t) | (x,t) <- lex s, not (null x)
                                  , isDigit (head x), (f,[]) <- readFloat x ])
    where
-    readFloat x = if all isDigit x then [ (i2f i, t) | (i,t) <- read_ x ]
-                                   else read_ x
+    readFloat x = if all isDigit x
+                    then [ (i2f i, t) | (i,t) <- readNatLiteral x ]
+                    else readFloatLiteral x
 
 readSigned :: Real a => ReadS a -> ReadS a
 readSigned p = readParen False read'
@@ -1218,6 +1220,18 @@ read_ s = prim_readLiteral $## s
 
 prim_readLiteral :: String -> [(_,String)]
 prim_readLiteral external
+
+readNatLiteral :: ReadS Int
+readNatLiteral s = prim_readNatLiteral $## s
+
+prim_readNatLiteral :: String -> [(Int,String)]
+prim_readNatLiteral external
+
+readFloatLiteral :: ReadS Float
+readFloatLiteral s = prim_readFloatLiteral $## s
+
+prim_readFloatLiteral :: String -> [(Float,String)]
+prim_readFloatLiteral external
 
 instance Read a => Read [a] where
   readsPrec _ = readList
