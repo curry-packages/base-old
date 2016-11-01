@@ -1185,12 +1185,11 @@ instance Read () where
                                                  , (")", t) <- lex s ])
 
 instance Read Int where
-  readsPrec _ = readParen False $ readSigned
-                  (\s -> [(i,t) | (x,t) <- lexDigits s
-                                , (i,[]) <- readNatLiteral x])
+  readsPrec _ = readSigned (\s -> [(i,t) | (x,t) <- lexDigits s
+                                         , (i,[]) <- readNatLiteral x])
 
 instance Read Float where
-  readsPrec _ = readParen False $ readSigned
+  readsPrec _ = readSigned
                   (\s -> [ (f,t) | (x,t) <- lex s, not (null x)
                                  , isDigit (head x), (f,[]) <- readFloat x ])
    where
@@ -1206,21 +1205,15 @@ readSigned p = readParen False read'
 instance Read Char where
   readsPrec _ = readParen False
                   (\s -> [ (c, t) | (x, t) <- lex s, not (null x), head x == '''
-                                  , (c, []) <- read_ x ])
+                                  , (c, []) <- readCharLiteral x ])
 
   readList s = readParen False
                  (\s -> [ (cs, t) | (x, t) <- lex s, not (null x), head x == '"'
-                                  , (cs, []) <- read_ x ]) s
+                                  , (cs, []) <- readStringLiteral x ]) s
                ++
                readListDefault s
 
--- Primitive operation to read arbitrary literals.
-read_ :: ReadS _
-read_ s = prim_readLiteral $## s
-
-prim_readLiteral :: String -> [(_,String)]
-prim_readLiteral external
-
+-- Primitive operations to read specific literals.
 readNatLiteral :: ReadS Int
 readNatLiteral s = prim_readNatLiteral $## s
 
@@ -1232,6 +1225,18 @@ readFloatLiteral s = prim_readFloatLiteral $## s
 
 prim_readFloatLiteral :: String -> [(Float,String)]
 prim_readFloatLiteral external
+
+readCharLiteral :: ReadS Char
+readCharLiteral s = prim_readCharLiteral $## s
+
+prim_readCharLiteral :: String -> [(Char,String)]
+prim_readCharLiteral external
+
+readStringLiteral :: ReadS String
+readStringLiteral s = prim_readStringLiteral $## s
+
+prim_readStringLiteral :: String -> [(String,String)]
+prim_readStringLiteral external
 
 instance Read a => Read [a] where
   readsPrec _ = readList
