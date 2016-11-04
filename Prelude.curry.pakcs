@@ -1718,6 +1718,7 @@ instance Monad Maybe where
   Nothing >>= _ = Nothing
   (Just x) >>= f = f x
   return = Just
+  fail _ = Nothing
 
 instance Monad [] where
   xs >>= f = [y | x <- xs, y <- f x]
