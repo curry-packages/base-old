@@ -6,14 +6,14 @@
 --- The installation of a cgi script written with this library
 --- can be done by the command
 ---
----     makecurrycgi -m initialForm -o /home/joe/public_html/prog.cgi prog
+---     curry makecgi -m initialForm -o /home/joe/public_html/prog.cgi prog
 ---
 --- where `prog` is the name of the Curry program with
 --- the cgi script, `/home/joe/public_html/prog.cgi` is
 --- the desired location of the
 --- compiled cgi script, and `initialForm` is the Curry expression
---- (of type IO HtmlForm) computing the HTML form (where makecurrycgi
---- is a shell script stored in *pakcshome*/bin).
+--- (of type IO HtmlForm) computing the HTML form (where `curry`
+--- is the shell command calling the Curry system PAKCS or KiCS2).
 ---
 --- @author Michael Hanus (with extensions by Bernd Brassel and Marco Comini)
 --- @version October 2016
