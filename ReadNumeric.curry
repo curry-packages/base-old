@@ -2,12 +2,12 @@
 --- Library with some functions for reading and converting numeric tokens.
 --
 --- @author Michael Hanus, Frank Huch, Bjoern Peemoeller
---- @version November 2014
+--- @version November 2016
 --- @category general
 ------------------------------------------------------------------------------
 
 module ReadNumeric
-  ( readInt, readNat, readHex, readOct
+  ( readInt, readNat, readHex, readOct, readBin
   ) where
 
 import Char (digitToInt, isBinDigit, isOctDigit, isDigit, isHexDigit, isSpace)
@@ -27,7 +27,8 @@ readInt str = case dropWhile isSpace str of
 --- Read a natural number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
 --- up to the first non-digit.
---- If the string does not start with a natural number token, `Nothing` is returned,
+--- If the string does not start with a natural number token,
+--- `Nothing` is returned,
 --- otherwise the result is `Just (v, s)` where `v` is the value of the number
 --- and s is the remaing string without the number token.
 readNat :: String -> Maybe (Int, String)
@@ -36,7 +37,8 @@ readNat str = readNumPrefix (dropWhile isSpace str) Nothing 10 isDigit digitToIn
 --- Read a hexadecimal number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
 --- up to the first non-hexadecimal digit.
---- If the string does not start with a hexadecimal number token, `Nothing` is returned,
+--- If the string does not start with a hexadecimal number token,
+--- `Nothing` is returned,
 --- otherwise the result is `Just (v, s)` where `v` is the value of the number
 --- and s is the remaing string without the number token.
 readHex :: String -> Maybe (Int, String)
@@ -45,7 +47,8 @@ readHex l = readNumPrefix (dropWhile isSpace l) Nothing 16 isHexDigit digitToInt
 --- Read an octal number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
 --- up to the first non-octal digit.
---- If the string does not start with an octal number token, `Nothing` is returned,
+--- If the string does not start with an octal number token,
+--- `Nothing` is returned,
 --- otherwise the result is `Just (v, s)` where `v` is the value of the number
 --- and s is the remaing string without the number token.
 readOct :: String -> Maybe (Int, String)
@@ -54,14 +57,16 @@ readOct l = readNumPrefix (dropWhile isSpace l) Nothing 8 isOctDigit digitToInt
 --- Read a binary number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
 --- up to the first non-binary digit.
---- If the string does not start with a binary number token, `Nothing` is returned,
+--- If the string does not start with a binary number token,
+--- `Nothing` is returned,
 --- otherwise the result is `Just (v, s)` where `v` is the value of the number
 --- and s is the remaing string without the number token.
 readBin :: String -> Maybe (Int, String)
 readBin l = readNumPrefix (dropWhile isSpace l) Nothing 2 isBinDigit digitToInt
 
---- Read an integral number prefix where the value of an already read number prefix is
---- provided as the second argument. The third argument is the base, the fourth argument
+--- Read an integral number prefix where the value of an already read number
+--- prefix is provided as the second argument.
+--- The third argument is the base, the fourth argument
 --- is a predicate to distinguish valid digits, and the fifth argument converts
 --- valid digits into integer values.
 readNumPrefix :: String -> Maybe Int -> Int -> (Char -> Bool) -> (Char -> Int)
