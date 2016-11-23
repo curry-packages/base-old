@@ -420,7 +420,6 @@ widget2tcl label (ScrollH widget confs) =
     ("scrollbar "++label++" -orient horizontal -command {"++
                                          wRef2Label widget++" xview}\n" ++
      wRef2Label widget++" configure -xscrollcommand {"++label++" set}\n" ++
-     wRef2Label widget++" configure -wrap none\n" ++ -- no line wrap
      conf_tcl , conf_evs)
    where (conf_tcl,conf_evs) = configs2tcl "scrollbar" label confs
 

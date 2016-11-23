@@ -1,14 +1,17 @@
 # directory containing the repository library files:
-LIBTRUNKDIR=$(ROOT)/lib-trunk
+ifndef CURRYLIBSDIR
+CURRYLIBSDIR=$(ROOT)/lib-trunk
+endif
+
 # specific PAKCS libraries:
 PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry CLPFD.curry CLPR.curry CLP/FD.curry \
 	        Database.curry Dynamic.curry Findall.curry \
 		GlobalVariable.curry KeyDB.curry KeyDatabase.curry \
 		PlProfileData.curry Ports.curry 
 # get all library files from standard makefile and add PAKCS specific libs:
-LIB_CURRY = `cd $(LIBTRUNKDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
+LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
 # name of this makefile:
-CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
+CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 
 ##########################################################################
 # Install the library sources into the Curry system library directory:
@@ -34,105 +37,105 @@ $(LIBDIR)/test.sh: test.sh
 sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
-	cp $(LIBTRUNKDIR)/*.prim_c2p .
-	#cp $(LIBTRUNKDIR)/CLP/*.prim_c2p CLP
+	cp $(CURRYLIBSDIR)/*.prim_c2p .
+	#cp $(CURRYLIBSDIR)/CLP/*.prim_c2p CLP
 
-Prelude.curry: $(LIBTRUNKDIR)/Prelude.curry.$(CURRYSYSTEM)
+Prelude.curry: $(CURRYLIBSDIR)/Prelude.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-AllSolutions.curry: $(LIBTRUNKDIR)/AllSolutions.curry.$(CURRYSYSTEM)
+AllSolutions.curry: $(CURRYLIBSDIR)/AllSolutions.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-CLPB.curry: $(LIBTRUNKDIR)/CLPB.curry.$(CURRYSYSTEM)
+CLPB.curry: $(CURRYLIBSDIR)/CLPB.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-CHR.curry: $(LIBTRUNKDIR)/CHR.curry.$(CURRYSYSTEM)
+CHR.curry: $(CURRYLIBSDIR)/CHR.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-CHRcompiled.curry: $(LIBTRUNKDIR)/CHRcompiled.curry.$(CURRYSYSTEM)
+CHRcompiled.curry: $(CURRYLIBSDIR)/CHRcompiled.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-CLPFD.curry: $(LIBTRUNKDIR)/CLPFD.curry.$(CURRYSYSTEM)
+CLPFD.curry: $(CURRYLIBSDIR)/CLPFD.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-CLPR.curry: $(LIBTRUNKDIR)/CLPR.curry.$(CURRYSYSTEM)
+CLPR.curry: $(CURRYLIBSDIR)/CLPR.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-CLP/FD.curry: $(LIBTRUNKDIR)/CLP/FD.curry.$(CURRYSYSTEM)
+CLP/FD.curry: $(CURRYLIBSDIR)/CLP/FD.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Database.curry: $(LIBTRUNKDIR)/Database.curry.$(CURRYSYSTEM)
+Database.curry: $(CURRYLIBSDIR)/Database.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Dynamic.curry: $(LIBTRUNKDIR)/Dynamic.curry.$(CURRYSYSTEM)
+Dynamic.curry: $(CURRYLIBSDIR)/Dynamic.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Findall.curry: $(LIBTRUNKDIR)/Findall.curry.$(CURRYSYSTEM)
+Findall.curry: $(CURRYLIBSDIR)/Findall.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Global.curry: $(LIBTRUNKDIR)/Global.curry.$(CURRYSYSTEM)
+Global.curry: $(CURRYLIBSDIR)/Global.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-GlobalVariable.curry: $(LIBTRUNKDIR)/GlobalVariable.curry.$(CURRYSYSTEM)
+GlobalVariable.curry: $(CURRYLIBSDIR)/GlobalVariable.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-IOExts.curry: $(LIBTRUNKDIR)/IOExts.curry.$(CURRYSYSTEM)
+IOExts.curry: $(CURRYLIBSDIR)/IOExts.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-KeyDB.curry: $(LIBTRUNKDIR)/KeyDB.curry.$(CURRYSYSTEM)
+KeyDB.curry: $(CURRYLIBSDIR)/KeyDB.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-KeyDatabase.curry: $(LIBTRUNKDIR)/KeyDatabase.curry.$(CURRYSYSTEM)
+KeyDatabase.curry: $(CURRYLIBSDIR)/KeyDatabase.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-PlProfileData.curry: $(LIBTRUNKDIR)/PlProfileData.curry.$(CURRYSYSTEM)
+PlProfileData.curry: $(CURRYLIBSDIR)/PlProfileData.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Ports.curry: $(LIBTRUNKDIR)/Ports.curry.$(CURRYSYSTEM)
+Ports.curry: $(CURRYLIBSDIR)/Ports.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Profile.curry: $(LIBTRUNKDIR)/Profile.curry.$(CURRYSYSTEM)
+Profile.curry: $(CURRYLIBSDIR)/Profile.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Random.curry: $(LIBTRUNKDIR)/Random.curry.$(CURRYSYSTEM)
+Random.curry: $(CURRYLIBSDIR)/Random.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-SearchTree.curry: $(LIBTRUNKDIR)/SearchTree.curry.$(CURRYSYSTEM)
+SearchTree.curry: $(CURRYLIBSDIR)/SearchTree.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-SetFunctions.curry: $(LIBTRUNKDIR)/SetFunctions.curry.$(CURRYSYSTEM)
+SetFunctions.curry: $(CURRYLIBSDIR)/SetFunctions.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Unsafe.curry: $(LIBTRUNKDIR)/Unsafe.curry.$(CURRYSYSTEM)
+Unsafe.curry: $(CURRYLIBSDIR)/Unsafe.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-ValueSequence.curry: $(LIBTRUNKDIR)/ValueSequence.curry.$(CURRYSYSTEM)
+ValueSequence.curry: $(CURRYLIBSDIR)/ValueSequence.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
+AbstractCurry/%.curry: $(CURRYLIBSDIR)/AbstractCurry/%.curry
 	cp $< $@
 
-FlatCurry/Annotated/%.curry: $(LIBTRUNKDIR)/FlatCurry/Annotated/%.curry
+FlatCurry/Annotated/%.curry: $(CURRYLIBSDIR)/FlatCurry/Annotated/%.curry
 	cp $< $@
 
-FlatCurry/%.curry: $(LIBTRUNKDIR)/FlatCurry/%.curry
+FlatCurry/%.curry: $(CURRYLIBSDIR)/FlatCurry/%.curry
 	cp $< $@
 
-Database/CDBI/%.curry: $(LIBTRUNKDIR)/Database/CDBI/%.curry
+Database/CDBI/%.curry: $(CURRYLIBSDIR)/Database/CDBI/%.curry
 	cp $< $@
 
-Database/%.curry: $(LIBTRUNKDIR)/Database/%.curry
+Database/%.curry: $(CURRYLIBSDIR)/Database/%.curry
 	cp $< $@
 
-Rewriting/%.curry: $(LIBTRUNKDIR)/Rewriting/%.curry
+Rewriting/%.curry: $(CURRYLIBSDIR)/Rewriting/%.curry
 	cp $< $@
 
-Test/%.curry: $(LIBTRUNKDIR)/Test/%.curry
+Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
 	cp $< $@
 
-%.curry: $(LIBTRUNKDIR)/%.curry
+%.curry: $(CURRYLIBSDIR)/%.curry
 	cp $< $@
 
-index.html: $(LIBTRUNKDIR)/index.html.$(CURRYSYSTEM)
+index.html: $(CURRYLIBSDIR)/index.html.$(CURRYSYSTEM)
 	 cp $< $@
 
