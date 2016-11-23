@@ -1,5 +1,6 @@
 # directory containing the repository library files:
-LIBTRUNKDIR=$(ROOT)/lib-trunk
+LIBTRUNKDIR=$(CURRYLIBSDIR)
+
 # specific PAKCS libraries:
 PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry CLPFD.curry CLPR.curry CLP/FD.curry \
 	        Database.curry Dynamic.curry Findall.curry \
