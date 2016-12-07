@@ -205,6 +205,7 @@ writeAssertResult (result,flag) =
 --- Used by the currytest tool.
 data ProtocolMsg = TestModule String | TestCase String Bool | TestFinished
                  | TestCompileError
+ deriving Show
 
 --- Sends message to GUI for showing test of a module.
 --- Used by the currytest tool.
@@ -232,8 +233,7 @@ showTestCompileError portnum = sendToLocalSocket portnum TestCompileError
 sendToLocalSocket :: Int -> ProtocolMsg -> IO ()
 sendToLocalSocket portnum msg = do
   h <- connectToSocket "localhost" portnum
-  -- hPutStrLn h (show msg) -- TODO
-  hPutStrLn h (error "TODO: show Assertion.ProtocolMsg")
+  hPutStrLn h (show msg)
   hClose h
 
 -- end of module Assertion
