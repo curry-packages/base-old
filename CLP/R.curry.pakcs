@@ -1,9 +1,12 @@
 ------------------------------------------------------------------------------
 --- Library for constraint programming with arithmetic constraints over reals.
+---
+--- @author Michael Hanus
+--- @version December 2016
+--- @category general
 ------------------------------------------------------------------------------
 
-module CLP.R(CFloat,(+.),(-.),(*.),(/.),(<.),(>.),(<=.),(>=.),i2f,
-            minimumFor,minimize,maximumFor,maximize) where
+module CLP.R(CFloat,minimumFor,minimize,maximumFor,maximize) where
 
 -- The operator declarations are similar to the standard arithmetic operators.
 
@@ -13,13 +16,16 @@ infix  4 <., >., <=., >=.
 
 --- Abstract type to represent floats used in constraints.
 data CFloat = CF Float
--- deriving (Eq,Ord)
 
 instance Eq CFloat where
   (CF f1) == (CF f2) = f1 == f2
 
 instance Ord CFloat where
   compare (CF f1) (CF f2) = compare f1 f2
+  x < y = x <. y
+  x > y = x >. y
+  x <= y = x <=. y
+  x >= y = x >=. y
 
 instance Show CFloat where
   show (CF f) = show f
@@ -80,34 +86,34 @@ prim_CLPR_div external
 
 --- "Less than" constraint on floats.
 
-(<.)   :: CFloat -> CFloat -> Success
+(<.)   :: CFloat -> CFloat -> Bool
 (CF x) <. (CF y) = (prim_CLPR_le $! y) $! x
 
-prim_CLPR_le :: Float -> Float -> Success
+prim_CLPR_le :: Float -> Float -> Bool
 prim_CLPR_le external
 
 --- "Greater than" constraint on floats.
 
-(>.)   :: CFloat -> CFloat -> Success
+(>.)   :: CFloat -> CFloat -> Bool
 (CF x) >. (CF y) = (prim_CLPR_ge $! y) $! x
 
-prim_CLPR_ge :: Float -> Float -> Success
+prim_CLPR_ge :: Float -> Float -> Bool
 prim_CLPR_ge external
 
 --- "Less than or equal" constraint on floats.
 
-(<=.)  :: CFloat -> CFloat -> Success
+(<=.)  :: CFloat -> CFloat -> Bool
 (CF x) <=. (CF y) = (prim_CLPR_leq $! y) $! x
 
-prim_CLPR_leq :: Float -> Float -> Success
+prim_CLPR_leq :: Float -> Float -> Bool
 prim_CLPR_leq external
 
 --- "Greater than or equal" constraint on floats.
 
-(>=.)  :: CFloat -> CFloat -> Success
+(>=.)  :: CFloat -> CFloat -> Bool
 (CF x) >=. (CF y) = (prim_CLPR_geq $! y) $! x
 
-prim_CLPR_geq :: Float -> Float -> Success
+prim_CLPR_geq :: Float -> Float -> Bool
 prim_CLPR_geq external
 
 --- Conversion function from integers to floats.
@@ -127,7 +133,7 @@ prim_CLPR_i2f external
 --- does not exist. The evaluation suspends if it contains
 --- unbound non-local variables.
 
-minimumFor :: (a -> Success) -> (a -> Float) -> a
+minimumFor :: (a -> Bool) -> (a -> Float) -> a
 minimumFor external
 
 --- Minimization constraint.
@@ -135,7 +141,7 @@ minimumFor external
 --- (f x) is minimal. The evaluation suspends if it contains
 --- unbound non-local variables.
 
-minimize :: (a -> Success) -> (a -> Float) -> a -> Success
+minimize :: (a -> Bool) -> (a -> Float) -> a -> Bool
 minimize g f x = minimumFor g f =:= x
 
 --- Computes the maximum with respect to a given constraint.
@@ -144,7 +150,7 @@ minimize g f x = minimumFor g f =:= x
 --- does not exist. The evaluation suspends if it contains
 --- unbound non-local variables.
 
-maximumFor :: (a -> Success) -> (a -> Float) -> a
+maximumFor :: (a -> Bool) -> (a -> Float) -> a
 maximumFor external
 
 --- Maximization constraint.
@@ -152,7 +158,7 @@ maximumFor external
 --- (f x) is maximal. The evaluation suspends if it contains
 --- unbound non-local variables.
 
-maximize :: (a -> Success) -> (a -> Float) -> a -> Success
+maximize :: (a -> Bool) -> (a -> Float) -> a -> Bool
 maximize g f x = maximumFor g f =:= x
 
 

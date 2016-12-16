@@ -26,7 +26,6 @@
 module CLP.FD
   ( FDConstr, FDExpr, FDRel(..), Option(..), fd
   , allDifferent, domain, sum, scalarProduct, count
-  , (*#), (+#), (-#)
   , (=#), (/=#), (<#), (<=#), (>#), (>=#)
   , true, (/\), andC, allC
   , solveFD, solveFDAll, solveFDOne
@@ -51,6 +50,17 @@ domain min max = genFDVars min max
  where
   genFDVars :: Int -> Int -> [FDExpr]
   genFDVars l u = FDVar l u _ : genFDVars l u
+
+instance Num FDExpr where
+  x + y = x +# y
+  x - y = x -# y
+  x * y = x *# y
+
+  abs _ = error "abs undefined for FD constraints"
+
+  signum _ = error "signum undefined for FD constraints"
+
+  fromInteger x = fd x
 
 --- Represent an integer value as an FD expression.
 fd :: Int -> FDExpr
@@ -339,7 +349,6 @@ trO option = case option of
   Min                  -> C.Min
   Max                  -> C.Max
   Step                 -> C.Step
-  Step                 -> C.Min
   Enum                 -> C.Enum                
   Bisect               -> C.Bisect              
   Up                   -> C.Up          
@@ -350,6 +359,5 @@ trO option = case option of
   Assumptions n        -> C.Assumptions n       
   RandomVariable n     -> C.RandomVariable n
   RandomValue n        -> C.RandomValue n
-  _                    -> error $ "Unknown option: " ++ show option
 
 ------------------------------------------------------------------------
