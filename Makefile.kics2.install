@@ -1,9 +1,12 @@
 # directory containing the repository library files:
-LIBTRUNKDIR=$(ROOT)/lib-trunk
+ifndef CURRYLIBSDIR
+CURRYLIBSDIR=$(ROOT)/lib-trunk
+endif
+
 # get all library files from standard makefile:
-LIB_CURRY = `cd $(LIBTRUNKDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources`
+LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources`
 # name of this makefile:
-CURRENT_MAKEFILE = $(LIBTRUNKDIR)/Makefile.$(CURRYSYSTEM).install
+CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 
 ##########################################################################
 # Install the library sources into the Curry system library directory:
@@ -28,32 +31,32 @@ $(LIBDIR)/test.sh: test.sh
 sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
-	cp -p $(LIBTRUNKDIR)/*.hs .
+	cp -p $(CURRYLIBSDIR)/*.hs .
 
-AbstractCurry/%.curry: $(LIBTRUNKDIR)/AbstractCurry/%.curry
+AbstractCurry/%.curry: $(CURRYLIBSDIR)/AbstractCurry/%.curry
 	cp $< $@
 
-FlatCurry/Annotated/%.curry: $(LIBTRUNKDIR)/FlatCurry/Annotated/%.curry
+FlatCurry/Annotated/%.curry: $(CURRYLIBSDIR)/FlatCurry/Annotated/%.curry
 	cp $< $@
 
-FlatCurry/%.curry: $(LIBTRUNKDIR)/FlatCurry/%.curry
+FlatCurry/%.curry: $(CURRYLIBSDIR)/FlatCurry/%.curry
 	cp $< $@
 
-Database/CDBI/%.curry: $(LIBTRUNKDIR)/Database/CDBI/%.curry
+Database/CDBI/%.curry: $(CURRYLIBSDIR)/Database/CDBI/%.curry
 	cp $< $@
 
-Database/%.curry: $(LIBTRUNKDIR)/Database/%.curry
+Database/%.curry: $(CURRYLIBSDIR)/Database/%.curry
 	cp $< $@
 
-Rewriting/%.curry: $(LIBTRUNKDIR)/Rewriting/%.curry
+Rewriting/%.curry: $(CURRYLIBSDIR)/Rewriting/%.curry
 	cp $< $@
 
-Test/%.curry: $(LIBTRUNKDIR)/Test/%.curry
+Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
 	cp $< $@
 
-%.curry: $(LIBTRUNKDIR)/%.curry
+%.curry: $(CURRYLIBSDIR)/%.curry
 	cp $< $@
 
-index.html: $(LIBTRUNKDIR)/index.html.$(CURRYSYSTEM)
+index.html: $(CURRYLIBSDIR)/index.html.$(CURRYSYSTEM)
 	 cp $< $@
 

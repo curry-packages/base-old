@@ -181,8 +181,8 @@ mapTerm f (TermCons c ts) = TermCons (f c) (map (mapTerm f) ts)
 eqConsPattern :: Eq f => Term f -> Term f -> Bool
 eqConsPattern (TermVar _)       _                 = False
 eqConsPattern (TermCons _ _)    (TermVar _)       = False
-eqConsPattern (TermCons c1 ts1) (TermCons c2 ts2)
-  = (c1 == c2) && ((length ts1) == (length ts2))
+eqConsPattern (TermCons c1 ts1) (TermCons c2 ts2) =
+  c1 == c2 && length ts1 == length ts2
 
 -- ---------------------------------------------------------------------------
 -- Definition of helper functions

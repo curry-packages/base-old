@@ -2,7 +2,7 @@
 --- Library for representation of rules and term rewriting systems.
 ---
 --- @author Jan-Hendrik Matthes
---- @version July 2016
+--- @version November 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@ module Rewriting.Rules
   ( Rule, TRS
   , showRule, showTRS, rRoot, rCons, rVars, maxVarInRule, minVarInRule
   , maxVarInTRS, minVarInTRS, renameRuleVars, renameTRSVars, normalizeRule
-  , normalizeTRS, isVariantOf, isLeftLinear, isLeftNormal, hasRule, isPattern
+  , normalizeTRS, isVariantOf, isLeftLinear, isLeftNormal, isRedex, isPattern
   , isConsBased, isDemandedAt
   ) where
 
@@ -116,20 +116,20 @@ isLeftLinear = all (isLinear . fst)
 isLeftNormal :: TRS _ -> Bool
 isLeftNormal = all (isNormal . fst)
 
---- Checks whether a term has a rule with the same constructor and the same
---- arity in the given term rewriting system.
-hasRule :: Eq f => TRS f -> Term f -> Bool
-hasRule trs t = any ((eqConsPattern t) . fst) trs
+--- Checks whether a term is reducible with some rule
+--- of the given term rewriting system.
+isRedex :: Eq f => TRS f -> Term f -> Bool
+isRedex trs t = any ((eqConsPattern t) . fst) trs
 
---- Checks whether a term is a pattern according to the given term rewriting
+--- Checks whether a term is a pattern, i.e., an root-reducible term
+--- where the argaccording to the given term rewriting
 --- system.
 isPattern :: Eq f => TRS f -> Term f -> Bool
 isPattern _   (TermVar _)       = False
-isPattern trs t@(TermCons _ ts) = (hasRule trs t) && (all isVarOrCons ts)
-  where
-    isVarOrCons (TermVar _)         = True
-    isVarOrCons t'@(TermCons _ ts') = (not (hasRule trs t'))
-                                        && (all isVarOrCons ts')
+isPattern trs t@(TermCons _ ts) = isRedex trs t && all isVarOrCons ts
+ where
+  isVarOrCons (TermVar _)         = True
+  isVarOrCons t'@(TermCons _ ts') = not (isRedex trs t') && all isVarOrCons ts'
 
 --- Checks whether a term rewriting system is constructor-based.
 isConsBased :: Eq f => TRS f -> Bool

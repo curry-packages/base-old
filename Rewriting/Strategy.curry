@@ -3,7 +3,7 @@
 --- terms and representation of reduction strategies.
 ---
 --- @author Jan-Hendrik Matthes
---- @version August 2016
+--- @version November 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
@@ -98,39 +98,39 @@ liRStrategy :: Eq f => RStrategy f
 liRStrategy = seqRStrategy liOrder
   where
     liOrder :: Pos -> Pos -> Ordering
-    liOrder p q | p == q         = EQ
-                | isPosLeft p q  = LT
-                | isPosBelow p q = LT
-                | otherwise      = GT
+    liOrder p q | p == q     = EQ
+                | leftOf p q = LT
+                | below p q  = LT
+                | otherwise  = GT
 
 --- The leftmost outermost reduction strategy.
 loRStrategy :: Eq f => RStrategy f
 loRStrategy = seqRStrategy loOrder
   where
     loOrder :: Pos -> Pos -> Ordering
-    loOrder p q | p == q         = EQ
-                | isPosLeft p q  = LT
-                | isPosAbove p q = LT
-                | otherwise      = GT
+    loOrder p q | p == q     = EQ
+                | leftOf p q = LT
+                | above p q  = LT
+                | otherwise  = GT
 
 --- The rightmost innermost reduction strategy.
 riRStrategy :: Eq f => RStrategy f
 riRStrategy = seqRStrategy riOrder
   where
     riOrder :: Pos -> Pos -> Ordering
-    riOrder p q | p == q         = EQ
-                | isPosRight p q = LT
-                | isPosBelow p q = LT
-                | otherwise      = GT
+    riOrder p q | p == q      = EQ
+                | rightOf p q = LT
+                | below p q   = LT
+                | otherwise   = GT
 
 --- The rightmost outermost reduction strategy.
 roRStrategy :: Eq f => RStrategy f
 roRStrategy = seqRStrategy roOrder
   where
     roOrder :: Pos -> Pos -> Ordering
-    roOrder p q | p == q         = EQ
-                | isPosRight p q = LT
-                | isPosAbove p q = LT
+    roOrder p q | p == q      = EQ
+                | rightOf p q = LT
+                | above p q   = LT
                 | otherwise      = GT
 
 --- The parallel innermost reduction strategy.
@@ -138,20 +138,20 @@ piRStrategy :: Eq f => RStrategy f
 piRStrategy = parRStrategy piOrder
   where
     piOrder :: Pos -> Pos -> Ordering
-    piOrder p q | p == q         = EQ
-                | isPosBelow p q = LT
-                | isPosAbove p q = GT
-                | otherwise      = EQ
+    piOrder p q | p == q    = EQ
+                | below p q = LT
+                | above p q = GT
+                | otherwise = EQ
 
 --- The parallel outermost reduction strategy.
 poRStrategy :: Eq f => RStrategy f
 poRStrategy = parRStrategy poOrder
   where
     poOrder :: Pos -> Pos -> Ordering
-    poOrder p q | p == q         = EQ
-                | isPosAbove p q = LT
-                | isPosBelow p q = GT
-                | otherwise      = EQ
+    poOrder p q | p == q    = EQ
+                | above p q = LT
+                | below p q = GT
+                | otherwise = EQ
 
 -- ---------------------------------------------------------------------------
 -- Functions for reductions on first-order terms

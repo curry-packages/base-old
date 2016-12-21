@@ -4,7 +4,7 @@
 --- compiler version, load paths, front end.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version August 2016
+--- @version December 2016
 --- @category general
 --------------------------------------------------------------------------------
 
@@ -18,7 +18,8 @@ module Distribution (
   joinModuleIdentifiers, splitModuleIdentifiers, splitModuleFileName,
   inCurrySubdirModule,
 
-  sysLibPath, getLoadPathForModule, lookupModuleSourceInLoadPath,
+  sysLibPath, getLoadPathForModule,
+  lookupModuleSourceInLoadPath, lookupModuleSource,
 
   FrontendTarget(..),
 
@@ -230,10 +231,20 @@ getLoadPathForModule modpath = do
 --- of the hierarchy.
 --- Returns Nothing if there is no corresponding source file.
 lookupModuleSourceInLoadPath :: ModulePath -> IO (Maybe (String,String))
-lookupModuleSourceInLoadPath modpath =
-  getLoadPathForModule modpath >>= lookupSourceInPath
+lookupModuleSourceInLoadPath modpath = do
+  loadpath <- getLoadPathForModule modpath
+  lookupModuleSource loadpath modpath
+
+--- Returns a directory name and the actual source file name for a module
+--- by looking up the module source in the load path provided as the
+--- first argument.
+--- If the module is hierarchical, the directory is the top directory
+--- of the hierarchy.
+--- Returns Nothing if there is no corresponding source file.
+lookupModuleSource :: [String] -> String -> IO (Maybe (String,String))
+lookupModuleSource loadpath mod = lookupSourceInPath loadpath
  where
-  fn       = takeFileName modpath
+  fn       = takeFileName mod
   fnlcurry = modNameToPath fn ++ ".lcurry"
   fncurry  = modNameToPath fn ++ ".curry"
 

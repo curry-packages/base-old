@@ -3,16 +3,16 @@
 --- terms and representation of narrowing strategies.
 ---
 --- @author Jan-Hendrik Matthes
---- @version August 2016
+--- @version November 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
 module Rewriting.Narrowing
-  ( NStrategy, Narrowing (..), NarrowingGraph (..), NOptions (..)
+  ( NStrategy, Narrowing (..), NarrowingTree (..), NOptions (..)
   , defaultNOptions, showNarrowing, stdNStrategy, imNStrategy, omNStrategy
   , loNStrategy, lazyNStrategy, wnNStrategy, narrowBy, narrowByL, narrowingBy
-  , narrowingByL, narrowingGraphBy, narrowingGraphByL, solveEq, solveEqL
-  , dotifyNarrowingGraph, writeNarrowingGraph
+  , narrowingByL, narrowingTreeBy, narrowingTreeByL, solveEq, solveEqL
+  , dotifyNarrowingTree, writeNarrowingTree
   ) where
 
 import FiniteMap (eltsFM)
@@ -50,15 +50,15 @@ type NStrategy f = TRS f -> Term f -> [(Pos, Rule f, Subst f)]
 data Narrowing f = NTerm (Term f) | NStep (Term f) Pos (Subst f) (Narrowing f)
 
 -- ---------------------------------------------------------------------------
--- Representation of narrowing graphs for first-order terms
+-- Representation of narrowing trees for first-order terms
 -- ---------------------------------------------------------------------------
 
---- Representation of a narrowing graph for first-order terms, parameterized
+--- Representation of a narrowing tree for first-order terms, parameterized
 --- over the kind of function symbols, e.g., strings.
 ---
---- @cons NGraph t ns - The narrowing of term `t` to a new term with a list of
----                     narrowing steps `ns`.
-data NarrowingGraph f = NGraph (Term f) [(Pos, Subst f, NarrowingGraph f)]
+--- @cons NTree t ns - The narrowing of term `t` to a new term with a list of
+---                    narrowing steps `ns`.
+data NarrowingTree f = NTree (Term f) [(Pos, Subst f, NarrowingTree f)]
 
 -- ---------------------------------------------------------------------------
 -- Representation of narrowing options for solving term equations
@@ -112,7 +112,7 @@ imNStrategy trs t = [(p, rule, sub) |
 omNStrategy :: Eq f => NStrategy f
 omNStrategy trs t = let ns = stdNStrategy trs t
                      in [n | n@(p, _, _) <- ns,
-                             all (\p' -> not (isPosAbove p' p))
+                             all (\p' -> not (above p' p))
                                  [p' | (p', _, _) <- ns, p' /= p]]
 
 --- The leftmost outermost narrowing strategy.
@@ -120,7 +120,7 @@ loNStrategy :: Eq f => NStrategy f
 loNStrategy trs t
   = let ns = stdNStrategy trs t
      in [n | n@(p, _, _) <- ns,
-             all (\p' -> not ((isPosAbove p' p) || (isPosLeft p' p)))
+             all (\p' -> not ((above p' p) || (leftOf p' p)))
                  [p' | (p', _, _) <- ns, p' /= p]]
 
 --- The lazy narrowing strategy.
@@ -134,7 +134,7 @@ lazyNStrategy trs t
 lazyPositions :: Eq f => TRS f -> Term f -> [Pos]
 lazyPositions _   (TermVar _)       = []
 lazyPositions trs t@(TermCons _ ts)
-  | hasRule trs t = if null rs then lps else eps:lps
+  | isRedex trs t = if null rs then lps else eps:lps
   | otherwise     = [i:p | (i, t') <- zip [1..] ts, p <- lazyPositions trs t']
   where
     ftrs = filter ((eqConsPattern t) . fst) trs
@@ -245,31 +245,31 @@ narrowingBy' v sub s trs n t
                    vs@(_:_) -> (maximum vs) + 1
          in map (NStep t p phi) (narrowingBy' v' phi s trs (n - 1) t')
 
---- Returns a narrowing graph for a term with the given strategy, the given
+--- Returns a narrowing tree for a term with the given strategy, the given
 --- term rewriting system and the given number of steps.
-narrowingGraphBy :: NStrategy f -> TRS f -> Int -> Term f -> NarrowingGraph f
-narrowingGraphBy s trs n t
-  | n <= 0    = NGraph t []
+narrowingTreeBy :: NStrategy f -> TRS f -> Int -> Term f -> NarrowingTree f
+narrowingTreeBy s trs n t
+  | n <= 0    = NTree t []
   | otherwise = let v = maybe 0 (+ 1) (maxVarInTerm t)
-                 in narrowingGraphBy' v emptySubst s trs n t
+                 in narrowingTreeBy' v emptySubst s trs n t
 
---- Returns a narrowing graph for a term with the given strategy, the given
+--- Returns a narrowing tree for a term with the given strategy, the given
 --- list of term rewriting systems and the given number of steps.
-narrowingGraphByL :: NStrategy f -> [TRS f] -> Int -> Term f
-                  -> NarrowingGraph f
-narrowingGraphByL s trss = narrowingGraphBy s (concat trss)
+narrowingTreeByL :: NStrategy f -> [TRS f] -> Int -> Term f
+                  -> NarrowingTree f
+narrowingTreeByL s trss = narrowingTreeBy s (concat trss)
 
---- Returns a narrowing graph for a term with the given strategy, the given
+--- Returns a narrowing tree for a term with the given strategy, the given
 --- term rewriting system, the already existing substitution, the given next
 --- possible variable and the given number of steps.
-narrowingGraphBy' :: VarIdx -> Subst f -> NStrategy f -> TRS f -> Int
-                  -> Term f -> NarrowingGraph f
-narrowingGraphBy' v sub s trs n t
-  | n <= 0    = NGraph t []
-  | otherwise = NGraph t (map combine (s trs' t))
+narrowingTreeBy' :: VarIdx -> Subst f -> NStrategy f -> TRS f -> Int
+                  -> Term f -> NarrowingTree f
+narrowingTreeBy' v sub s trs n t
+  | n <= 0    = NTree t []
+  | otherwise = NTree t (map combine (s trs' t))
   where
     trs' = renameTRSVars v (normalizeTRS trs)
-    --combine :: (Pos, Rule f, Subst f) -> (Pos, Subst f, NarrowingGraph f)
+    --combine :: (Pos, Rule f, Subst f) -> (Pos, Subst f, NarrowingTree f)
     combine (p, (_, r), sub')
       = let t' = applySubst sub' (replaceTerm t p r)
             rsub' = restrictSubst sub' (tVars t)
@@ -277,7 +277,7 @@ narrowingGraphBy' v sub s trs n t
             v' = case mapMaybe maxVarInTerm (eltsFM rsub') of
                    []       -> v
                    vs@(_:_) -> (maximum vs) + 1
-         in (p, phi, narrowingGraphBy' v' phi s trs (n - 1) t')
+         in (p, phi, narrowingTreeBy' v' phi s trs (n - 1) t')
 
 --- Solves a term equation with the given strategy, the given term rewriting
 --- system and the given options. The term has to be of the form
@@ -315,7 +315,7 @@ solveEq' _    _ _   _ _   (TermVar _)       = []
 solveEq' opts v sub s trs t@(TermCons _ ts)
   = case ts of
       [_, _] -> case unify [(l, r)] of
-                  (Left (Clash t1 t2)) | (hasRule trs t1) || (hasRule trs t2)
+                  (Left (Clash t1 t2)) | (isRedex trs t1) || (isRedex trs t2)
                                           -> concatMap solve (s trs' nt)
                                        | otherwise -> []
                   (Left (OccurCheck _ _)) -> []
@@ -336,7 +336,7 @@ solveEq' opts v sub s trs t@(TermCons _ ts)
          in solveEq' opts v' (composeSubst rsub' sub) s trs t'
 
 -- ---------------------------------------------------------------------------
--- Graphical representation of narrowing graphs
+-- Graphical representation of narrowing trees
 -- ---------------------------------------------------------------------------
 
 --- A node represented as a pair of an integer and a term and parameterized
@@ -351,29 +351,29 @@ type Edge f = (Node f, Subst f, Node f)
 --- the kind of function symbols, e.g., strings.
 type Graph f = ([Node f], [Edge f])
 
---- Transforms a narrowing graph into a graph representation.
-toGraph :: NarrowingGraph f -> Graph f
+--- Transforms a narrowing tree into a graph representation.
+toGraph :: NarrowingTree f -> Graph f
 toGraph ng = fst (fst (runState (toGraph' ng) 0))
   where
-    toGraph' :: NarrowingGraph f -> State Int (Graph f, Node f)
-    toGraph' (NGraph t ngs)
+    toGraph' :: NarrowingTree f -> State Int (Graph f, Node f)
+    toGraph' (NTree t ngs)
       = newIdx `bindS`
           (\i -> let n = (i, t)
                   in (mapS (edge n) ngs) `bindS`
                        (\gs -> let (ns, es) = unzip gs
                                 in returnS ((n:(concat ns), concat es), n)))
-    edge :: Node f -> (Pos, Subst f, NarrowingGraph f) -> State Int (Graph f)
+    edge :: Node f -> (Pos, Subst f, NarrowingTree f) -> State Int (Graph f)
     edge n1 (_, sub, ng')
       = (toGraph' ng') `bindS`
           (\((ns, es), n2) -> returnS (ns, (n1, sub, n2):es))
     newIdx :: State Int Int
     newIdx = getS `bindS` (\i -> (putS (i + 1)) `bindS_` (returnS i))
 
---- Transforms a narrowing graph into a graphical representation by using the
+--- Transforms a narrowing tree into a graphical representation by using the
 --- *DOT graph description language*.
-dotifyNarrowingGraph :: (f -> String) -> NarrowingGraph f -> String
-dotifyNarrowingGraph s ng
-  = "digraph NarrowingGraph {\n\t"
+dotifyNarrowingTree :: (f -> String) -> NarrowingTree f -> String
+dotifyNarrowingTree s ng
+  = "digraph NarrowingTree {\n\t"
       ++ "node [fontname=Helvetica,fontsize=10,shape=box];\n"
       ++ (unlines (map showNode ns))
       ++ "\tedge [fontname=Helvetica,fontsize=10];\n"
@@ -388,7 +388,7 @@ dotifyNarrowingGraph s ng
       = "\t" ++ (showVarIdx n1) ++ " -> " ++ (showVarIdx n2) ++ " [label=\""
           ++ (showSubst s (restrictSubst sub (tVars t))) ++ "\"];"
 
---- Writes the graphical representation of a narrowing graph with the
+--- Writes the graphical representation of a narrowing tree with the
 --- *DOT graph description language* to a file with the given filename.
-writeNarrowingGraph :: (f -> String) -> NarrowingGraph f -> String -> IO ()
-writeNarrowingGraph s ng fn = writeFile fn (dotifyNarrowingGraph s ng)
+writeNarrowingTree :: (f -> String) -> NarrowingTree f -> String -> IO ()
+writeNarrowingTree s ng fn = writeFile fn (dotifyNarrowingTree s ng)

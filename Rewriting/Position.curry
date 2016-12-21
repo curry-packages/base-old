@@ -2,7 +2,7 @@
 --- Library for representation of positions in first-order terms.
 ---
 --- @author Jan-Hendrik Matthes
---- @version August 2016
+--- @version November 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@
 
 module Rewriting.Position
   ( Pos
-  , showPos, eps, isPosAbove, isPosBelow, isPosLeft, isPosRight, isPosDisjunct
+  , showPos, eps, above, below, leftOf, rightOf, disjoint
   , positions, (.>), (|>), replaceTerm
   ) where
 
@@ -45,29 +45,29 @@ eps :: Pos
 eps = []
 
 --- Checks whether the first position is above the second position.
-isPosAbove :: Pos -> Pos -> Bool
-isPosAbove = isPrefixOf
+above :: Pos -> Pos -> Bool
+above = isPrefixOf
 
 --- Checks whether the first position is below the second position.
-isPosBelow :: Pos -> Pos -> Bool
-isPosBelow = flip isPosAbove
+below :: Pos -> Pos -> Bool
+below = flip above
 
 --- Checks whether the first position is left from the second position.
-isPosLeft :: Pos -> Pos -> Bool
-isPosLeft []     _      = False
-isPosLeft (_:_)  []     = False
-isPosLeft (p:ps) (q:qs) = case compare p q of
-                            LT -> True
-                            EQ -> isPosLeft ps qs
-                            GT -> False
+leftOf :: Pos -> Pos -> Bool
+leftOf []     _      = False
+leftOf (_:_)  []     = False
+leftOf (p:ps) (q:qs) = case compare p q of
+                         LT -> True
+                         EQ -> leftOf ps qs
+                         GT -> False
 
 --- Checks whether the first position is right from the second position.
-isPosRight :: Pos -> Pos -> Bool
-isPosRight = flip isPosLeft
+rightOf :: Pos -> Pos -> Bool
+rightOf = flip leftOf
 
---- Checks whether two positions are disjunct.
-isPosDisjunct :: Pos -> Pos -> Bool
-isPosDisjunct p q = not ((isPosAbove p q) || (isPosBelow p q))
+--- Checks whether two positions are disjoint.
+disjoint :: Pos -> Pos -> Bool
+disjoint p q = not ((above p q) || (below p q))
 
 --- Returns a list of all positions in a term.
 positions :: Term _ -> [Pos]
