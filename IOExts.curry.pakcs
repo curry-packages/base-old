@@ -51,7 +51,7 @@ evalCmd cmd args input = do
   let tmpfile = "/tmp/PAKCS_evalCMD"++show pid
   (hi,ho,he) <- execCmd (unwords (map wrapArg (cmd:args)) ++
                          " ; (echo $? > "++tmpfile++")")
-  hPutStrLn hi input
+  unless (null input) (hPutStrLn hi input)
   hClose hi
   outs <- hGetEOF ho
   errs <- hGetEOF he
