@@ -2,7 +2,7 @@
 --- Library with some useful extensions to the IO monad.
 ---
 --- @author Michael Hanus
---- @version January 2014
+--- @version January 2017
 --- @category general
 ------------------------------------------------------------------------------
 
@@ -97,12 +97,13 @@ updateFile f file = do
 --- @return the result of the execution of the action
 exclusiveIO :: String -> IO a -> IO a
 exclusiveIO lockfile action = do
-  system ("lockfile -1 "++lockfile)
+  system ("lockfile-create --lock-name "++lockfile)
   catch (do actionResult <- action
-            system ("rm -f "++lockfile)
+            deleteLockFile
             return actionResult )
-        (\e -> system ("rm -f "++lockfile) >> ioError e)
-
+        (\e -> deleteLockFile >> ioError e)
+ where
+  deleteLockFile = system $ "lockfile-remove --lock-name " ++ lockfile
 
 --- Defines a global association between two strings.
 --- Both arguments must be evaluable to ground terms before applying
