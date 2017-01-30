@@ -28,6 +28,7 @@ import IO           ( Handle, hPutStrLn, hGetLine, hFlush, hClose, stderr )
 import List         ( insertBy, isInfixOf, isPrefixOf, tails )
 import ReadShowTerm ( readsQTerm )
 import ReadNumeric  ( readInt )
+import System       ( system )
 import Time
 
 --- Global flag for database debug mode.
@@ -202,6 +203,9 @@ data Connection = SQLiteConnection Handle
 --- @return A connection to a SQLite Database
 connectSQLite :: String -> IO Connection
 connectSQLite db = do
+  exsqlite3 <- system "which sqlite3"
+  when (exsqlite3>0) $
+    error "Database interface `sqlite3' not found. Please install package `sqlite3'!"
   h <- connectToCommand $ "sqlite3 " ++ db
   hPutAndFlush h ".mode line"
   hPutAndFlush h ".log stdout"

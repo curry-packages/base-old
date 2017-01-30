@@ -62,9 +62,10 @@ import Global       ( Global, GlobalSpec(..), global, readGlobal, writeGlobal )
 import IO           ( Handle, hPutStrLn, hGetLine, hFlush, hClose, stderr )
 import IOExts       ( connectToCommand )
 import List         ( intersperse, insertBy )
+import Maybe        ( mapMMaybe )
 import ReadNumeric  ( readInt )
 import ReadShowTerm ( readQTerm, showQTerm, readsQTerm )
-import Maybe        ( mapMMaybe )
+import System       ( system )
 
 infixl 1 |>>, |>>=
 
@@ -569,13 +570,16 @@ ensureDBHandle db =
   do dbHandles <- readGlobal openDBHandles
      unless (db `elem` map fst dbHandles) $ addNewDBHandle dbHandles
  where
-  addNewDBHandle dbHandles =
-    do h <- connectToCommand $ path'to'sqlite3 ++ " " ++ db
-       hPutAndFlush h ".separator ','"
-       writeGlobal openDBHandles $ -- sort against deadlock
-         insertBy ((<=) `on` fst) (db,h) dbHandles
-       isTrans <- readGlobal currentlyInTransaction
-       unless (not isTrans) $ hPutStrLn h "begin immediate;"
+  addNewDBHandle dbHandles = do
+    exsqlite3 <- system $ "which " ++ path'to'sqlite3
+    when (exsqlite3>0) $
+      error "Database interface `sqlite3' not found. Please install package `sqlite3'!"
+    h <- connectToCommand $ path'to'sqlite3 ++ " " ++ db
+    hPutAndFlush h ".separator ','"
+    writeGlobal openDBHandles $ -- sort against deadlock
+      insertBy ((<=) `on` fst) (db,h) dbHandles
+    isTrans <- readGlobal currentlyInTransaction
+    unless (not isTrans) $ hPutStrLn h "begin immediate;"
 
 unless :: Bool -> IO () -> IO ()
 unless False action = action
