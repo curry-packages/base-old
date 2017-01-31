@@ -571,7 +571,7 @@ ensureDBHandle db =
      unless (db `elem` map fst dbHandles) $ addNewDBHandle dbHandles
  where
   addNewDBHandle dbHandles = do
-    exsqlite3 <- system $ "which " ++ path'to'sqlite3
+    exsqlite3 <- system $ "which " ++ path'to'sqlite3 ++ " > /dev/null"
     when (exsqlite3>0) $
       error "Database interface `sqlite3' not found. Please install package `sqlite3'!"
     h <- connectToCommand $ path'to'sqlite3 ++ " " ++ db

@@ -203,7 +203,7 @@ data Connection = SQLiteConnection Handle
 --- @return A connection to a SQLite Database
 connectSQLite :: String -> IO Connection
 connectSQLite db = do
-  exsqlite3 <- system "which sqlite3"
+  exsqlite3 <- system "which sqlite3 > /dev/null"
   when (exsqlite3>0) $
     error "Database interface `sqlite3' not found. Please install package `sqlite3'!"
   h <- connectToCommand $ "sqlite3 " ++ db

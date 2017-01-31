@@ -888,7 +888,7 @@ reportTclTkError s =
 -- The first argument are parameters passed to the wish command.
 openGuiPort :: String -> IO GuiPort
 openGuiPort wishparams = do
-  exwish <- system "which wish"
+  exwish <- system "which wish > /dev/null"
   when (exwish>0) $
     error "Windowing shell `wish' not found. Please install package `tk'!"
   reportTclTk ("OPEN CONNECTION TO WISH WITH PARAMS: "++wishparams)
