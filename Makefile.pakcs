@@ -5,8 +5,6 @@ CYMAKEPARAMS = --extended -Wnone -i.
 
 PAKCS=$(ROOT)/bin/pakcs
 
-# directory containing the repository library files:
-LIBTRUNKDIR=$(ROOT)/lib-trunk
 # directory for HTML documentation files:
 LIBDOCDIR=CDOC
 # directory for LaTeX documentation files:
