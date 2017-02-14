@@ -1,7 +1,10 @@
+import CurryException
+import Control.Exception as C
 import Data.IORef
 import System.IO
-import System.Directory (doesFileExist)
+import System.Directory  (doesFileExist)
 import System.IO.Unsafe
+import System.Process    (system)
 
 -- Implementation of Globals in Curry. We use Haskell's IORefs for temporary
 -- globals where Curry values are stored in the IORefs
@@ -103,14 +106,39 @@ external_d_C_prim_readGlobal :: Curry_Prelude.Curry a => C_Global a -> Cover -> 
                              -> Curry_Prelude.C_IO a
 external_d_C_prim_readGlobal (C_Global_Temp  ref) _ _ = fromIO (readIORef ref)
 external_d_C_prim_readGlobal (C_Global_Pers name) _ _ = fromIO $
-  do h <- openFile name ReadMode
-     s <- hGetLine h
-     hClose h
-     return (read s)
+  exclusiveOnFile name $ do
+    s <- catch (do h <- openFile name ReadMode
+                   eof <- hIsEOF h
+                   s <- if eof then return "" else hGetLine h
+                   hClose h
+                   return s)
+              (\e -> throw (IOException (show (e :: C.IOException))))
+    case reads s of
+      [(val,"")] -> return val
+      _          -> throw (IOException $ "Persistent file `" ++ name ++
+                                         "' contains malformed contents")
 
 external_d_C_prim_writeGlobal :: Curry_Prelude.Curry a => C_Global a -> a
                               -> Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.OP_Unit
 external_d_C_prim_writeGlobal (C_Global_Temp ref) val _ _ =
   toCurry (writeIORef ref val)
 external_d_C_prim_writeGlobal (C_Global_Pers name) val _ _ =
-  toCurry (writeFile name (show val ++ "\n"))
+  toCurry (exclusiveOnFile name $ writeFile name (show val ++ "\n"))
+
+
+--- Forces the exclusive execution of an action via a lock file.
+exclusiveOnFile :: String -> IO a -> IO a
+exclusiveOnFile file action = do
+  exlock <- doesFileExist lockfile
+  if exlock
+    then hPutStrLn stderr
+              (">>> Waiting for removing lock file `" ++ lockfile ++ "'...")
+    else return ()
+  system ("lockfile-create --lock-name "++lockfile)
+  C.catch (do actionResult <- action
+              deleteLockFile
+              return actionResult )
+          (\e -> deleteLockFile >> C.throw (e :: CurryException))
+ where
+  lockfile = file ++ ".LOCK"
+  deleteLockFile = system $ "lockfile-remove --lock-name " ++ lockfile
