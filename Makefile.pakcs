@@ -56,6 +56,7 @@ cleanpl:
 
 ##########################################################################
 # generate the FlatCurry files of all libraries:
+.NOTPARALLEL: fcy
 .PHONY: fcy
 fcy: $(LIB_FCY)
 
@@ -63,7 +64,8 @@ fcy: $(LIB_FCY)
 .PHONY: acy
 acy: $(LIB_ACY)
 
-# generate the compile Prolog target files of all libraries:
+# generate the compiled Prolog target files of all libraries:
+.NOTPARALLEL: pl
 .PHONY: pl
 pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
 
