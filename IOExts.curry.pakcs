@@ -2,7 +2,7 @@
 --- Library with some useful extensions to the IO monad.
 ---
 --- @author Michael Hanus
---- @version January 2014
+--- @version January 2017
 --- @category general
 ------------------------------------------------------------------------------
 
@@ -51,7 +51,7 @@ evalCmd cmd args input = do
   let tmpfile = "/tmp/PAKCS_evalCMD"++show pid
   (hi,ho,he) <- execCmd (unwords (map wrapArg (cmd:args)) ++
                          " ; (echo $? > "++tmpfile++")")
-  hPutStrLn hi input
+  unless (null input) (hPutStrLn hi input)
   hClose hi
   outs <- hGetEOF ho
   errs <- hGetEOF he
@@ -130,12 +130,13 @@ updateFile f file = do
 --- @return the result of the execution of the action
 exclusiveIO :: String -> IO a -> IO a
 exclusiveIO lockfile action = do
-  system ("lockfile -1 "++lockfile)
+  system ("lockfile-create --lock-name "++lockfile)
   catch (do actionResult <- action
-            system ("rm -f "++lockfile)
+            deleteLockFile
             return actionResult )
-        (\e -> system ("rm -f "++lockfile) >> ioError e)
-
+        (\e -> deleteLockFile >> ioError e)
+ where
+  deleteLockFile = system $ "lockfile-remove --lock-name " ++ lockfile
 
 --- Defines a global association between two strings.
 --- Both arguments must be evaluable to ground terms before applying
@@ -160,7 +161,7 @@ prim_getAssoc external
 --- The values are not evaluated when they are assigned to an IORef.
 data IORef a = IORef a -- precise structure internally defined
 
---- Creates a new IORef with an initial values.
+--- Creates a new IORef with an initial value.
 newIORef :: a -> IO (IORef a)
 newIORef external
 

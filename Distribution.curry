@@ -203,7 +203,7 @@ sysLibPath = case curryCompiler of
   "pakcs" -> [installDir </> "lib"]
   "kics"  -> [installDir </> "src" </> "lib"]
   "kics2" -> [installDir </> "lib"]
-  _       -> error "Distribution.getSysLibPath: unknown curryCompiler"
+  _       -> error "Distribution.sysLibPath: unknown curryCompiler"
 
 --- Returns the current path (list of directory names) that is
 --- used for loading modules w.r.t. a given module path.
@@ -422,7 +422,7 @@ callFrontendWithParams target params modpath = do
  where
    callParseCurry = do
      path <- maybe (getLoadPathForModule modpath) return (fullPath params)
-     return (quote (installDir </> "bin" </> curryCompiler ++ "-cymake")
+     return (quote (installDir </> "bin" </> curryCompiler ++ "-frontend")
              ++ concatMap ((" -i" ++) . quote) path)
 
    quote s = '"' : s ++ "\""

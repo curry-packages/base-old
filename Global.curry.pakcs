@@ -20,15 +20,17 @@
 ---
 ---
 --- @author Michael Hanus
---- @version June 2007
+--- @version February 2017
 --- @category general
 ------------------------------------------------------------------------------
 
-module Global(Global,GlobalSpec(..),global,readGlobal,writeGlobal) where
+module Global( Global, GlobalSpec(..), global
+             , readGlobal, safeReadGlobal, writeGlobal)
+ where
 
 ----------------------------------------------------------------------
 
---- The type of a global entity.
+--- The abstract type of a global entity.
 data Global a = GlobalDef a GlobalSpec
 
 --- <code>global</code> is only used for the declaration of a global value
@@ -51,6 +53,13 @@ readGlobal g = prim_readGlobal $# g
 prim_readGlobal :: Global a -> IO a
 prim_readGlobal external
 
+--- Safely reads the current value of a global.
+--- If `readGlobal` fails (e.g., due to a corrupted persistent storage),
+--- the global is re-initialized with the default value given as
+--- the second argument.
+safeReadGlobal :: Global a -> a -> IO a
+safeReadGlobal g dflt =
+  catch (readGlobal g) (\_ -> writeGlobal g dflt >> return dflt)
 
 --- Updates the value of a global.
 --- The value is evaluated to a ground constructor term before it is updated.

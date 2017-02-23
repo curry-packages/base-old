@@ -54,7 +54,7 @@ CABAL_LIBDEPS    = $(call comma_sep,$(LIBDEPS))
 ########################################################################
 
 .PHONY: install
-install: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_FCY) $(LIB_ACY) $(LIB_HS) $(LIB_HS_TRACE)
+install: fcy acy hs hstrace
 	$(MAKE) $(CABAL_FILE)
 	$(CABAL_INSTALL) $(CABAL_PROFILE)
 	rm -f $(CABAL_FILE)
@@ -134,6 +134,16 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 	echo "  Exposed-modules: $(HS_LIB_TRACE_NAMES)"                 >> $@
 	echo "  hs-source-dirs: ./.curry/kics2"                         >> $@
 
+# generate the compiled Haskell target files of all libraries:
+.NOTPARALLEL: hs
+.PHONY: hs
+hs: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_HS)
+
+# generate the compiled Haskell target files with tracing of all libraries:
+.NOTPARALLEL: hstrace
+.PHONY: hstrace
+hs: $(LIB_HS_TRACE)
+
 # generate Haskell file in subdirectory .curry/kics2
 .curry/kics2/Curry_Trace_%.hs: %.curry
 	$(COMP) -v0 -i. --trace-failure $*
@@ -183,11 +193,20 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 .curry/kics2/Test/Curry_%.hs: Test/%.curry
 	$(COMP) -v0 -i. Test.$*
 
+# generate the FlatCurry files of all libraries:
+.NOTPARALLEL: fcy
+.PHONY: fcy
+fcy: $(LIB_FCY)
+
 # generate FlatCurry file in subdirectory .curry:
 .curry/%.fcy: %.curry
 	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*)
 
-# generate all AbstractCurry files in subdirectory .curry:
+# generate the AbstractCurry files of all libraries:
+.PHONY: acy
+acy: $(LIB_ACY)
+
+# generate AbstractCurry file in subdirectory .curry:
 .curry/%.acy: %.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $(subst /,.,$*)
 

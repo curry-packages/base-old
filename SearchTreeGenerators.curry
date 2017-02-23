@@ -25,18 +25,19 @@
 ---                 ||| genCons1 Node (genList (genTree gena))
 ---
 --- @author  Michael Hanus
---- @version February 2016
+--- @version February 2017
 --- @category algorithm
 ------------------------------------------------------------------------------
 
 module SearchTreeGenerators
-  ( genBool, genNat, genInt, genChar, genList
+  ( genBool, genNat, genInt, genFloat, genChar, genList
   , genMaybe, genEither, genUnit, genPair, genTriple, genTuple4, genTuple5
   , genOrdering
   , genCons0, genCons1, genCons2, genCons3, genCons4, genCons5
   , (|||)
   ) where
 
+import Float
 import SearchTree
 import SearchTreeTraversal
 
@@ -114,6 +115,23 @@ genInt = Or genNat
             (Or (Value 0)
                 (valsTo genNat (Value . (0 -))))
              
+--- Generates a search tree for Float values.
+genFloat :: SearchTree Float
+genFloat = Or genPosFloat
+              (Or (Value 0.0)
+                  (valsTo genPosFloat (Value . (0.0 -.))))
+
+--- Generates a search tree for positive Float values.
+genPosFloat :: SearchTree Float
+genPosFloat = valsTo (genPair genNat genNat) ii2f
+ where
+  -- Combine two naturals to a float value:
+  ii2f (x,y) = Value (i2f x +. nat2float 0.1 y)
+  -- Transform an natural to float<1, e.g., nat2float 0.1 135 = 0.531
+  nat2float m i =
+    if i == 0 then 0.0
+              else nat2float (m/.10) (i `div` 10) +. m *. i2f (i `mod` 10)
+
 --- Generates a search tree for Boolean values.
 genBool :: SearchTree Bool
 genBool = Or (Value False) (Value True)

@@ -4,22 +4,23 @@
 --- with ports.
 ---
 --- @author Michael Hanus
---- @version January 2012
+--- @version February 2017
 --- @category web
 ------------------------------------------------------------------------------
 
 module CPNS(registerPort,getPortInfo,unregisterPort,
             cpnsStart,cpnsStop,cpnsShow,cpnsAlive,main) where
 
-import Socket
-import IO
-import ReadShowTerm
 import Char
-import List(delete,intersperse)
-import Time
-import System
 import Distribution(installDir)
+import FilePath((</>))
+import IO
+import List(delete,intersperse)
 import Profile
+import ReadShowTerm
+import Socket
+import System
+import Time
 
 -- If we connect to a port with symbolic name pn, we first connect
 -- to the CPNS of the host named by pn to get the physical socket
@@ -295,7 +296,7 @@ cpnsAlive timeout host = catch tryPingCPNS (\_ -> return False)
 --- Starts the CPNS demon at localhost if it is not already running:
 startCPNSDIfNecessary :: IO ()
 startCPNSDIfNecessary = do
-  system $ "\""++installDir++"/cpns/start\""
+  system $ installDir </> "currytools" </> "cpns" </> "start"
   done
 
 --- Main function for CPNS demon. Check arguments and execute command.

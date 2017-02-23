@@ -104,10 +104,10 @@ intersectBy eq xs@(_:_) ys@(_:_) = [x | x <- xs, any (eq x) ys]
 --- Puts a separator element between all elements in a list.
 ---
 --- Example: `(intersperse 9 [1,2,3,4]) = [1,9,2,9,3,9,4]`
-intersperse               :: a -> [a] -> [a]
-intersperse _   []         = []
-intersperse _   [x]        = [x]
-intersperse sep (x1:x2:xs) = x1 : sep : intersperse sep (x2:xs)
+intersperse :: a -> [a] -> [a]
+intersperse _   []           = []
+intersperse _   [x]          = [x]
+intersperse sep (x:xs@(_:_)) = x : sep : intersperse sep xs
 
 --- `intercalate xs xss` is equivalent to `(concat (intersperse xs xss))`.
 --- It inserts the list `xs` in between the lists in `xss` and
@@ -265,13 +265,13 @@ insertBy le x (y:ys) = if le x y
 
 --- Returns the last element of a non-empty list.
 last :: [a] -> a
-last [x]      = x
-last (_:x:xs) = last (x:xs)
+last [x]            = x
+last (_ : xs@(_:_)) = last xs
 
 --- Returns the input list with the last element removed.
 init :: [a] -> [a]
-init [_]      = []
-init (x:y:xs) = x : init (y:xs)
+init [_]          = []
+init (x:xs@(_:_)) = x : init xs
 
 --- Returns the sum of a list of integers.
 sum :: Num a => [a] -> a
