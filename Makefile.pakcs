@@ -29,6 +29,9 @@ EXCLUDES     = $(ALLLIBS).curry UnsafeSearchTree.curry
 # Modules not included in library documentation index page:
 DOCEXCLUDES  = CHRcompiled CPNS HtmlCgi WUIjs
 
+# Executable of CurryDoc:
+CURRYDOC := $(shell which curry-doc)
+
 .PHONY: all
 all: $(ALLLIBS).curry fcy acy
 
@@ -85,6 +88,13 @@ pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
 # create HTML documentation files for system libraries
 ##############################################################################
 
+# Check whether CurryDoc is installed
+.PHONY: checkcurrydoc
+checkcurrydoc:
+	@if [ ! -x "$(CURRYDOC)" ] ; then \
+	  echo "ERROR: Executable 'curry-doc' is not installed!" && echo "Install it by > cpm installbin currydoc" && exit 1 ; \
+	fi
+
 INDEXHTML    = $(LIBDOCDIR)/index.html
 HTMLEXCLUDES = $(INDEXHTML) $(foreach file, findex.html cindex.html PAKCS_libs.html, $(LIBDOCDIR)/$(file))
 
@@ -94,38 +104,38 @@ doc: $(LIB_CURRY)
 	@$(MAKE) $(LIB_HTML)
 	@$(MAKE) $(INDEXHTML)
 
-$(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
+$(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html)) checkcurrydoc
 	@echo "Generating index pages for Curry libraries:"
 	@echo $(LIB_DOCNAMES)
-	"$(PAKCS)" doc --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
+	$(CURRYDOC) --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries
-$(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
-	"$(PAKCS)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry checkcurrydoc
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
-	"$(PAKCS)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry checkcurrydoc
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
-	"$(PAKCS)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry checkcurrydoc
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/CLP.%.html: CLP/%.curry
-	"$(PAKCS)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(LIBDOCDIR)/CLP.%.html: CLP/%.curry checkcurrydoc
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
-	"$(PAKCS)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry checkcurrydoc
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/Database.%.html: Database/%.curry
-	"$(PAKCS)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(LIBDOCDIR)/Database.%.html: Database/%.curry checkcurrydoc
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
-	"$(PAKCS)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry checkcurrydoc
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/Test.%.html: Test/%.curry
-	"$(PAKCS)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(LIBDOCDIR)/Test.%.html: Test/%.curry checkcurrydoc
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/%.html: %.curry
-	"$(PAKCS)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(LIBDOCDIR)/%.html: %.curry checkcurrydoc
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
@@ -139,29 +149,29 @@ texdoc: $(LIB_CURRY)
 # Generate individual LaTeX documentations for libraries.
 # In case of failures (which might occur due to memory problems in SWI-Prolog)
 # an empty LaTeX file is generated so that the make process does not die.
-$(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
-	"$(PAKCS)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry checkcurrydoc
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
-$(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
-	"$(PAKCS)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry checkcurrydoc
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
-$(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
-	"$(PAKCS)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry checkcurrydoc
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
-$(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
-	"$(PAKCS)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(TEXDOCDIR)/CLP.%.tex: CLP/%.curry checkcurrydoc
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
-$(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
-	"$(PAKCS)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry checkcurrydoc
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
-$(TEXDOCDIR)/Database.%.tex: Database/%.curry
-	"$(PAKCS)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(TEXDOCDIR)/Database.%.tex: Database/%.curry checkcurrydoc
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
-$(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
-	"$(PAKCS)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry checkcurrydoc
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
-$(TEXDOCDIR)/Test.%.tex: Test/%.curry
-	"$(PAKCS)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(TEXDOCDIR)/Test.%.tex: Test/%.curry checkcurrydoc
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
-$(TEXDOCDIR)/%.tex: %.curry
-	"$(PAKCS)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(TEXDOCDIR)/%.tex: %.curry checkcurrydoc
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
