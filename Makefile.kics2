@@ -228,42 +228,42 @@ INDEXHTML    = $(LIBDOCDIR)/index.html
 HTMLEXCLUDES = $(INDEXHTML) $(foreach file, findex.html cindex.html KiCS2_libs.html, $(LIBDOCDIR)/$(file))
 
 .PHONY: doc
-doc: $(LIB_CURRY)
+doc: checkcurrydoc $(LIB_CURRY)
 	@mkdir -p "$(LIBDOCDIR)"
 	@$(MAKE) $(LIB_HTML)
 	@$(MAKE) $(INDEXHTML)
 
-$(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html)) checkcurrydoc
+$(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	@echo "Generating index pages for Curry libraries:"
 	@echo $(LIB_DOCNAMES)
 	$(CURRYDOC) --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries
-$(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry checkcurrydoc
+$(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry checkcurrydoc
+$(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry checkcurrydoc
+$(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/CLP.%.html: CLP/%.curry checkcurrydoc
+$(LIBDOCDIR)/CLP.%.html: CLP/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry checkcurrydoc
+$(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/Database.%.html: Database/%.curry checkcurrydoc
+$(LIBDOCDIR)/Database.%.html: Database/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry checkcurrydoc
+$(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/Test.%.html: Test/%.curry checkcurrydoc
+$(LIBDOCDIR)/Test.%.html: Test/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/%.html: %.curry checkcurrydoc
+$(LIBDOCDIR)/%.html: %.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 ##############################################################################
@@ -271,35 +271,35 @@ $(LIBDOCDIR)/%.html: %.curry checkcurrydoc
 ##############################################################################
 
 .PHONY: texdoc
-texdoc: $(LIB_CURRY)
+texdoc: checkcurrydoc $(LIB_CURRY)
 	@mkdir -p "$(TEXDOCDIR)"
 	$(MAKE) $(LIB_TEX)
 
 # generate individual LaTeX documentations for libraries
-$(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry checkcurrydoc
+$(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
-$(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry checkcurrydoc
+$(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
-$(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry checkcurrydoc
+$(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
-$(TEXDOCDIR)/CLP.%.tex: CLP/%.curry checkcurrydoc
+$(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
-$(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry checkcurrydoc
+$(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
-$(TEXDOCDIR)/Database.%.tex: Database/%.curry checkcurrydoc
+$(TEXDOCDIR)/Database.%.tex: Database/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
-$(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry checkcurrydoc
+$(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
-$(TEXDOCDIR)/Test.%.tex: Test/%.curry checkcurrydoc
+$(TEXDOCDIR)/Test.%.tex: Test/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
-$(TEXDOCDIR)/%.tex: %.curry checkcurrydoc
+$(TEXDOCDIR)/%.tex: %.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
