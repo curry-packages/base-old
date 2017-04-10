@@ -227,8 +227,8 @@ checkcurrydoc:
 INDEXHTML    = $(LIBDOCDIR)/index.html
 HTMLEXCLUDES = $(INDEXHTML) $(foreach file, findex.html cindex.html KiCS2_libs.html, $(LIBDOCDIR)/$(file))
 
-.PHONY: doc
-doc: checkcurrydoc $(LIB_CURRY)
+.PHONY: htmldoc
+htmldoc: checkcurrydoc $(LIB_CURRY)
 	@mkdir -p "$(LIBDOCDIR)"
 	@$(MAKE) $(LIB_HTML)
 	@$(MAKE) $(INDEXHTML)
