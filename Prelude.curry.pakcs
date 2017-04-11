@@ -13,7 +13,7 @@ module Prelude
     Eq(..)
   , elem, notElem, lookup
   , Ord(..)
-  , Show(..), print, shows, showChar, showString, showParen
+  , Show(..), ShowS, print, shows, showChar, showString, showParen
   , Read (..), ReadS, lex, read, reads, readParen
   , Bounded (..), Enum (..), boundedEnumFrom, boundedEnumFromThen
   , asTypeOf
@@ -473,8 +473,6 @@ words s    = let s1 = dropWhile isSpace s
               in if s1=="" then []
                            else let (w,s2) = break isSpace s1
                                  in w : words s2
- where
-   isSpace c = c == ' '  || c == '\t' || c == '\n' || c == '\r'
 
 --- Concatenates a list of strings with a blank between two strings.
 unwords    :: [String] -> String
@@ -1207,11 +1205,10 @@ instance Read Char where
                   (\s -> [ (c, t) | (x, t) <- lex s, not (null x), head x == '''
                                   , (c, []) <- readCharLiteral x ])
 
-  readList s = readParen False
+  readList xs = readParen False
                  (\s -> [ (cs, t) | (x, t) <- lex s, not (null x), head x == '"'
-                                  , (cs, []) <- readStringLiteral x ]) s
-               ++
-               readListDefault s
+                                  , (cs, []) <- readStringLiteral x ]) xs
+                ++ readListDefault xs
 
 -- Primitive operations to read specific literals.
 readNatLiteral :: ReadS Int
@@ -1286,19 +1283,19 @@ instance (Read a, Read b, Read c, Read d, Read e) => Read (a, b, c, d, e) where
 -- The following definitions are necessary to implement instances of Read.
 
 lex :: ReadS String
-lex s = case s of
+lex xs = case xs of
     "" -> [("","")]
-    (c:s)
-      | isSpace c -> lex $ dropWhile isSpace s
+    (c:cs)
+      | isSpace c -> lex $ dropWhile isSpace cs
     ('\'':s) ->
       [('\'' : ch ++ "'", t) | (ch, '\'' : t)  <- lexLitChar s, ch /= "'"]
     ('"':s) -> [('"' : str, t) | (str, t) <- lexString s]
-    (c:s)
-      | isSingle c -> [([c], s)]
-      | isSym c -> [(c : sym, t) | (sym, t) <- [span isSym s]]
-      | isAlpha c -> [(c : nam, t) | (nam, t) <- [span isIdChar s]]
-      | isDigit c ->
-        [(c : ds ++ fe, t)| (ds, s) <- [span isDigit s], (fe, t)  <- lexFracExp s]
+    (c:cs)
+      | isSingle c -> [([c], cs)]
+      | isSym c -> [(c : sym, t) | (sym, t) <- [span isSym cs]]
+      | isAlpha c -> [(c : nam, t) | (nam, t) <- [span isIdChar cs]]
+      | isDigit c -> [(c : ds ++ fe, t) | (ds, s) <- [span isDigit cs]
+                                        , (fe, t)  <- lexFracExp s]
       | otherwise -> []
   where
   isSingle c = c `elem` ",;()[]{}_`"
@@ -1308,43 +1305,43 @@ lex s = case s of
     ('.':c:cs)
       | isDigit c ->
         [('.' : ds ++ e, u) | (ds, t) <- lexDigits (c : cs), (e, u)  <- lexExp t]
-    s -> lexExp s
+    _ -> lexExp s
   lexExp s = case s of
-    (e:s) | e `elem` "eE" ->
-      [(e : c : ds, u) | (c:t)  <- [s], c `elem` "+-"
+    (e:cs) | e `elem` "eE" ->
+      [(e : c : ds, u) | (c:t)  <- [cs], c `elem` "+-"
                        , (ds, u) <- lexDigits t] ++
-        [(e : ds, t) | (ds, t) <- lexDigits s]
-    s -> [("", s)]
+        [(e : ds, t) | (ds, t) <- lexDigits cs]
+    _ -> [("", s)]
   lexString s = case s of
-    ('"':s) -> [("\"", s)]
-    s -> [(ch ++ str, u) | (ch, t) <- lexStrItem s, (str, u) <- lexString t]
+    ('"':cs) -> [("\"", cs)]
+    _ -> [(ch ++ str, u) | (ch, t) <- lexStrItem s, (str, u) <- lexString t]
   lexStrItem s = case s of
-    ('\\':'&':s) -> [("\\&", s)]
-    ('\\':c:s)
-      | isSpace c -> [("\\&", t) | '\\':t <- [dropWhile isSpace s]]
-    s -> lexLitChar s
+    ('\\':'&':cs) -> [("\\&", cs)]
+    ('\\':c:cs)
+      | isSpace c -> [("\\&", t) | '\\':t <- [dropWhile isSpace cs]]
+    _ -> lexLitChar s
 
 lexLitChar :: ReadS String
-lexLitChar s = case s of
+lexLitChar xs = case xs of
     "" -> []
-    ('\\':s) -> map (prefix '\\') (lexEsc s)
-    (c:s) -> [([c], s)]
-  where
+    ('\\':cs) -> map (prefix '\\') (lexEsc cs)
+    (c:cs) -> [([c], cs)]
+ where
   lexEsc s = case s of
-    (c:s)
-      | c `elem` "abfnrtv\\\"'" -> [([c], s)]
-    ('^':c:s)
-      | c >= '@' && c <= '_'    -> [(['^',c], s)]
-    ('b':s) -> [prefix 'b' (span isBinDigit s)]
-    ('o':s) -> [prefix 'o' (span isOctDigit s)]
-    ('x':s) -> [prefix 'x' (span isHexDigit s)]
-    s@(d:_)
-      | isDigit d -> [span isDigit s]
-    s@(c:_)
-      | isUpper c -> [span isCharName s]
+    (c:cs)
+      | c `elem` "abfnrtv\\\"'" -> [([c], cs)]
+    ('^':c:cs)
+      | c >= '@' && c <= '_'    -> [(['^',c], cs)]
+    ('b':cs) -> [prefix 'b' (span isBinDigit cs)]
+    ('o':cs) -> [prefix 'o' (span isOctDigit cs)]
+    ('x':cs) -> [prefix 'x' (span isHexDigit cs)]
+    cs@(d:_)
+      | isDigit d -> [span isDigit cs]
+    cs@(c:_)
+      | isUpper c -> [span isCharName cs]
     _ -> []
   isCharName c = isUpper c || isDigit c
-  prefix c (t, s) = (c : t, s)
+  prefix c (t, cs) = (c : t, cs)
 
 lexDigits :: ReadS String
 lexDigits = nonNull isDigit
