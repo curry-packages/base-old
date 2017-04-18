@@ -1,22 +1,23 @@
 -------------------------------------------------------------------------
 --- This module defines the interface of properties that can be checked
---- with the tool `currycheck`, an automatic property-based test tool
+--- with the CurryCheck tool, an automatic property-based test tool
 --- based on the EasyCheck library.
 --- The ideas behind EasyCheck are described in
---- [this paper](http://www-ps.informatik.uni-kiel.de/~sebf/pub/flops08.html)
---- The tool `currycheck` automatically executes tests of properties defined
---- in this library. CurryCheck supports the definition of unit tests
+--- [this paper](http://www-ps.informatik.uni-kiel.de/~sebf/pub/flops08.html).
+--- CurryCheck automatically tests properties defined with this library.
+--- CurryCheck supports the definition of unit tests
 --- (also for I/O operations) and property tests parameterized
---- over some arguments.
+--- over some arguments. CurryCheck is described in more detail in
+--- [this paper](http://www.informatik.uni-kiel.de/~mh/papers/LOPSTR16.html).
 ---
---- Basically, this module is a clone of the EasyCheck library
---- which contains only the interface and stub versions of some
---- operations so that this library does not import any other library.
+--- Basically, this module is a stub clone of the EasyCheck library
+--- which contains only the interface of the operations used to specify
+--- properties. Hence, this library does not import any other library.
 --- This supports the definition of properties in any other module
 --- (execept for the prelude).
 ---
 --- @author Sebastian Fischer (with extensions by Michael Hanus)
---- @version June 2016
+--- @version April 2017
 --- @category general
 -------------------------------------------------------------------------
 
@@ -25,7 +26,7 @@ module Test.Prop (
   -- test specification:
   PropIO, returns, sameReturns, toError, toIOError,
 
-  Test, Prop, (==>), for,
+  Prop, (==>), for,
 
   is, isAlways, isEventually, uniquely, always, eventually,
   failing, successful, deterministic, (-=-), (<~>), (~>), (<~), (<~~>),
@@ -48,17 +49,17 @@ infixr 0 ==>
 
 -------------------------------------------------------------------------
 --- Abstract type to represent properties involving IO actions.
-data PropIO = PropIO (Bool -> String -> IO (Maybe String))
+data PropIO = PropIO
 
 --- The property `returns a x` is satisfied if the execution of the
 --- I/O action `a` returns the value `x`.
 returns :: IO a -> a -> PropIO
-returns act r = PropIO (testIO act (return r))
+returns _ _ = propUndefinedError "returns"
 
 --- The property `sameReturns a1 a2` is satisfied if the execution of the
 --- I/O actions `a1` and `a2` return identical values.
 sameReturns :: IO a -> IO a -> PropIO
-sameReturns a1 a2 = PropIO (testIO a1 a2)
+sameReturns _ _ = propUndefinedError "sameReturns"
 
 --- The property `toError a` is satisfied if the evaluation of the argument
 --- to normal form yields an exception.
@@ -68,98 +69,19 @@ toError _ = propUndefinedError "toError"
 --- The property `toIOError a` is satisfied if the execution of the
 --- I/O action `a` causes an exception.
 toIOError :: IO a -> PropIO
-toIOError act = PropIO (hasIOError act)
+toIOError _ = propUndefinedError "toIOError"
 
---- Extracts the tests of an I/O property (used by the test runner).
-ioTestOf :: PropIO -> (Bool -> String -> IO (Maybe String))
-ioTestOf (PropIO t) = t
-
--- Test an IO property, i.e., compare the results of two IO actions.
-testIO :: IO a -> IO a -> Bool -> String -> IO (Maybe String)
-testIO act1 act2 quiet msg =
-   catch (do r1 <- act1
-             r2 <- act2
-             if r1 == r2
-               then unless quiet (putStr (msg++": OK\n")) >> return Nothing
-               else do putStrLn $ msg++": FAILED!\nResults: " ++ show (r1,r2)
-                       return (Just msg)
-         )
-         (\err -> do putStrLn $ msg++": EXECUTION FAILURE:\n" ++ showError err
-                     return (Just msg)
-         )
-
--- Test whether an IO action produces an error.
-hasIOError :: IO a -> Bool -> String -> IO (Maybe String)
-hasIOError act quiet msg =
-   catch (act >> return (Just msg))
-         (\_ -> unless quiet (putStr (msg++": OK\n")) >> return Nothing)
 
 -------------------------------------------------------------------------
---- Abstract type to represent a single test for a property to be checked.
---- A test consists of the result computed for this test,
---- the arguments used for this test, and the labels possibly assigned
---- to this test by annotating properties.
-data Test = Test Result [String] [String]
-
---- Data type to represent the result of checking a property.
-data Result = Undef | Ok | Falsified [String] | Ambigious [Bool] [String]
-
 --- Abstract type to represent properties to be checked.
 --- Basically, it contains all tests to be executed to check the property.
-data Prop = Prop [Test]
+data Prop = Prop
 
---- Extracts the tests of a property (used by the test runner).
-testsOf :: Prop -> [Test]
-testsOf (Prop ts) = ts
-
---- An empty test.
-notest :: Test
-notest = Test Undef [] []
-
---- Extracts the result of a test.
-result :: Test -> Result
-result (Test r _ _) = r
-
---- Set the result of a test.
-setResult :: Result -> Test -> Test
-setResult res (Test _ s a) = Test res a s
-
---- Extracts the arguments of a test.
-args :: Test -> [String]
-args  (Test _ a _) = a
-
---- Extracts the labels of a test.
-stamp :: Test -> [String]
-stamp (Test _ _ s) = s
-
---- Updates the arguments of a test.
-updArgs :: ([String] -> [String]) -> Test -> Test
-updArgs  upd (Test r a s) = Test r (upd a) s
-
---- Updates the labels of a test.
-updStamp :: ([String] -> [String]) -> Test -> Test
-updStamp upd (Test r a s) = Test r a (upd s)
-
--- Test Specification
-
---- Constructs a property to be tested from an arbitrary expression
---- (first argument) and a predicate that is applied to the list of
---- non-deterministic values. The given predicate determines whether
---- the constructed property is satisfied or falsified for the given
---- expression.
-test :: a -> ([a] -> Bool) -> Prop
-test x f = Prop [setResult res notest]
- where
-  xs  = valuesOf x
-  res = case valuesOf (f xs) of
-          [True]  -> Ok
-          [False] -> Falsified (map show xs)
-          bs      -> Ambigious bs (map show xs)
 
 --- The property `x -=- y` is satisfied if `x` and `y` have deterministic
 --- values that are equal.
 (-=-) :: a -> a -> Prop
-x -=- y = (x,y) `is` uncurry (==)
+_ -=- _ = propUndefinedError "-=-"
 
 --- The property `x <~> y` is satisfied if the sets of the values of
 --- `x` and `y` are equal.
@@ -183,10 +105,7 @@ _ <~~> _ = propUndefinedError "<~~>"
 
 --- A conditional property is tested if the condition evaluates to `True`.
 (==>) :: Bool -> Prop -> Prop
-cond ==> p =
-  if True `elem` valuesOf cond
-  then p
-  else Prop [notest]
+_ ==> _ = propUndefinedError "==>"
 
 --- `solutionOf p` returns (non-deterministically) a solution
 --- of predicate `p`. This operation is useful to test solutions
@@ -197,42 +116,41 @@ solutionOf pred = pred x &> x where x free
 --- The property `is x p` is satisfied if `x` has a deterministic value
 --- which satisfies `p`.
 is :: a -> (a -> Bool) -> Prop
-is x f = test x (\xs -> case xs of [y] -> f y
-                                   _   -> False)
+is _ _ = propUndefinedError "is"
 
 --- The property `isAlways x p` is satisfied if all values of `x` satisfy `p`.
 isAlways :: a -> (a -> Bool) -> Prop
-isAlways x  = test x . all
+isAlways _ = propUndefinedError "isAlways"
 
 --- The property `isEventually x p` is satisfied if some value of `x`
 --- satisfies `p`.
 isEventually :: a -> (a -> Bool) -> Prop
-isEventually x = test x . any
+isEventually _ = propUndefinedError "isEventually"
 
 --- The property `uniquely x` is satisfied if `x` has a deterministic value
 --- which is true.
 uniquely :: Bool -> Prop
-uniquely = (`is` id)
+uniquely _ = propUndefinedError "uniquely"
 
 --- The property `always x` is satisfied if all values of `x` are true.
 always :: Bool -> Prop
-always = (`isAlways` id)
+always _ = propUndefinedError "always"
 
 --- The property `eventually x` is satisfied if some value of `x` is true.
 eventually :: Bool -> Prop
-eventually = (`isEventually` id)
+eventually _ = propUndefinedError "eventually"
 
 --- The property `failing x` is satisfied if `x` has no value.
 failing :: _ -> Prop
-failing x = test x null
+failing _ = propUndefinedError "failing"
 
 --- The property `successful x` is satisfied if `x` has at least one value.
 successful :: _ -> Prop
-successful x = test x (not . null)
+successful _ = propUndefinedError "successful"
 
 --- The property `deterministic x` is satisfied if `x` has exactly one value.
 deterministic :: _ -> Prop
-deterministic x = x `is` const True
+deterministic _ = propUndefinedError "deterministic"
 
 --- The property `x # n` is satisfied if `x` has `n` values.
 (#) :: _ -> Int -> Prop
@@ -257,7 +175,7 @@ for _ _ = propUndefinedError "for"
 --- Assign a label to a property.
 --- All labeled tests are counted and shown at the end.
 label :: String -> Prop -> Prop
-label l (Prop ts) = Prop (map (updStamp (l:)) ts)
+label _ _ = propUndefinedError "label"
 
 --- Assign a label to a property if the first argument is `True`.
 --- All labeled tests are counted and shown at the end.
@@ -266,23 +184,22 @@ label l (Prop ts) = Prop (map (updStamp (l:)) ts)
 ---     multIsComm x y = classify (x<0 || y<0) "Negative" $ x*y -=- y*x
 ---
 classify :: Bool -> String -> Prop -> Prop
-classify True  name = label name
-classify False _    = id
+classify _ _ _ = propUndefinedError "classify"
 
 --- Assign the label "trivial" to a property if the first argument is `True`.
 --- All labeled tests are counted and shown at the end.
 trivial :: Bool -> Prop -> Prop
-trivial = (`classify` "trivial")
+trivial _ _ = propUndefinedError "trivial"
 
 --- Assign a label showing the given argument to a property.
 --- All labeled tests are counted and shown at the end.
 collect :: a -> Prop -> Prop
-collect = label . show
+collect _ _ = propUndefinedError "collect"
 
 --- Assign a label showing a given name and the given argument to a property.
 --- All labeled tests are counted and shown at the end.
 collectAs :: String -> a -> Prop -> Prop
-collectAs name = label . ((name++": ")++) . show
+collectAs _ _ _ = propUndefinedError "collectAs"
 
 -------------------------------------------------------------------------
 -- Value generation

@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------
 --- EasyCheck is a library for automated, property-based testing of
 --- Curry programs. The ideas behind EasyCheck are described in
---- [this paper](http://www-ps.informatik.uni-kiel.de/~sebf/pub/flops08.html)
+--- [this paper](http://www-ps.informatik.uni-kiel.de/~sebf/pub/flops08.html).
 --- This module implements the operations to actually execute
 --- the tests.
 ---
