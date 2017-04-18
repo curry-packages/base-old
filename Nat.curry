@@ -72,11 +72,11 @@ mul (S m) n = add n (mul m n)
 
 -- Property: multiplication is commutative
 mulIsCommutative :: Nat -> Nat -> Prop
-mulIsCommutative x y = add x y -=- add y x
+mulIsCommutative x y = mul x y -=- mul y x
 
 -- Property: multiplication is associative
 mulIsAssociative :: Nat -> Nat -> Nat -> Prop
-mulIsAssociative x y z = add (add x y) z -=- add x (add y z)
+mulIsAssociative x y z = mul (mul x y) z -=- mul x (mul y z)
 
 -- Properties: multiplication is distributive over addition
 distMulAddL :: Nat -> Nat -> Nat -> Prop
