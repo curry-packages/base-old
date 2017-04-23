@@ -221,7 +221,7 @@ acy: $(LIB_ACY)
 .PHONY: checkcurrydoc
 checkcurrydoc:
 	@if [ ! -x "$(CURRYDOC)" ] ; then \
-	  echo "ERROR: Executable 'curry-doc' is not installed!" && echo "Install it by > cpm installbin currydoc" && exit 1 ; \
+	  echo "ERROR: Executable 'curry-doc' is not installed!" && echo "Install it by > cpm installapp currydoc" && exit 1 ; \
 	fi
 
 INDEXHTML    = $(LIBDOCDIR)/index.html
