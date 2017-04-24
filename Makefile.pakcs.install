@@ -4,7 +4,7 @@ CURRYLIBSDIR=$(ROOT)/lib-trunk
 endif
 
 # specific PAKCS libraries:
-PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry CLPFD.curry CLPR.curry CLP/FD.curry \
+PAKCSONLYLIBS = CLPFD.curry CLPR.curry CLP/FD.curry \
 	        Database.curry Dynamic.curry Findall.curry \
 		GlobalVariable.curry KeyDB.curry KeyDatabase.curry \
 		PlProfileData.curry Ports.curry 
@@ -44,15 +44,6 @@ Prelude.curry: $(CURRYLIBSDIR)/Prelude.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 AllSolutions.curry: $(CURRYLIBSDIR)/AllSolutions.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CLPB.curry: $(CURRYLIBSDIR)/CLPB.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CHR.curry: $(CURRYLIBSDIR)/CHR.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CHRcompiled.curry: $(CURRYLIBSDIR)/CHRcompiled.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 CLPFD.curry: $(CURRYLIBSDIR)/CLPFD.curry.$(CURRYSYSTEM)
