@@ -305,9 +305,9 @@ foldr _ z []     = z
 foldr f z (x:xs) = f x (foldr f z xs)
 
 --- Accumulates a non-empty list from right to left:
-foldr1              :: (a -> a -> a) -> [a] -> a
-foldr1 _ [x]        = x
-foldr1 f (x1:x2:xs) = f x1 (foldr1 f (x2:xs))
+foldr1                :: (a -> a -> a) -> [a] -> a
+foldr1 _ [x]          = x
+foldr1 f (x:xs@(_:_)) = f x (foldr1 f xs)
 
 --- Filters all elements satisfying a given predicate in a list.
 filter            :: (a -> Bool) -> [a] -> [a]

@@ -4,8 +4,7 @@ CURRYLIBSDIR=$(ROOT)/lib-trunk
 endif
 
 # specific PAKCS libraries:
-PAKCSONLYLIBS = CHR.curry CHRcompiled.curry CLPB.curry \
-                CLPFD.curry CLPR.curry CLP/FD.curry CLP/R.curry \
+PAKCSONLYLIBS = CLPFD.curry CLPR.curry CLP/FD.curry CLP/R.curry \
 	        Findall.curry GlobalVariable.curry \
 		PlProfileData.curry Ports.curry 
 # get all library files from standard makefile and add PAKCS specific libs:
@@ -44,15 +43,6 @@ Prelude.curry: $(CURRYLIBSDIR)/Prelude.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 AllSolutions.curry: $(CURRYLIBSDIR)/AllSolutions.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CLPB.curry: $(CURRYLIBSDIR)/CLPB.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CHR.curry: $(CURRYLIBSDIR)/CHR.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CHRcompiled.curry: $(CURRYLIBSDIR)/CHRcompiled.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 CLPFD.curry: $(CURRYLIBSDIR)/CLPFD.curry.$(CURRYSYSTEM)

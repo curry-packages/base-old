@@ -49,6 +49,9 @@ CABAL_FILE       = $(PACKAGE).cabal
 CABAL_TRACE_FILE = $(PACKAGE_TRACE).cabal
 CABAL_LIBDEPS    = $(call comma_sep,$(LIBDEPS))
 
+# Executable of CurryDoc:
+CURRYDOC := $(shell which curry-doc)
+
 ########################################################################
 # support for installation
 ########################################################################
@@ -214,11 +217,18 @@ acy: $(LIB_ACY)
 # create HTML documentation files for system libraries
 ##############################################################################
 
+# Check whether CurryDoc is installed
+.PHONY: checkcurrydoc
+checkcurrydoc:
+	@if [ ! -x "$(CURRYDOC)" ] ; then \
+	  echo "ERROR: Executable 'curry-doc' is not installed!" && echo "Install it by > cpm installapp currydoc" && exit 1 ; \
+	fi
+
 INDEXHTML    = $(LIBDOCDIR)/index.html
 HTMLEXCLUDES = $(INDEXHTML) $(foreach file, findex.html cindex.html KiCS2_libs.html, $(LIBDOCDIR)/$(file))
 
-.PHONY: doc
-doc: $(LIB_CURRY)
+.PHONY: htmldoc
+htmldoc: checkcurrydoc $(LIB_CURRY)
 	@mkdir -p "$(LIBDOCDIR)"
 	@$(MAKE) $(LIB_HTML)
 	@$(MAKE) $(INDEXHTML)
@@ -226,70 +236,70 @@ doc: $(LIB_CURRY)
 $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	@echo "Generating index pages for Curry libraries:"
 	@echo $(LIB_DOCNAMES)
-	"$(KICS2)" doc --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
+	$(CURRYDOC) --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries
 $(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
-	"$(KICS2)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
-	"$(KICS2)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
-	"$(KICS2)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/CLP.%.html: CLP/%.curry
-	"$(KICS2)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
-	"$(KICS2)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Database.%.html: Database/%.curry
-	"$(KICS2)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
-	"$(KICS2)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Test.%.html: Test/%.curry
-	"$(KICS2)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/%.html: %.curry
-	"$(KICS2)" doc --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
 ##############################################################################
 
 .PHONY: texdoc
-texdoc: $(LIB_CURRY)
+texdoc: checkcurrydoc $(LIB_CURRY)
 	@mkdir -p "$(TEXDOCDIR)"
 	$(MAKE) $(LIB_TEX)
 
 # generate individual LaTeX documentations for libraries
 $(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
-	"$(KICS2)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
-	"$(KICS2)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
-	"$(KICS2)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
-	"$(KICS2)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
-	"$(KICS2)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Database.%.tex: Database/%.curry
-	"$(KICS2)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
-	"$(KICS2)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Test.%.tex: Test/%.curry
-	"$(KICS2)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/%.tex: %.curry
-	"$(KICS2)" doc --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
