@@ -3,7 +3,7 @@
 --- some operations on this representation.
 ---
 --- @author Michael Hanus
---- @version May 2016
+--- @version May 2017
 --- @category general
 ------------------------------------------------------------------------------
 
@@ -13,7 +13,7 @@ module Nat
 
 --- Natural numbers defined in Peano representation.
 data Nat = Z | S Nat
- deriving Eq
+ deriving (Eq,Show)
 
 --- Transforms a natural number into a standard integer.
 fromNat :: Nat -> Int
