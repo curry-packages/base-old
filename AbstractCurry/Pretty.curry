@@ -276,7 +276,7 @@ ppImports opts imps = vcatMap (\m -> text importmode <+> ppMName m)
    importmode = if qualification opts `elem` [Imports,Full]
                 then "import qualified"
                 else "import"
-                
+
 --- Pretty-print operator precedence declarations.
 ppCOpDecl :: Options -> COpDecl -> Doc
 ppCOpDecl _ (COp qn fix p) =
@@ -445,7 +445,7 @@ ppCTypeExpr' p opts texp@(CTApply tcon targ) =
   funOfApply te = case te of CTApply (CTCons qn) _ -> Just qn
                              CTApply tc _          -> funOfApply tc
                              _                     -> Nothing
-                                 
+
   argsOfApply te = case te of
     CTApply (CTCons _) ta -> [ta]
     CTApply tc         ta -> argsOfApply tc ++ [ta]
@@ -811,8 +811,8 @@ genericPPQName visNames visVars g opts qn@(m, f)
                            else name
           isAmbiguous n = anyCol (on' (&&) (sameName n) (diffMod n)) visNames
           isShadowed n  = anyCol (sameName n) visVars
-          sameName      = \(_,x) (_,y) -> x == y
           diffMod       = (/=) `on` fst
+          sameName (_,x) (_,y) = x == y
 
 genericPPName :: (QName -> Doc -> Doc) -> QName -> Doc
 genericPPName f qn = f qn $ text . snd $ qn
