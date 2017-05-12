@@ -1202,7 +1202,7 @@ readSigned p = readParen False read'
 
 instance Read Char where
   readsPrec _ = readParen False
-                  (\s -> [ (c, t) | (x, t) <- lex s, not (null x), head x == '''
+                  (\s -> [ (c, t) | (x, t) <- lex s, not (null x), head x == '\''
                                   , (c, []) <- readCharLiteral x ])
 
   readList xs = readParen False
