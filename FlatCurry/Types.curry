@@ -36,7 +36,7 @@ data Visibility
   = Public    -- public (exported) entity
   | Private   -- private entity
  deriving (Eq,Show)
-  
+
 --- The data type for representing type variables.
 --- They are represented by `(TVar i)` where `i` is a type variable index.
 type TVarIndex = Int
@@ -77,10 +77,11 @@ data ConsDecl = Cons QName Int Visibility [TypeExpr]
 --- "Int", "Float", "Bool", "Char", "IO",
 --- "()" (unit type), "(,...,)" (tuple types), "[]" (list type)
 data TypeExpr
-  = TVar TVarIndex                 -- type variable
-  | FuncType TypeExpr TypeExpr     -- function type t1->t2
-  | TCons QName [TypeExpr]         -- type constructor application
-                                   -- TCons module name typeargs
+  = TVar TVarIndex                   -- type variable
+  | FuncType TypeExpr TypeExpr       -- function type t1->t2
+  | TCons QName [TypeExpr]           -- type constructor application
+                                     -- TCons module name typeargs
+  | ForallType  [TVarIndex] TypeExpr -- forall type
  deriving (Eq,Show)
 
 --- Data type for operator declarations.
