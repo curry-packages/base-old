@@ -19,6 +19,7 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/AbstractCurry
+	mkdir -p $(LIBDIR)/FlatCurry
 	mkdir -p $(LIBDIR)/CLP
 	mkdir -p $(LIBDIR)/Database/CDBI
 	mkdir -p $(LIBDIR)/Test
