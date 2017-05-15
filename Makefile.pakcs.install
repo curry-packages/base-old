@@ -19,10 +19,8 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/AbstractCurry
-	mkdir -p $(LIBDIR)/FlatCurry/Annotated
 	mkdir -p $(LIBDIR)/CLP
 	mkdir -p $(LIBDIR)/Database/CDBI
-	mkdir -p $(LIBDIR)/Rewriting
 	mkdir -p $(LIBDIR)/Test
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
@@ -106,9 +104,6 @@ ValueSequence.curry: $(CURRYLIBSDIR)/ValueSequence.curry.$(CURRYSYSTEM)
 AbstractCurry/%.curry: $(CURRYLIBSDIR)/AbstractCurry/%.curry
 	cp $< $@
 
-FlatCurry/Annotated/%.curry: $(CURRYLIBSDIR)/FlatCurry/Annotated/%.curry
-	cp $< $@
-
 FlatCurry/%.curry: $(CURRYLIBSDIR)/FlatCurry/%.curry
 	cp $< $@
 
@@ -116,9 +111,6 @@ Database/CDBI/%.curry: $(CURRYLIBSDIR)/Database/CDBI/%.curry
 	cp $< $@
 
 Database/%.curry: $(CURRYLIBSDIR)/Database/%.curry
-	cp $< $@
-
-Rewriting/%.curry: $(CURRYLIBSDIR)/Rewriting/%.curry
 	cp $< $@
 
 Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
