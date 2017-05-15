@@ -11,7 +11,7 @@ LIBDOCDIR=CDOC
 TEXDOCDIR := $(DOCDIR)/src/lib
 
 # Curry library files
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry FlatCurry/Annotated/*.curry CLP/*.curry Database/*.curry Database/CDBI/*.curry Rewriting/*.curry Test/*.curry))
+LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry CLP/*.curry Database/*.curry Database/CDBI/*.curry Test/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
@@ -113,9 +113,6 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 $(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
-
 $(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
@@ -126,9 +123,6 @@ $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Database.%.html: Database/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
-
-$(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Test.%.html: Test/%.curry
@@ -152,9 +146,6 @@ texdoc: checkcurrydoc $(LIB_CURRY)
 $(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
-$(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
-
 $(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
@@ -165,9 +156,6 @@ $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Database.%.tex: Database/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
-
-$(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
 $(TEXDOCDIR)/Test.%.tex: Test/%.curry
