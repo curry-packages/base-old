@@ -269,7 +269,7 @@ lookupModuleSource loadpath mod = lookupSourceInPath loadpath
 --- @cons HTML - colored HTML representation of source program
 --- @cons CY   - source representation employed by the frontend
 --- @cons TOKS - token stream of source program
-data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY | TOKS
+data FrontendTarget = FCY | TFCY | FINT | ACY | UACY | HTML | CY | TOKS
   deriving Eq
 
 --- Abstract data type for representing parameters supported by the front end
@@ -428,6 +428,7 @@ callFrontendWithParams target params modpath = do
    quote s = '"' : s ++ "\""
 
    showFrontendTarget FCY  = "--flat"
+   showFrontendTarget TFCY = "--typed-flat"
    showFrontendTarget FINT = "--flat"
    showFrontendTarget ACY  = "--acy"
    showFrontendTarget UACY = "--uacy"
