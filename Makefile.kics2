@@ -242,9 +242,6 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 $(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/FlatCurry.Annotated.%.html: FlatCurry/Annotated/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
-
 $(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
@@ -255,9 +252,6 @@ $(LIBDOCDIR)/Database.CDBI.%.html: Database/CDBI/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Database.%.html: Database/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
-
-$(LIBDOCDIR)/Rewriting.%.html: Rewriting/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
 $(LIBDOCDIR)/Test.%.html: Test/%.curry
@@ -279,9 +273,6 @@ texdoc: checkcurrydoc $(LIB_CURRY)
 $(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
-$(TEXDOCDIR)/FlatCurry.Annotated.%.tex: FlatCurry/Annotated/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
-
 $(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
@@ -292,9 +283,6 @@ $(TEXDOCDIR)/Database.CDBI.%.tex: Database/CDBI/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Database.%.tex: Database/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
-
-$(TEXDOCDIR)/Rewriting.%.tex: Rewriting/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/Test.%.tex: Test/%.curry

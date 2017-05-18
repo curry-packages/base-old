@@ -74,19 +74,23 @@ showFlatRule (Rule params expr) =
 showFlatRule (External name) =
   " (External " ++ show name ++ ")"
 
+showFlatTypeExpr :: TypeExpr -> String
 showFlatTypeExpr (FuncType t1 t2) =
   "(FuncType " ++ showFlatTypeExpr t1 ++ " " ++ showFlatTypeExpr t2 ++ ")"
 showFlatTypeExpr (TCons tc ts) =
   "(TCons " ++ show tc
             ++ showFlatList showFlatTypeExpr ts ++ ")"
 showFlatTypeExpr (TVar n) = "(TVar " ++ show n ++ ")"
+showFlatTypeExpr (ForallType tvs te) =
+  "(ForallType " ++ showFlatList show tvs ++ showFlatTypeExpr te ++ ")"
 
-
+showFlatCombType :: CombType -> String
 showFlatCombType FuncCall = "FuncCall"
 showFlatCombType ConsCall = "ConsCall"
 showFlatCombType (FuncPartCall n) = "(FuncPartCall " ++ show n ++ ")"
 showFlatCombType (ConsPartCall n) = "(ConsPartCall " ++ show n ++ ")"
 
+showFlatExpr :: Expr -> String
 showFlatExpr (Var n) = "(Var " ++ show n ++ ")"
 showFlatExpr (Lit l) = "(Lit " ++ showFlatLit l ++ ")"
 showFlatExpr (Comb ctype cf es) =
@@ -156,7 +160,7 @@ isClassContext texp = case texp of
 
 ------------------------------
 
-showCurryType_ :: ((String,String) -> String) -> Bool -> TypeExpr -> String
+showCurryType_ :: (QName -> String) -> Bool -> TypeExpr -> String
 showCurryType_ _ _ (TVar i) = if i<5 then [chr (97+i)] else 't':show i
 showCurryType_ tf nested (FuncType t1 t2) =
   showBracketsIf nested
@@ -169,14 +173,20 @@ showCurryType_ tf nested (TCons tc ts)
  | tc==("Prelude","[]")
   = "[" ++ showCurryType_ tf False (head ts) ++ "]" -- list type
  | take 2 (snd tc) == "(,"                          -- tuple type
-  = "(" ++ concat (intersperse "," (map (showCurryType_ tf False) ts)) ++ ")"
+  = "(" ++ intercalate "," (map (showCurryType_ tf False) ts) ++ ")"
  | otherwise
   = showBracketsIf nested
     (tf tc ++ concatMap (\t->' ':showCurryType_ tf True t) ts)
+showCurryType_ tf nested (ForallType tvs te) =
+  showBracketsIf nested
+    (unwords ("forall" : map (showCurryType_ tf False . TVar) tvs) ++ " . " ++
+     showCurryType_ tf False te)
 
-isFuncType (TVar _)       = False
-isFuncType (FuncType _ _) = True
-isFuncType (TCons _ _)    = False
+isFuncType :: TypeExpr -> Bool
+isFuncType (TVar _)          = False
+isFuncType (FuncType _ _)    = True
+isFuncType (TCons _ _)       = False
+isFuncType (ForallType _ te) = isFuncType te
 
 
 ------------------------------------------------------------------------------
