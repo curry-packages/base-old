@@ -93,13 +93,13 @@ instance NormalForm (C_IORef a) where
   ($!!) cont ioref@(C_IORef _)            cd cs = cont ioref cd cs
   ($!!) cont (Choice_C_IORef d i io1 io2) cd cs = nfChoice cont d i io1 io2 cd cs
   ($!!) cont (Choices_C_IORef d i ios)    cd cs = nfChoices cont d  i ios cd cs
-  ($!!) cont (Guard_C_IORef d c io)       cd cs 
+  ($!!) cont (Guard_C_IORef d c io)       cd cs
     = guardCons d c ((cont $!! io) cd $! (addCs c cs))
   ($!!) _    (Fail_C_IORef d info)        _  _  = failCons d info
   ($##) cont io@(C_IORef _)               cd cs = cont io cd cs
   ($##) cont (Choice_C_IORef d i io1 io2) cd cs = gnfChoice cont d i io1 io2 cd cs
   ($##) cont (Choices_C_IORef d i ios)    cd cs = gnfChoices cont d i ios cd cs
-  ($##) cont (Guard_C_IORef d c io)       cd cs 
+  ($##) cont (Guard_C_IORef d c io)       cd cs
     = guardCons d c ((cont $## io) cd $! (addCs c cs))
   ($##) _    (Fail_C_IORef d info)        cd cs = failCons d info
   searchNF _ cont ioref@(C_IORef _)        = cont ioref
@@ -118,9 +118,7 @@ instance Unifiable (C_IORef a) where
   lazyBind _  _ (Fail_C_IORef cd info) = [Unsolvable info]
   lazyBind cd i (Guard_C_IORef _ cs e) = (getConstrList cs) ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry_Prelude.Curry a => Curry_Prelude.Curry (C_IORef a) where
-  (=?=) = error "(==) is undefined for IORefs"
-  (<?=) = error "(<=) is undefined for IORefs"
+instance Curry_Prelude.Curry a => Curry_Prelude.Curry (C_IORef a)
 
 instance ConvertCurryHaskell (C_IORef a) (IORef a) where
   fromCurry (C_IORef r) = r

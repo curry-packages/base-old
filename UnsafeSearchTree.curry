@@ -91,7 +91,7 @@ isDefined x = hasValue (someSearchTree x)
                               Or t1 t2 -> hasValue t1 || hasValue t2
 
 --- Shows the search tree as an intended line structure
-showSearchTree :: SearchTree _ -> String
+showSearchTree :: Show a => SearchTree a -> String
 showSearchTree st = showsST [] st ""
  where
   -- `showsST ctxt <SearchTree>`, where `ctxt` is a stack of boolean flags
@@ -139,7 +139,7 @@ searchTreeSize (Or t1 t2) = let (v1, f1, o1) = searchTreeSize t1
 
 --- Return all values in a search tree via depth-first search
 allValuesDFS :: SearchTree a -> [a]
-allValuesDFS = vsToList . dfsStrategy 
+allValuesDFS = vsToList . dfsStrategy
 
 dfsStrategy :: Strategy a
 dfsStrategy (Fail d)  = failVS d

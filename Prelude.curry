@@ -1,29 +1,64 @@
 ----------------------------------------------------------------------------
---- The standard prelude of Curry.
---- All top-level functions defined in this module
---- are always available in any Curry program.
+--- The standard prelude of Curry (with type classes).
+--- All top-level functions, data types, classes and methods defined
+--- in this module are always available in any Curry program.
 ---
 --- @category general
 ----------------------------------------------------------------------------
-
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
 
-module Prelude where
+module Prelude
+  (
+    -- classes and overloaded functions
+    Eq(..)
+  , elem, notElem, lookup
+  , Ord(..)
+  , Show(..), print, shows, showChar, showString, showParen
+  , Read (..), ReadS, lex, read, reads, readParen
+  , Bounded (..), Enum (..), boundedEnumFrom, boundedEnumFromThen
+  , asTypeOf
+  , Num(..), Fractional(..), Real(..), Integral(..)
+  -- data types
+  , Bool (..) , Char (..) , Int (..) , Float (..), String , Ordering (..)
+  , Success, Maybe (..), Either (..), IO (..), IOError (..)
+  , DET
+  -- functions
+  , (.), id, const, curry, uncurry, flip, until, seq, ensureNotFree
+  , ensureSpine, ($), ($!), ($!!), ($#), ($##), error
+  , failed, (&&), (||), not, otherwise, if_then_else, solve
+  , fst, snd, head, tail, null, (++), length, (!!), map, foldl, foldl1
+  , foldr, foldr1, filter, zip, zip3, zipWith, zipWith3, unzip, unzip3
+  , concat, concatMap, iterate, repeat, replicate, take, drop, splitAt
+  , takeWhile, dropWhile, span, break, lines, unlines, words, unwords
+  , reverse, and, or, any, all
+  , ord, chr, (=:=), success, (&), (&>), maybe
+  , either, (>>=), return, (>>), done, putChar, getChar, readFile
+  , writeFile, appendFile
+  , putStr, putStrLn, getLine, userError, ioError, showError
+  , catch, doSolve, sequenceIO, sequenceIO_, mapIO
+  , mapIO_, (?), anyOf, unknown
+  , when, unless, forIO, forIO_, liftIO, foldIO
+  , normalForm, groundNormalForm, apply, cond, (=:<=)
+  , enumFrom_, enumFromTo_, enumFromThen_, enumFromThenTo_, negate_, negateFloat
+  , PEVAL
+  , Monad(..)
+  , Functor(..)
+  ) where
+
 
 -- Lines beginning with "--++" are part of the prelude
 -- but cannot parsed by the compiler
 
 -- Infix operator declarations:
 
-
 infixl 9 !!
 infixr 9 .
-infixl 7 *, `div`, `mod`, `quot`, `rem`
+infixl 7 *, `div`, `mod`, `quot`, `rem`, /
 infixl 6 +, -
 -- infixr 5 :                          -- declared together with list
 infixr 5 ++
 infix  4 =:=, ==, /=, <, >, <=, >=, =:<=
-infix  4  `elem`, `notElem`
+infix  4 `elem`, `notElem`
 infixr 3 &&
 infixr 2 ||
 infixl 1 >>, >>=
@@ -34,7 +69,6 @@ infixr 0 $, $!, $!!, $#, $##, `seq`, &, &>, ?
 data Int
 data Float
 data Char
-
 
 type String = [Char]
 
@@ -126,6 +160,7 @@ failed external
 -- Boolean values
 -- already defined as builtin, since it is required for if-then-else
 data Bool = False | True
+ deriving (Eq, Ord, Show, Read)
 
 --- Sequential conjunction on Booleans.
 (&&)            :: Bool -> Bool -> Bool
@@ -166,14 +201,6 @@ solve True = True
 (&>) :: Bool -> a -> a
 True &> x = x
 
---- Equality on finite ground data terms.
-(==)            :: a -> a -> Bool
-(==) external
-
---- Disequality.
-(/=)            :: a -> a -> Bool
-x /= y          = not (x==y)
-
 --- The equational constraint.
 --- `(e1 =:= e2)` is satisfiable if both sides `e1` and `e2` can be
 --- reduced to a unifiable data term (i.e., a term without defined
@@ -187,42 +214,29 @@ x /= y          = not (x==y)
 (&)     :: Bool -> Bool -> Bool
 (&) external
 
+-- used for comparison of standard types like Int, Float and Char
+eqChar :: Char -> Char -> Bool
+eqChar external
+
+eqInt :: Int -> Int -> Bool
+eqInt external
+
+eqFloat :: Float -> Float -> Bool
+eqFloat external
 
 --- Ordering type. Useful as a result of comparison functions.
 data Ordering = LT | EQ | GT
+ deriving (Eq, Ord, Show, Read)
 
---- Comparison of arbitrary ground data terms.
---- Data constructors are compared in the order of their definition
---- in the datatype declarations and recursively in the arguments.
-compare :: a -> a -> Ordering
-compare x y | x == y    = EQ
-            | x <= y    = LT
-            | otherwise = GT
+-- used for comparison of standard types like Int, Float and Char
+ltEqChar :: Char -> Char -> Bool
+ltEqChar external
 
---- Less-than on ground data terms.
-(<)   :: a -> a -> Bool
-x < y = not (y <= x)
+ltEqInt :: Int -> Int -> Bool
+ltEqInt external
 
---- Greater-than on ground data terms.
-(>)   :: a -> a -> Bool
-x > y = not (x <= y)
-
---- Less-or-equal on ground data terms.
-(<=)  :: a -> a -> Bool
-(<=)  external
-
---- Greater-or-equal on ground data terms.
-(>=)  :: a -> a -> Bool
-x >= y = not (x < y)
-
---- Maximum of ground data terms.
-max :: a -> a -> a
-max x y = if x >= y then x else y
-
---- Minimum of ground data terms.
-min :: a -> a -> a
-min x y = if x <= y then x else y
-
+ltEqFloat :: Float -> Float -> Bool
+ltEqFloat external
 
 -- Pairs
 
@@ -266,13 +280,15 @@ null (_:_)      = False
 (x:xs) ++ ys    = x : xs++ys
 
 --- Computes the length of a list.
-length          :: [_] -> Int
+--length          :: [_] -> Int
+--length []       = 0
+--length (_:xs)   = 1 + length xs
+
+length :: [_] -> Int
 length xs = len xs 0
   where
     len []     n = n
     len (_:ys) n = let np1 = n + 1 in len ys $!! np1
---length []       = 0
---length (_:xs)   = 1 + length xs
 
 --- List index (subscript) operator, head has index 0.
 (!!)            :: [a] -> Int -> a
@@ -467,37 +483,38 @@ all        :: (a -> Bool) -> [a] -> Bool
 all p      = and . map p
 
 --- Element of a list?
-elem       :: a -> [a] -> Bool
-elem x     = any (x==)
+elem :: Eq a => a -> [a] -> Bool
+elem x = any (x ==)
 
 --- Not element of a list?
-notElem    :: a -> [a] -> Bool
-notElem x  = all (x/=)
+notElem :: Eq a => a -> [a] -> Bool
+notElem x = all (x /=)
 
 --- Looks up a key in an association list.
-lookup            :: a -> [(a,b)] -> Maybe b
+lookup :: Eq a => a -> [(a, b)] -> Maybe b
 lookup _ []       = Nothing
 lookup k ((x,y):xys)
       | k==x      = Just y
       | otherwise = lookup k xys
 
 --- Generates an infinite sequence of ascending integers.
-enumFrom               :: Int -> [Int]                   -- [n..]
-enumFrom n             = n : enumFrom (n+1)
+enumFrom_ :: Int -> [Int]                   -- [n..]
+enumFrom_ n = n : enumFrom_ (n+1)
 
 --- Generates an infinite sequence of integers with a particular in/decrement.
-enumFromThen           :: Int -> Int -> [Int]            -- [n1,n2..]
-enumFromThen n1 n2     = iterate ((n2-n1)+) n1
+enumFromThen_ :: Int -> Int -> [Int]            -- [n1,n2..]
+enumFromThen_ n1 n2 = iterate ((n2-n1)+) n1
 
 --- Generates a sequence of ascending integers.
-enumFromTo             :: Int -> Int -> [Int]            -- [n..m]
-enumFromTo n m         = if n>m then [] else n : enumFromTo (n+1) m
+enumFromTo_ :: Int -> Int -> [Int]            -- [n..m]
+enumFromTo_ n m = if n>m then [] else n : enumFromTo_ (n+1) m
 
 --- Generates a sequence of integers with a particular in/decrement.
-enumFromThenTo         :: Int -> Int -> Int -> [Int]     -- [n1,n2..m]
-enumFromThenTo n1 n2 m = takeWhile p (enumFromThen n1 n2)
-                         where p x | n2 >= n1  = (x <= m)
-                                   | otherwise = (x >= m)
+enumFromThenTo_ :: Int -> Int -> Int -> [Int]     -- [n1,n2..m]
+enumFromThenTo_ n1 n2 m = takeWhile p (enumFromThen_ n1 n2)
+ where
+  p x | n2 >= n1  = (x <= m)
+      | otherwise = (x >= m)
 
 
 --- Converts a character into its ASCII value.
@@ -520,65 +537,64 @@ prim_chr external
 -- Types of primitive arithmetic functions and predicates
 
 --- Adds two integers.
-(+)   :: Int -> Int -> Int
-(+) external
+(+$)   :: Int -> Int -> Int
+(+$) external
 
 --- Subtracts two integers.
-(-)   :: Int -> Int -> Int
-(-) external
+(-$)   :: Int -> Int -> Int
+(-$) external
 
 --- Multiplies two integers.
-(*)   :: Int -> Int -> Int
-(*) external
+(*$)   :: Int -> Int -> Int
+(*$) external
 
 --- Integer division. The value is the integer quotient of its arguments
 --- and always truncated towards negative infinity.
 --- Thus, the value of <code>13 `div` 5</code> is <code>2</code>,
---- and the value of <code>-15 `div` 4</code> is <code>-4</code>.
-div   :: Int -> Int -> Int
-div external
+--- and the value of <code>-15 `div` 4</code> is <code>-3</code>.
+div_   :: Int -> Int -> Int
+div_ external
 
 --- Integer remainder. The value is the remainder of the integer division and
 --- it obeys the rule <code>x `mod` y = x - y * (x `div` y)</code>.
 --- Thus, the value of <code>13 `mod` 5</code> is <code>3</code>,
 --- and the value of <code>-15 `mod` 4</code> is <code>-3</code>.
-mod   :: Int -> Int -> Int
-mod external
+mod_   :: Int -> Int -> Int
+mod_ external
 
 --- Returns an integer (quotient,remainder) pair.
 --- The value is the integer quotient of its arguments
 --- and always truncated towards negative infinity.
-divMod :: Int -> Int -> (Int, Int)
-divMod external
+divMod_ :: Int -> Int -> (Int, Int)
+divMod_ external
 
 --- Integer division. The value is the integer quotient of its arguments
 --- and always truncated towards zero.
 --- Thus, the value of <code>13 `quot` 5</code> is <code>2</code>,
 --- and the value of <code>-15 `quot` 4</code> is <code>-3</code>.
-quot :: Int -> Int -> Int
-quot external
+quot_ :: Int -> Int -> Int
+quot_ external
 
 --- Integer remainder. The value is the remainder of the integer division and
 --- it obeys the rule <code>x `rem` y = x - y * (x `quot` y)</code>.
 --- Thus, the value of <code>13 `rem` 5</code> is <code>3</code>,
 --- and the value of <code>-15 `rem` 4</code> is <code>-3</code>.
-rem :: Int -> Int -> Int
-rem external
+rem_ :: Int -> Int -> Int
+rem_ external
 
 --- Returns an integer (quotient,remainder) pair.
 --- The value is the integer quotient of its arguments
 --- and always truncated towards zero.
-quotRem :: Int -> Int -> (Int, Int)
-quotRem external
+quotRem_ :: Int -> Int -> (Int, Int)
+quotRem_ external
 
 --- Unary minus. Usually written as "- e".
-negate :: Int -> Int
-negate x = 0 - x
+negate_ :: Int -> Int
+negate_ x = 0 - x
 
 --- Unary minus on Floats. Usually written as "-e".
 negateFloat :: Float -> Float
 negateFloat external
-
 
 -- Constraints (included for backward compatibility)
 type Success = Bool
@@ -590,6 +606,7 @@ success = True
 -- Maybe type
 
 data Maybe a = Nothing | Just a
+ deriving (Eq, Ord, Show, Read)
 
 maybe              :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
@@ -599,6 +616,7 @@ maybe _ f (Just x) = f x
 -- Either type
 
 data Either a b = Left a | Right b
+ deriving (Eq, Ord, Show, Read)
 
 either               :: (a -> c) -> (b -> c) -> Either a b -> c
 either f _ (Left x)  = f x
@@ -609,32 +627,32 @@ either _ g (Right x) = g x
 
 data IO _  -- conceptually: World -> (a,World)
 
---- Sequential composition of actions.
+--- Sequential composition of IO actions.
 --- @param a - An action
 --- @param fa - A function from a value into an action
 --- @return An action that first performs a (yielding result r)
 ---         and then performs (fa r)
-(>>=)             :: IO a -> (a -> IO b) -> IO b
-(>>=) external
+(>>=$)             :: IO a -> (a -> IO b) -> IO b
+(>>=$) external
 
---- The empty action that directly returns its argument.
-return            :: a -> IO a
-return external
+--- The empty IO action that directly returns its argument.
+returnIO            :: a -> IO a
+returnIO external
 
---- Sequential composition of actions.
---- @param a1 - An action
---- @param a2 - An action
---- @return An action that first performs a1 and then a2
-(>>)              :: IO _ -> IO b        -> IO b
-a >> b            = a >>= (\_ -> b)
+--- Sequential composition of IO actions.
+--- @param a1 - An IO action
+--- @param a2 - An IO action
+--- @return An IO action that first performs a1 and then a2
+(>>$) :: IO _ -> IO b -> IO b
+a >>$ b = a >>=$ (\_ -> b)
 
---- The empty action that returns nothing.
-done              :: IO ()
-done              = return ()
+--- The empty IO action that returns nothing.
+done :: IO ()
+done = return ()
 
 --- An action that puts its character argument on standard output.
 putChar           :: Char -> IO ()
-putChar c = prim_putChar $## c
+putChar c = prim_putChar $# c
 
 prim_putChar           :: Char -> IO ()
 prim_putChar external
@@ -654,7 +672,7 @@ prim_readFile external
 --- @param filename - The name of the file to be written.
 --- @param contents - The contents to be written to the file.
 writeFile         :: String -> String -> IO ()
-writeFile f s = (prim_writeFile $## f) $## s
+writeFile f s = (prim_writeFile $## f) s
 
 prim_writeFile         :: String -> String -> IO ()
 prim_writeFile external
@@ -664,7 +682,7 @@ prim_writeFile external
 --- @param filename - The name of the file to be written.
 --- @param contents - The contents to be appended to the file.
 appendFile        :: String -> String -> IO ()
-appendFile f s = (prim_appendFile $## f) $## s
+appendFile f s = (prim_appendFile $## f) s
 
 prim_appendFile         :: String -> String -> IO ()
 prim_appendFile external
@@ -732,14 +750,14 @@ catch external
 ----------------------------------------------------------------------------
 
 --- Converts an arbitrary term into an external string representation.
-show    :: _ -> String
-show x = prim_show $## x
+show_    :: _ -> String
+show_ x = prim_show $## x
 
 prim_show    :: _ -> String
 prim_show external
 
 --- Converts a term into a string and prints it.
-print   :: _ -> IO ()
+print :: Show a => a -> IO ()
 print t = putStrLn (show t)
 
 --- Solves a constraint as an I/O action.
@@ -861,4 +879,785 @@ cond external
 (=:<=) :: a -> a -> Bool
 (=:<=) external
 
+-- -------------------------------------------------------------------------
+-- Eq class and related instances and functions
+-- -------------------------------------------------------------------------
+
+class Eq a where
+  (==), (/=) :: a -> a -> Bool
+
+  x == y = not (x /= y)
+  x /= y = not (x == y)
+
+instance Eq Char where
+  c == c' = c `eqChar` c'
+
+instance Eq Int where
+  i == i' = i `eqInt` i'
+
+instance Eq Float where
+  f == f' = f `eqFloat` f'
+
+instance Eq a => Eq [a] where
+  []    == []    = True
+  []    == (_:_) = False
+  (_:_) == []    = False
+  (x:xs) == (y:ys) = x == y && xs == ys
+
+instance Eq () where
+  () == () = True
+
+instance (Eq a, Eq b) => Eq (a, b) where
+  (a, b) == (a', b') = a == a' && b == b'
+
+instance (Eq a, Eq b, Eq c) => Eq (a, b, c) where
+  (a, b, c) == (a', b', c') = a == a' && b == b' && c == c'
+
+instance (Eq a, Eq b, Eq c, Eq d) => Eq (a, b, c, d) where
+  (a, b, c, d) == (a', b', c', d') = a == a' && b == b' && c == c' && d == d'
+
+instance (Eq a, Eq b, Eq c, Eq d, Eq e) => Eq (a, b, c, d, e) where
+  (a, b, c, d, e) == (a', b', c', d', e') = a == a' && b == b' && c == c' && d == d' && e == e'
+
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq (a, b, c, d, e, f) where
+  (a, b, c, d, e, f) == (a', b', c', d', e', f') = a == a' && b == b' && c == c' && d == d' && e == e' && f == f'
+
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq (a, b, c, d, e, f, g) where
+  (a, b, c, d, e, f, g) == (a', b', c', d', e', f', g') = a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g'
+
+-- -------------------------------------------------------------------------
+-- Ord class and related instances and functions
+-- -------------------------------------------------------------------------
+
+--- minimal complete definition: compare or <=
+class Eq a => Ord a where
+  compare :: a -> a -> Ordering
+  (<=) :: a -> a -> Bool
+  (>=) :: a -> a -> Bool
+  (<)  :: a -> a -> Bool
+  (>)  :: a -> a -> Bool
+
+  min :: a -> a -> a
+  max :: a -> a -> a
+
+  x < y = x <= y && x /= y
+  x > y = not (x <= y)
+  x >= y = y <= x
+  x <= y = compare x y == EQ || compare x y == LT
+
+  compare x y | x == y = EQ
+              | x <= y = LT
+              | otherwise = GT
+
+  min x y | x <= y    = x
+          | otherwise = y
+
+  max x y | x >= y    = x
+          | otherwise = y
+
+instance Ord Char where
+  c1 <= c2 = c1 `ltEqChar` c2
+
+instance Ord Int where
+  i1 <= i2 = i1 `ltEqInt` i2
+
+instance Ord Float where
+  f1 <= f2 = f1 `ltEqFloat` f2
+
+instance Ord a => Ord [a] where
+  []    <= []    = True
+  (_:_) <= []    = False
+  []    <= (_:_) = True
+  (x:xs) <= (y:ys) | x == y    = xs <= ys
+                   | otherwise = x < y
+
+instance Ord () where
+  () <= () = True
+
+instance (Ord a, Ord b) => Ord (a, b) where
+  (a, b) <= (a', b') = a < a' || (a == a' && b <= b')
+
+instance (Ord a, Ord b, Ord c) => Ord (a, b, c) where
+  (a, b, c) <= (a', b', c') = a < a'
+     || (a == a' && b < b')
+     || (a == a' && b == b' && c <= c')
+
+instance (Ord a, Ord b, Ord c, Ord d) => Ord (a, b, c, d) where
+  (a, b, c, d) <= (a', b', c', d') = a < a'
+     || (a == a' && b < b')
+     || (a == a' && b == b' && c < c')
+     || (a == a' && b == b' && c == c' && d <= d')
+
+instance (Ord a, Ord b, Ord c, Ord d, Ord e) => Ord (a, b, c, d, e) where
+  (a, b, c, d, e) <= (a', b', c', d', e') = a < a'
+     || (a == a' && b < b')
+     || (a == a' && b == b' && c < c')
+     || (a == a' && b == b' && c == c' && d < d')
+     || (a == a' && b == b' && c == c' && d == d' && e <= e')
+
+-- -------------------------------------------------------------------------
+-- Show class and related instances and functions
+-- -------------------------------------------------------------------------
+
+type ShowS = String -> String
+
+class Show a where
+  show :: a -> String
+
+  showsPrec :: Int -> a -> ShowS
+
+  showList :: [a] -> ShowS
+
+  showsPrec _ x s = show x ++ s
+  show x = shows x ""
+  showList ls s = showList' shows ls s
+
+showList' :: (a -> ShowS) ->  [a] -> ShowS
+showList' _     []     s = "[]" ++ s
+showList' showx (x:xs) s = '[' : showx x (showl xs)
+  where
+    showl []     = ']' : s
+    showl (y:ys) = ',' : showx y (showl ys)
+
+shows :: Show a => a -> ShowS
+shows = showsPrec 0
+
+showChar :: Char -> ShowS
+showChar c s = c:s
+
+showString :: String -> ShowS
+showString str s = foldr showChar s str
+
+showParen :: Bool -> ShowS -> ShowS
+showParen b s = if b then showChar '(' . s . showChar ')' else s
+
+-- -------------------------------------------------------------------------
+
+instance Show () where
+  showsPrec _ () = showString "()"
+
+instance (Show a, Show b) => Show (a, b) where
+  showsPrec _ (a, b) = showTuple [shows a, shows b]
+
+instance (Show a, Show b, Show c) => Show (a, b, c) where
+  showsPrec _ (a, b, c) = showTuple [shows a, shows b, shows c]
+
+instance (Show a, Show b, Show c, Show d) => Show (a, b, c, d) where
+  showsPrec _ (a, b, c, d) = showTuple [shows a, shows b, shows c, shows d]
+
+instance (Show a, Show b, Show c, Show d, Show e) => Show (a, b, c, d, e) where
+  showsPrec _ (a, b, c, d, e) = showTuple [shows a, shows b, shows c, shows d, shows e]
+
+instance Show a => Show [a] where
+  showsPrec _ = showList
+
+instance Show Char where
+  -- TODO: own implementation instead of passing to original Prelude functions?
+  showsPrec _ c = showString (show_ c)
+
+  showList cs | null cs   = showString "\"\""
+              | otherwise = showString (show_ cs)
+
+instance Show Int where
+  showsPrec = showSigned (showString . show_)
+
+instance Show Float where
+  showsPrec = showSigned (showString . show_)
+
+showSigned :: Real a => (a -> ShowS) -> Int -> a -> ShowS
+showSigned showPos p x
+  | x < 0     = showParen (p > 6) (showChar '-' . showPos (-x))
+  | otherwise = showPos x
+
+showTuple :: [ShowS] -> ShowS
+showTuple ss = showChar '('
+             . foldr1 (\s r -> s . showChar ',' . r) ss
+             . showChar ')'
+
+appPrec :: Int
+appPrec = 10
+
+appPrec1 :: Int
+appPrec1 = 11
+
+-- -------------------------------------------------------------------------
+-- Read class and related instances and functions
+-- -------------------------------------------------------------------------
+
+type ReadS a = String -> [(a, String)]
+
+
+class Read a where
+  readsPrec :: Int -> ReadS a
+
+  readList :: ReadS [a]
+  readList = readListDefault
+
+readListDefault :: Read a => ReadS [a]
+readListDefault = readParen False (\r -> [pr | ("[",s)  <- lex r
+                                        , pr       <- readl s])
+    where readl s = [([], t) | ("]", t) <- lex s] ++
+                      [(x : xs, u) | (x, t) <- reads s, (xs, u) <- readl' t]
+          readl' s = [([], t) | ("]", t) <- lex s] ++
+                       [(x : xs, v) | (",", t)  <- lex s, (x, u) <- reads t
+                                    , (xs,v) <- readl' u]
+
+reads :: Read a => ReadS a
+reads = readsPrec 0
+
+readParen :: Bool -> ReadS a -> ReadS a
+readParen b g = if b then mandatory else optional
+  where optional r = g r ++ mandatory r
+        mandatory r =
+          [(x, u) | ("(", s) <- lex r, (x, t) <- optional s, (")", u) <- lex t]
+
+read :: (Read a) => String -> a
+read s =  case [x | (x, t) <- reads s, ("", "") <- lex t] of
+  [x] -> x
+  [] -> error "Prelude.read: no parse"
+  _ -> error "Prelude.read: ambiguous parse"
+
+instance Read () where
+  readsPrec _ = readParen False (\r -> [ ((), t) | ("(", s) <- lex r
+                                                 , (")", t) <- lex s ])
+
+instance Read Int where
+  readsPrec _ = readSigned (\s -> [(i,t) | (x,t) <- lexDigits s
+                                         , (i,[]) <- readNatLiteral x])
+
+instance Read Float where
+  readsPrec _ = readSigned
+                  (\s -> [ (f,t) | (x,t) <- lex s, not (null x)
+                                 , isDigit (head x), (f,[]) <- readFloat x ])
+   where
+    readFloat x = if all isDigit x
+                    then [ (i2f i, t) | (i,t) <- readNatLiteral x ]
+                    else readFloatLiteral x
+
+readSigned :: Real a => ReadS a -> ReadS a
+readSigned p = readParen False read'
+  where read' r = read'' r ++ [(-x, t) | ("-", s) <- lex r, (x, t) <- read'' s]
+        read'' r = [(n, s) | (str, s) <- lex r, (n, "") <- p str]
+
+instance Read Char where
+  readsPrec _ = readParen False
+                  (\s -> [ (c, t) | (x, t) <- lex s, not (null x), head x == '\''
+                                  , (c, []) <- readCharLiteral x ])
+
+  readList s = readParen False
+                 (\s -> [ (cs, t) | (x, t) <- lex s, not (null x), head x == '"'
+                                  , (cs, []) <- readStringLiteral x ]) s
+                ++
+               readListDefault s
+
+-- Primitive operations to read specific literals.
+readNatLiteral :: ReadS Int
+readNatLiteral s = prim_readNatLiteral $## s
+
+prim_readNatLiteral :: String -> [(Int,String)]
+prim_readNatLiteral external
+
+readFloatLiteral :: ReadS Float
+readFloatLiteral s = prim_readFloatLiteral $## s
+
+prim_readFloatLiteral :: String -> [(Float,String)]
+prim_readFloatLiteral external
+
+readCharLiteral :: ReadS Char
+readCharLiteral s = prim_readCharLiteral $## s
+
+prim_readCharLiteral :: String -> [(Char,String)]
+prim_readCharLiteral external
+
+readStringLiteral :: ReadS String
+readStringLiteral s = prim_readStringLiteral $## s
+
+prim_readStringLiteral :: String -> [(String,String)]
+prim_readStringLiteral external
+
+instance Read a => Read [a] where
+  readsPrec _ = readList
+
+instance (Read a, Read b) => Read (a, b) where
+  readsPrec _ = readParen False (\r -> [ ((a, b), w) | ("(", s) <- lex r
+                                                     , (a, t) <- reads s
+                                                     , (",", u) <- lex t
+                                                     , (b, v) <- reads u
+                                                     , (")", w) <- lex v ])
+
+instance (Read a, Read b, Read c) => Read (a, b, c) where
+  readsPrec _ = readParen False (\r -> [ ((a, b, c), y) | ("(", s) <- lex r
+                                                        , (a, t) <- reads s
+                                                        , (",", u) <- lex t
+                                                        , (b, v) <- reads u
+                                                        , (",", w) <- lex v
+                                                        , (c, x) <- reads w
+                                                        , (")", y) <- lex x ])
+
+instance (Read a, Read b, Read c, Read d) => Read (a, b, c, d) where
+  readsPrec _ = readParen False
+                  (\q -> [ ((a, b, c, d), z) | ("(", r) <- lex q
+                                             , (a, s) <- reads r
+                                             , (",", t) <- lex s
+                                             , (b, u) <- reads t
+                                             , (",", v) <- lex u
+                                             , (c, w) <- reads v
+                                             , (",", x) <- lex w
+                                             , (d, y) <- reads x
+                                             , (")", z) <- lex y ])
+
+instance (Read a, Read b, Read c, Read d, Read e) => Read (a, b, c, d, e) where
+  readsPrec _ = readParen False
+                  (\o -> [ ((a, b, c, d, e), z) | ("(", p) <- lex o
+                                                , (a, q) <- reads p
+                                                , (",", r) <- lex q
+                                                , (b, s) <- reads r
+                                                , (",", t) <- lex s
+                                                , (c, u) <- reads t
+                                                , (",", v) <- lex u
+                                                , (d, w) <- reads v
+                                                , (",", x) <- lex w
+                                                , (e, y) <- reads x
+                                                , (")", z) <- lex y ])
+
+-- The following definitions are necessary to implement instances of Read.
+
+lex :: ReadS String
+lex s = case s of
+    "" -> [("","")]
+    (c:s)
+      | isSpace c -> lex $ dropWhile isSpace s
+    ('\'':s) ->
+      [('\'' : ch ++ "'", t) | (ch, '\'' : t)  <- lexLitChar s, ch /= "'"]
+    ('"':s) -> [('"' : str, t) | (str, t) <- lexString s]
+    (c:s)
+      | isSingle c -> [([c], s)]
+      | isSym c -> [(c : sym, t) | (sym, t) <- [span isSym s]]
+      | isAlpha c -> [(c : nam, t) | (nam, t) <- [span isIdChar s]]
+      | isDigit c ->
+        [(c : ds ++ fe, t)| (ds, s) <- [span isDigit s], (fe, t)  <- lexFracExp s]
+      | otherwise -> []
+  where
+  isSingle c = c `elem` ",;()[]{}_`"
+  isSym c = c `elem` "!@#$%&⋆+./<=>?\\^|:-~"
+  isIdChar c = isAlphaNum c || c `elem` "_'"
+  lexFracExp s = case s of
+    ('.':c:cs)
+      | isDigit c ->
+        [('.' : ds ++ e, u) | (ds, t) <- lexDigits (c : cs), (e, u)  <- lexExp t]
+    s -> lexExp s
+  lexExp s = case s of
+    (e:s) | e `elem` "eE" ->
+      [(e : c : ds, u) | (c:t)  <- [s], c `elem` "+-"
+                       , (ds, u) <- lexDigits t] ++
+        [(e : ds, t) | (ds, t) <- lexDigits s]
+    s -> [("", s)]
+  lexString s = case s of
+    ('"':s) -> [("\"", s)]
+    s -> [(ch ++ str, u) | (ch, t) <- lexStrItem s, (str, u) <- lexString t]
+  lexStrItem s = case s of
+    ('\\':'&':s) -> [("\\&", s)]
+    ('\\':c:s)
+      | isSpace c -> [("\\&", t) | '\\':t <- [dropWhile isSpace s]]
+    s -> lexLitChar s
+
+lexLitChar :: ReadS String
+lexLitChar s = case s of
+    "" -> []
+    ('\\':s) -> map (prefix '\\') (lexEsc s)
+    (c:s) -> [([c], s)]
+  where
+  lexEsc s = case s of
+    (c:s)
+      | c `elem` "abfnrtv\\\"'" -> [([c], s)]
+    ('^':c:s)
+      | c >= '@' && c <= '_'    -> [(['^',c], s)]
+    ('b':s) -> [prefix 'b' (span isBinDigit s)]
+    ('o':s) -> [prefix 'o' (span isOctDigit s)]
+    ('x':s) -> [prefix 'x' (span isHexDigit s)]
+    s@(d:_)
+      | isDigit d -> [span isDigit s]
+    s@(c:_)
+      | isUpper c -> [span isCharName s]
+    _ -> []
+  isCharName c = isUpper c || isDigit c
+  prefix c (t, s) = (c : t, s)
+
+lexDigits :: ReadS String
+lexDigits = nonNull isDigit
+
+nonNull :: (Char -> Bool) -> ReadS String
+nonNull p s = [(cs, t) | (cs@(_:_), t) <- [span p s]]
+
+--- Returns true if the argument is an uppercase letter.
+isUpper         :: Char -> Bool
+isUpper c       =  c >= 'A' && c <= 'Z'
+
+--- Returns true if the argument is an lowercase letter.
+isLower         :: Char -> Bool
+isLower c       =  c >= 'a' && c <= 'z'
+
+--- Returns true if the argument is a letter.
+isAlpha         :: Char -> Bool
+isAlpha c       =  isUpper c || isLower c
+
+--- Returns true if the argument is a decimal digit.
+isDigit         :: Char -> Bool
+isDigit c       =  c >= '0' && c <= '9'
+
+--- Returns true if the argument is a letter or digit.
+isAlphaNum      :: Char -> Bool
+isAlphaNum c    =  isAlpha c || isDigit c
+
+--- Returns true if the argument is a binary digit.
+isBinDigit     :: Char -> Bool
+isBinDigit c   =  c >= '0' || c <= '1'
+
+--- Returns true if the argument is an octal digit.
+isOctDigit     :: Char -> Bool
+isOctDigit c    =  c >= '0' && c <= '7'
+
+--- Returns true if the argument is a hexadecimal digit.
+isHexDigit      :: Char -> Bool
+isHexDigit c     = isDigit c || c >= 'A' && c <= 'F'
+                             || c >= 'a' && c <= 'f'
+
+--- Returns true if the argument is a white space.
+isSpace         :: Char -> Bool
+isSpace c       =  c == ' '    || c == '\t' || c == '\n' ||
+                   c == '\r'   || c == '\f' || c == '\v' ||
+                   c == '\xa0' || ord c `elem` [5760,6158,8192,8239,8287,12288]
+
+-- -------------------------------------------------------------------------
+-- Bounded and Enum classes and instances
+-- -------------------------------------------------------------------------
+
+class Bounded a where
+  minBound, maxBound :: a
+
+class Enum a where
+  succ :: a -> a
+  pred :: a -> a
+
+  toEnum   :: Int -> a
+  fromEnum :: a -> Int
+
+  enumFrom       :: a -> [a]
+  enumFromThen   :: a -> a -> [a]
+  enumFromTo     :: a -> a -> [a]
+  enumFromThenTo :: a -> a -> a -> [a]
+
+  succ = toEnum . (+ 1) . fromEnum
+  pred = toEnum . (\x -> x -1) . fromEnum
+  enumFrom x = map toEnum [fromEnum x ..]
+  enumFromThen x y = map toEnum [fromEnum x, fromEnum y ..]
+  enumFromTo x y = map toEnum [fromEnum x .. fromEnum y]
+  enumFromThenTo x1 x2 y = map toEnum [fromEnum x1, fromEnum x2 .. fromEnum y]
+
+instance Bounded () where
+  minBound = ()
+  maxBound = ()
+
+instance Enum () where
+  succ _      = error "Prelude.Enum.().succ: bad argument"
+  pred _      = error "Prelude.Enum.().pred: bad argument"
+
+  toEnum x | x == 0    = ()
+           | otherwise = error "Prelude.Enum.().toEnum: bad argument"
+
+  fromEnum () = 0
+  enumFrom ()         = [()]
+  enumFromThen () ()  = let many = ():many in many
+  enumFromTo () ()    = [()]
+  enumFromThenTo () () () = let many = ():many in many
+
+instance Bounded Bool where
+  minBound = False
+  maxBound = True
+
+instance Enum Bool where
+  succ False = True
+  succ True  = error "Prelude.Enum.Bool.succ: bad argument"
+
+  pred False = error "Prelude.Enum.Bool.pred: bad argument"
+  pred True  = False
+
+  toEnum n | n == 0 = False
+           | n == 1 = True
+           | otherwise = error "Prelude.Enum.Bool.toEnum: bad argument"
+
+  fromEnum False = 0
+  fromEnum True  = 1
+
+  enumFrom = boundedEnumFrom
+  enumFromThen = boundedEnumFromThen
+
+
+instance (Bounded a, Bounded b) => Bounded (a, b) where
+  minBound = (minBound, minBound)
+  maxBound = (maxBound, maxBound)
+
+instance (Bounded a, Bounded b, Bounded c) => Bounded (a, b, c) where
+  minBound = (minBound, minBound, minBound)
+  maxBound = (maxBound, maxBound, maxBound)
+
+instance (Bounded a, Bounded b, Bounded c, Bounded d) => Bounded (a, b, c, d) where
+  minBound = (minBound, minBound, minBound, minBound)
+  maxBound = (maxBound, maxBound, maxBound, maxBound)
+
+instance (Bounded a, Bounded b, Bounded c, Bounded d, Bounded e) => Bounded (a, b, c, d, e) where
+  minBound = (minBound, minBound, minBound, minBound, minBound)
+  maxBound = (maxBound, maxBound, maxBound, maxBound, maxBound)
+
+
+
+instance Bounded Ordering where
+  minBound = LT
+  maxBound = GT
+
+instance Enum Ordering where
+  succ LT = EQ
+  succ EQ = GT
+  succ GT = error "Prelude.Enum.Ordering.succ: bad argument"
+
+  pred LT = error "Prelude.Enum.Ordering.pred: bad argument"
+  pred EQ = LT
+  pred GT = EQ
+
+  toEnum n | n == 0 = LT
+           | n == 1 = EQ
+           | n == 2 = GT
+           | otherwise = error "Prelude.Enum.Ordering.toEnum: bad argument"
+
+  fromEnum LT = 0
+  fromEnum EQ = 1
+  fromEnum GT = 2
+
+  enumFrom = boundedEnumFrom
+  enumFromThen = boundedEnumFromThen
+
+uppermostCharacter :: Int
+uppermostCharacter = 0x10FFFF
+
+instance Bounded Char where
+   minBound = chr 0
+   maxBound = chr uppermostCharacter
+
+
+instance Enum Char where
+
+  succ c | ord c < uppermostCharacter = chr $ ord c + 1
+         | otherwise = error "Prelude.Enum.Char.succ: no successor"
+
+  pred c | ord c > 0 = chr $ ord c - 1
+         | otherwise = error "Prelude.Enum.Char.succ: no predecessor"
+
+  toEnum = chr
+  fromEnum = ord
+
+  enumFrom = boundedEnumFrom
+  enumFromThen = boundedEnumFromThen
+
+-- TODO:
+-- instance Enum Float where
+
+-- TODO (?):
+-- instance Bounded Int where
+
+instance Enum Int where
+  -- TODO: is Int unbounded?
+  succ x = x + 1
+  pred x = x - 1
+
+  -- TODO: correct semantic?
+  toEnum n = n
+  fromEnum n = n
+
+  -- TODO: provide own implementations?
+  enumFrom = enumFrom_
+  enumFromTo = enumFromTo_
+  enumFromThen = enumFromThen_
+  enumFromThenTo = enumFromThenTo_
+
+
+boundedEnumFrom :: (Enum a, Bounded a) => a -> [a]
+boundedEnumFrom n = map toEnum [fromEnum n .. fromEnum (maxBound `asTypeOf` n)]
+
+boundedEnumFromThen :: (Enum a, Bounded a) => a -> a -> [a]
+boundedEnumFromThen n1 n2
+  | i_n2 >= i_n1  = map toEnum [i_n1, i_n2 .. fromEnum (maxBound `asTypeOf` n1)]
+  | otherwise     = map toEnum [i_n1, i_n2 .. fromEnum (minBound `asTypeOf` n1)]
+  where
+    i_n1 = fromEnum n1
+    i_n2 = fromEnum n2
+
+-- -------------------------------------------------------------------------
+-- Numeric classes and instances
+-- -------------------------------------------------------------------------
+
+-- minimal definition: all (except negate or (-))
+class Num a where
+  (+), (-), (*) :: a -> a -> a
+  negate :: a -> a
+  abs :: a -> a
+  signum :: a -> a
+
+  fromInteger :: Int -> a
+
+  x - y = x + negate y
+  negate x = 0 - x
+
+instance Num Int where
+  x + y = x +$ y
+  x - y = x -$ y
+  x * y = x *$ y
+
+  negate x = 0 - x
+
+  abs x | x >= 0 = x
+        | otherwise = negate x
+
+  signum x | x > 0     = 1
+           | x == 0    = 0
+           | otherwise = -1
+
+  fromInteger x = x
+
+instance Num Float where
+  x + y = x +. y
+  x - y = x -. y
+  x * y = x *. y
+
+  negate x = negateFloat x
+
+  abs x | x >= 0 = x
+        | otherwise = negate x
+
+
+  signum x | x > 0     = 1
+           | x == 0    = 0
+           | otherwise = -1
+
+  fromInteger x = i2f x
+
+-- minimal definition: fromRational and (recip or (/))
+class Num a => Fractional a where
+
+  (/) :: a -> a -> a
+  recip :: a -> a
+
+  recip x = 1/x
+  x / y = x * recip y
+
+  fromRational :: Float -> a -- since we have no type Rational
+
+instance Fractional Float where
+  x / y = x /. y
+  recip x = 1.0/x
+
+  fromRational x = x
+
+class (Num a, Ord a) => Real a where
+  -- toRational :: a -> Rational
+
+class Real a => Integral a where
+  div  :: a -> a -> a
+  mod  :: a -> a -> a
+  quot :: a -> a -> a
+  rem  :: a -> a -> a
+
+  divMod  :: a -> a -> (a, a)
+  quotRem :: a -> a -> (a, a)
+
+  n `div`  d = q where (q, _) = divMod n d
+  n `mod`  d = r where (_, r) = divMod n d
+  n `quot` d = q where (q, _) = n `quotRem` d
+  n `rem`  d = r where (_, r) = n `quotRem` d
+
+instance Real Int where
+  -- no class methods to implement
+
+instance Real Float where
+  -- no class methods to implement
+
+instance Integral Int where
+  divMod n d = (n `div_` d, n `mod_` d)
+  quotRem n d = (n `quot_` d, n `rem_` d)
+
+-- -------------------------------------------------------------------------
+-- Helper functions
+-- -------------------------------------------------------------------------
+
+asTypeOf :: a -> a -> a
+asTypeOf = const
+
+-- -------------------------------------------------------------------------
+-- Floating point operations
+-- -------------------------------------------------------------------------
+
+--- Addition on floats.
+(+.)   :: Float -> Float -> Float
+x +. y = (prim_Float_plus $# y) $# x
+
+prim_Float_plus :: Float -> Float -> Float
+prim_Float_plus external
+
+--- Subtraction on floats.
+(-.)   :: Float -> Float -> Float
+x -. y = (prim_Float_minus $# y) $# x
+
+prim_Float_minus :: Float -> Float -> Float
+prim_Float_minus external
+
+--- Multiplication on floats.
+(*.)   :: Float -> Float -> Float
+x *. y = (prim_Float_times $# y) $# x
+
+prim_Float_times :: Float -> Float -> Float
+prim_Float_times external
+
+--- Division on floats.
+(/.)   :: Float -> Float -> Float
+x /. y = (prim_Float_div $# y) $# x
+
+prim_Float_div :: Float -> Float -> Float
+prim_Float_div external
+
+--- Conversion function from integers to floats.
+i2f    :: Int -> Float
+i2f x = prim_i2f $# x
+
+prim_i2f :: Int -> Float
+prim_i2f external
+
 -- the end of the standard prelude
+
+class Functor f where
+  fmap :: (a -> b) -> f a -> f b
+
+instance Functor [] where
+  fmap = map
+
+class Monad m where
+  (>>=) :: m a -> (a -> m b) -> m b
+  (>>) :: m a -> m b -> m b
+  m >> k = m >>= \_ -> k
+  return :: a -> m a
+  fail :: String -> m a
+  fail s = error s
+
+instance Monad IO where
+  a1 >>= a2 = a1 >>=$ a2
+  a1 >>  a2 = a1 >>$  a2
+  return x = returnIO x
+
+instance Monad Maybe where
+  Nothing >>= _ = Nothing
+  (Just x) >>= f = f x
+  return = Just
+  fail _ = Nothing
+
+instance Monad [] where
+  xs >>= f = [y | x <- xs, y <- f x]
+  return x = [x]
+  fail _ = []
