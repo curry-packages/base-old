@@ -395,7 +395,7 @@ instance NonDet C_Char where
   match _ _ _ _ _ f x = f x
 
 instance Generable C_Char where
-  generate s cd = Choices_C_Char cd (freeID [1] s) [CurryChar (generate (leftSupply s) cd)]
+  generate s cd = Choices_C_Char cd (freeID [0, 1] s) [CurryChar Zero, CurryChar (Pos (generate (leftSupply s) cd))]
 
 instance NormalForm C_Char where
   ($!!) cont x@(C_Char _) cd cs = cont x cd cs
