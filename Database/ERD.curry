@@ -4,7 +4,7 @@
 --- from a term file.
 ---
 --- @author Michael Hanus, Marion Mueller
---- @version June 2016
+--- @version May 2017
 --- @category database
 ------------------------------------------------------------------------------
 
@@ -12,12 +12,13 @@ module Database.ERD
   ( ERD(..), ERDName, Entity(..), EName, Entity(..)
   , Attribute(..), AName, Key(..), Null, Domain(..)
   , Relationship(..), REnd(..), RName, Role, Cardinality(..), MaxValue(..)
-  , readERDTermFile
+  , readERDTermFile, writeERDTermFile
   ) where
 
-import Char(isSpace)
+import Char         (isSpace)
+import Directory    (getAbsolutePath)
 import IO
-import ReadShowTerm(readUnqualifiedTerm)
+import ReadShowTerm (readUnqualifiedTerm)
 import Time
 
 --- Data type to represent entity/relationship diagrams.
@@ -120,6 +121,14 @@ updateERDTerm (ERD name es rs) = ERD name es (map updateRel rs)
      then Between min (Max m)
      else error ("ERD: Illegal cardinality " ++ show (Between min (Max m)))
    updateCard (Between min Infinite) = Between min Infinite
+
+--- Writes an ERD term into a file with name `ERDMODELNAME.erdterm`
+--- and returns the absolute path name of the generated term file.
+writeERDTermFile :: ERD -> IO String
+writeERDTermFile erd@(ERD name _ _) = do
+  let termfile = name ++ ".erdterm"
+  writeFile termfile (show erd)
+  getAbsolutePath termfile
 
 {-
 -- Example ERD term:
