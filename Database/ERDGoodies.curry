@@ -3,7 +3,7 @@
 --- entity/relationship diagrams
 ---
 --- @author Michael Hanus
---- @version October 2016
+--- @version May 2017
 --- @category database
 ------------------------------------------------------------------------------
 
@@ -17,16 +17,17 @@ module Database.ERDGoodies
   , storeERDFromProgram, writeERDTermFile
   ) where
 
-import Char(isUpper)
+import Char            (isUpper)
 import Database.ERD
-import Distribution(installDir,stripCurrySuffix)
+import Directory       (getAbsolutePath)
+import Distribution    (installDir,stripCurrySuffix)
 import FlatCurry.Types
 import FlatCurry.Files
 import FlatCurry.Goodies
-import IOExts (evalCmd)
-import List(intersperse)
+import IOExts          (evalCmd)
+import List            (intersperse)
 import Maybe
-import System(system)
+import System          (system)
 
 --- The name of an ERD.
 erdName :: ERD -> String
@@ -170,6 +171,7 @@ writeERDTermFile :: ERD -> IO ()
 writeERDTermFile erd = do
   let termfile = erdName erd ++ ".erdterm"
   writeFile termfile (showERD 0 erd)
-  putStrLn termfile
+  abstermfile <- getAbsolutePath termfile
+  putStrLn abstermfile
 
 ------------------------------------------------------------------------------
