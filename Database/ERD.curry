@@ -75,7 +75,7 @@ data MaxValue = Max Int | Infinite
 --- Read an ERD specification from a file containing a single ERD term.
 readERDTermFile :: String -> IO ERD
 readERDTermFile termfilename = do
-  putStrLn $ "Reading ERD term from file " ++ termfilename ++ "..."
+  putStrLn $ "Reading ERD term from file '" ++ termfilename ++ "'..."
   handle <- openFile termfilename ReadMode
   line <- skipCommentLines handle
   termstring <- hGetContents handle
