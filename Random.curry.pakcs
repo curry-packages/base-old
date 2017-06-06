@@ -13,7 +13,7 @@
 --- Volume 2: _Seminumerical Algorithms_, section 3.2.1.
 ---
 --- @author Sergio Antoy (with extensions by Michael Hanus)
---- @version February 2016
+--- @version June 2017
 --- @category algorithm
 ------------------------------------------------------------------------------
 
@@ -32,41 +32,59 @@ import Time
 
 -- a few constants
 
+multiplier :: Int
 multiplier = 25214903917
+
+addend     :: Int
 addend     = 11
+
+powermask  :: Int
 powermask  = 48
+
+mask       :: Int
 mask       = 281474976710656  -- 2^powermask
+
+intsize    :: Int
 intsize    = 32
+
+intspan    :: Int
 intspan    = 4294967296       -- 2^intsize
+
+intlimit   :: Int
 intlimit   = 2147483648       -- 2^(intsize-1)
 
 -- the basic sequence of random values
 
+sequence :: Int -> [Int]
 sequence seed = next : sequence next
     where next = nextseed seed
 
 -- auxiliary private operations
 
-nextseed seed = (seed * multiplier + addend) `mod` mask
+nextseed :: Int -> Int
+nextseed seed = (seed * multiplier + addend) `rem` mask
 
+xor :: Int -> Int -> Int
 xor x y = if (x==0) && (y==0) then 0 else lastBit + 2 * restBits
-    where lastBit  = if (x `mod` 2) == (y `mod` 2) then 0 else 1
-          restBits = xor (x `div` 2) (y `div` 2)
+    where lastBit  = if (x `rem` 2) == (y `rem` 2) then 0 else 1
+          restBits = xor (x `quot` 2) (y `quot` 2)
 
+power :: Int -> Int -> Int
 power base exp = binary 1 base exp
     where binary x b e
               = if (e == 0) then x
-                else binary (x * if (e `mod` 2 == 1) then b else 1)
+                else binary (x * if (e `rem` 2 == 1) then b else 1)
                             (b * b)
-                            (e `div` 2)
+                            (e `quot` 2)
 
+nextIntBits :: Int -> Int -> [Int]
 nextIntBits seed bits = map adjust list
-    where init = (xor seed multiplier) `mod` mask
+    where init = (xor seed multiplier) `rem` mask
           list = sequence init
           shift = power 2 (powermask - bits)
           adjust x = if arg > intlimit then arg - intspan
                                        else arg
-              where arg = (x `div` shift) `mod` intspan
+              where arg = (x `quot` shift) `rem` intspan
 
 ------------------------------------------------------------------
 --                       Public Operations
@@ -96,11 +114,11 @@ nextIntRange seed n | n>0
     = if power_of_2 n then map adjust_a seq
       else map adjust_b (filter adjust_c seq)
     where seq = nextIntBits seed (intsize - 1)
-          adjust_a x = (n * x) `div` intlimit
-          adjust_b x = x `mod` n
-          adjust_c x = x - (x `mod` n) + (n - 1) >= 0
+          adjust_a x = (n * x) `quot` intlimit
+          adjust_b x = x `rem` n
+          adjust_c x = x - (x `rem` n) + (n - 1) >= 0
           power_of_2 k = k == 2 || 
-                         k > 2 && k `mod` 2 == 0 && power_of_2 (k `div` 2)
+                         k > 2 && k `rem` 2 == 0 && power_of_2 (k `quot` 2)
                             
 --- Returns a pseudorandom, uniformly distributed sequence of
 --- boolean values. The values `True` and `False` are produced with
@@ -120,7 +138,7 @@ getRandomSeed =
   getClockTime >>= \time ->
   getCPUTime >>= \msecs ->
   let (CalendarTime y mo d h m s _) = toUTCTime time
-   in return ((y+mo+d+h+m*s*msecs) `mod` mask)
+   in return ((y+mo+d+h+m*s*msecs) `rem` mask)
                             
 --- Computes a random permutation of the given list.
 ---
@@ -138,7 +156,7 @@ shuffleWithLen (r:rs) len xs
   | len == 0  = []
   | otherwise = z : shuffleWithLen rs (len-1) (ys++zs)
  where
-  (ys,z:zs) = splitAt (abs r `mod` len) xs
+  (ys,z:zs) = splitAt (abs r `rem` len) xs
 
 {-     Simple tests and examples
 
