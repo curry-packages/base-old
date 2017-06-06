@@ -37,9 +37,16 @@ module Random
 import System  ( getCPUTime )
 import Time
 
+zfact :: Int
 zfact = 36969
+
+wfact :: Int
 wfact = 18000
+
+two16 :: Int
 two16 = 65536
+
+large :: Int
 large = 536870911 -- 2^29 - 1
 ------------------------------------------------------------------
 --                       Public Operations
