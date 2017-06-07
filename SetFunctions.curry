@@ -34,7 +34,7 @@
 --- > of Declarative Programming (PPDP'13), pp. 49-60, ACM Press, 2013
 ---
 --- @author Michael Hanus, Fabian Reck
---- @version June 2014
+--- @version June 2017
 --- @category general
 ------------------------------------------------------------------------
 
@@ -218,10 +218,7 @@ select (Values (x:xs)) = (x, Values xs)
 selectValue :: Values a -> a
 selectValue s = fst (select s)
 
---- Accumulates all elements of a multiset of values by applying a binary
---- operation. This is similarly to fold on lists, but the binary operation
---- must be <b>commutative</b> so that the result is independent of the order
---- of applying this operation to all elements in the multiset.
+--- Maps a function to all elements of a multiset of values.
 mapValues :: (a -> b) -> Values a -> Values b
 mapValues f (Values s) = Values (map f s)
 
@@ -231,6 +228,10 @@ mapValues f (Values s) = Values (map f s)
 --- of applying this operation to all elements in the multiset.
 foldValues :: (a -> a -> a) -> a -> Values a -> a
 foldValues f z (Values s) = foldr f z s
+
+--- Keeps all elements of a multiset of values that satisfy a predicate.
+filterValues :: (a -> Bool) -> Values a -> Values a
+filterValues p (Values s) = Values (filter p s)
 
 --- Returns the minimal element of a non-empty multiset of values
 --- with respect to a given total ordering on the elements.
