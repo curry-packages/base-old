@@ -43,7 +43,7 @@ module SetFunctions
   ,set0With,set1With,set2With,set3With,set4With,set5With,set6With,set7With
   ,Values,isEmpty,notEmpty,valueOf
   ,choose,chooseValue,select,selectValue
-  ,mapValues,foldValues,minValue,maxValue
+  ,mapValues,foldValues,filterValues,minValue,maxValue
   ,values2list,printValues,sortValues,sortValuesBy
   ) where
 
