@@ -67,9 +67,9 @@ infixr 0 $, $!, $!!, $#, $##, `seq`, &, &>, ?
 
 
 -- externally defined types for numbers and characters
-data Int
-data Float
-data Char
+external data Int
+external data Float
+external data Char
 
 type String = [Char]
 
@@ -666,7 +666,7 @@ either _ g (Right x) = g x
 
 -- Monadic IO
 
-data IO _  -- conceptually: World -> (a,World)
+external data IO _  -- conceptually: World -> (a,World)
 
 --- Sequential composition of IO actions.
 --- @param a - An action

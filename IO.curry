@@ -16,7 +16,7 @@ module IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,
           hIsReadable,hIsWritable,hIsTerminalDevice) where
 
 --- The abstract type of a handle for a stream.
-data Handle -- internally defined
+external data Handle -- internally defined
 
 instance Eq Handle where
   h1 == h2 = (handle_eq $# h2) $# h1
