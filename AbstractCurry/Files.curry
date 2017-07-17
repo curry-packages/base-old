@@ -105,19 +105,22 @@ tryParse fn = do
  where cancel str = return (Left str)
 
 --- I/O action which parses a Curry program and returns the corresponding
---- untyped abstract Curry program.
---- An untyped abstract Curry program has functions of type `Prelude.untyped`
---- if the source code does not contain a type signature for this function.
---- Thus, the argument is the file name without suffix ".curry"
+--- untyped AbstractCurry program.
+--- The argument is the file name without suffix ".curry"
 --- or ".lcurry") and the result is a Curry term representing this
 --- program.
+--- In an untyped AbstractCurry program, the type signatures
+--- of operations are the type signatures provided by the programmer
+--- (and not the type signatures inferred by the front end).
+--- If the programmer has not provided an explicit type signature,
+--- the function declaration contains the type `(CTCons ("Prelude","untyped")`.
 readUntypedCurry :: String -> IO CurryProg
 readUntypedCurry prog =
   readUntypedCurryWithParseOptions prog (setQuiet True defaultParams)
 
 --- I/O action which reads a typed Curry program from a file (with extension
 --- ".acy") with respect to some parser options.
---- This I/O action is used by the standard action `readCurry`.
+--- This I/O action is used by the standard action 'readCurry'.
 --- It is currently predefined only in Curry2Prolog.
 --- @param progfile - the program file name (without suffix ".curry")
 --- @param options - parameters passed to the front end
@@ -138,6 +141,11 @@ readCurryWithParseOptions progname options = do
 --- I/O action which reads an untyped Curry program from a file (with extension
 --- ".uacy") with respect to some parser options. For more details
 --- see function 'readCurryWithParseOptions'
+--- In an untyped AbstractCurry program, the type signatures
+--- of operations are the type signatures provided by the programmer
+--- (and not the type signatures inferred by the front end).
+--- If the programmer has not provided an explicit type signature,
+--- the function declaration contains the type `(CTCons ("Prelude","untyped")`.
 readUntypedCurryWithParseOptions :: String -> FrontendParams -> IO CurryProg
 readUntypedCurryWithParseOptions progname options = do
   let modname = takeFileName progname

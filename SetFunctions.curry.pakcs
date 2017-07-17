@@ -37,7 +37,7 @@
 --- the interface is not stable and might change.
 ---
 --- @author Michael Hanus
---- @version July 2014
+--- @version July 2017
 --- @category general
 ------------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ module SetFunctions
   (set0,set1,set2,set3,set4,set5,set6,set7
   ,Values,isEmpty,notEmpty,valueOf
   ,choose,chooseValue,select,selectValue
-  ,mapValues,foldValues,minValue,maxValue
+  ,mapValues,foldValues,filterValues,minValue,maxValue
   ,values2list,printValues,sortValues,sortValuesBy
   ) where
 
@@ -189,10 +189,7 @@ select (Values _ (x:xs)) =
 selectValue :: Values a -> a
 selectValue (Values (Just val) _) = val
 
---- Accumulates all elements of a multiset of values by applying a binary
---- operation. This is similarly to fold on lists, but the binary operation
---- must be <b>commutative</b> so that the result is independent of the order
---- of applying this operation to all elements in the multiset.
+--- Maps a function to all elements of a multiset of values.
 mapValues :: (a -> b) -> Values a -> Values b
 mapValues f (Values mbval s) = Values (maybe Nothing (Just . f) mbval) (map f s)
 
@@ -202,6 +199,13 @@ mapValues f (Values mbval s) = Values (maybe Nothing (Just . f) mbval) (map f s)
 --- of applying this operation to all elements in the multiset.
 foldValues :: (a -> a -> a) -> a -> Values a -> a
 foldValues f z (Values _ s) = foldr f z s
+
+--- Keeps all elements of a multiset of values that satisfy a predicate.
+filterValues :: (a -> Bool) -> Values a -> Values a
+filterValues p (Values _ s) = Values val xs
+ where
+  xs = filter p s
+  val = if null xs then Nothing else Just (head xs)
 
 --- Returns the minimal element of a non-empty multiset of values
 --- with respect to a given total ordering on the elements.
