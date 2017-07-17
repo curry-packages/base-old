@@ -127,18 +127,23 @@ type Arity = Int
 ---
 --- A function declaration in AbstractCurry is a term of the form
 ---
---- <code>(CFunc name arity visibility type (CRules eval [CRule rule1,...,rulek]))</code>
+---     (CFunc name arity visibility type (CRules eval [CRule rule1,...,rulek]))
 ---
---- and represents the function <code>name</code> defined by the rules
---- <code>rule1,...,rulek</code>.
+--- and represents the function `name` defined by the rules
+--- `rule1,...,rulek`.
 ---
 --- Note: the variable indices are unique inside each rule
 ---
 --- Thus, a function declaration consists of the name, arity, type, and
---- a list of rules.
+--- a list of rules. The type is the function's type inferred by the
+--- type checker. However, if an AbstractCurry program is read with
+--- the operation `AbstractCurry.Files.readUntypedCurry`, the type
+--- is either the type signature provided by the programmer or
+--- the expression `(CTCons ("Prelude","untyped")`
+--- if the programmer has not provided an explicit type signature.
 ---
---- A function declaration with the constructor <code>CmtFunc</code>
---- is similarly to <code>CFunc</code> but has a comment
+--- A function declaration with the constructor `CmtFunc`
+--- is similarly to `CFunc` but has a comment
 --- as an additional first argument. This comment could be used
 --- by pretty printers that generate a readable Curry program
 --- containing documentation comments.
