@@ -30,8 +30,8 @@ data ORegExp a = Nil
                | Times (Int,Int) (RegExp a)
 
 --- The match function is used to match lists with regular expressions
---- @param s - The input list
 --- @param r - The regular expression
+--- @param s - The input list
 --- @result True if matched else False
 match :: Ord a => RegExp a -> [a] -> Bool
 match re s = case re of
