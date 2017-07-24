@@ -4,7 +4,7 @@
 --- of POSIX extended regular expressions into Curry programs.
 ---
 --- @author Jasper Sikorra
---- @version January 2013
+--- @version July 2017
 --- @category general
 ------------------------------------------------------------------------------
 -- TODO
@@ -33,34 +33,34 @@ data ORegExp a = Nil
 --- @param s - The input list
 --- @param r - The regular expression
 --- @result True if matched else False
-match :: [a] -> RegExp a -> Bool
-match s re = case re of
+match :: RegExp a -> [a] -> Bool
+match re s = case re of
   []                  -> s == []
-  (Nil:ors)           -> match s ors
-  (Xor or1 or2:ors)   -> match s (or1 ++ ors) || match s (or2 ++ ors)
+  (Nil:ors)           -> match ors s
+  (Xor or1 or2:ors)   -> match (or1 ++ ors) s || match (or2 ++ ors) s
   (Literal c:ors)     -> case s of
     []      -> False
-    (d:ds)  -> if (d == c) then match ds ors else False
-  (Star r:ors)        -> matchstar s r ors
-  (Plus r:ors)        -> matchplus s r ors
+    (d:ds)  -> if (d == c) then match ors ds else False
+  (Star r:ors)        -> matchstar r ors s
+  (Plus r:ors)        -> matchplus r ors s
   (AnyLiteral:ors)    -> case s of
     []      -> False
-    (_:ds)  -> match ds ors
+    (_:ds)  -> match ors ds
   (Bracket b:ors)     -> case s of
     []      -> False
-    (d:ds)  -> (matchbracket b d) && match ds ors
+    (d:ds)  -> (matchbracket b d) && match ors ds
   (NegBracket b:ors)  -> case s of
     []      -> False
-    (d:ds)  -> not (matchbracket b d) && match ds ors
+    (d:ds)  -> not (matchbracket b d) && match ors ds
   (Start _:_)         -> failed
   (End _:_)           -> failed
   (Times (n,m) r:ors) -> matchtimes s n m r ors
 
 -- Matching with a star
-matchstar :: [a] -> RegExp a -> RegExp a -> Bool
-matchstar st r rgx = (||)
-  (match st rgx)
-  (tryeach (map (\x -> match x r) (inits st)) (tails st) r rgx)
+matchstar :: RegExp a -> RegExp a -> [a] -> Bool
+matchstar r rgx st = (||)
+  (match rgx st)
+  (tryeach (map (\x -> match r x) (inits st)) (tails st) r rgx)
 
 tryeach :: [Bool] -> [[a]] -> RegExp a -> RegExp a -> Bool
 tryeach [] []         _  _   = False
@@ -68,13 +68,13 @@ tryeach (b:bs) (t:ts) r  rgx =
   (||)
     (if b
       then
-        (match t rgx || matchstar t r rgx)
+        (match rgx t || matchstar r rgx t)
       else False)
     (tryeach bs ts r rgx)
 
 -- Matching with a plus
-matchplus :: [a] -> RegExp a -> RegExp a -> Bool
-matchplus st r rgx = tryeach (map (\x -> match x r) ini) tls r rgx
+matchplus :: RegExp a -> RegExp a -> [a] -> Bool
+matchplus r rgx st = tryeach (map (\x -> match r x) ini) tls r rgx
   where
     ini = tail (inits st)
     tls = tail (tails st)
@@ -91,9 +91,9 @@ matchbracket (Right (c1,c2):es) d          =
 
 -- Matching an amount of times between a range
 matchtimes :: [a] -> Int -> Int -> RegExp a -> RegExp a -> Bool
-matchtimes s n m r rgx | m == 0 = match s rgx
+matchtimes s n m r rgx | m == 0 = match rgx s
                        | m >  0 =
-  tryeachRestricted (m-n) (map (\x -> match x mr) (inits s)) (tails s) r rgx
+  tryeachRestricted (m-n) (map (\x -> match mr x) (inits s)) (tails s) r rgx
   where
     mr = concat (replicate n r)
 
@@ -103,7 +103,7 @@ tryeachRestricted m      (b:bs) (t:ts) r  rgx  =
   (||)
     (if b
       then
-        (match t rgx || matchtimes t 1 m r rgx)  
+        (match rgx t || matchtimes t 1 m r rgx)  
       else False)
     (tryeachRestricted m bs ts r rgx)
 
