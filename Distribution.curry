@@ -32,7 +32,7 @@ module Distribution (
   ) where
 
 import List         (nub, split)
-import Char         (toLower)
+import Char         (toLower, toUpper)
 import Directory    (doesFileExist, getHomeDirectory)
 import FileGoodies  (lookupFileInPath, getFileInPath, fileSuffix, stripSuffix)
 import FilePath     ( FilePath, (</>), (<.>), addTrailingPathSeparator
@@ -263,6 +263,7 @@ lookupModuleSource loadpath mod = lookupSourceInPath loadpath
 --- Data type for representing the different target files that can be produced
 --- by the front end of the Curry compiler.
 --- @cons FCY  - FlatCurry file ending with .fcy
+--- @cons TFCY - Typed FlatCurry file ending with .tfcy
 --- @cons FINT - FlatCurry interface file ending with .fint
 --- @cons ACY  - AbstractCurry file ending with .acy
 --- @cons UACY - Untyped (without type checking) AbstractCurry file ending with .uacy
@@ -412,7 +413,7 @@ callFrontendWithParams target params modpath = do
   let lf      = maybe "" id (logfile params)
       tgts    = nub (target : targets params)
       syscall = unwords $ [parsecurry] ++ map showFrontendTarget tgts ++
-                          [showFrontendParams, takeFileName modpath]
+                          [showFrontendParams, cppParams, takeFileName modpath]
   retcode <- if null lf
              then system syscall
              else system (syscall ++ " > " ++ lf ++ " 2>&1")
@@ -445,3 +446,8 @@ callFrontendWithParams target params modpath = do
     ]
 
    runQuiet = "--no-verb --no-warn --no-overlap-warn"
+
+   cppParams = "-D__" ++ map toUpper curryCompiler ++ "__=" ++
+     show curryCompilerMajorVersion ++
+     let minorVersion = show curryCompilerMinorVersion
+     in replicate (2 - length minorVersion) '0' ++ minorVersion
