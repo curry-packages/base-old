@@ -5,6 +5,7 @@
 ---
 --- @category general
 ----------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
 
 module Prelude
@@ -43,6 +44,9 @@ module Prelude
   , PEVAL
   , Monad(..)
   , Functor(..)
+#ifdef __PAKCS__
+  , (=:<<=), letrec
+#endif
   ) where
 
 
@@ -58,6 +62,9 @@ infixl 6 +, -
 -- infixr 5 :                          -- declared together with list
 infixr 5 ++
 infix  4 =:=, ==, /=, <, >, <=, >=, =:<=
+#ifdef __PAKCS__
+infix  4 =:<<=
+#endif
 infix  4 `elem`, `notElem`
 infixr 3 &&
 infixr 2 ||
@@ -66,9 +73,9 @@ infixr 0 $, $!, $!!, $#, $##, `seq`, &, &>, ?
 
 
 -- externally defined types for numbers and characters
-data Int
-data Float
-data Char
+external data Int
+external data Float
+external data Char
 
 type String = [Char]
 
@@ -216,13 +223,34 @@ True &> x = x
 
 -- used for comparison of standard types like Int, Float and Char
 eqChar :: Char -> Char -> Bool
+#ifdef __PAKCS__
+eqChar x y = (prim_eqChar $# y) $# x
+
+prim_eqChar :: Char -> Char -> Bool
+prim_eqChar external
+#else
 eqChar external
+#endif
 
 eqInt :: Int -> Int -> Bool
+#ifdef __PAKCS__
+eqInt x y = (prim_eqInt $# y) $# x
+
+prim_eqInt :: Int -> Int -> Bool
+prim_eqInt external
+#else
 eqInt external
+#endif
 
 eqFloat :: Float -> Float -> Bool
+#ifdef __PAKCS__
+eqFloat x y = (prim_eqFloat $# y) $# x
+
+prim_eqFloat :: Float -> Float -> Bool
+prim_eqFloat external
+#else
 eqFloat external
+#endif
 
 --- Ordering type. Useful as a result of comparison functions.
 data Ordering = LT | EQ | GT
@@ -230,13 +258,34 @@ data Ordering = LT | EQ | GT
 
 -- used for comparison of standard types like Int, Float and Char
 ltEqChar :: Char -> Char -> Bool
+#ifdef __PAKCS__
+ltEqChar x y = (prim_ltEqChar $# y) $# x
+
+prim_ltEqChar :: Char -> Char -> Bool
+prim_ltEqChar external
+#else
 ltEqChar external
+#endif
 
 ltEqInt :: Int -> Int -> Bool
+#ifdef __PAKCS__
+ltEqInt x y = (prim_ltEqInt $# y) $# x
+
+prim_ltEqInt :: Int -> Int -> Bool
+prim_ltEqInt external
+#else
 ltEqInt external
+#endif
 
 ltEqFloat :: Float -> Float -> Bool
+#ifdef __PAKCS__
+ltEqFloat x y = (prim_ltEqFloat $# y) $# x
+
+prim_ltEqFloat :: Float -> Float -> Bool
+prim_ltEqFloat external
+#else
 ltEqFloat external
+#endif
 
 -- Pairs
 
@@ -536,63 +585,105 @@ prim_chr external
 
 --- Adds two integers.
 (+$)   :: Int -> Int -> Int
+#ifdef __PAKCS__
+x +$ y = (prim_Int_plus $# y) $# x
+
+prim_Int_plus :: Int -> Int -> Int
+prim_Int_plus external
+#else
 (+$) external
+#endif
 
 --- Subtracts two integers.
 (-$)   :: Int -> Int -> Int
+#ifdef __PAKCS__
+x -$ y = (prim_Int_minus $# y) $# x
+
+prim_Int_minus :: Int -> Int -> Int
+prim_Int_minus external
+#else
 (-$) external
+#endif
 
 --- Multiplies two integers.
 (*$)   :: Int -> Int -> Int
-(*$) external
+#ifdef __PAKCS__
+x *$ y = (prim_Int_times $# y) $# x
 
+prim_Int_times :: Int -> Int -> Int
+prim_Int_times external
+#else
+(*$) external
+#endif
+
+#ifdef __PAKCS__
 --- Integer division. The value is the integer quotient of its arguments
 --- and always truncated towards negative infinity.
 --- Thus, the value of <code>13 `div` 5</code> is <code>2</code>,
 --- and the value of <code>-15 `div` 4</code> is <code>-3</code>.
 div_   :: Int -> Int -> Int
-div_ external
+x `div_` y = (prim_Int_div $# y) $# x
+
+prim_Int_div :: Int -> Int -> Int
+prim_Int_div external
 
 --- Integer remainder. The value is the remainder of the integer division and
 --- it obeys the rule <code>x `mod` y = x - y * (x `div` y)</code>.
 --- Thus, the value of <code>13 `mod` 5</code> is <code>3</code>,
 --- and the value of <code>-15 `mod` 4</code> is <code>-3</code>.
 mod_   :: Int -> Int -> Int
-mod_ external
+x `mod_` y = (prim_Int_mod $# y) $# x
+
+prim_Int_mod :: Int -> Int -> Int
+prim_Int_mod external
 
 --- Returns an integer (quotient,remainder) pair.
 --- The value is the integer quotient of its arguments
 --- and always truncated towards negative infinity.
 divMod_ :: Int -> Int -> (Int, Int)
-divMod_ external
+divMod_ x y = (x `div` y, x `mod` y)
 
 --- Integer division. The value is the integer quotient of its arguments
 --- and always truncated towards zero.
 --- Thus, the value of <code>13 `quot` 5</code> is <code>2</code>,
 --- and the value of <code>-15 `quot` 4</code> is <code>-3</code>.
 quot_ :: Int -> Int -> Int
-quot_ external
+x `quot_` y = (prim_Int_quot $# y) $# x
+
+prim_Int_quot :: Int -> Int -> Int
+prim_Int_quot external
 
 --- Integer remainder. The value is the remainder of the integer division and
 --- it obeys the rule <code>x `rem` y = x - y * (x `quot` y)</code>.
 --- Thus, the value of <code>13 `rem` 5</code> is <code>3</code>,
 --- and the value of <code>-15 `rem` 4</code> is <code>-3</code>.
 rem_ :: Int -> Int -> Int
-rem_ external
+x `rem_` y = (prim_Int_rem $# y) $# x
+
+prim_Int_rem :: Int -> Int -> Int
+prim_Int_rem external
 
 --- Returns an integer (quotient,remainder) pair.
 --- The value is the integer quotient of its arguments
 --- and always truncated towards zero.
 quotRem_ :: Int -> Int -> (Int, Int)
-quotRem_ external
+quotRem_ x y = (x `quot` y, x `rem` y)
 
 --- Unary minus. Usually written as "- e".
 negate_ :: Int -> Int
 negate_ x = 0 - x
+#endif
 
 --- Unary minus on Floats. Usually written as "-e".
 negateFloat :: Float -> Float
+#ifdef __PAKCS__
+negateFloat x = prim_negateFloat $# x
+
+prim_negateFloat :: Float -> Float
+prim_negateFloat external
+#else
 negateFloat external
+#endif
 
 -- Constraints (included for backward compatibility)
 type Success = Bool
@@ -623,7 +714,7 @@ either _ g (Right x) = g x
 
 -- Monadic IO
 
-data IO _  -- conceptually: World -> (a,World)
+external data IO _  -- conceptually: World -> (a,World)
 
 --- Sequential composition of IO actions.
 --- @param a - An action
@@ -665,6 +756,11 @@ readFile f = prim_readFile $## f
 
 prim_readFile          :: String -> IO String
 prim_readFile external
+#ifdef __PAKCS__
+-- for internal implementation of readFile:
+prim_readFileContents          :: String -> String
+prim_readFileContents external
+#endif
 
 --- An action that writes a file.
 --- @param filename - The name of the file to be written.
@@ -726,10 +822,14 @@ userError s = UserError s
 
 --- Raises an I/O exception with a given error value.
 ioError :: IOError -> IO _
+#ifdef __PAKCS__
+ioError err = error (showError err)
+#else
 ioError err = prim_ioError $## err
 
 prim_ioError :: IOError -> IO _
 prim_ioError external
+#endif
 
 --- Shows an error values as a string.
 showError :: IOError -> String
@@ -874,9 +974,32 @@ apply external
 cond :: Bool -> a -> a
 cond external
 
+#ifdef __PAKCS__
+-- Only for internal use:
+-- letrec ones (1:ones) -> bind ones to (1:ones)
+letrec :: a -> a -> Bool
+letrec external
+#endif
+
 --- Non-strict equational constraint. Used to implement functional patterns.
 (=:<=) :: a -> a -> Bool
 (=:<=) external
+
+#ifdef __PAKCS__
+--- Non-strict equational constraint for linear functional patterns.
+--- Thus, it must be ensured that the first argument is always (after evalutation
+--- by narrowing) a linear pattern. Experimental.
+(=:<<=) :: a -> a -> Bool
+(=:<<=) external
+
+--- internal function to implement =:<=
+ifVar :: _ -> a -> a -> a
+ifVar external
+
+--- internal operation to implement failure reporting
+failure :: _ -> _ -> _
+failure external
+#endif
 
 -- -------------------------------------------------------------------------
 -- Eq class and related instances and functions

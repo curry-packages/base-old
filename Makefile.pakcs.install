@@ -6,7 +6,7 @@ endif
 # specific PAKCS libraries:
 PAKCSONLYLIBS = CLPFD.curry CLPR.curry CLP/FD.curry CLP/R.curry \
 	        Findall.curry GlobalVariable.curry \
-		PlProfileData.curry Ports.curry 
+		PlProfileData.curry Ports.curry
 # get all library files from standard makefile and add PAKCS specific libs:
 LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
 # name of this makefile:
@@ -37,9 +37,6 @@ sources:
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp $(CURRYLIBSDIR)/*.prim_c2p .
 	cp $(CURRYLIBSDIR)/CLP/*.prim_c2p CLP
-
-Prelude.curry: $(CURRYLIBSDIR)/Prelude.curry.$(CURRYSYSTEM)
-	cp $< $@
 
 AllSolutions.curry: $(CURRYLIBSDIR)/AllSolutions.curry.$(CURRYSYSTEM)
 	cp $< $@
