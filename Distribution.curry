@@ -3,8 +3,8 @@
 --- distribution of the Curry implementation, e.g.,
 --- compiler version, load paths, front end.
 ---
---- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version December 2016
+--- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller, Finn Teegen
+--- @version July 2017
 --- @category general
 --------------------------------------------------------------------------------
 
