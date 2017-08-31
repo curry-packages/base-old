@@ -616,63 +616,85 @@ prim_Int_times external
 (*$) external
 #endif
 
-#ifdef __PAKCS__
 --- Integer division. The value is the integer quotient of its arguments
 --- and always truncated towards negative infinity.
 --- Thus, the value of <code>13 `div` 5</code> is <code>2</code>,
 --- and the value of <code>-15 `div` 4</code> is <code>-3</code>.
 div_   :: Int -> Int -> Int
+#ifdef __PAKCS__
 x `div_` y = (prim_Int_div $# y) $# x
 
 prim_Int_div :: Int -> Int -> Int
 prim_Int_div external
+#else
+div_ external
+#endif
 
 --- Integer remainder. The value is the remainder of the integer division and
 --- it obeys the rule <code>x `mod` y = x - y * (x `div` y)</code>.
 --- Thus, the value of <code>13 `mod` 5</code> is <code>3</code>,
 --- and the value of <code>-15 `mod` 4</code> is <code>-3</code>.
 mod_   :: Int -> Int -> Int
+#ifdef __PAKCS__
 x `mod_` y = (prim_Int_mod $# y) $# x
 
 prim_Int_mod :: Int -> Int -> Int
 prim_Int_mod external
+#else
+mod_ external
+#endif
 
 --- Returns an integer (quotient,remainder) pair.
 --- The value is the integer quotient of its arguments
 --- and always truncated towards negative infinity.
 divMod_ :: Int -> Int -> (Int, Int)
+#ifdef __PAKCS__
 divMod_ x y = (x `div` y, x `mod` y)
+#else
+divMod_ external
+#endif
 
 --- Integer division. The value is the integer quotient of its arguments
 --- and always truncated towards zero.
 --- Thus, the value of <code>13 `quot` 5</code> is <code>2</code>,
 --- and the value of <code>-15 `quot` 4</code> is <code>-3</code>.
 quot_ :: Int -> Int -> Int
+#ifdef __PAKCS__
 x `quot_` y = (prim_Int_quot $# y) $# x
 
 prim_Int_quot :: Int -> Int -> Int
 prim_Int_quot external
+#else
+quot_ external
+#endif
 
 --- Integer remainder. The value is the remainder of the integer division and
 --- it obeys the rule <code>x `rem` y = x - y * (x `quot` y)</code>.
 --- Thus, the value of <code>13 `rem` 5</code> is <code>3</code>,
 --- and the value of <code>-15 `rem` 4</code> is <code>-3</code>.
 rem_ :: Int -> Int -> Int
+#ifdef __PAKCS__
 x `rem_` y = (prim_Int_rem $# y) $# x
 
 prim_Int_rem :: Int -> Int -> Int
 prim_Int_rem external
+#else
+rem_ external
+#endif
 
 --- Returns an integer (quotient,remainder) pair.
 --- The value is the integer quotient of its arguments
 --- and always truncated towards zero.
 quotRem_ :: Int -> Int -> (Int, Int)
+#ifdef __PAKCS__
 quotRem_ x y = (x `quot` y, x `rem` y)
+#else
+quotRem_ external
+#endif
 
 --- Unary minus. Usually written as "- e".
 negate_ :: Int -> Int
 negate_ x = 0 - x
-#endif
 
 --- Unary minus on Floats. Usually written as "-e".
 negateFloat :: Float -> Float
