@@ -18,7 +18,7 @@ import System
 import IO(Handle)
 
 --- The abstract type of sockets.
-data Socket
+external data Socket
 
 ---------------------------------------------------------------------
 -- Server side operations:

@@ -22,7 +22,7 @@ module ValueSequence(ValueSequence, emptyVS, addVS, failVS, (|++|), vsToList)
 --- A value sequence is an abstract sequence of values.
 --- It also contains failure elements in order to implement the semantics
 --- of set functions w.r.t. failures in the intended manner.
-data ValueSequence _ -- external
+external data ValueSequence _ -- external
 
 --- An empty sequence of values.
 emptyVS :: ValueSequence a
