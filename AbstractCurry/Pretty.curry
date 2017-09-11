@@ -305,7 +305,7 @@ ppCClassDecl opts (CClass qn _ ctxt tvar funcs) =
 ppCInstanceDecl :: Options -> CInstanceDecl -> Doc
 ppCInstanceDecl opts (CInstance qn ctxt texp funcs) =
   hsep [ text "instance", ppCContext opts ctxt
-       , ppType qn, ppCTypeExpr opts texp, text "where"]
+       , ppType qn, ppCTypeExpr' 2 opts texp, text "where"]
   <$!$> indent' opts (vsepBlankMap (ppCFuncDeclWithoutSig opts) funcs)
 
 --- Pretty-print type declarations, like `data ... = ...`, `type ... = ...` or
