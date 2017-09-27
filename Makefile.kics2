@@ -21,7 +21,7 @@ prefix     = $(patsubst ./%,%,$(dir $(2))$(1)$(notdir $(2)))
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
 # Curry library files
-LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry FlatCurry/*.curry Database/*.curry Database/CDBI/*.curry Test/*.curry))
+LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry Database/*.curry Database/CDBI/*.curry Test/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
@@ -242,9 +242,6 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 $(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
-$(LIBDOCDIR)/FlatCurry.%.html: FlatCurry/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
-
 $(LIBDOCDIR)/CLP.%.html: CLP/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
@@ -271,9 +268,6 @@ texdoc: checkcurrydoc $(LIB_CURRY)
 
 # generate individual LaTeX documentations for libraries
 $(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
-
-$(TEXDOCDIR)/FlatCurry.%.tex: FlatCurry/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 
 $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
