@@ -14,7 +14,6 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/AbstractCurry
-	mkdir -p $(LIBDIR)/FlatCurry
 	mkdir -p $(LIBDIR)/Database/CDBI
 	mkdir -p $(LIBDIR)/Test
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
@@ -33,9 +32,6 @@ sources:
 	cp -p $(CURRYLIBSDIR)/*.hs .
 
 AbstractCurry/%.curry: $(CURRYLIBSDIR)/AbstractCurry/%.curry
-	cp $< $@
-
-FlatCurry/%.curry: $(CURRYLIBSDIR)/FlatCurry/%.curry
 	cp $< $@
 
 Database/CDBI/%.curry: $(CURRYLIBSDIR)/Database/CDBI/%.curry
