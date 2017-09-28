@@ -18,7 +18,6 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	mkdir -p $(LIBDIR)/AbstractCurry
 	mkdir -p $(LIBDIR)/CLP
 	mkdir -p $(LIBDIR)/Database/CDBI
 	mkdir -p $(LIBDIR)/Test
@@ -99,9 +98,6 @@ Unsafe.curry: $(CURRYLIBSDIR)/Unsafe.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 ValueSequence.curry: $(CURRYLIBSDIR)/ValueSequence.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-AbstractCurry/%.curry: $(CURRYLIBSDIR)/AbstractCurry/%.curry
 	cp $< $@
 
 Database/CDBI/%.curry: $(CURRYLIBSDIR)/Database/CDBI/%.curry
