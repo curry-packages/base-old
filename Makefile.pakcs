@@ -11,7 +11,7 @@ LIBDOCDIR=CDOC
 TEXDOCDIR := $(DOCDIR)/src/lib
 
 # Curry library files
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry AbstractCurry/*.curry CLP/*.curry Database/*.curry Database/CDBI/*.curry Test/*.curry))
+LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry CLP/*.curry Database/*.curry Database/CDBI/*.curry Test/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
@@ -110,9 +110,6 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	$(CURRYDOC) --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries
-$(LIBDOCDIR)/AbstractCurry.%.html: AbstractCurry/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
-
 $(LIBDOCDIR)/CLP.%.html: CLP/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
@@ -140,9 +137,6 @@ texdoc: checkcurrydoc $(LIB_CURRY)
 # Generate individual LaTeX documentations for libraries.
 # In case of failures (which might occur due to memory problems in SWI-Prolog)
 # an empty LaTeX file is generated so that the make process does not die.
-$(TEXDOCDIR)/AbstractCurry.%.tex: AbstractCurry/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
-
 $(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
 
