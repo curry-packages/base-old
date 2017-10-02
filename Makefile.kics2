@@ -140,7 +140,7 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 # generate the compiled Haskell target files of all libraries:
 .NOTPARALLEL: hs
 .PHONY: hs
-hs: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_HS)
+hs: $(LIB_HS) # .curry/kics2/Curry_$(ALLLIBS).hs
 
 # generate the compiled Haskell target files with tracing of all libraries:
 .NOTPARALLEL: hstrace
