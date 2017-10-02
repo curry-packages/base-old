@@ -57,7 +57,7 @@ CURRYDOC := $(shell which curry-doc)
 ########################################################################
 
 .PHONY: install
-install: tfcy acy hs hstrace
+install: tfcy acy hs hstrace $(ALLLIBS).curry
 	$(MAKE) $(CABAL_FILE)
 	$(CABAL_INSTALL) $(CABAL_PROFILE)
 	rm -f $(CABAL_FILE)
