@@ -4,9 +4,8 @@ CURRYLIBSDIR=$(ROOT)/lib-trunk
 endif
 
 # specific PAKCS libraries:
-PAKCSONLYLIBS = CLPFD.curry CLPR.curry CLP/FD.curry \
-	        Database.curry Dynamic.curry Findall.curry \
-		GlobalVariable.curry KeyDB.curry KeyDatabase.curry \
+PAKCSONLYLIBS = CLPFD.curry CLPR.curry CLP/FD.curry Findall.curry \
+		GlobalVariable.curry \
 		PlProfileData.curry Ports.curry 
 # get all library files from standard makefile and add PAKCS specific libs:
 LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
@@ -52,12 +51,6 @@ CLPR.curry: $(CURRYLIBSDIR)/CLPR.curry.$(CURRYSYSTEM)
 CLP/FD.curry: $(CURRYLIBSDIR)/CLP/FD.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Database.curry: $(CURRYLIBSDIR)/Database.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-Dynamic.curry: $(CURRYLIBSDIR)/Dynamic.curry.$(CURRYSYSTEM)
-	cp $< $@
-
 Findall.curry: $(CURRYLIBSDIR)/Findall.curry.$(CURRYSYSTEM)
 	cp $< $@
 
@@ -68,12 +61,6 @@ GlobalVariable.curry: $(CURRYLIBSDIR)/GlobalVariable.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 IOExts.curry: $(CURRYLIBSDIR)/IOExts.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-KeyDB.curry: $(CURRYLIBSDIR)/KeyDB.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-KeyDatabase.curry: $(CURRYLIBSDIR)/KeyDatabase.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 PlProfileData.curry: $(CURRYLIBSDIR)/PlProfileData.curry.$(CURRYSYSTEM)
