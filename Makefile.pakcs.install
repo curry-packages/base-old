@@ -18,7 +18,6 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 install:
 	mkdir -p $(LIBDIR)
 	mkdir -p $(LIBDIR)/CLP
-	mkdir -p $(LIBDIR)/Database/CDBI
 	mkdir -p $(LIBDIR)/Test
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
@@ -51,12 +50,6 @@ CLP/FD.curry: $(CURRYLIBSDIR)/CLP/FD.curry.$(CURRYSYSTEM)
 CLP/R.curry: $(CURRYLIBSDIR)/CLP/R.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Database.curry: $(CURRYLIBSDIR)/Database.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-Dynamic.curry: $(CURRYLIBSDIR)/Dynamic.curry.$(CURRYSYSTEM)
-	cp $< $@
-
 Findall.curry: $(CURRYLIBSDIR)/Findall.curry.$(CURRYSYSTEM)
 	cp $< $@
 
@@ -67,12 +60,6 @@ GlobalVariable.curry: $(CURRYLIBSDIR)/GlobalVariable.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 IOExts.curry: $(CURRYLIBSDIR)/IOExts.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-KeyDB.curry: $(CURRYLIBSDIR)/KeyDB.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-KeyDatabase.curry: $(CURRYLIBSDIR)/KeyDatabase.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 PlProfileData.curry: $(CURRYLIBSDIR)/PlProfileData.curry.$(CURRYSYSTEM)
@@ -97,12 +84,6 @@ Unsafe.curry: $(CURRYLIBSDIR)/Unsafe.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 ValueSequence.curry: $(CURRYLIBSDIR)/ValueSequence.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-Database/CDBI/%.curry: $(CURRYLIBSDIR)/Database/CDBI/%.curry
-	cp $< $@
-
-Database/%.curry: $(CURRYLIBSDIR)/Database/%.curry
 	cp $< $@
 
 Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
