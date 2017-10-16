@@ -13,7 +13,6 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	mkdir -p $(LIBDIR)/Database/CDBI
 	mkdir -p $(LIBDIR)/Test
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
@@ -29,12 +28,6 @@ sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp -p $(CURRYLIBSDIR)/*.hs .
-
-Database/CDBI/%.curry: $(CURRYLIBSDIR)/Database/CDBI/%.curry
-	cp $< $@
-
-Database/%.curry: $(CURRYLIBSDIR)/Database/%.curry
-	cp $< $@
 
 Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
 	cp $< $@
