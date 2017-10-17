@@ -203,9 +203,6 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	$(CURRYDOC) --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries
-$(LIBDOCDIR)/CLP.%.html: CLP/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
-
 $(LIBDOCDIR)/Test.%.html: Test/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
@@ -222,9 +219,6 @@ texdoc: checkcurrydoc $(LIB_CURRY)
 	$(MAKE) $(LIB_TEX)
 
 # generate individual LaTeX documentations for libraries
-$(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
-
 $(TEXDOCDIR)/Test.%.tex: Test/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 

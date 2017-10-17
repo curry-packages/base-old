@@ -4,8 +4,7 @@ CURRYLIBSDIR=$(ROOT)/lib-trunk
 endif
 
 # specific PAKCS libraries:
-PAKCSONLYLIBS = CLPFD.curry CLPR.curry CLP/FD.curry CLP/R.curry \
-	        Findall.curry GlobalVariable.curry \
+PAKCSONLYLIBS = Findall.curry GlobalVariable.curry \
 		PlProfileData.curry Ports.curry
 # get all library files from standard makefile and add PAKCS specific libs:
 LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
@@ -17,7 +16,6 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	mkdir -p $(LIBDIR)/CLP
 	mkdir -p $(LIBDIR)/Test
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
@@ -33,21 +31,8 @@ sources:
 	@echo LIB_CURRY=$(LIB_CURRY)
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp $(CURRYLIBSDIR)/*.prim_c2p .
-	cp $(CURRYLIBSDIR)/CLP/*.prim_c2p CLP
 
 AllSolutions.curry: $(CURRYLIBSDIR)/AllSolutions.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CLPFD.curry: $(CURRYLIBSDIR)/CLPFD.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CLPR.curry: $(CURRYLIBSDIR)/CLPR.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CLP/FD.curry: $(CURRYLIBSDIR)/CLP/FD.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-CLP/R.curry: $(CURRYLIBSDIR)/CLP/R.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 Findall.curry: $(CURRYLIBSDIR)/Findall.curry.$(CURRYSYSTEM)
