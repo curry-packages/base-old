@@ -3,8 +3,8 @@
 --- distribution of the Curry implementation, e.g.,
 --- compiler version, load paths, front end.
 ---
---- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller
---- @version December 2016
+--- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller, Finn Teegen
+--- @version July 2017
 --- @category general
 --------------------------------------------------------------------------------
 
@@ -24,15 +24,15 @@ module Distribution (
   FrontendTarget(..),
 
   FrontendParams, defaultParams, rcParams,
-  quiet, extended, overlapWarn, fullPath, htmldir, logfile, specials,
-  setQuiet, setExtended, setOverlapWarn, setFullPath, setHtmlDir, setLogfile,
-  addTarget, setSpecials,
+  quiet, extended, cpp, overlapWarn, fullPath, htmldir, logfile, specials,
+  setQuiet, setExtended, setCpp, setOverlapWarn, setFullPath, setHtmlDir,
+  setLogfile, addTarget, setSpecials,
 
-  callFrontend,callFrontendWithParams
+  callFrontend, callFrontendWithParams
   ) where
 
 import List         (nub, split)
-import Char         (toLower)
+import Char         (toLower, toUpper)
 import Directory    (doesFileExist, getHomeDirectory)
 import FileGoodies  (lookupFileInPath, getFileInPath, fileSuffix, stripSuffix)
 import FilePath     ( FilePath, (</>), (<.>), addTrailingPathSeparator
@@ -263,21 +263,24 @@ lookupModuleSource loadpath mod = lookupSourceInPath loadpath
 --- Data type for representing the different target files that can be produced
 --- by the front end of the Curry compiler.
 --- @cons FCY  - FlatCurry file ending with .fcy
+--- @cons TFCY - Typed FlatCurry file ending with .tfcy
 --- @cons FINT - FlatCurry interface file ending with .fint
 --- @cons ACY  - AbstractCurry file ending with .acy
 --- @cons UACY - Untyped (without type checking) AbstractCurry file ending with .uacy
 --- @cons HTML - colored HTML representation of source program
 --- @cons CY   - source representation employed by the frontend
 --- @cons TOKS - token stream of source program
-data FrontendTarget = FCY | FINT | ACY | UACY | HTML | CY | TOKS
+data FrontendTarget = FCY | TFCY | FINT | ACY | UACY | HTML | CY | TOKS
+  deriving Eq
 
 --- Abstract data type for representing parameters supported by the front end
 --- of the Curry compiler.
 -- The parameters are of the form
--- FrontendParams Quiet Extended NoOverlapWarn FullPath HtmlDir LogFile Specials
+-- FrontendParams Quiet Extended Cpp NoOverlapWarn FullPath HtmlDir LogFile Specials
 -- where
 --   Quiet         - work silently
 --   Extended      - support extended Curry syntax
+--   Cpp           - enable conditional compiling
 --   OverlapWarn   - warn for overlapping rules
 --   FullPath dirs - the complete list of directory names for loading modules
 --   HtmlDir file  - output directory (only relevant for HTML target)
@@ -288,6 +291,7 @@ data FrontendParams =
   FrontendParams Bool
                  Bool
                  Bool
+                 Bool
                  (Maybe [String])
                  (Maybe String)
                  (Maybe String)
@@ -296,7 +300,8 @@ data FrontendParams =
 
 --- The default parameters of the front end.
 defaultParams :: FrontendParams
-defaultParams = FrontendParams False True True Nothing Nothing Nothing [] ""
+defaultParams =
+  FrontendParams False True False True Nothing Nothing Nothing [] ""
 
 --- The default parameters of the front end as configured by the compiler
 --- specific resource configuration file.
@@ -309,81 +314,91 @@ rcParams = do
 
 --- Set quiet mode of the front end.
 setQuiet :: Bool -> FrontendParams -> FrontendParams
-setQuiet s (FrontendParams _ v w x y z ts sp) = FrontendParams s v w x y z ts sp
+setQuiet s (FrontendParams _ v c w x y z ts sp) =
+  FrontendParams s v c w x y z ts sp
 
 --- Set extended mode of the front end.
 setExtended :: Bool -> FrontendParams -> FrontendParams
-setExtended s (FrontendParams a _ w x y z ts sp) =
-  FrontendParams a s w x y z ts sp
+setExtended s (FrontendParams a _ c w x y z ts sp) =
+  FrontendParams a s c w x y z ts sp
+
+--- Set extended mode of the front end.
+setCpp :: Bool -> FrontendParams -> FrontendParams
+setCpp s (FrontendParams a v _ w x y z ts sp) =
+  FrontendParams a v s w x y z ts sp
 
 --- Set overlap warn mode of the front end.
 setOverlapWarn :: Bool -> FrontendParams -> FrontendParams
-setOverlapWarn s (FrontendParams a b _ x y z ts sp) =
-  FrontendParams a b s x y z ts sp
+setOverlapWarn s (FrontendParams a b c _ x y z ts sp) =
+  FrontendParams a b c s x y z ts sp
 
 --- Set the full path of the front end.
 --- If this parameter is set, the front end searches all modules
 --- in this path (instead of using the default path).
 setFullPath ::  [String] -> FrontendParams -> FrontendParams
-setFullPath s (FrontendParams a b c _ y z ts sp) =
-  FrontendParams a b c (Just s) y z ts sp
+setFullPath s (FrontendParams a b c d _ y z ts sp) =
+  FrontendParams a b c d (Just s) y z ts sp
 
 --- Set the htmldir parameter of the front end.
 --- Relevant for HTML generation.
 setHtmlDir ::  String -> FrontendParams -> FrontendParams
-setHtmlDir  s (FrontendParams a b c d _ z ts sp) =
-  FrontendParams a b c d (Just s) z ts sp
+setHtmlDir  s (FrontendParams a b c d e _ z ts sp) =
+  FrontendParams a b c d e (Just s) z ts sp
 
 --- Set the logfile parameter of the front end.
 --- If this parameter is set, all messages produced by the front end
 --- are stored in this file.
 setLogfile ::  String -> FrontendParams -> FrontendParams
-setLogfile  s (FrontendParams a b c d e _ ts sp) =
-  FrontendParams a b c d e (Just s) ts sp
+setLogfile  s (FrontendParams a b c d e f _ ts sp) =
+  FrontendParams a b c d e f (Just s) ts sp
 
 --- Set additional specials parameters of the front end.
 --- These parameters are specific for the current front end and
 --- should be used with care, since their form might change in the future.
 setSpecials :: String -> FrontendParams -> FrontendParams
-setSpecials sp (FrontendParams a b c d e z ts _) =
-  FrontendParams a b c d e z ts sp
+setSpecials sp (FrontendParams a b c d e f z ts _) =
+  FrontendParams a b c d e f z ts sp
 
 --- Add an additional front end target.
 addTarget :: FrontendTarget -> FrontendParams -> FrontendParams
-addTarget t (FrontendParams a b c d e z ts sp) =
-  FrontendParams a b c d e z (t:ts) sp
+addTarget t (FrontendParams a b c d e f z ts sp) =
+  FrontendParams a b c d e f z (t:ts) sp
 
 --- Returns the value of the "quiet" parameter.
 quiet :: FrontendParams -> Bool
-quiet (FrontendParams x _ _ _ _ _ _ _) = x
+quiet (FrontendParams x _ _ _ _ _ _ _ _) = x
 
 --- Returns the value of the "extended" parameter.
 extended :: FrontendParams -> Bool
-extended (FrontendParams _ x _ _ _ _ _ _) = x
+extended (FrontendParams _ x _ _ _ _ _ _ _) = x
+
+--- Returns the value of the "cpp" parameter.
+cpp :: FrontendParams -> Bool
+cpp (FrontendParams _ _ x _ _ _ _ _ _) = x
 
 --- Returns the value of the "overlapWarn" parameter.
 overlapWarn :: FrontendParams -> Bool
-overlapWarn (FrontendParams _ _ x _ _ _ _ _) = x
+overlapWarn (FrontendParams _ _ _ x _ _ _ _ _) = x
 
 --- Returns the full path parameter of the front end.
 fullPath :: FrontendParams -> Maybe [String]
-fullPath (FrontendParams _ _ _ x _ _ _ _) = x
+fullPath (FrontendParams _ _ _ _ x _ _ _ _) = x
 
 --- Returns the htmldir parameter of the front end.
 htmldir :: FrontendParams -> Maybe String
-htmldir  (FrontendParams _ _ _ _ x _ _ _) = x
+htmldir  (FrontendParams _ _ _ _ _ x _ _ _) = x
 
 --- Returns the logfile parameter of the front end.
 logfile :: FrontendParams -> Maybe String
-logfile  (FrontendParams _ _ _ _ _ x _ _) = x
+logfile  (FrontendParams _ _ _ _ _ _ x _ _) = x
 
 --- Returns the special parameters of the front end.
 specials :: FrontendParams -> String
-specials (FrontendParams _ _ _ _ _ _ _ x) = x
+specials (FrontendParams _ _ _ _ _ _ _ _ x) = x
 
 --- Returns the special parameters of the front end.
 targets :: FrontendParams -> [FrontendTarget]
-targets (FrontendParams _ _ _ _ _ _ x _) = x
+targets (FrontendParams _ _ _ _ _ _ _ x _) = x
 
 --- In order to make sure that compiler generated files (like .fcy, .fint, .acy)
 --- are up to date, one can call the front end of the Curry compiler
@@ -411,7 +426,7 @@ callFrontendWithParams target params modpath = do
   let lf      = maybe "" id (logfile params)
       tgts    = nub (target : targets params)
       syscall = unwords $ [parsecurry] ++ map showFrontendTarget tgts ++
-                          [showFrontendParams, takeFileName modpath]
+                          [showFrontendParams, cppParams, takeFileName modpath]
   retcode <- if null lf
              then system syscall
              else system (syscall ++ " > " ++ lf ++ " 2>&1")
@@ -427,6 +442,7 @@ callFrontendWithParams target params modpath = do
    quote s = '"' : s ++ "\""
 
    showFrontendTarget FCY  = "--flat"
+   showFrontendTarget TFCY = "--typed-flat"
    showFrontendTarget FINT = "--flat"
    showFrontendTarget ACY  = "--acy"
    showFrontendTarget UACY = "--uacy"
@@ -437,9 +453,15 @@ callFrontendWithParams target params modpath = do
    showFrontendParams = unwords
     [ if quiet       params then runQuiet     else ""
     , if extended    params then "--extended" else ""
+    , if cpp         params then "--cpp"      else ""
     , if overlapWarn params then ""           else "--no-overlap-warn"
     , maybe "" ("--htmldir="++) (htmldir params)
     , specials params
     ]
 
    runQuiet = "--no-verb --no-warn --no-overlap-warn"
+
+   cppParams = "-D__" ++ map toUpper curryCompiler ++ "__=" ++
+     show curryCompilerMajorVersion ++
+     let minorVersion = show curryCompilerMinorVersion
+     in replicate (2 - length minorVersion) '0' ++ minorVersion

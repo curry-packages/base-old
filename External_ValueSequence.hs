@@ -98,8 +98,19 @@ getValues (Choices_VS cd i  xs) = choicesCons cd i (map getValues xs)
 getValues (Guard_VS   cd cs  x) = guardCons cd cs (getValues x)
 
 failGreatest d EmptyVS               = FailVS d
-failGreatest d (FailVS           d2) = FailVS (Curry_Prelude.d_C_max d d2
-  (error "ExternalSearchTree: failGreatest - nesting depth used") emptyCs)
+failGreatest d (FailVS           d2) = FailVS
+  (Curry_Prelude.d_C_max
+    (Curry_Prelude.d_OP_uscore_inst_hash_Prelude_dot_Ord_hash_Prelude_dot_Int cd cs)
+    cd
+    cs
+    d
+    cd
+    cs
+    d2
+    cd
+    cs)
+  where cd = error "ExternalSearchTree: failGreatest - nesting depth used"
+        cs = emptyCs
 failGreatest _ vs@(Values         _) = vs
 failGreatest d (Choice_VS  cd i x y)
   = choiceCons  cd i (failGreatest d x) (failGreatest d y)

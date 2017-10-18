@@ -139,7 +139,7 @@ set7 f x1 x2 x3 x4 x5 x6 x7 = set7With dfsStrategy f x1 x2 x3 x4 x5 x6 x7
 --- that uses a given strategy to compute its values.
 set7With :: Strategy b -> (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> b)
          -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> Values b
-set7With s f x1 x2 x3 x4 x5 x6 x7 = 
+set7With s f x1 x2 x3 x4 x5 x6 x7 =
  allVs s (\_ -> f x1 x2 x3 x4 x5 x6 x7)
 
 ------------------------------------------------------------------------
@@ -155,7 +155,7 @@ allVs s f =
 -- Apply a function to an argument where the encapsulation level of the
 -- argument is incremented.
 incDepth :: (a -> b) -> a -> b
-incDepth external 
+incDepth external
 
 ----------------------------------------------------------------------
 --- Abstract type representing multisets of values.
@@ -171,7 +171,7 @@ notEmpty :: Values _ -> Bool
 notEmpty vs = not (isEmpty vs)
 
 --- Is some value an element of a multiset of values?
-valueOf :: a -> Values a -> Bool
+valueOf :: Eq a => a -> Values a -> Bool
 valueOf e (Values s) = e `elem` s
 
 --- Chooses (non-deterministically) some value in a multiset of values
@@ -183,7 +183,7 @@ valueOf e (Values s) = e `elem` s
 --- then `(set1 chooseValue)` is the identity on value sets, i.e.,
 --- `(set1 chooseValue s)` contains the same elements as the
 --- value set `s`.
-choose :: Values a -> (a,Values a)
+choose :: Eq a => Values a -> (a,Values a)
 choose (Values vs) = (x, Values xs)
   where x = foldr1 (?) vs
         xs = delete x vs
@@ -193,7 +193,7 @@ choose (Values vs) = (x, Values xs)
 --- Thus, `(set1 chooseValue)` is the identity on value sets, i.e.,
 --- `(set1 chooseValue s)` contains the same elements as the
 --- value set `s`.
-chooseValue :: Values a -> a
+chooseValue :: Eq a => Values a -> a
 chooseValue s = fst (choose s)
 
 --- Selects (indeterministically) some value in a multiset of values
@@ -258,13 +258,13 @@ values2list :: Values a -> IO [a]
 values2list (Values s) = return s
 
 --- Prints all elements of a multiset of values.
-printValues :: Values _ -> IO ()
+printValues :: Show a => Values a -> IO ()
 printValues s = values2list s >>= mapIO_ print
 
 --- Transforms a multiset of values into a list sorted by
 --- the standard term ordering. As a consequence, the multiset of values
 --- is completely evaluated.
-sortValues :: Values a -> [a]
+sortValues :: Ord a => Values a -> [a]
 sortValues = sortValuesBy (<=)
 
 --- Transforms a multiset of values into a list sorted by a given ordering

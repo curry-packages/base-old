@@ -18,7 +18,7 @@ type SetRBT a = RBT.RedBlackTree a
 
 --- Returns an empty set, i.e., an empty red-black tree
 --- augmented with an order predicate.
-emptySetRBT :: (a -> a -> Bool) -> SetRBT a
+emptySetRBT :: Eq a => (a -> a -> Bool) -> SetRBT a
 emptySetRBT = RBT.empty (==) (==)
 
 --- Test for an empty set.
@@ -38,7 +38,7 @@ insertRBT = RBT.update
 
 --- Inserts an element into a multiset.
 --- Thus, the same element can have several occurrences in the multiset.
-insertMultiRBT :: a -> SetRBT a -> SetRBT a
+insertMultiRBT :: Eq a => a -> SetRBT a -> SetRBT a
 insertMultiRBT e = RBT.setInsertEquivalence (==)
                  . RBT.update e
                  . RBT.setInsertEquivalence (\ _ _ -> False)
@@ -68,5 +68,5 @@ intersectRBT s1 s2 = foldr insertRBT (RBT.newTreeLike s1)
 
 --- Generic sort based on insertion into red-black trees.
 --- The first argument is the order for the elements.
-sortRBT  :: (a -> a -> Bool) -> [a] -> [a]
+sortRBT  :: Eq a => (a -> a -> Bool) -> [a] -> [a]
 sortRBT = RBT.sortBy

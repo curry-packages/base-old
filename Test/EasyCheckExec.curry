@@ -81,7 +81,7 @@ quietConfig = easyConfig { isQuiet = True, every = (\_ _ -> "") }
 
 -- Note that this does not work with PAKCS! However, if CurryCheck is used,
 -- this operation is not replaced by explicit generator operations.
-suc :: (a -> Prop) -> (b -> a) -> Prop
+suc :: Show b => (a -> Prop) -> (b -> a) -> Prop
 suc n = forAllValues n (valuesOf unknown)
 
 --- Checks a unit test with a given configuration (first argument)
@@ -92,7 +92,7 @@ check0 = check
 
 --- The property `forValues xs p` is satisfied if all values of `xs`
 --- satisfy property `p x`.
-forValues :: [a] -> (a -> Prop) -> Prop
+forValues :: Show a => [a] -> (a -> Prop) -> Prop
 forValues xs p = forAllValues id xs p
 
 --- Checks a unit test with a given configuration (first argument)
@@ -106,7 +106,7 @@ checkWithValues0 = check
 --- a name for the test (second argument),
 --- and all values given in the third argument.
 --- Returns a flag whether the test was successful.
-checkWithValues1 :: Config -> String -> [a] -> (a -> Prop) -> IO Bool
+checkWithValues1 :: Show a => Config -> String -> [a] -> (a -> Prop) -> IO Bool
 checkWithValues1 config msg xs p = check config msg (forValues xs p)
 
 --- Checks a property parameterized over two arguments
@@ -114,7 +114,7 @@ checkWithValues1 config msg xs p = check config msg (forValues xs p)
 --- a name for the test (second argument),
 --- and all values given in the third and fourth argument.
 --- Returns a flag whether the test was successful.
-checkWithValues2 :: Config -> String -> [a] -> [b]
+checkWithValues2 :: (Show a, Show b) => Config -> String -> [a] -> [b]
                 -> (a -> b -> Prop) -> IO Bool
 checkWithValues2 config msg xs ys p =
   check config msg (forValues xs (\x -> forValues ys (p x)))
@@ -124,8 +124,9 @@ checkWithValues2 config msg xs ys p =
 --- a name for the test (second argument),
 --- and all values given in the third, fourth and fifth argument.
 --- Returns a flag whether the test was successful.
-checkWithValues3 :: Config -> String -> [a] -> [b] -> [c]
-                -> (a -> b -> c -> Prop) -> IO Bool
+checkWithValues3 :: (Show a, Show b, Show c) =>
+                    Config -> String -> [a] -> [b] -> [c]
+                 -> (a -> b -> c -> Prop) -> IO Bool
 checkWithValues3 config msg xs ys zs p =
   check config msg
         (forValues xs (\x -> forValues ys (\y -> forValues zs (p x y))))
@@ -135,8 +136,9 @@ checkWithValues3 config msg xs ys zs p =
 --- a name for the test (second argument),
 --- and all values given in the further arguments.
 --- Returns a flag whether the test was successful.
-checkWithValues4 :: Config -> String -> [a] -> [b] -> [c] -> [d]
-                -> (a -> b -> c -> d -> Prop) -> IO Bool
+checkWithValues4 :: (Show a, Show b, Show c, Show d) =>
+                    Config -> String -> [a] -> [b] -> [c] -> [d]
+                 -> (a -> b -> c -> d -> Prop) -> IO Bool
 checkWithValues4 config msg xs ys zs1 zs2 p =
   check config msg
         (forValues xs (\x -> forValues ys
@@ -148,8 +150,9 @@ checkWithValues4 config msg xs ys zs1 zs2 p =
 --- a name for the test (second argument),
 --- and all values given in the further arguments.
 --- Returns a flag whether the test was successful.
-checkWithValues5 :: Config -> String -> [a] -> [b] -> [c] -> [d] -> [e]
-                -> (a -> b -> c -> d -> e -> Prop) -> IO Bool
+checkWithValues5 :: (Show a, Show b, Show c, Show d, Show e) =>
+                    Config -> String -> [a] -> [b] -> [c] -> [d] -> [e]
+                 -> (a -> b -> c -> d -> e -> Prop) -> IO Bool
 checkWithValues5 config msg xs ys zs1 zs2 zs3 p =
   check config msg
         (forValues xs (\x -> forValues ys
@@ -161,35 +164,38 @@ checkWithValues5 config msg xs ys zs1 zs2 zs3 p =
 --- with a given configuration (first argument)
 --- and a name for the test (second argument).
 --- Returns a flag whether the test was successful.
-check1 :: Config -> String -> (_ -> Prop) -> IO Bool
+check1 :: Show a => Config -> String -> (a -> Prop) -> IO Bool
 check1 config msg = check config msg . suc id
 
 --- Checks a property parameterized over two arguments
 --- with a given configuration (first argument)
 --- and a name for the test (second argument).
 --- Returns a flag whether the test was successful.
-check2 :: Config -> String -> (_ -> _ -> Prop) -> IO Bool
+check2 :: (Show a, Show b) => Config -> String -> (a -> b -> Prop) -> IO Bool
 check2 config msg = check config msg . suc (suc id)
 
 --- Checks a property parameterized over three arguments
 --- with a given configuration (first argument)
 --- and a name for the test (second argument).
 --- Returns a flag whether the test was successful.
-check3 :: Config -> String -> (_ -> _ -> _ -> Prop) -> IO Bool
+check3 :: (Show a, Show b, Show c) =>
+          Config -> String -> (a -> b -> c -> Prop) -> IO Bool
 check3 config msg = check config msg . suc (suc (suc id))
 
 --- Checks a property parameterized over four arguments
 --- with a given configuration (first argument)
 --- and a name for the test (second argument).
 --- Returns a flag whether the test was successful.
-check4 :: Config -> String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
+check4 :: (Show a, Show b, Show c, Show d) =>
+          Config -> String -> (a -> b -> c -> d -> Prop) -> IO Bool
 check4 config msg = check config msg . suc (suc (suc (suc id)))
 
 --- Checks a property parameterized over five arguments
 --- with a given configuration (first argument)
 --- and a name for the test (second argument).
 --- Returns a flag whether the test was successful.
-check5 :: Config -> String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
+check5 :: (Show a, Show b, Show c, Show d, Show e) =>
+          Config -> String -> (a -> b -> c -> d -> e -> Prop) -> IO Bool
 check5 config msg = check config msg . suc (suc (suc (suc (suc id))))
 
 
@@ -203,35 +209,38 @@ easyCheck0 = check0 easyConfig
 --- according to the default configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-easyCheck1 :: String -> (_ -> Prop) -> IO Bool
+easyCheck1 :: Show a => String -> (a -> Prop) -> IO Bool
 easyCheck1 = check1 easyConfig
 
 --- Checks a property parameterized over two arguments
 --- according to the default configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-easyCheck2 :: String -> (_ -> _ -> Prop) -> IO Bool
+easyCheck2 :: (Show a, Show b) => String -> (a -> b -> Prop) -> IO Bool
 easyCheck2 = check2 easyConfig
 
 --- Checks a property parameterized over three arguments
 --- according to the default configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-easyCheck3 :: String -> (_ -> _ -> _ -> Prop) -> IO Bool
+easyCheck3 :: (Show a, Show b, Show c) =>
+              String -> (a -> b -> c -> Prop) -> IO Bool
 easyCheck3 = check3 easyConfig
 
 --- Checks a property parameterized over four arguments
 --- according to the default configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-easyCheck4 :: String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
+easyCheck4 :: (Show a, Show b, Show c, Show d) =>
+              String -> (a -> b -> c -> d -> Prop) -> IO Bool
 easyCheck4 = check4 easyConfig
 
 --- Checks a property parameterized over five arguments
 --- according to the default configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-easyCheck5 :: String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
+easyCheck5 :: (Show a, Show b, Show c, Show d, Show e) =>
+              String -> (a -> b -> c -> d -> e -> Prop) -> IO Bool
 easyCheck5 = check5 easyConfig
 
 --- Checks a unit test according to the verbose configuration
@@ -244,35 +253,38 @@ verboseCheck0 = check0 verboseConfig
 --- according to the verbose configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-verboseCheck1 :: String -> (_ -> Prop) -> IO Bool
+verboseCheck1 :: Show a => String -> (a -> Prop) -> IO Bool
 verboseCheck1 = check1 verboseConfig
 
 --- Checks a property parameterized over two arguments
 --- according to the verbose configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-verboseCheck2 :: String -> (_ -> _ -> Prop) -> IO Bool
+verboseCheck2 :: (Show a, Show b) => String -> (a -> b -> Prop) -> IO Bool
 verboseCheck2 = check2 verboseConfig
 
 --- Checks a property parameterized over three arguments
 --- according to the verbose configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-verboseCheck3 :: String -> (_ -> _ -> _ -> Prop) -> IO Bool
+verboseCheck3 :: (Show a, Show b, Show c) =>
+                 String -> (a -> b -> c -> Prop) -> IO Bool
 verboseCheck3 = check3 verboseConfig
 
 --- Checks a property parameterized over four arguments
 --- according to the verbose configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-verboseCheck4 :: String -> (_ -> _ -> _ -> _ -> Prop) -> IO Bool
+verboseCheck4 :: (Show a, Show b, Show c, Show d) =>
+                 String -> (a -> b -> c -> d -> Prop) -> IO Bool
 verboseCheck4 = check4 verboseConfig
 
 --- Checks a property parameterized over five arguments
 --- according to the verbose configuration
 --- and a name for the test (first argument).
 --- Returns a flag whether the test was successful.
-verboseCheck5 :: String -> (_ -> _ -> _ -> _ -> _ -> Prop) -> IO Bool
+verboseCheck5 :: (Show a, Show b, Show c, Show d, Show e) =>
+                 String -> (a -> b -> c -> d -> e -> Prop) -> IO Bool
 verboseCheck5 = check5 verboseConfig
 
 
@@ -327,19 +339,22 @@ tests' config (t:ts) ntest nfail stamps
 easyCheck' :: Prop -> Result
 easyCheck' = check' easyConfig
 
-easyCheck1' :: (_ -> Prop) -> Result
+easyCheck1' :: Show a => (a -> Prop) -> Result
 easyCheck1' = easyCheck' . suc id
 
-easyCheck2' :: (_ -> _ -> Prop) -> Result
+easyCheck2' :: (Show a, Show b) => (a -> b -> Prop) -> Result
 easyCheck2' = easyCheck' . suc (suc id)
 
-easyCheck3' :: (_ -> _ -> _ -> Prop) -> Result
+easyCheck3' :: (Show a, Show b, Show c) =>
+               (a -> b -> c -> Prop) -> Result
 easyCheck3' = easyCheck' . suc (suc (suc id))
 
-easyCheck4' :: (_ -> _ -> _ -> _ -> Prop) -> Result
+easyCheck4' :: (Show a, Show b, Show c, Show d) =>
+               (a -> b -> c -> d -> Prop) -> Result
 easyCheck4' = easyCheck' . suc (suc (suc (suc id)))
 
-easyCheck5' :: (_ -> _ -> _ -> _ -> _ -> Prop) -> Result
+easyCheck5' :: (Show a, Show b, Show c, Show d, Show e) =>
+               (a -> b -> c -> d -> e -> Prop) -> Result
 easyCheck5' = easyCheck' . suc (suc (suc (suc (suc id))))
 
 nth :: Int -> String
@@ -378,7 +393,7 @@ done config mesg ntest stamps status = do
 
 -- Auxiliary operations
 
-leqPair :: (a -> a -> Bool) -> (b -> b -> Bool) -> ((a,b) -> (a,b) -> Bool)
+leqPair :: Eq a => (a -> a -> Bool) -> (b -> b -> Bool) -> ((a,b) -> (a,b) -> Bool)
 leqPair leqa leqb (x1,y1) (x2,y2)
   | x1 == x2  = leqb y1 y2
   | otherwise = leqa x1 x2

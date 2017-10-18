@@ -77,6 +77,7 @@ getAllFailures generator test =
 
 --- A search tree for representing search structures.
 data SearchTree a b = SearchBranch [(b,SearchTree a b)] | Solutions [a]
+  deriving (Eq,Show)
 
 --- Computes a tree of solutions where the first argument determines
 --- the branching level of the tree.

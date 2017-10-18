@@ -53,12 +53,12 @@ data PropIO = PropIO
 
 --- The property `returns a x` is satisfied if the execution of the
 --- I/O action `a` returns the value `x`.
-returns :: IO a -> a -> PropIO
+returns :: (Eq a, Show a) => IO a -> a -> PropIO
 returns _ _ = propUndefinedError "returns"
 
 --- The property `sameReturns a1 a2` is satisfied if the execution of the
 --- I/O actions `a1` and `a2` return identical values.
-sameReturns :: IO a -> IO a -> PropIO
+sameReturns :: (Eq a, Show a) => IO a -> IO a -> PropIO
 sameReturns _ _ = propUndefinedError "sameReturns"
 
 --- The property `toError a` is satisfied if the evaluation of the argument
@@ -80,27 +80,27 @@ data Prop = Prop
 
 --- The property `x -=- y` is satisfied if `x` and `y` have deterministic
 --- values that are equal.
-(-=-) :: a -> a -> Prop
+(-=-) ::(Eq a, Show a) =>  a -> a -> Prop
 _ -=- _ = propUndefinedError "-=-"
 
 --- The property `x <~> y` is satisfied if the sets of the values of
 --- `x` and `y` are equal.
-(<~>) :: a -> a -> Prop
+(<~>) :: (Eq a, Show a) => a -> a -> Prop
 _ <~> _ = propUndefinedError "<~>"
 
 --- The property `x ~> y` is satisfied if `x` evaluates to every value of `y`.
 --- Thus, the set of values of `y` must be a subset of the set of values of `x`.
-(~>) :: a -> a -> Prop
+(~>) :: (Eq a, Show a) => a -> a -> Prop
 _ ~> _ = propUndefinedError "~>"
 
 --- The property `x <~ y` is satisfied if `y` evaluates to every value of `x`.
 --- Thus, the set of values of `x` must be a subset of the set of values of `y`.
-(<~) :: a -> a -> Prop
+(<~) :: (Eq a, Show a) => a -> a -> Prop
 _ <~ _ = propUndefinedError "<~"
 
 --- The property `x <~~> y` is satisfied if the multisets of the values of
 --- `x` and `y` are equal.
-(<~~>) :: a -> a -> Prop
+(<~~>) :: (Eq a, Show a) => a -> a -> Prop
 _ <~~> _ = propUndefinedError "<~~>"
 
 --- A conditional property is tested if the condition evaluates to `True`.
@@ -115,16 +115,16 @@ solutionOf pred = pred x &> x where x free
 
 --- The property `is x p` is satisfied if `x` has a deterministic value
 --- which satisfies `p`.
-is :: a -> (a -> Bool) -> Prop
+is :: Show a => a -> (a -> Bool) -> Prop
 is _ _ = propUndefinedError "is"
 
 --- The property `isAlways x p` is satisfied if all values of `x` satisfy `p`.
-isAlways :: a -> (a -> Bool) -> Prop
+isAlways :: Show a => a -> (a -> Bool) -> Prop
 isAlways _ = propUndefinedError "isAlways"
 
 --- The property `isEventually x p` is satisfied if some value of `x`
 --- satisfies `p`.
-isEventually :: a -> (a -> Bool) -> Prop
+isEventually :: Show a => a -> (a -> Bool) -> Prop
 isEventually _ = propUndefinedError "isEventually"
 
 --- The property `uniquely x` is satisfied if `x` has a deterministic value
@@ -141,32 +141,32 @@ eventually :: Bool -> Prop
 eventually _ = propUndefinedError "eventually"
 
 --- The property `failing x` is satisfied if `x` has no value.
-failing :: _ -> Prop
+failing :: Show a => a -> Prop
 failing _ = propUndefinedError "failing"
 
 --- The property `successful x` is satisfied if `x` has at least one value.
-successful :: _ -> Prop
+successful :: Show a => a -> Prop
 successful _ = propUndefinedError "successful"
 
 --- The property `deterministic x` is satisfied if `x` has exactly one value.
-deterministic :: _ -> Prop
+deterministic :: Show a => a -> Prop
 deterministic _ = propUndefinedError "deterministic"
 
 --- The property `x # n` is satisfied if `x` has `n` values.
-(#) :: _ -> Int -> Prop
+(#) :: (Eq a, Show a) => a -> Int -> Prop
 _ # _ =  propUndefinedError "#"
 
 --- The property `x #< n` is satisfied if `x` has less than `n` values.
-(#<) :: _ -> Int -> Prop
+(#<) :: (Eq a, Show a) => a -> Int -> Prop
 _ #< _ = propUndefinedError "#<"
 
 --- The property `x #> n` is satisfied if `x` has more than `n` values.
-(#>) :: _ -> Int -> Prop
+(#>) :: (Eq a, Show a) => a -> Int -> Prop
 _ #> _ = propUndefinedError "#>"
 
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satisfy property `p y`.
-for :: a -> (a -> Prop) -> Prop
+for :: Show a => a -> (a -> Prop) -> Prop
 for _ _ = propUndefinedError "for"
 
 -------------------------------------------------------------------------
@@ -193,12 +193,12 @@ trivial _ _ = propUndefinedError "trivial"
 
 --- Assign a label showing the given argument to a property.
 --- All labeled tests are counted and shown at the end.
-collect :: a -> Prop -> Prop
+collect :: Show a => a -> Prop -> Prop
 collect _ _ = propUndefinedError "collect"
 
 --- Assign a label showing a given name and the given argument to a property.
 --- All labeled tests are counted and shown at the end.
-collectAs :: String -> a -> Prop -> Prop
+collectAs :: Show a => String -> a -> Prop -> Prop
 collectAs _ _ _ = propUndefinedError "collectAs"
 
 -------------------------------------------------------------------------

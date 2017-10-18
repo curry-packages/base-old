@@ -57,12 +57,12 @@ data PropIO = PropIO (Bool -> String -> IO (Maybe String))
 
 --- The property `returns a x` is satisfied if the execution of the
 --- I/O action `a` returns the value `x`.
-returns :: IO a -> a -> PropIO
+returns :: (Eq a, Show a) => IO a -> a -> PropIO
 returns act r = PropIO (testIO act (return r))
 
 --- The property `sameReturns a1 a2` is satisfied if the execution of the
 --- I/O actions `a1` and `a2` return identical values.
-sameReturns :: IO a -> IO a -> PropIO
+sameReturns :: (Eq a, Show a) => IO a -> IO a -> PropIO
 sameReturns a1 a2 = PropIO (testIO a1 a2)
 
 --- The property `toError a` is satisfied if the evaluation of the argument
@@ -80,7 +80,7 @@ ioTestOf :: PropIO -> (Bool -> String -> IO (Maybe String))
 ioTestOf (PropIO t) = t
 
 -- Test an IO property, i.e., compare the results of two IO actions.
-testIO :: IO a -> IO a -> Bool -> String -> IO (Maybe String)
+testIO :: (Eq a, Show a) => IO a -> IO a -> Bool -> String -> IO (Maybe String)
 testIO act1 act2 quiet msg =
    catch (do r1 <- act1
              r2 <- act2
@@ -152,7 +152,7 @@ updStamp upd (Test r a s) = Test r a (upd s)
 --- non-deterministic values. The given predicate determines whether
 --- the constructed property is satisfied or falsified for the given
 --- expression.
-test :: a -> ([a] -> Bool) -> Prop
+test :: Show a => a -> ([a] -> Bool) -> Prop
 test x f = Prop [setResult res notest]
  where
   xs  = valuesOf x
@@ -163,42 +163,42 @@ test x f = Prop [setResult res notest]
 
 --- The property `x -=- y` is satisfied if `x` and `y` have deterministic
 --- values that are equal.
-(-=-) :: a -> a -> Prop
+(-=-) :: (Eq a, Show a) => a -> a -> Prop
 x -=- y = (x,y) `is` uncurry (==)
 
 --- The property `x <~> y` is satisfied if the sets of the values of
 --- `x` and `y` are equal.
-(<~>) :: a -> a -> Prop
+(<~>) :: (Eq a, Show a) => a -> a -> Prop
 x <~>  y = test x (isSameSet (valuesOf y))
 
 --- The property `x ~> y` is satisfied if `x` evaluates to every value of `y`.
 --- Thus, the set of values of `y` must be a subset of the set of values of `x`.
-(~>) :: a -> a -> Prop
+(~>) :: (Eq a, Show a) => a -> a -> Prop
 x  ~>  y = test x (isSubsetOf (valuesOf y))
 
 --- The property `x <~ y` is satisfied if `y` evaluates to every value of `x`.
 --- Thus, the set of values of `x` must be a subset of the set of values of `y`.
-(<~) :: a -> a -> Prop
+(<~) :: (Eq a, Show a) => a -> a -> Prop
 x  <~  y = test x (`isSubsetOf` (valuesOf y))
 
 --- The property `x <~~> y` is satisfied if the multisets of the values of
 --- `x` and `y` are equal.
-(<~~>) :: a -> a -> Prop
+(<~~>) :: (Eq a, Show a) => a -> a -> Prop
 x <~~> y = test x (isSameMSet (valuesOf y))
 
-isSameSet :: [a] -> [a] -> Bool
+isSameSet :: Eq a => [a] -> [a] -> Bool
 isSameSet xs ys = xs' `subset` ys' && ys' `subset` xs'
  where xs' = nub xs
        ys' = nub ys
 
-isSubsetOf :: [a] -> [a] -> Bool
+isSubsetOf :: Eq a => [a] -> [a] -> Bool
 xs `isSubsetOf` ys = nub xs `subset` ys
 
-subset :: [a] -> [a] -> Bool
+subset :: Eq a => [a] -> [a] -> Bool
 xs `subset` ys = null (xs\\ys)
 
 -- compare to lists if they represent the same multi-set
-isSameMSet :: [a] -> [a] -> Bool
+isSameMSet :: Eq a => [a] -> [a] -> Bool
 isSameMSet []     ys = ys == []
 isSameMSet (x:xs) ys
   | x `elem` ys  = isSameMSet xs (delete x ys)
@@ -219,17 +219,17 @@ solutionOf pred = pred x &> x where x free
 
 --- The property `is x p` is satisfied if `x` has a deterministic value
 --- which satisfies `p`.
-is :: a -> (a -> Bool) -> Prop
+is :: Show a => a -> (a -> Bool) -> Prop
 is x f = test x (\xs -> case xs of [y] -> f y
                                    _   -> False)
 
 --- The property `isAlways x p` is satisfied if all values of `x` satisfy `p`.
-isAlways :: a -> (a -> Bool) -> Prop
+isAlways :: Show a => a -> (a -> Bool) -> Prop
 isAlways x  = test x . all
 
 --- The property `isEventually x p` is satisfied if some value of `x`
 --- satisfies `p`.
-isEventually :: a -> (a -> Bool) -> Prop
+isEventually :: Show a => a -> (a -> Bool) -> Prop
 isEventually x = test x . any
 
 --- The property `uniquely x` is satisfied if `x` has a deterministic value
@@ -246,41 +246,41 @@ eventually :: Bool -> Prop
 eventually = (`isEventually` id)
 
 --- The property `failing x` is satisfied if `x` has no value.
-failing :: _ -> Prop
+failing :: Show a => a -> Prop
 failing x = test x null
 
 --- The property `successful x` is satisfied if `x` has at least one value.
-successful :: _ -> Prop
+successful :: Show a => a -> Prop
 successful x = test x (not . null)
 
 --- The property `deterministic x` is satisfied if `x` has exactly one value.
-deterministic :: _ -> Prop
+deterministic :: Show a => a -> Prop
 deterministic x = x `is` const True
 
 --- The property `x # n` is satisfied if `x` has `n` values.
-(#) :: _ -> Int -> Prop
+(#) :: (Eq a, Show a) => a -> Int -> Prop
 x # n = test x ((n==) . length . nub)
 
 --- The property `x #< n` is satisfied if `x` has less than `n` values.
-(#<) :: _ -> Int -> Prop
+(#<) :: (Eq a, Show a) => a -> Int -> Prop
 x #< n = test x ((<n) . length . nub)
 
 --- The property `x #> n` is satisfied if `x` has more than `n` values.
-(#>) :: _ -> Int -> Prop
+(#>) :: (Eq a, Show a) => a -> Int -> Prop
 x #> n = test x ((>n) . length . nub)
 
 --- The property `for x p` is satisfied if all values `y` of `x`
 --- satisfy property `p y`.
-for :: a -> (a -> Prop) -> Prop
+for :: Show a => a -> (a -> Prop) -> Prop
 for x p = forAll (valuesOf x) p
 
 --- The property `forAll xs p` is satisfied if all values `x` of the list `xs`
 --- satisfy property `p x`.
-forAll :: [a] -> (a -> Prop) -> Prop
+forAll :: Show a => [a] -> (a -> Prop) -> Prop
 forAll xs p = forAllValues id xs p
 
 --- Only for internal use by the test runner.
-forAllValues :: (b -> Prop) -> [a] -> (a -> b) -> Prop
+forAllValues :: Show a => (b -> Prop) -> [a] -> (a -> b) -> Prop
 forAllValues c vals f =
  Prop $
   diagonal
@@ -311,12 +311,12 @@ trivial = (`classify` "trivial")
 
 --- Assign a label showing the given argument to a property.
 --- All labeled tests are counted and shown at the end.
-collect :: a -> Prop -> Prop
+collect :: Show a => a -> Prop -> Prop
 collect = label . show
 
 --- Assign a label showing a given name and the given argument to a property.
 --- All labeled tests are counted and shown at the end.
-collectAs :: String -> a -> Prop -> Prop
+collectAs :: Show a => String -> a -> Prop -> Prop
 collectAs name = label . ((name++": ")++) . show
 
 -------------------------------------------------------------------------

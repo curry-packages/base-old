@@ -10,7 +10,7 @@
 ---
 --- A global entity `g` with an initial value `v`
 --- of type `t` must be declared by:
---- 
+---
 ---     g :: Global t
 ---     g = global v spec
 ---
@@ -31,7 +31,7 @@ module Global( Global, GlobalSpec(..), global
 ----------------------------------------------------------------------
 
 --- The abstract type of a global entity.
-data Global _ -- a = GlobalDef a GlobalSpec
+external data Global _ -- a = GlobalDef a GlobalSpec
 
 --- <code>global</code> is only used for the declaration of a global value
 --- and should not be used elsewhere. In the future, it might become a keyword.

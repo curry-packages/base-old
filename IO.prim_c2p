@@ -1,6 +1,10 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE primitives SYSTEM "http://www.informatik.uni-kiel.de/~pakcs/primitives.dtd">
 <primitives>
+ <primitive name="handle_eq" arity="2">
+  <library>prim_io</library>
+  <entry>handle_eq</entry>
+ </primitive>
  <primitive name="stdin" arity="0">
   <library>prim_io</library>
   <entry>prim_stdin</entry>

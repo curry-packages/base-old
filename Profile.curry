@@ -25,6 +25,7 @@ import List(intersperse)
 --- @cons GarbageCollections - the number of garbage collections performed
 data ProcessInfo = RunTime | ElapsedTime | Memory | Code
                  | Stack | Heap | Choices | GarbageCollections
+ deriving Eq
 
 --- Returns various informations about the current state of the Curry process.
 --- Note that the returned values are implementation dependent

@@ -33,7 +33,7 @@ showParen True  s = showChar '(' . s . showChar ')'
 showParen False s = s
 
 --- Convert a value to `ShowS` using the standard show function.
-shows :: a -> ShowS
+shows :: Show a => a -> ShowS
 shows = showString . show
 
 --- Prepend a space

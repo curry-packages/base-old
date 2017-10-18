@@ -33,9 +33,9 @@ instance NonDet (C_Global a) where
   try (Guard_C_Global cd c e) = Guard cd c e
   try x = Val x
   match choiceF _ _ _ _ _ (Choice_C_Global cd i x y) = choiceF cd i x y
-  match _ narrF _ _ _ _   (Choices_C_Global cd i@(NarrowedID _ _) xs) 
+  match _ narrF _ _ _ _   (Choices_C_Global cd i@(NarrowedID _ _) xs)
    = narrF cd i xs
-  match _ _ freeF _ _ _   (Choices_C_Global cd i@(FreeID _ _) xs)     
+  match _ _ freeF _ _ _   (Choices_C_Global cd i@(FreeID _ _) xs)
    = freeF cd i xs
   match _ _ _ failF _ _   (Fail_C_Global cd info) = failF cd info
   match _ _ _ _ guardF _  (Guard_C_Global cd c e) = guardF cd c e
@@ -49,14 +49,14 @@ instance NormalForm (C_Global a) where
   ($!!) cont g@(C_Global_Pers _)         cd cs = cont g cd cs
   ($!!) cont (Choice_C_Global d i g1 g2) cd cs = nfChoice cont d i g1 g2 cd cs
   ($!!) cont (Choices_C_Global d i gs)   cd cs = nfChoices cont d i gs cd cs
-  ($!!) cont (Guard_C_Global d c g)      cd cs = guardCons d c ((cont $!! g) cd 
+  ($!!) cont (Guard_C_Global d c g)      cd cs = guardCons d c ((cont $!! g) cd
                                                     $! (addCs c cs))
   ($!!) _    (Fail_C_Global d info)      _  _  = failCons d info
   ($##) cont g@(C_Global_Temp _)         cd cs = cont g cd cs
   ($##) cont g@(C_Global_Pers _)         cd cs = cont g cd cs
   ($##) cont (Choice_C_Global d i g1 g2) cd cs = gnfChoice cont d i g1 g2 cd cs
   ($##) cont (Choices_C_Global d i gs)   cd cs = gnfChoices cont d i gs cd cs
-  ($##) cont (Guard_C_Global d c g)      cd cs = guardCons d c ((cont $## g) cd 
+  ($##) cont (Guard_C_Global d c g)      cd cs = guardCons d c ((cont $## g) cd
                                                     $!  (addCs c cs))
   ($##) _    (Fail_C_Global cd info)     _  _  = failCons cd info
   searchNF _ cont g@(C_Global_Temp _)          = cont g
@@ -69,25 +69,23 @@ instance Unifiable (C_Global a) where
     | f1 == f2  = C_True
   (=.=) _ _ cd _ = Fail_C_Bool cd defFailInfo
   (=.<=) = (=.=)
-  bind cd i (Choice_C_Global d j l r) 
+  bind cd i (Choice_C_Global d j l r)
     = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
   bind cd i (Choices_C_Global d j@(FreeID _ _) xs) = bindOrNarrow cd i d j xs
-  bind cd i (Choices_C_Global d j@(NarrowedID _ _) xs) 
+  bind cd i (Choices_C_Global d j@(NarrowedID _ _) xs)
     = [(ConstraintChoices d j (map (bind cd i) xs))]
   bind _ _ (Fail_C_Global _ info) = [Unsolvable info]
   bind cd i (Guard_C_Global _ cs e) = (getConstrList cs) ++ (bind cd i e)
-  lazyBind cd i (Choice_C_Global d j l r) 
+  lazyBind cd i (Choice_C_Global d j l r)
     = [(ConstraintChoice d j (lazyBind cd i l) (lazyBind cd i r))]
   lazyBind cd i (Choices_C_Global d j@(FreeID _ _) xs) = lazyBindOrNarrow cd i d j xs
-  lazyBind cd i (Choices_C_Global d j@(NarrowedID _ _) xs) 
+  lazyBind cd i (Choices_C_Global d j@(NarrowedID _ _) xs)
     = [(ConstraintChoices d j (map (lazyBind cd i) xs))]
   lazyBind _ _ (Fail_C_Global cd info) = [Unsolvable info]
-  lazyBind cd i (Guard_C_Global _ cs e) 
+  lazyBind cd i (Guard_C_Global _ cs e)
     = (getConstrList cs) ++ [(i :=: (LazyBind (lazyBind cd i e)))]
 
-instance Curry_Prelude.Curry a => Curry_Prelude.Curry (C_Global a) where
-  (=?=) = error "(==) is undefined for Globals"
-  (<?=) = error "(<=) is undefined for Globals"
+instance Curry_Prelude.Curry a => Curry_Prelude.Curry (C_Global a)
 
 
 external_d_C_global :: Curry_Prelude.Curry a => a -> C_GlobalSpec -> Cover -> ConstStore

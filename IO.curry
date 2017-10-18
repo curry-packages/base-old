@@ -16,7 +16,13 @@ module IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,
           hIsReadable,hIsWritable,hIsTerminalDevice) where
 
 --- The abstract type of a handle for a stream.
-data Handle -- internally defined
+external data Handle -- internally defined
+
+instance Eq Handle where
+  h1 == h2 = (handle_eq $# h2) $# h1
+
+handle_eq :: Handle -> Handle -> Bool
+handle_eq external
 
 --- The modes for opening a file.
 data IOMode = ReadMode | WriteMode | AppendMode
@@ -211,7 +217,7 @@ hPutStrLn :: Handle -> String -> IO ()
 hPutStrLn h s = hPutStr h s >> hPutChar h '\n'
 
 --- Converts a term into a string and puts it to an output handle.
-hPrint :: Handle -> _ -> IO ()
+hPrint :: Show a => Handle -> a -> IO ()
 hPrint h = hPutStrLn h . show
 
 

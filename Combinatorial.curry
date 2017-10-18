@@ -65,7 +65,7 @@ subsetElems xs = anyOf (subset xs) <~ anyOf xs
 --- @param xs - The list.
 --- @return All the sublists of the argument.
 
-allSubsets      :: [a] -> [[a]]
+allSubsets :: Ord a => [a] -> [[a]]
 allSubsets xs = sortValues (set1 subset xs)
 
 -- Properties:

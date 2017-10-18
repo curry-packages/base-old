@@ -67,26 +67,26 @@ rotate :: Queue a -> Queue a
 rotate q = snoc (deqHead q) (deqTail q)
 
 --- Matches the front of a queue.
---- <code>matchHead q</code> is equivalent to
---- <code>if isEmpty q then Nothing else Just (deqHead q, deqTail q)</code>
+--- `matchHead q` is equivalent to
+--- `if isEmpty q then Nothing else Just (deqHead q, deqTail q)`
 --- but more efficient.
 matchHead :: Queue a -> Maybe (a, Queue a)
-matchHead   (S _    []     _    []     ) = Nothing
-matchHead   (S _    []     _    [x]    ) = Just (x, empty)
-matchHead q@(S _    []     _    (_:_:_))
-  = error $ "Dequeue.matchHead: illegal queue " ++ show q
+matchHead (S _    []     _    []     ) = Nothing
+matchHead (S _    []     _    [x]    ) = Just (x, empty)
+matchHead (S _    []     _    (_:_:_))
+  = error $ "Dequeue.matchHead: illegal queue"
 matchHead   (S lenf (x:xs) lenr r      )
   = Just (x, deqReverse (check lenr r (lenf - 1) xs))
 
 --- Matches the end of a queue.
---- <code>matchLast q</code> is equivalent to
---- <code>if isEmpty q then Nothing else Just (deqLast q,deqInit q)</code>
+--- `matchLast q` is equivalent to
+--- `if isEmpty q then Nothing else Just (deqLast q,deqInit q)`
 --- but more efficient.
 matchLast :: Queue a -> Maybe (a,Queue a)
-matchLast   (S _    []      _    []    ) = Nothing
-matchLast   (S _    [x]     _    []    ) = Just (x, empty)
-matchLast q@(S _    (_:_:_) _    []    )
-  = error $ "Dequeue.matchLast: illegal queue " ++ show q
+matchLast (S _    []      _    []    ) = Nothing
+matchLast (S _    [x]     _    []    ) = Just (x, empty)
+matchLast (S _    (_:_:_) _    []    )
+  = error $ "Dequeue.matchLast: illegal queue"
 matchLast   (S lenf f       lenr (x:xs)) = Just (x, check lenf f (lenr - 1) xs)
 
 --- Transforms a list to a double ended queue.

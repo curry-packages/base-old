@@ -22,7 +22,7 @@ import qualified RedBlackTree as RBT
 type TableRBT key a = RBT.RedBlackTree (key,a) 
 
 --- Returns an empty table, i.e., an empty red-black tree.
-emptyTableRBT :: (a -> a -> Bool) -> TableRBT a _ 
+emptyTableRBT :: Eq a => (a -> a -> Bool) -> TableRBT a _ 
 emptyTableRBT lt = RBT.empty (\ x y -> fst x==fst y) 
                              (\ x y -> fst x==fst y)
                              (\ x y -> lt (fst x) (fst y))

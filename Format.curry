@@ -343,6 +343,7 @@ convertPrecision = maybe 1 id
 
 --- FILLING A STRING WITH APPROPRIATE ALIGNMENT
 data Alignment = LeftAlign | RightAlign
+ deriving Eq
 
 fillWithCharsLeftAlign :: Int -> Char -> String -> String
 fillWithCharsLeftAlign  = fillWithChars LeftAlign

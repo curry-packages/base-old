@@ -21,15 +21,15 @@ import Char
 import Test.Prop
 
 --- The default sorting operation, mergeSort, with standard ordering `<=`.
-sort :: [a] -> [a]
+sort :: Ord a => [a] -> [a]
 sort = sortBy (<=)
 
 -- Postcondition: input and output lists have same length and output is sorted.
-sort'post :: [a] -> [a] -> Bool
+sort'post :: Ord a => [a] -> [a] -> Bool
 sort'post xs ys = length xs == length ys && sorted ys
 
 -- Specification via permutation sort:
-sort'spec :: [a] -> [a]
+sort'spec :: Ord a => [a] -> [a]
 sort'spec xs = permSort xs
 
 
@@ -38,7 +38,7 @@ sortBy :: (a -> a -> Bool) -> [a] -> [a]
 sortBy = mergeSortBy
 
 --- `sorted xs` is satisfied if the elements `xs` are in ascending order.
-sorted :: [a] -> Bool
+sorted :: Ord a => [a] -> Bool
 sorted = sortedBy (<=)
 
 --- `sortedBy leq xs` is satisfied if all adjacent elements of the list `xs`
@@ -54,14 +54,14 @@ sortedBy leq (x:y:ys) = leq x y && sortedBy leq (y:ys)
 --- Sorts a list by finding a sorted permutation
 --- of the input. This is not a usable way to sort a list but it can be used
 --- as a specification of other sorting algorithms.
-permSort :: [a] -> [a]
+permSort :: Ord a => [a] -> [a]
 permSort = permSortBy (<=)
 
 --- Permutation sort with ordering as first parameter.
 --- Sorts a list by finding a sorted permutation
 --- of the input. This is not a usable way to sort a list but it can be used
 --- as a specification of other sorting algorithms.
-permSortBy :: (a -> a -> Bool) -> [a] -> [a]
+permSortBy :: Eq a => (a -> a -> Bool) -> [a] -> [a]
 permSortBy leq xs | ys == perm xs && sortedBy leq ys = ys  where ys free
 
 --- Computes a permutation of a list.
@@ -75,15 +75,15 @@ perm (x:xs) = insert (perm xs)
 --- Insertion sort with standard ordering `<=`.
 --- The list is sorted by repeated sorted insertion of the elements
 --- into the already sorted part of the list.
-insertionSort  :: [a] -> [a]
+insertionSort  :: Ord a => [a] -> [a]
 insertionSort = insertionSortBy (<=)
 
 -- Postcondition: input and output lists have same length and output is sorted.
-insertionSort'post :: [a] -> [a] -> Bool
+insertionSort'post :: Ord a => [a] -> [a] -> Bool
 insertionSort'post xs ys = length xs == length ys && sorted ys
 
 -- Specification via permutation sort:
-insertionSort'spec :: [a] -> [a]
+insertionSort'spec :: Ord a => [a] -> [a]
 insertionSort'spec = permSort
 
 
@@ -102,15 +102,15 @@ insertionSortBy leq (x:xs) = insert (insertionSortBy leq xs)
 ------------------------------------------------------------------------------
 --- Quicksort with standard ordering `<=`.
 --- The classical quicksort algorithm on lists.
-quickSort :: [a] -> [a]
+quickSort :: Ord a => [a] -> [a]
 quickSort = quickSortBy (<=)
 
 -- Postcondition: input and output lists have same length and output is sorted.
-quickSort'post :: [a] -> [a] -> Bool
+quickSort'post :: Ord a => [a] -> [a] -> Bool
 quickSort'post xs ys = length xs == length ys && sorted ys
 
 -- Specification via permutation sort:
-quickSort'spec :: [a] -> [a]
+quickSort'spec :: Ord a => [a] -> [a]
 quickSort'spec = permSort
 
 
@@ -129,15 +129,15 @@ quickSortBy leq (x:xs) = let (l,r) = split x xs
 
 ------------------------------------------------------------------------------
 --- Bottom-up mergesort with standard ordering `<=`.
-mergeSort :: [a] -> [a]
+mergeSort :: Ord a => [a] -> [a]
 mergeSort = mergeSortBy (<=)
 
 -- Postcondition: input and output lists have same length and output is sorted.
-mergeSort'post :: [a] -> [a] -> Bool
+mergeSort'post :: Ord a => [a] -> [a] -> Bool
 mergeSort'post xs ys = length xs == length ys && sorted ys
 
 -- Specification via permutation sort:
-mergeSort'spec :: [a] -> [a]
+mergeSort'spec :: Ord a => [a] -> [a]
 mergeSort'spec = permSort
 
 
@@ -174,7 +174,7 @@ merge leq (x:xs) (y:ys) | leq x y   = x : merge leq xs (y:ys)
 -- Comparing lists, characters and strings
 
 --- Less-or-equal on lists.
-leqList :: (a -> a -> Bool) -> [a] -> [a] -> Bool
+leqList :: Eq a => (a -> a -> Bool) -> [a] -> [a] -> Bool
 leqList _   []     _      = True
 leqList _   (_:_)  []     = False
 leqList leq (x:xs) (y:ys) | x == y    = leqList leq xs ys

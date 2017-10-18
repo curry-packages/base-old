@@ -17,12 +17,14 @@ module Time(ClockTime,
 
 --- ClockTime represents a clock time in some internal representation.
 data ClockTime = CTime Int
+ deriving (Eq, Ord, Show)
 
 --- A calendar time is presented in the following form:
 --- (CalendarTime year month day hour minute second timezone)
 --- where timezone is an integer representing the timezone as a difference
 --- to UTC time in seconds.
 data CalendarTime = CalendarTime Int Int Int Int Int Int Int
+ deriving (Eq, Ord, Show)
 
 --- The year of a calendar time.
 ctYear :: CalendarTime -> Int

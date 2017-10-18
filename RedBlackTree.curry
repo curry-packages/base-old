@@ -128,7 +128,7 @@ tree2listTree tree = t2l tree []
 --- Generic sort based on insertion into red-black trees.
 --- The first argument is the order for the elements.
 
-sortBy :: (a -> a -> Bool) -> [a] -> [a]
+sortBy :: Eq a => (a -> a -> Bool) -> [a] -> [a]
 sortBy cmp xs = tree2list (foldr update (empty (\_ _->False) (==) cmp) xs)
 
 --- For compatibility with old version only
@@ -143,6 +143,7 @@ rbt (RedBlackTree _ _ _ t) = t
 
 --- The colors of a node in a red-black tree.
 data Color = Red | Black | DoublyBlack
+ deriving Eq
 
 --- The structure of red-black trees.
 data Tree a = Tree Color a (Tree a) (Tree a)

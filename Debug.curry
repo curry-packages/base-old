@@ -25,11 +25,11 @@ traceId a = trace a a
 
 --- Prints the first argument using `show` and returns the second argument
 --- afterwards.
-traceShow :: a -> b -> b
+traceShow :: Show a => a -> b -> b
 traceShow a b = trace (show a) b
 
 --- Prints the first argument using `show` and returns it afterwards.
-traceShowId :: a -> a
+traceShowId :: Show a => a -> a
 traceShowId a = trace (show a) a
 
 --- Output a trace message from the `IO` monad.

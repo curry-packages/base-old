@@ -27,7 +27,7 @@ LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
 LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(LIB_NAMES))
 # Generated files
-LIB_FCY      = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.fcy), $(lib))
+LIB_TFCY     = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.tfcy), $(lib))
 LIB_ACY      = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.acy), $(lib))
 LIB_HS       = $(foreach lib, $(LIB_CURRY:.curry=.hs), .curry/kics2/$(call prefix,Curry_,$(lib)))
 LIB_HS_TRACE = $(foreach lib, $(LIB_CURRY:.curry=.hs), .curry/kics2/$(call prefix,Curry_Trace_,$(lib)))
@@ -57,7 +57,7 @@ CURRYDOC := $(shell which curry-doc)
 ########################################################################
 
 .PHONY: install
-install: fcy acy hs hstrace
+install: tfcy acy hs hstrace $(ALLLIBS).curry
 	$(MAKE) $(CABAL_FILE)
 	$(CABAL_INSTALL) $(CABAL_PROFILE)
 	rm -f $(CABAL_FILE)
@@ -140,7 +140,7 @@ $(CABAL_TRACE_FILE): ../Makefile Makefile
 # generate the compiled Haskell target files of all libraries:
 .NOTPARALLEL: hs
 .PHONY: hs
-hs: .curry/kics2/Curry_$(ALLLIBS).hs $(LIB_HS)
+hs: $(LIB_HS) # .curry/kics2/Curry_$(ALLLIBS).hs
 
 # generate the compiled Haskell target files with tracing of all libraries:
 .NOTPARALLEL: hstrace
@@ -160,14 +160,14 @@ hs: $(LIB_HS_TRACE)
 .curry/kics2/Test/Curry_%.hs: Test/%.curry
 	$(COMP) -v0 -i. Test.$*
 
-# generate the FlatCurry files of all libraries:
-.NOTPARALLEL: fcy
-.PHONY: fcy
-fcy: $(LIB_FCY)
+# generate the typed FlatCurry files of all libraries:
+.NOTPARALLEL: tfcy
+.PHONY: tfcy
+tfcy: $(LIB_TFCY)
 
 # generate FlatCurry file in subdirectory .curry:
-.curry/%.fcy: %.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*)
+.curry/%.tfcy: %.curry
+	"$(CYMAKE)" --typed-flat $(CYMAKEPARAMS) $(subst /,.,$*)
 
 # generate the AbstractCurry files of all libraries:
 .PHONY: acy
@@ -203,9 +203,6 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	$(CURRYDOC) --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries
-$(LIBDOCDIR)/CLP.%.html: CLP/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
-
 $(LIBDOCDIR)/Test.%.html: Test/%.curry
 	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
 
@@ -222,9 +219,6 @@ texdoc: checkcurrydoc $(LIB_CURRY)
 	$(MAKE) $(LIB_TEX)
 
 # generate individual LaTeX documentations for libraries
-$(TEXDOCDIR)/CLP.%.tex: CLP/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
-
 $(TEXDOCDIR)/Test.%.tex: Test/%.curry
 	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
 

@@ -182,12 +182,12 @@ findfirst :: (a -> Bool) -> a
 findfirst g = head (findall g)
 
 --- Shows the solution of a solved constraint.
-browse  :: (_ -> Bool) -> IO ()
+browse  :: Show a => (a -> Bool) -> IO ()
 browse g = putStr (show (unpack g))
 
 --- Unpacks solutions from a list of lambda abstractions and write
 --- them to the screen.
-browseList :: [_ -> Bool] -> IO ()
+browseList :: Show a => [a -> Bool] -> IO ()
 browseList []     = done
 browseList (g:gs) = browse g >> putChar '\n' >> browseList gs
 

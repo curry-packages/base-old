@@ -22,7 +22,6 @@ module Random
   , shuffle
   ) where
 
-import Integer ( abs )
 import System  ( getCPUTime )
 import Time
 
