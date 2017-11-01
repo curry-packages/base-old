@@ -38,8 +38,9 @@ data Global a = GlobalDef a GlobalSpec
 external data Global _
 #endif
 
---- <code>global</code> is only used for the declaration of a global value
+--- `global` is only used for the declaration of a global value
 --- and should not be used elsewhere. In the future, it might become a keyword.
+global :: a -> GlobalSpec -> Global a
 #ifdef __PAKCS__
 global v s = GlobalDef v s
 #else

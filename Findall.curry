@@ -28,7 +28,8 @@ module Findall
 #endif
   ) where
 
-#ifdef __KICS2__
+#ifdef __PAKCS__
+#else
 import qualified SearchTree as ST
 #endif
 
