@@ -5,6 +5,7 @@
 --- @version January 2017
 --- @category general
 ------------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
 
 module IOExts
   ( -- execution of shell commands
@@ -17,8 +18,13 @@ module IOExts
   , IORef, newIORef, readIORef, writeIORef, modifyIORef
   ) where
 
+#ifdef __PAKCS__
+import Char      (isAlphaNum)
+import Directory (removeFile)
+import Read      (readNat)
+#endif
+import IO
 import System
-import IO (Handle)
 
 --- Executes a command with a new default shell process.
 --- The standard I/O streams of the new process (stdin,stdout,stderr)
@@ -42,10 +48,47 @@ prim_execCmd external
 --- @param input - the input to be written to the command's stdin
 --- @return the exit code and the contents written to stdout and stderr
 evalCmd :: String -> [String] -> String -> IO (Int, String, String)
+#ifdef __PAKCS__
+evalCmd cmd args input = do
+  pid <- getPID
+  let tmpfile = "/tmp/PAKCS_evalCMD"++show pid
+  (hi,ho,he) <- execCmd (unwords (map wrapArg (cmd:args)) ++
+                         " ; (echo $? > "++tmpfile++")")
+  unless (null input) (hPutStrLn hi input)
+  hClose hi
+  outs <- hGetEOF ho
+  errs <- hGetEOF he
+  ecodes <- readCompleteFile tmpfile
+  removeFile tmpfile
+  return (readNat ecodes, outs, errs)
+ where
+  wrapArg str
+    | null str         = "''"
+    -- goodChar is a pessimistic predicate, such that if an argument is
+    -- non-empty and only contains goodChars, then there is no need to
+    -- do any quoting or escaping
+    | all goodChar str = str
+    | otherwise        = '\'' : foldr escape "'" str
+      where escape c s
+              | c == '\'' = "'\\''" ++ s
+              | otherwise = c : s
+            goodChar c    = isAlphaNum c || c `elem` "-_.,/"
+
+  --- Reads from an input handle until EOF and returns the input.
+  hGetEOF  :: Handle -> IO String
+  hGetEOF h = do
+    eof <- hIsEOF h
+    if eof
+     then hClose h >> return ""
+     else do c <- hGetChar h
+             cs <- hGetEOF h
+             return (c:cs)
+#else
 evalCmd cmd args input = ((prim_evalCmd $## cmd) $## args) $## input
 
 prim_evalCmd :: String -> [String] -> String -> IO (Int, String, String)
 prim_evalCmd external
+#endif
 
 
 --- Executes a command with a new default shell process.
@@ -126,8 +169,11 @@ prim_getAssoc external
 
 --- Mutable variables containing values of some type.
 --- The values are not evaluated when they are assigned to an IORef.
+#ifdef __PAKCS__
+data IORef a = IORef a -- precise structure internally defined
+#else
 external data IORef _ -- precise structure internally defined
-
+#endif
 --- Creates a new IORef with an initial value.
 newIORef :: a -> IO (IORef a)
 newIORef external

@@ -8,6 +8,7 @@
 --- @version February 2016
 --- @category algorithm
 ------------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
 
 module SearchTree
   ( SearchTree (..), someSearchTree, getSearchTree
@@ -21,6 +22,9 @@ module SearchTree
   , someValue, someValueWith
   ) where
 
+#ifdef __PAKCS__
+import Findall       (allValues)
+#endif
 import IO            (hFlush,stdout)
 import List          (diagonal)
 import ValueSequence
@@ -45,8 +49,19 @@ getSearchTree x = return (someSearchTree x)
 --- Note that this operation is not purely declarative since
 --- the ordering in the resulting search tree depends on the
 --- ordering of the program rules.
+---
+--- Note that in PAKCS the search tree is just a degenerated tree
+--- representing all values of the argument expression
+--- and it is computed at once (i.e., not lazily!).
 someSearchTree :: a -> SearchTree a
+#ifdef __PAKCS__
+someSearchTree = list2st . allValues
+ where list2st []  = Fail 0
+       list2st [x] = Value x
+       list2st (x:y:ys) = Or (Value x) (list2st (y:ys))
+#else
 someSearchTree external
+#endif
 
 --- Returns True iff the argument is defined, i.e., has a value.
 isDefined :: a -> Bool

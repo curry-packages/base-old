@@ -3,11 +3,8 @@ ifndef CURRYLIBSDIR
 CURRYLIBSDIR=$(ROOT)/lib-trunk
 endif
 
-# specific PAKCS libraries:
-PAKCSONLYLIBS = Findall.curry GlobalVariable.curry \
-		PlProfileData.curry Ports.curry
 # get all library files from standard makefile and add PAKCS specific libs:
-LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
+LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources`
 # name of this makefile:
 CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 
@@ -32,43 +29,10 @@ sources:
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
 	cp $(CURRYLIBSDIR)/*.prim_c2p .
 
-AllSolutions.curry: $(CURRYLIBSDIR)/AllSolutions.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-Findall.curry: $(CURRYLIBSDIR)/Findall.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-Global.curry: $(CURRYLIBSDIR)/Global.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-GlobalVariable.curry: $(CURRYLIBSDIR)/GlobalVariable.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-IOExts.curry: $(CURRYLIBSDIR)/IOExts.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-PlProfileData.curry: $(CURRYLIBSDIR)/PlProfileData.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-Ports.curry: $(CURRYLIBSDIR)/Ports.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-Profile.curry: $(CURRYLIBSDIR)/Profile.curry.$(CURRYSYSTEM)
-	cp $< $@
-
 Random.curry: $(CURRYLIBSDIR)/Random.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-SearchTree.curry: $(CURRYLIBSDIR)/SearchTree.curry.$(CURRYSYSTEM)
-	cp $< $@
-
 SetFunctions.curry: $(CURRYLIBSDIR)/SetFunctions.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-Unsafe.curry: $(CURRYLIBSDIR)/Unsafe.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-ValueSequence.curry: $(CURRYLIBSDIR)/ValueSequence.curry.$(CURRYSYSTEM)
 	cp $< $@
 
 Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry

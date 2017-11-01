@@ -23,6 +23,7 @@
 --- @version February 2017
 --- @category general
 ------------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
 
 module Global( Global, GlobalSpec(..), global
              , readGlobal, safeReadGlobal, writeGlobal)
@@ -31,12 +32,19 @@ module Global( Global, GlobalSpec(..), global
 ----------------------------------------------------------------------
 
 --- The abstract type of a global entity.
-external data Global _ -- a = GlobalDef a GlobalSpec
+#ifdef __PAKCS__
+data Global a = GlobalDef a GlobalSpec
+#else
+external data Global _
+#endif
 
 --- <code>global</code> is only used for the declaration of a global value
 --- and should not be used elsewhere. In the future, it might become a keyword.
-global :: a -> GlobalSpec -> Global a
-global external --v s = GlobalDef v s
+#ifdef __PAKCS__
+global v s = GlobalDef v s
+#else
+global external
+#endif
 
 --- The storage mechanism for the global entity.
 --- @cons Temporary - the global value exists only during a single execution

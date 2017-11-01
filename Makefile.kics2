@@ -39,9 +39,9 @@ HS_LIB_TRACE_NAMES = $(call comma_sep,$(foreach lib,$(LIB_NAMES),$(if $(findstri
 ALLLIBS       = AllLibraries
 MAINGOAL      = Curry_Main_Goal.curry
 # Modules not included as regular libraries:
-EXCLUDES      = $(ALLLIBS).curry $(MAINGOAL)
+EXCLUDES      = $(ALLLIBS).curry $(MAINGOAL) GlobalVariable.curry PlProfileData.curry Ports.curry
 # Modules not included in library documentation index page:
-DOCEXCLUDES  = CPNS HtmlCgi ValueSequence WUIjs
+DOCEXCLUDES  = CPNS ValueSequence
 
 PACKAGE          = kics2-libraries
 PACKAGE_TRACE    = kics2-libraries-trace

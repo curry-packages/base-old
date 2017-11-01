@@ -5,10 +5,16 @@
 --- @version November 2015
 --- @category general
 ------------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
 
-module Profile(ProcessInfo(..), getProcessInfos, showMemInfo, printMemInfo,
-               garbageCollectorOff, garbageCollectorOn, garbageCollect,
-               profileTime, profileTimeNF, profileSpace, profileSpaceNF)
+module Profile
+  ( ProcessInfo(..), getProcessInfos, showMemInfo, printMemInfo
+  , garbageCollectorOff, garbageCollectorOn, garbageCollect
+  , profileTime, profileTimeNF, profileSpace, profileSpaceNF
+#ifdef __PAKCS__
+  , evalTime, evalSpace
+#endif
+  )
  where
 
 import List(intersperse)
@@ -31,7 +37,7 @@ data ProcessInfo = RunTime | ElapsedTime | Memory | Code
 --- Note that the returned values are implementation dependent
 --- so that one should interpret them with care!
 ---
---- Note for kics2 users:
+--- Note for KiCS2 users:
 --- Since GHC version 7.x, one has to set the run-time option `-T`
 --- when this operation is used. This can be done by the kics2 command
 ---
@@ -126,3 +132,17 @@ profileSpaceNF exp = profileSpace (seq (id $!! exp) done)
 showInfoDiff infos1 infos2 item =
   show (maybe 0 id (lookup item infos2) - maybe 0 id (lookup item infos1))
 
+#ifdef __PAKCS__
+--- Evaluates the argument to normal form (and return the normal form)
+--- and print the time needed for this evaluation on standard error.
+--- Included for backward compatibility only, use profileTime!
+evalTime :: a -> a
+evalTime external
+
+--- Evaluates the argument to normal form (and return the normal form)
+--- and print the time and space needed for this evaluation on standard error.
+--- During the evaluation, the garbage collector is turned off.
+--- Included for backward compatibility only, use profileSpace!
+evalSpace :: a -> a
+evalSpace external
+#endif
