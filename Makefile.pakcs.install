@@ -15,38 +15,19 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 # Install the library sources into the Curry system library directory:
 .PHONY: install
 install:
-#	rm -rf $(LIBDIR)
 	mkdir -p $(LIBDIR)
-	cp -r $(CURRYLIBSDIR)/* $(LIBDIR)
-	find $(LIBDIR) -name "Makefile*" -exec rm {} \;
-	cd $(LIBDIR)
-	for m in `find * -name "*.curry.pakcs" -exec sh -c "echo {} | sed 's/\.pakcs$$//g;'" \;`; do mv $(LIBDIR)/$$m.pakcs $(LIBDIR)/$$m; done
+	cd $(CURRYLIBSDIR)
+	find * -type d -exec mkdir -p $(LIBDIR)/{} \;         # copy directory structure
+	find * -name "*.curry" -exec cp {} $(LIBDIR)/{} \;    # copy curry files
+	find * -name "*.prim_c2p" -exec cp {} $(LIBDIR)/{} \; # copy curry to prolog files
+	for m in `find * -name "*.curry.pakcs" -exec sh -c "echo {} | sed 's/\.pakcs$$//g;'" \;`; do cp $$m.pakcs $(LIBDIR)/$$m; done # overwrite generic curry files with pakcs specific versions
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
-	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
 $(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
 	cp $< $@
 
 $(LIBDIR)/test.sh: test.sh
 	cp $< $@
-
-.PHONY: sources
-sources:
-	@echo LIB_CURRY=$(LIB_CURRY)
-	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
-	cp $(CURRYLIBSDIR)/*.prim_c2p .
-
-Random.curry: $(CURRYLIBSDIR)/Random.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-SetFunctions.curry: $(CURRYLIBSDIR)/SetFunctions.curry.$(CURRYSYSTEM)
-	cp $< $@
-
-#Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
-#	cp $< $@
-
-#%.curry: $(CURRYLIBSDIR)/%.curry
-#	cp $< $@
 
 index.html: $(CURRYLIBSDIR)/index.html.$(CURRYSYSTEM)
 	 cp $< $@
