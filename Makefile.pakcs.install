@@ -3,8 +3,11 @@ ifndef CURRYLIBSDIR
 CURRYLIBSDIR=$(ROOT)/lib-trunk
 endif
 
+# specific PAKCS libraries:
+PAKCSONLYLIBS = Findall.curry GlobalVariable.curry \
+		PlProfileData.curry Ports.curry
 # get all library files from standard makefile and add PAKCS specific libs:
-LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources`
+LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
 # name of this makefile:
 CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 
@@ -12,8 +15,12 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 # Install the library sources into the Curry system library directory:
 .PHONY: install
 install:
+#	rm -rf $(LIBDIR)
 	mkdir -p $(LIBDIR)
-	mkdir -p $(LIBDIR)/Test
+	cp -r $(CURRYLIBSDIR)/* $(LIBDIR)
+	find $(LIBDIR) -name "Makefile*" -exec rm {} \;
+	cd $(LIBDIR)
+	for m in `find * -name "*.curry.pakcs" -exec sh -c "echo {} | sed 's/\.pakcs$$//g;'" \;`; do mv $(LIBDIR)/$$m.pakcs $(LIBDIR)/$$m; done
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
 	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
@@ -35,11 +42,11 @@ Random.curry: $(CURRYLIBSDIR)/Random.curry.$(CURRYSYSTEM)
 SetFunctions.curry: $(CURRYLIBSDIR)/SetFunctions.curry.$(CURRYSYSTEM)
 	cp $< $@
 
-Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
-	cp $< $@
+#Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
+#	cp $< $@
 
-%.curry: $(CURRYLIBSDIR)/%.curry
-	cp $< $@
+#%.curry: $(CURRYLIBSDIR)/%.curry
+#	cp $< $@
 
 index.html: $(CURRYLIBSDIR)/index.html.$(CURRYSYSTEM)
 	 cp $< $@
