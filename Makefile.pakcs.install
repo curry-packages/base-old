@@ -3,11 +3,8 @@ ifndef CURRYLIBSDIR
 CURRYLIBSDIR=$(ROOT)/lib-trunk
 endif
 
-# specific PAKCS libraries:
-PAKCSONLYLIBS = Findall.curry GlobalVariable.curry \
-		PlProfileData.curry Ports.curry
 # get all library files from standard makefile and add PAKCS specific libs:
-LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources` $(PAKCSONLYLIBS)
+LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources`
 # name of this makefile:
 CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 
@@ -16,17 +13,26 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	cd $(CURRYLIBSDIR)
-	find * -type d -exec mkdir -p $(LIBDIR)/{} \;         # copy directory structure
-	find * -name "*.curry" -exec cp {} $(LIBDIR)/{} \;    # copy curry files
-	find * -name "*.prim_c2p" -exec cp {} $(LIBDIR)/{} \; # copy curry to prolog files
-	for m in `find * -name "*.curry.pakcs" -exec sh -c "echo {} | sed 's/\.pakcs$$//g;'" \;`; do cp $$m.pakcs $(LIBDIR)/$$m; done # overwrite generic curry files with pakcs specific versions
+	mkdir -p $(LIBDIR)/Test
 	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
+	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
 
 $(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
 	cp $< $@
 
 $(LIBDIR)/test.sh: test.sh
+	cp $< $@
+
+.PHONY: sources
+sources:
+	@echo LIB_CURRY=$(LIB_CURRY)
+	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
+	cp $(CURRYLIBSDIR)/*.prim_c2p .
+
+Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
+	cp $< $@
+
+%.curry: $(CURRYLIBSDIR)/%.curry
 	cp $< $@
 
 index.html: $(CURRYLIBSDIR)/index.html.$(CURRYSYSTEM)

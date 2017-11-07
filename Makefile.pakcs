@@ -10,8 +10,8 @@ LIBDOCDIR=CDOC
 # directory for LaTeX documentation files:
 TEXDOCDIR := $(DOCDIR)/src/lib
 
-# Curry library files up to 4 folders deep (add more */.../* if required)
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry */*.curry */*/*.curry */*/*/*.curry */*/*/*/*.curry))
+# Curry library files
+LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry Test/*.curry))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
@@ -27,7 +27,7 @@ ALLLIBS      = AllLibraries
 # Modules not included as regular libraries:
 EXCLUDES     = $(ALLLIBS).curry UnsafeSearchTree.curry
 # Modules not included in library documentation index page:
-DOCEXCLUDES  = CHRcompiled CPNS HtmlCgi WUIjs
+DOCEXCLUDES  = CHRcompiled CPNS
 
 # Executable of CurryDoc:
 CURRYDOC := $(shell which curry-doc)
