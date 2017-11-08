@@ -3,8 +3,14 @@ ifndef CURRYLIBSDIR
 CURRYLIBSDIR=$(ROOT)/lib-trunk
 endif
 
-# get all library files from standard makefile and add PAKCS specific libs:
-LIB_CURRY = `cd $(CURRYLIBSDIR) && $(MAKE) --no-print-directory --quiet -f Makefile.$(CURRYSYSTEM) allsources`
+MODULE_FOLDERS    :=$(shell cd $(CURRYLIBSDIR) && find * -type d)
+CURRY_FILES       :=$(shell cd $(CURRYLIBSDIR) && find * -name "*.curry")
+PAKCS_CURRY_FILES :=$(basename $(shell cd $(CURRYLIBSDIR) && find * -name "*.curry.pakcs"))
+C2P_FILES         :=$(shell cd $(CURRYLIBSDIR) && find * -name "*.prim_c2p")
+C2P_CURRY_FILES   :=$(addsuffix .curry, $(basename $(C2P_FILES)))
+NON_PAKCS_BASENAMES=$(basename $(filter-out $(CURRY_PAKCS_FILES), $(CURRY_FILES)))
+CURRYONLY_FILES    =$(addsuffix .curry, $(filter-out $(basename $(C2P_FILES)), $(NON_PAKCS_BASENAMES)))
+
 # name of this makefile:
 CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 
@@ -13,28 +19,28 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM).install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	mkdir -p $(LIBDIR)/Test
-	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
-	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) sources
+	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) $(MODULE_FOLDERS) $(CURRYONLY_FILES) $(PAKCS_CURRY_FILES) $(C2P_CURRY_FILES) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
 
-$(LIBDIR)/Makefile: Makefile.$(CURRYSYSTEM)
+$(MODULE_FOLDERS): %: $(CURRYLIBSDIR)/%
+	mkdir -p $@
+
+$(CURRYONLY_FILES): %.curry: $(CURRYLIBSDIR)/%.curry
 	cp $< $@
 
-$(LIBDIR)/test.sh: test.sh
+$(PAKCS_CURRY_FILES): %.curry: $(CURRYLIBSDIR)/%.curry.pakcs
 	cp $< $@
 
-.PHONY: sources
-sources:
-	@echo LIB_CURRY=$(LIB_CURRY)
-	$(MAKE) -f $(CURRENT_MAKEFILE) $(LIB_CURRY)
-	cp $(CURRYLIBSDIR)/*.prim_c2p .
-
-Test/%.curry: $(CURRYLIBSDIR)/Test/%.curry
+$(C2P_FILES): %.prim_c2p: $(CURRYLIBSDIR)/%.prim_c2p
 	cp $< $@
 
-%.curry: $(CURRYLIBSDIR)/%.curry
+$(C2P_CURRY_FILES): %.curry: $(CURRYLIBSDIR)/%.curry %.prim_c2p
+	cp $< $@
+
+$(LIBDIR)/Makefile: $(CURRYLIBSDIR)/Makefile.$(CURRYSYSTEM)
+	cp $< $@
+
+$(LIBDIR)/test.sh: $(CURRYLIBSDIR)/test.sh
 	cp $< $@
 
 index.html: $(CURRYLIBSDIR)/index.html.$(CURRYSYSTEM)
-	 cp $< $@
-
+	cp $< $@
