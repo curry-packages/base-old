@@ -25,7 +25,7 @@ LIB_TEX   = $(foreach lib, $(LIB_CURRY:.curry=.tex),  $(TEXDOCDIR)/$(subst /,.,$
 
 ALLLIBS      = AllLibraries
 # Modules not included as regular libraries:
-EXCLUDES     = $(ALLLIBS).curry UnsafeSearchTree.curry
+EXCLUDES     = $(ALLLIBS).curry
 # Modules not included in library documentation index page:
 DOCEXCLUDES  = CHRcompiled CPNS
 
