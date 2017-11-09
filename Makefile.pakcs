@@ -136,7 +136,7 @@ texdoc: checkcurrydoc $(LIB_CURRY)
 # an empty LaTeX file is generated so that the make process does not die.
 define TEXRULE
 $(TEXDOCDIR)/$1.tex: $(subst .,/,$1).curry
-	$$(CURRYDOC) --tex "$(TEXDOCDIR)" $$(subst /,.,$<) || (rm -f $$@ && touch $$@)
+	$$(CURRYDOC) --tex "$(TEXDOCDIR)" $$(subst /,.,$$<) || (rm -f $$@ && touch $$@)
 endef
 
 $(foreach module, $(LIB_NAMES),$(eval $(call TEXRULE,$(module))))
