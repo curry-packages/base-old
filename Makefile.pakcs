@@ -5,13 +5,16 @@ CYMAKEPARAMS = --extended -Wnone -i.
 
 PAKCS=$(ROOT)/bin/pakcs
 
+CURRYLIBSDIR=$(ROOT)/lib-trunk
+CURRY_FILES:=$(shell cd $(CURRYLIBSDIR) && find * -name "*.curry")
+
 # directory for HTML documentation files:
 LIBDOCDIR=CDOC
 # directory for LaTeX documentation files:
 TEXDOCDIR := $(DOCDIR)/src/lib
 
 # Curry library files
-LIB_CURRY = $(filter-out $(EXCLUDES), $(wildcard *.curry Test/*.curry))
+LIB_CURRY = $(filter-out $(EXCLUDES), $(CURRY_FILES))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
@@ -110,11 +113,14 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	$(CURRYDOC) --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries
-$(LIBDOCDIR)/Test.%.html: Test/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+define HTMLRULE
+$(LIBDOCDIR)/$1.html: $(subst .,/,$1).curry
+	$$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $$(subst /,.,$$<)
+endef
 
-$(LIBDOCDIR)/%.html: %.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(foreach module, $(LIB_NAMES),$(eval $(call HTMLRULE,$(module))))
+# uncomment for rule debugging
+# $(foreach module, $(LIB_NAMES),$(info $(call HTMLRULE,$(module))))
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
