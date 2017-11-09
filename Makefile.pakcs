@@ -134,8 +134,9 @@ texdoc: checkcurrydoc $(LIB_CURRY)
 # Generate individual LaTeX documentations for libraries.
 # In case of failures (which might occur due to memory problems in SWI-Prolog)
 # an empty LaTeX file is generated so that the make process does not die.
-$(TEXDOCDIR)/Test.%.tex: Test/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+define TEXRULE
+$(TEXDOCDIR)/$1.tex: $(subst .,/,$1).curry
+	$$(CURRYDOC) --tex "$(TEXDOCDIR)" $$(subst /,.,$<) || (rm -f $$@ && touch $$@)
+endef
 
-$(TEXDOCDIR)/%.tex: %.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<) || (rm -f $@ && touch $@)
+$(foreach module, $(LIB_NAMES),$(eval $(call TEXRULE,$(module))))
