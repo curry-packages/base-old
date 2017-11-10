@@ -1,0 +1,56 @@
+FiniteMap --> Data.Map
+
+The data type changed from "FM" to "Map".
+The explicit ordering function is not necessary anymore,
+instead an "Ord" context is needed.
+The type "Set" in now in Data.Set.
+Renames from "Set":
+
+FiniteSet  --> Set
+emptySet   --> empty
+mkSet      --> fromList
+isEmptySet --> null
+elementOf  --> member
+minusSet   --> difference
+setToList  --> toList
+union      --> union
+
+Renames from "Map":
+
+FM --> Map
+emptyFM --> empty
+unitFM --> singleton
+listToFM --> fromList
+addToFM --> insert        | argument order changed!
+addToFM_C --> insertWith         | argument order changed!
+addListToFM --> insertList        | argument order changed!
+addListToFM_C --> insertListWith        | argument order changed!
+delFromFM --> delete | argument order changed!
+delListFromFM --> deleteAll | argument order changed!
+updFM --> adjust  | argument order changed!
+splitFM       --> splitLookup         | return type changed!
+plusFM --> union                  | first two arguments are swapped!
+plusFM_C --> unionWith
+minusFM --> difference
+intersectFM --> intersection
+intersectFM_C --> intersectionWith
+foldFM --> foldrWithKey
+mapFM --> mapWithKey
+filterFM --> filterWithKey
+sizeFM --> size
+eqFM --> Map has "Eq" context instead
+isEmptyFM --> null
+elemFM --> member                  | argument order changed!
+lookupFM --> lookup | argument order changed!
+lookupWithDefaultFM --> findWithDefault | argument order changed!
+keyOrder --> removed, because "Ord" context is used now
+fmToList --> toList
+keysFM --> keys
+eltsFM --> elems
+fmSortBy --> sortWithMap   | Will sort given by "<" of "Ord" context
+minFM --> lookupMin
+maxFM --> lookupMax
+fmToListPreOrder --> toPreOrderList
+
+showFM --> Map has "Show" context instead
+readFM --> Map has "Read" context instead
