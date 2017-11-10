@@ -24,9 +24,9 @@ module Distribution (
   FrontendTarget(..),
 
   FrontendParams, defaultParams, rcParams,
-  quiet, extended, cpp, overlapWarn, fullPath, htmldir, logfile, specials,
-  setQuiet, setExtended, setCpp, setOverlapWarn, setFullPath, setHtmlDir,
-  setLogfile, addTarget, setSpecials,
+  quiet, extended, cpp, definitions, overlapWarn, fullPath, htmldir, logfile,
+  specials, setQuiet, setExtended, setCpp, setDefinitions, setOverlapWarn,
+  setFullPath, setHtmlDir, setLogfile, addTarget, setSpecials,
 
   callFrontend, callFrontendWithParams
   ) where
