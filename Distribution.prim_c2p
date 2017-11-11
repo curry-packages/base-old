@@ -25,6 +25,10 @@
   <library>prim_distribution</library>
   <entry>prim_curryRuntimeMinorVersion</entry>
  </primitive>
+ <primitive name="baseVersion" arity="0">
+  <library>prim_distribution</library>
+  <entry>prim_baseVersion</entry>
+ </primitive>
  <primitive name="installDir" arity="0">
   <library>prim_distribution</library>
   <entry>prim_installDir</entry>
