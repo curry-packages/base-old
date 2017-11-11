@@ -52,7 +52,7 @@ module Data.Map (
 
     ) where
 
-import Maybe
+import Data.Maybe
 import ReadShowTerm (readsQTerm, showQTerm)
 
 -----------------------------------------------
