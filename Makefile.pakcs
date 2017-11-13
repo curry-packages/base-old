@@ -5,8 +5,7 @@ CYMAKEPARAMS = --extended -Wnone -i.
 
 PAKCS=$(ROOT)/bin/pakcs
 
-CURRYLIBSDIR=$(ROOT)/lib-trunk
-CURRY_FILES:=$(shell cd $(CURRYLIBSDIR) && find * -name "*.curry")
+CURRY_FILES:=$(shell find * -name "*.curry")
 
 # directory for HTML documentation files:
 LIBDOCDIR=CDOC

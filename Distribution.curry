@@ -9,11 +9,11 @@
 --------------------------------------------------------------------------------
 
 module Distribution (
-  curryCompiler,curryCompilerMajorVersion,curryCompilerMinorVersion,
-  curryRuntime,curryRuntimeMajorVersion,curryRuntimeMinorVersion,
-  installDir,stripCurrySuffix,modNameToPath,
-  currySubdir,inCurrySubdir,addCurrySubdir,
-  rcFileName,rcFileContents,getRcVar,getRcVars,
+  curryCompiler, curryCompilerMajorVersion, curryCompilerMinorVersion,
+  curryRuntime, curryRuntimeMajorVersion, curryRuntimeMinorVersion,
+  baseVersion, installDir, stripCurrySuffix, modNameToPath,
+  currySubdir, inCurrySubdir, addCurrySubdir,
+  rcFileName, rcFileContents, getRcVar, getRcVars,
 
   joinModuleIdentifiers, splitModuleIdentifiers, splitModuleFileName,
   inCurrySubdirModule,
@@ -78,6 +78,10 @@ curryRuntimeMajorVersion external
 --- The minor version number of the Curry run-time environment.
 curryRuntimeMinorVersion :: Int
 curryRuntimeMinorVersion external
+
+--- The version number of the base libraries (e.g., "1.0.5").
+baseVersion :: String
+baseVersion external
 
 --- Path of the main installation directory of the Curry compiler.
 installDir :: FilePath
