@@ -1,7 +1,7 @@
 import qualified Installation as I
 
 external_d_C_curryCompiler :: Cover -> ConstStore -> Curry_Prelude.C_String
-external_d_C_curryCompiler _ _ = toCurry "kics2"
+external_d_C_curryCompiler _ _ = toCurry I.compilerName
 
 external_d_C_curryCompilerMajorVersion ::  Cover -> ConstStore -> Curry_Prelude.C_Int
 external_d_C_curryCompilerMajorVersion _ _ = toCurry I.majorVersion
