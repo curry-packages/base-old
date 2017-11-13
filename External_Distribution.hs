@@ -19,7 +19,7 @@ external_d_C_curryRuntimeMinorVersion ::  Cover -> ConstStore -> Curry_Prelude.C
 external_d_C_curryRuntimeMinorVersion _ _ = toCurry I.runtimeMinor
 
 external_d_C_baseVersion ::  Cover -> ConstStore -> Curry_Prelude.C_String
-external_d_C_baseVersion _ _ = toCurry "" -- I.baseVersion -- TODO
+external_d_C_baseVersion _ _ = toCurry I.baseVersion
 
 external_d_C_installDir ::  Cover -> ConstStore -> Curry_Prelude.C_String
 external_d_C_installDir _ _ = toCurry I.installDir
