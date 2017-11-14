@@ -21,7 +21,7 @@ module Prelude
   , Num(..), Fractional(..), Real(..), Integral(..)
   -- data types
   , Bool (..) , Char (..) , Int (..) , Float (..), String , Ordering (..)
-  , Success, Maybe (..), Either (..), IO (..), IOError (..)
+  , Success, Maybe (..), IO (..), IOError (..)
   , DET
   -- functions
   , (.), id, const, curry, uncurry, flip, until, seq, ensureNotFree
@@ -33,7 +33,7 @@ module Prelude
   , takeWhile, dropWhile, span, break, lines, unlines, words, unwords
   , reverse, and, or, any, all
   , ord, chr, (=:=), success, (&), (&>), maybe
-  , either, (>>=), return, (>>), done, putChar, getChar, readFile
+  , (>>=), return, (>>), done, putChar, getChar, readFile
   , writeFile, appendFile
   , putStr, putStrLn, getLine, userError, ioError, showError
   , catch, doSolve, sequenceIO, sequenceIO_, mapIO
@@ -722,17 +722,6 @@ data Maybe a = Nothing | Just a
 maybe              :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
 maybe _ f (Just x) = f x
-
-
--- Either type
-
-data Either a b = Left a | Right b
- deriving (Eq, Ord, Show, Read)
-
-either               :: (a -> c) -> (b -> c) -> Either a b -> c
-either f _ (Left x)  = f x
-either _ g (Right x) = g x
-
 
 -- Monadic IO
 

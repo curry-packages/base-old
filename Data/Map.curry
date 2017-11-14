@@ -53,7 +53,6 @@ module Data.Map (
     ) where
 
 import Data.Maybe
-import ReadShowTerm (readsQTerm, showQTerm)
 
 -----------------------------------------------
 --        BUILDING finite maps
@@ -352,12 +351,7 @@ data Map k a
     Int{-STRICT-}    -- Size >= 1
     (Map k a)        -- Children
     (Map k a)
-
-instance (Show k, Show a) => Show (Map k a) where
-  show m = showQTerm m
-
-instance (Read k, Read a) => Read (Map k a) where
-  readsPrec _ s = readsQTerm s
+  deriving (Show, Read)
 
 instance (Eq k, Eq a) => Eq (Map k a) where
   m_1 == m_2 =

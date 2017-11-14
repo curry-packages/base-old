@@ -18,6 +18,16 @@ module Data.Either
   , partitionEithers
   ) where
 
+
+-- Either type
+
+data Either a b = Left a | Right b
+ deriving (Eq, Ord, Show, Read)
+
+either               :: (a -> c) -> (b -> c) -> Either a b -> c
+either f _ (Left x)  = f x
+either _ g (Right x) = g x
+
 --- Extracts from a list of `Either` all the `Left` elements in order.
 lefts   :: [Either a b] -> [a]
 lefts x = [a | Left a <- x]

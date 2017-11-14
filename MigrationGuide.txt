@@ -52,9 +52,6 @@ minFM               --> lookupMin
 maxFM               --> lookupMax
 fmToListPreOrder    --> toPreOrderList
 
-showFM --> Map has "Show" context instead
-readFM --> Map has "Read" context instead
-
 List -> Data.list
 
 Maybe -> Data.Maybe   | now using Monad instance
@@ -68,3 +65,36 @@ Directory -> System.Directory
 IO -> System.IO
 
 Random -> System.Random
+
+Function ->  Data.Function    (on, fix)
+         bzw Data.Tuple.Extra (first, second, (***), (&&&), both)
+
+Prelude -> Removed Either type
+
+State -> Control.Monad.State
+Renames:
+bindS      -> Monad instance, >>=
+bindS_     -> Monad instance, >>
+returnS    -> Monad instance, return
+getS       -> get
+putS       -> put
+modifyS    -> modify
+sequenceS  -> sequence
+sequenceS_ -> sequence_
+mapS       -> mapM
+mapS_      -> mapM_
+liftS      -> liftM
+liftS2     -> liftM2
+
+ErrorState -> Control.Monad.ErrorState
+Renames:
+evalES      -> runError
+returnES    -> Monad instance, return
+>+=         -> Monad instance, >>=
+>+          -> *>
+getS        -> get
+putS        -> put
+modifyS     -> modify
+mapS        -> mapM
+concatMapES -> concatMapM
+mapAccumES  -> mapAccumM
