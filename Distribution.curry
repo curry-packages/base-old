@@ -25,8 +25,8 @@ module Distribution (
 
   FrontendParams, defaultParams, rcParams,
   quiet, extended, cpp, definitions, overlapWarn, fullPath, htmldir, logfile,
-  specials, setQuiet, setExtended, setCpp, setDefinitions, setOverlapWarn,
-  setFullPath, setHtmlDir, setLogfile, addTarget, setSpecials,
+  specials, setQuiet, setExtended, setCpp, addDefinition, setDefinitions,
+  setOverlapWarn, setFullPath, setHtmlDir, setLogfile, addTarget, setSpecials,
 
   callFrontend, callFrontendWithParams
   ) where
@@ -335,6 +335,11 @@ setExtended s (FrontendParams a _ u v w x y z ts sp) =
 setCpp :: Bool -> FrontendParams -> FrontendParams
 setCpp s (FrontendParams a b _ v w x y z ts sp) =
   FrontendParams a b s v w x y z ts sp
+
+--- Add cpp definition of the front end.
+addDefinition :: (String, Int) -> FrontendParams -> FrontendParams
+addDefinition d (FrontendParams a b c ds w x y z ts sp) =
+  FrontendParams a b c (ds ++ [d]) w x y z ts sp
 
 --- Set cpp definitions of the front end.
 setDefinitions :: [(String, Int)] -> FrontendParams -> FrontendParams
