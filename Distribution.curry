@@ -309,7 +309,7 @@ defaultParams :: FrontendParams
 defaultParams =
   FrontendParams False True False defaultDefs True Nothing Nothing Nothing [] ""
  where
-  defaultDefs = [(map toUpper curryCompiler,
+  defaultDefs = [("__" ++ map toUpper curryCompiler ++ "__",
     curryCompilerMajorVersion * 100 + curryCompilerMinorVersion)]
 
 --- The default parameters of the front end as configured by the compiler
