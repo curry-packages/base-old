@@ -307,7 +307,10 @@ data FrontendParams =
 --- The default parameters of the front end.
 defaultParams :: FrontendParams
 defaultParams =
-  FrontendParams False True False [] True Nothing Nothing Nothing [] ""
+  FrontendParams False True False defaultDefs True Nothing Nothing Nothing [] ""
+ where
+  defaultDefs = [(map toUpper curryCompiler,
+    curryCompilerMajorVersion * 100 + curryCompilerMinorVersion)]
 
 --- The default parameters of the front end as configured by the compiler
 --- specific resource configuration file.
