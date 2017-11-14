@@ -7,7 +7,7 @@ import qualified Control.Exception as C
 -- are not recognized!
 import GHC.Exts (Int (I#), Int#, (==#), (/=#), (<#), (>#), (<=#))
 import GHC.Exts ((+#), (-#), (*#), quotInt#, remInt#, negateInt#)
-import GHC.Exts (Float (F#), Float#, eqFloat#, leFloat#, negateFloat#)
+import GHC.Exts (Double (D#), Double#, (==##), (<=##), negateDouble#)
 import GHC.Exts (Char (C#), Char#, eqChar#, leChar#, ord#, chr#)
 import System.IO
 
@@ -209,7 +209,7 @@ currynat2primint nat   = error ("KiCS2 error: Prelude.currynat2primint: no groun
 -- BEGIN GENERATED FROM PrimTypes.curry
 
 data C_Float
-     = C_Float Float#
+     = C_Float Double#
      | Choice_C_Float Cover ID C_Float C_Float
      | Choices_C_Float Cover ID ([C_Float])
      | Fail_C_Float Cover FailInfo
@@ -220,10 +220,10 @@ instance Show C_Float where
   showsPrec d (Choices_C_Float cd i xs) = showsChoices d cd i xs
   showsPrec d (Guard_C_Float cd c e) = showsGuard d cd c e
   showsPrec d (Fail_C_Float _ _) = showChar '!'
-  showsPrec d (C_Float x1) = shows (F# x1)
+  showsPrec d (C_Float x1) = shows (D# x1)
 
 instance Read C_Float where
-  readsPrec d s = map readFloat (readsPrec d s) where readFloat (F# f, s) = (C_Float f, s)
+  readsPrec d s = map readFloat (readsPrec d s) where readFloat (D# d, s) = (C_Float d, s)
 
 instance NonDet C_Float where
   choiceCons = Choice_C_Float
@@ -261,8 +261,8 @@ instance NormalForm C_Float where
   searchNF _ _ x = error ("Prelude.Float.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Float where
-  (=.=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_True else Fail_C_Bool cd defFailInfo
-  (=.<=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 `eqFloat#` y1) then C_True else Fail_C_Bool cd defFailInfo
+  (=.=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 ==## y1) then C_True else Fail_C_Bool cd defFailInfo
+  (=.<=) (C_Float x1) (C_Float y1) cd _  = if isTrue# (x1 ==## y1) then C_True else Fail_C_Bool cd defFailInfo
   bind cd i (Choice_C_Float d j l r) = [(ConstraintChoice d j (bind cd i l) (bind cd i r))]
   bind cd i (Choices_C_Float d j@(FreeID _ _) xs) = bindOrNarrow cd i d j xs
   bind cd i (Choices_C_Float d j@(NarrowedID _ _) xs) = [(ConstraintChoices d j (map (bind cd i) xs))]
@@ -294,7 +294,7 @@ d_C_prim_eqFloat y (Choices_C_Float d i xs) cd cs =
 d_C_prim_eqFloat y (Guard_C_Float d c x) cd cs =
   guardCons d c ((y `d_C_prim_eqFloat` x) cd  $! (addCs c cs))
 d_C_prim_eqFloat _ (Fail_C_Float d info) _ _ = failCons d info
-d_C_prim_eqFloat (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `eqFloat#` y1))
+d_C_prim_eqFloat (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 ==## y1))
 
 d_C_prim_ltEqFloat :: C_Float -> C_Float -> Cover -> ConstStore -> C_Bool
 d_C_prim_ltEqFloat (Choice_C_Float d i x y) z cd cs =
@@ -311,7 +311,7 @@ d_C_prim_ltEqFloat y (Choices_C_Float d i xs) cd cs =
 d_C_prim_ltEqFloat y (Guard_C_Float d c x) cd cs =
   guardCons d c ((y `d_C_prim_ltEqFloat` x) cd $! (addCs c cs))
 d_C_prim_ltEqFloat _ (Fail_C_Float d info) _ _ = failCons d info
-d_C_prim_ltEqFloat (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 `leFloat#` y1))
+d_C_prim_ltEqFloat (C_Float x1) (C_Float y1) _ _ = toCurry (isTrue# (x1 <=## y1))
 
 external_d_C_eqFloat :: C_Float -> C_Float -> Cover -> ConstStore -> C_Bool
 external_d_C_eqFloat  = d_C_prim_eqFloat
@@ -529,10 +529,10 @@ instance ConvertCurryHaskell C_Int Integer where
   fromCurry (C_CurryInt i) = toInteger (I# (curryint2primint i))
   fromCurry _              = error "KiCS2 error: Int data with no ground term"
 
-instance ConvertCurryHaskell C_Float Float where
-  toCurry (F# f) = C_Float f
+instance ConvertCurryHaskell C_Float Double where
+  toCurry (D# d) = C_Float d
 
-  fromCurry (C_Float f) = F# f
+  fromCurry (C_Float d) = D# d
   fromCurry _           = error "KiCS2 error: Float data with no ground term"
 
 instance ConvertCurryHaskell C_Char Char where
@@ -557,7 +557,7 @@ instance ConvertCurryHaskell C_Bool Bool where
 
   fromCurry C_True  = True
   fromCurry C_False = False
-  fromCurry _       = error "KiCS2 error: Float data with no ground term"
+  fromCurry _       = error "KiCS2 error: Bool data with no ground term"
 
 instance ConvertCurryHaskell OP_Unit () where
   toCurry ()  = OP_Unit
@@ -628,7 +628,7 @@ external_d_C_prim_readNatLiteral :: C_String -> Cover -> ConstStore -> OP_List (
 external_d_C_prim_readNatLiteral s _ _ = toCurry (reads (fromCurry s) :: [(Integer, String)])
 
 external_d_C_prim_readFloatLiteral :: C_String -> Cover -> ConstStore -> OP_List (OP_Tuple2 C_Float C_String)
-external_d_C_prim_readFloatLiteral s _ _ = toCurry (reads (fromCurry s) :: [(Float, String)])
+external_d_C_prim_readFloatLiteral s _ _ = toCurry (reads (fromCurry s) :: [(Double, String)])
 
 external_d_C_prim_readCharLiteral :: C_String -> Cover -> ConstStore -> OP_List (OP_Tuple2 C_Char C_String)
 external_d_C_prim_readCharLiteral s _ _ = toCurry (reads (fromCurry s) :: [(Char, String)])
@@ -860,28 +860,28 @@ mkIntTuple :: OP_Tuple2 BinInt BinInt -> Cover -> ConstStore -> OP_Tuple2 C_Int 
 mkIntTuple (OP_Tuple2 d m) _ _ = OP_Tuple2 (C_CurryInt d) (C_CurryInt m)
 
 external_d_C_negateFloat :: C_Float -> Cover -> ConstStore -> C_Float
-external_d_C_negateFloat (C_Float x) _  _  = C_Float (negateFloat# x)
+external_d_C_negateFloat (C_Float x) _  _  = C_Float (negateDouble# x)
 external_d_C_negateFloat x           cd cs
   = (external_d_C_negateFloat `d_OP_dollar_hash` x) cd cs
 
 external_d_C_prim_Float_plus :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
 external_d_C_prim_Float_plus y x _ _ =
-  toCurry ((fromCurry x + fromCurry y) :: Float)
+  toCurry ((fromCurry x + fromCurry y) :: Double)
 
 external_d_C_prim_Float_minus :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
 external_d_C_prim_Float_minus y x _ _ =
-  toCurry ((fromCurry x - fromCurry y) :: Float)
+  toCurry ((fromCurry x - fromCurry y) :: Double)
 
 external_d_C_prim_Float_times :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
 external_d_C_prim_Float_times y x _ _ =
-  toCurry ((fromCurry x * fromCurry y) :: Float)
+  toCurry ((fromCurry x * fromCurry y) :: Double)
 
 external_d_C_prim_Float_div :: C_Float -> C_Float -> Cover -> ConstStore -> C_Float
 external_d_C_prim_Float_div y x _ _ =
-  toCurry ((fromCurry x / fromCurry y) :: Float)
+  toCurry ((fromCurry x / fromCurry y) :: Double)
 
 external_d_C_prim_i2f :: C_Int -> Cover -> ConstStore -> C_Float
-external_d_C_prim_i2f x _ _ = toCurry (fromInteger (fromCurry x) :: Float)
+external_d_C_prim_i2f x _ _ = toCurry (fromInteger (fromCurry x) :: Double)
 
 -- -----------------------------------------------------------------------------
 -- Primitive operations: IO stuff
