@@ -486,4 +486,4 @@ callFrontendWithParams target params modpath = do
 
    cppParams = intercalate " " $ map showDefinition (definitions params)
 
-   showDefinition (s, v) = "-D__" ++ s ++ "__=" ++ show v
+   showDefinition (s, v) = "-D" ++ s ++ "=" ++ show v
