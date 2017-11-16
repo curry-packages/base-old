@@ -1,17 +1,4 @@
-{-# LANGUAGE CPP #-}
-import GHC.Exts (Int (I#),(<#))
-
-#if __GLASGOW_HASKELL__ > 706
-import GHC.Exts (isTrue#)
-#endif
-
 -- #endimport - do not remove this line!
-
-#if !(__GLASGOW_HASKELL__ > 706)
-isTrue# :: Bool -> Bool
-{-# INLINE isTrue# #-}
-isTrue# x = x
-#endif
 
 external_d_OP_bar_plus_plus_bar
   :: Curry_Prelude.Curry a
@@ -66,13 +53,13 @@ external_d_C_addVS x vs _ _ = Values (Curry_Prelude.OP_Cons x (getValues vs))
 
 external_d_C_failVS :: Curry_Prelude.C_Int
                     -> Cover -> ConstStore -> C_ValueSequence a
-external_d_C_failVS d@(Curry_Prelude.C_Int d') (I# cd) _
-  | isTrue# (d' <# cd) = FailVS d
-  | otherwise          = Values (Curry_Prelude.OP_List)
+external_d_C_failVS d@(Curry_Prelude.C_Int d') cd _
+  | fromInteger d' < cd = FailVS d
+  | otherwise           = Values (Curry_Prelude.OP_List)
 
 external_d_C_vsToList :: C_ValueSequence a -> Cover -> ConstStore -> Curry_Prelude.OP_List a
 external_d_C_vsToList (Values                       xs) _  _  = xs
-external_d_C_vsToList (FailVS  (Curry_Prelude.C_Int d)) _  _  = failCons (I# d) defFailInfo
+external_d_C_vsToList (FailVS  (Curry_Prelude.C_Int d)) _  _  = failCons (fromInteger d) defFailInfo
 external_d_C_vsToList (Choice_VS d i x y) cd cs
   = choiceCons d i (external_d_C_vsToList x cd cs)
                    (external_d_C_vsToList y cd cs)

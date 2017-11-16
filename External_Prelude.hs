@@ -5,10 +5,9 @@ import qualified Control.Exception as C
 
 -- ATTENTION: Do not introduce line breaks in import declarations as these
 -- are not recognized!
-import GHC.Exts (Int (I#), Int#, (==#), (/=#), (<#), (>#), (<=#))
-import GHC.Exts ((+#), (-#), (*#), quotInt#, remInt#, negateInt#)
+import Data.Char (chr, ord)
 import GHC.Exts (Double (D#), Double#, (==##), (<=##), negateDouble#)
-import GHC.Exts (Char (C#), Char#, eqChar#, leChar#, ord#, chr#)
+import GHC.Exts (Char (C#), Char#, eqChar#, leChar#)
 import System.IO
 
 import CurryException
@@ -34,7 +33,7 @@ isTrue# x = x
 
 -- BEGIN GENERATED FROM PrimTypes.curry
 data C_Int
-     = C_Int Int#
+     = C_Int Integer
      | C_CurryInt BinInt
      | Choice_C_Int Cover ID C_Int C_Int
      | Choices_C_Int Cover ID ([C_Int])
@@ -46,16 +45,16 @@ instance Show C_Int where
   showsPrec d (Choices_C_Int cd i xs) = showsChoices d cd i xs
   showsPrec d (Guard_C_Int cd c e) = showsGuard d cd c e
   showsPrec _ (Fail_C_Int _ _) = showChar '!'
-  showsPrec d (C_Int x1) = shows (I# x1)
+  showsPrec d (C_Int x1) = shows x1
   showsPrec d (C_CurryInt x1) = case ((\x _ _ -> x) $## x1) (error "Show C_Int: nesting depth used") emptyCs of
     Choice_BinInt _ _ _ _ -> shows x1
     Choices_BinInt _ _ _  -> shows x1
     Fail_BinInt _ _       -> shows x1
     Guard_BinInt _ _ _    -> shows x1
-    gnfBinInt             -> shows (I# (curryint2primint gnfBinInt))
+    gnfBinInt             -> shows (curryint2primint gnfBinInt)
 
 instance Read C_Int where
-  readsPrec d s = map readInt (readsPrec d s) where readInt (I# i, s) = (C_Int i, s)
+  readsPrec d s = map readInt (readsPrec d s) where readInt (i, s) = (C_Int i, s)
 
 instance NonDet C_Int where
   choiceCons = Choice_C_Int
@@ -96,12 +95,12 @@ instance NormalForm C_Int where
   searchNF _ _ x = error ("Prelude.Int.searchNF: no constructor: " ++ (show x))
 
 instance Unifiable C_Int where
-  (=.=) (C_Int      x1) (C_Int      y1) cd _  = if isTrue# (x1 ==# y1) then C_True else Fail_C_Bool cd defFailInfo
+  (=.=) (C_Int      x1) (C_Int      y1) cd _  = if x1 == y1 then C_True else Fail_C_Bool cd defFailInfo
   (=.=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =:= y1) cd cs
   (=.=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =:= (primint2curryint y1)) cd cs
   (=.=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =:= y1) cd cs
   (=.=) _               _               cd _  = Fail_C_Bool cd defFailInfo
-  (=.<=) (C_Int      x1) (C_Int      y1) cd _ = if isTrue# (x1 ==# y1) then C_True else Fail_C_Bool cd defFailInfo
+  (=.<=) (C_Int      x1) (C_Int      y1) cd _ = if x1 == y1 then C_True else Fail_C_Bool cd defFailInfo
   (=.<=) (C_Int      x1) (C_CurryInt y1) cd cs = ((primint2curryint x1) =:<= y1) cd cs
   (=.<=) (C_CurryInt x1) (C_Int      y1) cd cs = (x1 =:<= (primint2curryint y1)) cd cs
   (=.<=) (C_CurryInt x1) (C_CurryInt y1) cd cs = (x1 =:<= y1) cd cs
@@ -141,7 +140,7 @@ d_C_prim_eqInt y (Choices_C_Int d i xs) cd cs =
 d_C_prim_eqInt y (Guard_C_Int d c x) cd cs =
   guardCons d c ((y `d_C_prim_eqInt` x) cd $! (addCs c cs))
 d_C_prim_eqInt _ (Fail_C_Int d info) _ _ = failCons d info
-d_C_prim_eqInt (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 ==# y1))
+d_C_prim_eqInt (C_Int      x1) (C_Int      y1) _ _ = toCurry (x1 == y1)
 d_C_prim_eqInt (C_Int      x1) (C_CurryInt y1) cd cs =
   ((primint2curryint x1) `d_C_prim_eqBinInt` y1) cd cs
 d_C_prim_eqInt (C_CurryInt x1) (C_Int      y1) cd cs =
@@ -164,7 +163,7 @@ d_C_prim_ltEqInt y (Choices_C_Int d i xs) cd cs =
 d_C_prim_ltEqInt y (Guard_C_Int d c x) cd cs =
   guardCons d c ((y `d_C_prim_ltEqInt` x) cd $! (addCs c cs))
 d_C_prim_ltEqInt _ (Fail_C_Int d info) _ _ = failCons d info
-d_C_prim_ltEqInt (C_Int      x1) (C_Int      y1) _ _ = toCurry (isTrue# (x1 <=# y1))
+d_C_prim_ltEqInt (C_Int      x1) (C_Int      y1) _ _ = toCurry (x1 <= y1)
 d_C_prim_ltEqInt (C_Int      x1) (C_CurryInt y1) cd cs =
   ((primint2curryint x1) `d_C_lteqInteger` y1) cd cs
 d_C_prim_ltEqInt (C_CurryInt x1) (C_Int      y1) cd cs =
@@ -178,28 +177,28 @@ external_d_C_eqInt  = d_C_prim_eqInt
 external_d_C_ltEqInt :: C_Int -> C_Int -> Cover -> ConstStore -> C_Bool
 external_d_C_ltEqInt  = d_C_prim_ltEqInt
 
-primint2curryint :: Int# -> BinInt
+primint2curryint :: Integer -> BinInt
 primint2curryint n
-  | isTrue# (n <#  0#) = Neg (primint2currynat (negateInt# n))
-  | isTrue# (n ==# 0#) = Zero
-  | otherwise          = Pos (primint2currynat n)
+  | n <  0    = Neg (primint2currynat (negate n))
+  | n == 0    = Zero
+  | otherwise = Pos (primint2currynat n)
 
-primint2currynat :: Int# -> Nat
+primint2currynat :: Integer -> Nat
 primint2currynat n
-  | isTrue# (n ==# 1#)                = IHi
-  | isTrue# ((n `remInt#` 2#) ==# 0#) = O (primint2currynat (n `quotInt#` 2#))
-  | otherwise                         = I (primint2currynat (n `quotInt#` 2#))
+  | n == 1           = IHi
+  | (n `rem` 2) == 0 = O (primint2currynat (n `quot` 2))
+  | otherwise        = I (primint2currynat (n `quot` 2))
 
-curryint2primint :: BinInt -> Int#
-curryint2primint Zero    = 0#
+curryint2primint :: BinInt -> Integer
+curryint2primint Zero    = 0
 curryint2primint (Pos n) = currynat2primint n
-curryint2primint (Neg n) = negateInt# (currynat2primint n)
+curryint2primint (Neg n) = negate (currynat2primint n)
 curryint2primint int     = error ("KiCS2 error: Prelude.curryint2primint: no ground term, but " ++ show int)
 
-currynat2primint :: Nat -> Int#
-currynat2primint IHi   = 1#
-currynat2primint (O n) = 2# *# currynat2primint n
-currynat2primint (I n) = 2# *# currynat2primint n +# 1#
+currynat2primint :: Nat -> Integer
+currynat2primint IHi   = 1
+currynat2primint (O n) = 2 * currynat2primint n
+currynat2primint (I n) = 2 * currynat2primint n + 1
 currynat2primint nat   = error ("KiCS2 error: Prelude.currynat2primint: no ground term, but " ++ show nat)
 
 -- -----------------------------------------------------------------------------
@@ -503,31 +502,34 @@ external_d_C_eqChar  = d_C_prim_eqChar
 external_d_C_ltEqChar :: C_Char -> C_Char -> Cover -> ConstStore -> C_Bool
 external_d_C_ltEqChar  = d_C_prim_ltEqChar
 
+primChar2primint :: Char# -> Integer
+primChar2primint c = toInteger (ord (C# c))
+
+primint2primChar :: Integer -> Char#
+primint2primChar c = char2primChar (chr (fromInteger c))
+  where char2primChar (C# c) = c
+
 primChar2CurryChar :: Char# -> BinInt
-primChar2CurryChar c = primint2curryint (ord# c)
+primChar2CurryChar c = primint2curryint (primChar2primint c)
 
 curryChar2primChar :: BinInt -> Char#
-curryChar2primChar c = chr# (curryint2primint c)
+curryChar2primChar c = primint2primChar (curryint2primint c)
 
 -- ---------------------------------------------------------------------------
 -- Conversion from and to primitive Haskell types
 -- ---------------------------------------------------------------------------
 
-instance ConvertCurryHaskell C_Int Int where
-  toCurry (I# i) = C_Int i
-
-  fromCurry (C_Int i)      = I# i
-  fromCurry (C_CurryInt i) = I# (curryint2primint i)
-  fromCurry _              = error "KiCS2 error: Int data with no ground term"
-
 instance ConvertCurryHaskell C_Int Integer where
-  toCurry i = int2C_Int (fromInteger i)
-   where
-    int2C_Int (I# c) = C_Int c
+  toCurry i = C_Int i
 
-  fromCurry (C_Int      i) = toInteger (I# i)
-  fromCurry (C_CurryInt i) = toInteger (I# (curryint2primint i))
+  fromCurry (C_Int i)      = i
+  fromCurry (C_CurryInt i) = curryint2primint i
   fromCurry _              = error "KiCS2 error: Int data with no ground term"
+
+instance ConvertCurryHaskell C_Int Int where
+  toCurry i = toCurry (toInteger i)
+
+  fromCurry i = fromInteger (fromCurry i)
 
 instance ConvertCurryHaskell C_Float Double where
   toCurry (D# d) = C_Float d
@@ -702,11 +704,11 @@ external_nd_C_apply = nd_apply
 -- -----------------------------------------------------------------------------
 
 external_d_C_prim_ord :: C_Char -> Cover -> ConstStore -> C_Int
-external_d_C_prim_ord (C_Char c)    _ _ = C_Int (ord# c)
+external_d_C_prim_ord (C_Char c)    _ _ = C_Int (primChar2primint c)
 external_d_C_prim_ord (CurryChar c) _ _ = C_CurryInt c
 
 external_d_C_prim_chr :: C_Int -> Cover -> ConstStore -> C_Char
-external_d_C_prim_chr (C_Int i)      _ _ = C_Char (chr# i)
+external_d_C_prim_chr (C_Int i)      _ _ = C_Char (primint2primChar i)
 external_d_C_prim_chr (C_CurryInt i) _ _ = CurryChar i
 
 -- -----------------------------------------------------------------------------
@@ -714,7 +716,7 @@ external_d_C_prim_chr (C_CurryInt i) _ _ = CurryChar i
 -- -----------------------------------------------------------------------------
 
 external_d_OP_plus_dollar :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_OP_plus_dollar (C_Int      x) (C_Int      y) _  _  = C_Int (x +# y)
+external_d_OP_plus_dollar (C_Int      x) (C_Int      y) _  _  = C_Int (x + y)
 external_d_OP_plus_dollar (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_OP_plus_hash` y) cd cs)
 external_d_OP_plus_dollar (C_CurryInt x) (C_Int      y) cd cs
@@ -726,7 +728,7 @@ external_d_OP_plus_dollar x              y              cd cs
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
 external_d_OP_minus_dollar :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_OP_minus_dollar (C_Int      x) (C_Int      y) _  _  = C_Int (x -# y)
+external_d_OP_minus_dollar (C_Int      x) (C_Int      y) _  _  = C_Int (x - y)
 external_d_OP_minus_dollar (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_OP_minus_hash` y) cd cs)
 external_d_OP_minus_dollar (C_CurryInt x) (C_Int y)      cd cs
@@ -738,7 +740,7 @@ external_d_OP_minus_dollar x              y              cd cs
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
 external_d_OP_star_dollar :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
-external_d_OP_star_dollar (C_Int      x) (C_Int      y) _  _  = C_Int (x *# y)
+external_d_OP_star_dollar (C_Int      x) (C_Int      y) _  _  = C_Int (x * y)
 external_d_OP_star_dollar (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_OP_star_hash` y) cd cs)
 external_d_OP_star_dollar (C_CurryInt x) (C_Int      y) cd cs
@@ -751,8 +753,8 @@ external_d_OP_star_dollar x              y              cd cs
 
 external_d_C_quot_ :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
 external_d_C_quot_ (C_Int      x) (C_Int      y) cd _
-  | isTrue# (y ==# 0#) = Fail_C_Int cd (customFail "Division by Zero")
-  | otherwise          = C_Int (x `quotInt#` y)
+  | y == 0    = Fail_C_Int cd (customFail "Division by Zero")
+  | otherwise = C_Int (x `quot` y)
 external_d_C_quot_ (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_C_quotInteger` y) cd cs)
 external_d_C_quot_ (C_CurryInt x) (C_Int      y) cd cs
@@ -765,8 +767,8 @@ external_d_C_quot_ x              y              cd cs
 
 external_d_C_rem_ :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
 external_d_C_rem_ (C_Int      x) (C_Int      y) cd _
-  | isTrue# (y ==# 0#) = Fail_C_Int cd (customFail "Division by Zero")
-  | otherwise          = C_Int (x `remInt#` y)
+  | y == 0    = Fail_C_Int cd (customFail "Division by Zero")
+  | otherwise = C_Int (x `rem` y)
 external_d_C_rem_ (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_C_remInteger` y) cd cs)
 external_d_C_rem_ (C_CurryInt x) (C_Int      y) cd cs
@@ -780,8 +782,8 @@ external_d_C_rem_ x              y              cd cs
 external_d_C_quotRem_ :: C_Int -> C_Int
   -> Cover -> ConstStore -> OP_Tuple2 C_Int C_Int
 external_d_C_quotRem_ (C_Int      x) (C_Int      y) cd _
-  | isTrue# (y ==# 0#)  = Fail_OP_Tuple2 cd (customFail "Division by Zero")
-  | otherwise           = OP_Tuple2 (C_Int (x `quotInt#` y)) (C_Int (x `remInt#` y))
+  | y == 0    = Fail_OP_Tuple2 cd (customFail "Division by Zero")
+  | otherwise = OP_Tuple2 (C_Int (x `quot` y)) (C_Int (x `rem` y))
 external_d_C_quotRem_ (C_Int      x) (C_CurryInt y) cd cs
   = (mkIntTuple `d_dollar_bang` (((primint2curryint x) `d_C_quotRemInteger` y) cd cs)) cd cs
 external_d_C_quotRem_ (C_CurryInt x) (C_Int      y) cd cs
@@ -794,8 +796,8 @@ external_d_C_quotRem_ x              y              cd cs
 
 external_d_C_div_ :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
 external_d_C_div_ (C_Int      x) (C_Int      y) cd _
-  | isTrue# (y ==# 0#) = Fail_C_Int cd (customFail "Division by Zero")
-  | otherwise          = C_Int (x `divInt#` y)
+  | y == 0    = Fail_C_Int cd (customFail "Division by Zero")
+  | otherwise = C_Int (x `div` y)
 external_d_C_div_ (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_C_divInteger` y) cd cs)
 external_d_C_div_ (C_CurryInt x) (C_Int      y) cd cs
@@ -806,22 +808,10 @@ external_d_C_div_ x              y              cd cs
   = ((\a cd1 cs1-> ((\b cd2 cs2-> ((a `external_d_C_div_` b) cd2 cs2))
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
--- PrimOp taken from GHC.Base
-divInt# :: Int# -> Int# -> Int#
-x# `divInt#` y#
-        -- Be careful NOT to overflow if we do any additional arithmetic
-        -- on the arguments...  the following  previous version of this
-        -- code has problems with overflow:
---    | (x# ># 0#) && (y# <# 0#) = ((x# -# y#) -# 1#) `quotInt#` y#
---    | (x# <# 0#) && (y# ># 0#) = ((x# -# y#) +# 1#) `quotInt#` y#
-    | isTrue# ((x# ># 0#)) && isTrue# ((y# <# 0#)) = ((x# -# 1#) `quotInt#` y#) -# 1#
-    | isTrue# ((x# <# 0#)) && isTrue# ((y# ># 0#)) = ((x# +# 1#) `quotInt#` y#) -# 1#
-    | otherwise                                    = x# `quotInt#` y#
-
 external_d_C_mod_ :: C_Int -> C_Int -> Cover -> ConstStore -> C_Int
 external_d_C_mod_ (C_Int      x) (C_Int      y) cd _
-  | isTrue# (y ==# 0#) = Fail_C_Int cd (customFail "Division by Zero")
-  | otherwise          = C_Int (x `modInt#` y)
+  | y == 0    = Fail_C_Int cd (customFail "Division by Zero")
+  | otherwise = C_Int (x `mod` y)
 external_d_C_mod_ (C_Int      x) (C_CurryInt y) cd cs
   = C_CurryInt (((primint2curryint x) `d_C_modInteger` y) cd cs)
 external_d_C_mod_ (C_CurryInt x) (C_Int      y) cd cs
@@ -832,20 +822,10 @@ external_d_C_mod_ x              y              cd cs
   = ((\a cd1 cs1 -> ((\b cd2 cs2 -> ((a `external_d_C_mod_` b)) cd2 cs2)
     `d_OP_dollar_hash` y) cd1 cs1) `d_OP_dollar_hash` x) cd cs
 
--- PrimOp taken from GHC.Base
-modInt# :: Int# -> Int# -> Int#
-x# `modInt#` y#
-    | isTrue# ((x# ># 0#)) && isTrue# ((y# <# 0#)) ||
-      isTrue# ((x# <# 0#)) && isTrue# ((y# ># 0#))
-    = if isTrue# (r# /=# 0#) then r# +# y# else 0#
-    | otherwise
-    = r#
-  where !r# = x# `remInt#` y#
-
 external_d_C_divMod_ :: C_Int -> C_Int ->  Cover -> ConstStore -> OP_Tuple2 C_Int C_Int
 external_d_C_divMod_ (C_Int      x) (C_Int      y) cd _
-  | isTrue# (y ==# 0#) = Fail_OP_Tuple2 cd (customFail "Division by Zero")
-  | otherwise          = OP_Tuple2 (C_Int (x `divInt#` y)) (C_Int (x `modInt#` y))
+  | y == 0    = Fail_OP_Tuple2 cd (customFail "Division by Zero")
+  | otherwise = OP_Tuple2 (C_Int (x `div` y)) (C_Int (x `mod` y))
 external_d_C_divMod_ (C_Int      x) (C_CurryInt y) cd cs
   = (mkIntTuple `d_OP_dollar_hash` (((primint2curryint x) `d_C_divModInteger` y) cd cs)) cd cs
 external_d_C_divMod_ (C_CurryInt x) (C_Int      y) cd cs
