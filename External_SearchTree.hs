@@ -1,7 +1,6 @@
 import Control.Applicative
 import Control.Monad
 import MonadSearch
-import GHC.Exts (Int (I#))
 
 instance Functor C_SearchTree where
   fmap = liftM
@@ -29,13 +28,13 @@ instance Alternative C_SearchTree where
   empty = mzero
 
 instance MonadPlus C_SearchTree where
-  mzero = C_Fail (Curry_Prelude.C_Int -1#)
+  mzero = C_Fail (Curry_Prelude.C_Int (-1))
   mplus = C_Or
 
 instance MonadSearch C_SearchTree where
   splus            = Choice_C_SearchTree
   ssum             = Choices_C_SearchTree
-  szero (I# d) _   = C_Fail (Curry_Prelude.C_Int d)
+  szero d _        = C_Fail (Curry_Prelude.C_Int (toInteger d))
   constrainMSearch = Guard_C_SearchTree
 
 external_d_C_someSearchTree :: NormalForm a
