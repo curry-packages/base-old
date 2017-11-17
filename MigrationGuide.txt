@@ -62,6 +62,8 @@ Char -> Data.Char
 
 Directory -> System.Directory
 
+FilePath -> System.FilePath
+
 IO -> System.IO
 
 Random -> System.Random
@@ -98,3 +100,38 @@ modifyS     -> modify
 mapS        -> mapM
 concatMapES -> concatMapM
 mapAccumES  -> mapAccumM
+
+SearchTree -> Algorithm.SearchTree
+
+AllSolutions -> Language.Curry.AllSolutions
+
+Findall -> Language.Curry.Findall
+
+AnsiCodes -> System.Console.ANSI.Codes
+
+CPNS -> Network.CPNS //TODO: get rid of ReadShowTerm
+
+Socket -> Network.Socket //TODO: Function renaming?
+
+ValueSequence -> Algorithm.ValueSequence //TODO: rename functions
+
+Dequeue -> Algorithm.Queue
+
+GetOpt -> System.Console.GetOpt
+
+Global -> System.IO.Global
+
+NamedSocket -> Network.NamedSocket
+
+Pretty -> Text.PrettyPrint
+
+RedBlackTree -> Algorithm.RedBlackTree
+Now uses Ord Context instead of explicit ordering function.
+Renames:
+tree2list -> toList
+
+SearchTreeGenerators -> Algorithm.SearchTree.Generators
+
+SearchTreeTraversal -> Algorithm.SearchTree.Traversal
+
+ShowS -> Text.Show

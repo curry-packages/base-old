@@ -29,11 +29,11 @@ module Test.EasyCheckExec (
   checkPropWithMsg, checkPropIOWithMsg
   ) where
 
-import AllSolutions ( getAllValues )
-import Distribution ( curryCompiler )
-import IO           ( hFlush, stdout )
-import List         ( group, intersperse, nub )
-import Sort         ( leqList, leqString, sortBy )
+import Language.Curry.AllSolutions ( getAllValues )
+import Distribution                ( curryCompiler )
+import IO                          ( hFlush, stdout )
+import Data.List                   ( group, intersperse, nub )
+import ALgorithm.Sort              ( leqList, leqString, sortBy )
 import Test.EasyCheck
 
 -------------------------------------------------------------------------

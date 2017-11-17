@@ -40,10 +40,10 @@ module Test.EasyCheck (
 
   ) where
 
-import Findall      (getAllValues)
-import List         ( (\\), delete, diagonal, nub )
-import SearchTree   ( SearchTree, someSearchTree )
-import SearchTreeTraversal
+import Language.Curry.Findall (getAllValues)
+import Data.List              ( (\\), delete, diagonal, nub )
+import Algorithm.SearchTree   ( SearchTree, someSearchTree )
+import Algorithm.SearchTree.Traversal
 
 infix  1 `is`, `isAlways`, `isEventually`
 infix  1 -=-, <~>, ~>, <~, <~~>, `trivial`, #, #<, #>
@@ -326,12 +326,12 @@ collectAs name = label . ((name++": ")++) . show
 --- (here: randomized diagonalization of levels with flattening).
 valuesOfSearchTree :: SearchTree a -> [a]
 valuesOfSearchTree
-  -- = depthDiag            
-  -- = rndDepthDiag 0       
-  -- = levelDiag            
-  -- = rndLevelDiag 0       
-  = rndLevelDiagFlat 5 0 
-  -- = allValuesB           
+  -- = depthDiag
+  -- = rndDepthDiag 0
+  -- = levelDiag
+  -- = rndLevelDiag 0
+  = rndLevelDiagFlat 5 0
+  -- = allValuesB
 
 --- Computes the list of all values of the given argument
 --- according to a given strategy (here:

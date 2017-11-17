@@ -19,7 +19,7 @@ module Test.Contract
   )  where
 
 import SetFunctions
-import Unsafe(trace)
+import System.IO.Unsafe(trace)
 
 ---------------------------------------------------------------------------
 -- Report the result of checking the pre/postconditions.
@@ -67,7 +67,7 @@ traceLines ls x = trace (unlines ls) x
 -- Currently, we use Prelude.show but this has the risk that it suspends
 -- or loops.
 showATerm :: Show a => a -> String
-showATerm = show -- or Unsafe.showAnyTerm                 -- 
+showATerm = show -- or Unsafe.showAnyTerm                 --
 
 ---------------------------------------------------------------------------
 -- Combinators for checking of contracts having pre- and postconditions

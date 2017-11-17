@@ -1,0 +1,14 @@
+FileGoodies -> System.FileGoodies
+Distribution -> Compiler.Information...
+Float, ... -> Prelude (wie haskell?)
+Format -> Text.Format und eventuell Teile in Numeric
+Algorithm ok?
+Combinatorial, FunctionInversion, SetFunctions zu Data...
+Nat raus?
+SCC raus?
+Profile, Debug -> Wohin? (evtl. Monitoring, ...?)
+Read weg und ReadNumeric auf ReadS und ShowS basiert in Numeric?
+SetRBT oder FiniteSet aus FiniteMap als Data.Set? Das andere raus oder zu Algorithm?
+System -> System.Environment
+TableRBT raus?
+Traversal zu Typklasse?
