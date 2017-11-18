@@ -10,8 +10,9 @@
 --- @category general
 ------------------------------------------------------------------------------
 
-module Socket(Socket, listenOn, listenOnFresh,
-              socketAccept, waitForSocketAccept, sClose, connectToSocket)
+module Network.Socket
+  (Socket, listenOn, listenOnFresh,
+   socketAccept, waitForSocketAccept, sClose, connectToSocket)
  where
 
 import System

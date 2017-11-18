@@ -29,40 +29,40 @@ isEmptySetRBT = RBT.isEmpty
 --- @param e - an element to be checked for containment
 --- @param s - a set (represented as a red-black tree)
 --- @return True if e is contained in s
-elemRBT :: a -> SetRBT a -> Bool
+elemRBT :: Ord a => a -> SetRBT a -> Bool
 elemRBT e = isJust . (RBT.lookup e)
 
 --- Inserts an element into a set if it is not already there.
-insertRBT :: a -> SetRBT a -> SetRBT a
+insertRBT :: Ord a => a -> SetRBT a -> SetRBT a
 insertRBT = RBT.update
 
 --- Inserts an element into a multiset.
 --- Thus, the same element can have several occurrences in the multiset.
-insertMultiRBT :: Eq a => a -> SetRBT a -> SetRBT a
+insertMultiRBT :: Ord a => a -> SetRBT a -> SetRBT a
 insertMultiRBT e = RBT.setInsertEquivalence (==)
                  . RBT.update e
                  . RBT.setInsertEquivalence (\ _ _ -> False)
 
 --- delete an element from a set.
 --- Deletes only a single element from a multi set
-deleteRBT :: a -> SetRBT a -> SetRBT a
+deleteRBT :: Ord a => a -> SetRBT a -> SetRBT a
 deleteRBT = RBT.delete
 
 --- Transforms a (red-black tree) set into an ordered list of its elements.
 setRBT2list :: SetRBT a -> [a]
-setRBT2list = RBT.tree2list
+setRBT2list = RBT.toList
 
 --- Computes the union of two (red-black tree) sets.
 --- This is done by inserting all elements of the first set into the
 --- second set.
-unionRBT :: SetRBT a -> SetRBT a -> SetRBT a
+unionRBT :: Ord a => SetRBT a -> SetRBT a -> SetRBT a
 unionRBT s1 s2 = foldr insertRBT s2 (setRBT2list s1)
 
 --- Computes the intersection of two (red-black tree) sets.
 --- This is done by inserting all elements of the first set
 --- contained in the second set into a new set, which order
 --- is taken from the first set.
-intersectRBT :: SetRBT a -> SetRBT a -> SetRBT a
+intersectRBT :: Ord a => SetRBT a -> SetRBT a -> SetRBT a
 intersectRBT s1 s2 = foldr insertRBT (RBT.newTreeLike s1)
                      (filter (`elemRBT` s2) (setRBT2list s1))
 

@@ -20,7 +20,8 @@ import Profile
 import ReadShowTerm
 import Network.Socket
 import System
-import Time
+import Data.Time
+import Data.Either
 
 -- If we connect to a port with symbolic name pn, we first connect
 -- to the CPNS of the host named by pn to get the physical socket

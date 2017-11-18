@@ -44,7 +44,7 @@ module System.Random
   ) where
 
 import System  ( getCPUTime )
-import Time
+import Data.Time
 
 #ifdef __PAKCS__
 ------------------------------------------------------------------

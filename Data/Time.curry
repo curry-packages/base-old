@@ -11,7 +11,8 @@ module Data.Time(ClockTime,
                  getClockTime,getLocalTime,toUTCTime,toClockTime,toCalendarTime,
                  clockTimeToInt,calendarTimeToString,toDayString,toTimeString,
                  addSeconds,addMinutes,addHours,addDays,addMonths,addYears,
-                 daysOfMonth,validDate,compareCalendarTime,compareClockTime,
+                 daysOfMonth,validDate,compareCalendarTime,compareClockTime
+                 ) where
 
 
 --- ClockTime represents a clock time in some internal representation.

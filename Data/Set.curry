@@ -12,9 +12,10 @@ import qualified Data.Map as Map
 -------------------------------------------------------------------------
 type Set key = Map.Map key ()
 empty            :: Set key
-fromList         :: Ord key => [key] -> FiniteSet key
+fromList         :: Ord key => [key] -> Set key
 null             :: Set _ -> Bool
-member           :: Ord key => key -> FiniteSet key -> Bool
+size             :: Set _ -> Int
+member           :: Ord key => key -> Set key -> Bool
 difference       :: Ord key => Set key -> Set key -> Set key
 toList           :: Set key -> [key]
 union            :: Ord key => Set key -> Set key -> Set key
@@ -22,6 +23,7 @@ union            :: Ord key => Set key -> Set key -> Set key
 empty = Map.empty
 fromList xs = Map.fromList [ (x, ()) | x <- xs]
 null = Map.null
+size = Map.size
 member = Map.member
 difference = Map.difference
 toList = Map.keys

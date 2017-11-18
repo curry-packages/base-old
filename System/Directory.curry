@@ -5,8 +5,8 @@
 --- @version January 2013
 --- @category general
 
-module Directory
-  ( doesFileExist, doesDirectoryExist, fileSize, getModificationTime
+module System.Directory
+  ( doesFileExist, doesDirectoryExist, getFileSize, getModificationTime
   , getCurrentDirectory, setCurrentDirectory
   , getDirectoryContents, createDirectory, createDirectoryIfMissing
   , removeDirectory, renameDirectory
@@ -18,7 +18,7 @@ module Directory
 import System.FilePath (FilePath, (</>), splitDirectories, isAbsolute, normalise)
 import Data.List     (isPrefixOf, scanl1, last)
 import System   (getEnviron, isWindows)
-import Time     (ClockTime)
+import Data.Time     (ClockTime)
 
 
 --- Returns true if the argument is the name of an existing file.

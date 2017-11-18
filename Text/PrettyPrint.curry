@@ -57,7 +57,7 @@ module Text.PrettyPrint (
   bgBlack, bgRed, bgGreen, bgYellow, bgBlue, bgMagenta, bgCyan, bgWhite
   ) where
 
-import qualified Queue as Q (Queue, cons, empty, matchHead, matchLast)
+import qualified Algorithm.Queue as Q (Queue, cons, empty, matchHead, matchLast)
 
 infixl 5 $$, <$$>, </>,  <//>, <$!$>, <$+$>
 infixl 6 <>, <+>

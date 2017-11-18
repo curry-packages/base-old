@@ -6,7 +6,7 @@
 --- @category general
 --- ----------------------------------------------------------------------------
 
-module Maybe
+module Data.Maybe
   ( Maybe (..)
   , maybe
   , isJust, isNothing

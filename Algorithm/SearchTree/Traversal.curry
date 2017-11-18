@@ -11,8 +11,9 @@ module Algorithm.SearchTree.Traversal
     depthDiag, rndDepthDiag, levelDiag, rndLevelDiag, rndLevelDiagFlat
   ) where
 
-import Data.Lis  t       ( diagonal )
+import Data.List         ( diagonal )
 import System.Random     ( nextInt, nextIntRange, shuffle )
+import Data.Maybe
 import Algorithm.SearchTree
 
 --- Splits a random seeds into new seeds.

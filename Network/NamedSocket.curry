@@ -15,15 +15,15 @@
 --- @category general
 ------------------------------------------------------------------------------
 
-module NamedSocket(Socket,
-                   listenOn, socketAccept, waitForSocketAccept,
-                   connectToSocketRepeat, connectToSocketWait,
-                   sClose, socketName, connectToSocket)
+module Network.NamedSocket(Socket,
+                           listenOn, socketAccept, waitForSocketAccept,
+                           connectToSocketRepeat, connectToSocketWait,
+                           sClose, socketName, connectToSocket)
  where
 
 import System
 import System.IO(Handle)
-import qualified Network.Socket
+import qualified Network.Socket as Socket
 import Network.CPNS
 
 ---------------------------------------------------------------------

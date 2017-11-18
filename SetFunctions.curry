@@ -66,7 +66,7 @@ module SetFunctions
 import List(delete)
 import Sort(mergeSortBy)
 #ifdef __PAKCS__
-import Findall
+import Language.Curry.Findall
 #else
 import SearchTree
 #endif

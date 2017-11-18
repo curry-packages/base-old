@@ -15,6 +15,8 @@ module System.IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,
                 hPutChar,hPutStr,hPutStrLn,hPrint,
                 hIsReadable,hIsWritable,hIsTerminalDevice) where
 
+import Data.Either
+
 --- The abstract type of a handle for a stream.
 external data Handle -- internally defined
 

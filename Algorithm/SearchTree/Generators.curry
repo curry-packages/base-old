@@ -38,6 +38,7 @@ module Algorithm.SearchTree.Generators
   ) where
 
 import Float
+import Data.Either
 import Algorithm.SearchTree
 import Algorithm.SearchTree.Traversal
 

@@ -13,7 +13,7 @@
 
 module Algorithm.RedBlackTree
   ( RedBlackTree, empty, isEmpty, lookup, update
-  , tree2list, sortBy, newTreeLike, setInsertEquivalence, delete
+  , toList, sortBy, newTreeLike, setInsertEquivalence, delete
   ) where
 
 ----------------------------------------------------------------------------

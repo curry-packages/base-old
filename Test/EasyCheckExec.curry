@@ -31,9 +31,9 @@ module Test.EasyCheckExec (
 
 import Language.Curry.AllSolutions ( getAllValues )
 import Distribution                ( curryCompiler )
-import IO                          ( hFlush, stdout )
+import System.IO                          ( hFlush, stdout )
 import Data.List                   ( group, intersperse, nub )
-import ALgorithm.Sort              ( leqList, leqString, sortBy )
+import Algorithm.Sort              ( leqList, leqString, sortBy )
 import Test.EasyCheck
 
 -------------------------------------------------------------------------

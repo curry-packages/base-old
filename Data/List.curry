@@ -9,8 +9,7 @@
 --{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 
 module Data.List
-  ( [], (:),
-  , elemIndex, elemIndices, find, findIndex, findIndices
+  ( elemIndex, elemIndices, find, findIndex, findIndices
   , nub, nubBy, delete, deleteBy, (\\), union, intersect
   , intersperse, intercalate, transpose, diagonal, permutations, partition
   , group, groupBy, splitOn, split, inits, tails, replace
