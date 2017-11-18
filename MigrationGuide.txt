@@ -61,6 +61,8 @@ Either -> Data.Either
 Char -> Data.Char
 
 Directory -> System.Directory
+Renames:
+fileSize -> getFileSize
 
 FilePath -> System.FilePath
 
@@ -73,7 +75,7 @@ Function ->  Data.Function    (on, fix)
 
 Prelude -> Removed Either type
 
-State -> Control.Monad.State
+State -> Control.Monad.Trans.State, now with monad transformer
 Renames:
 bindS      -> Monad instance, >>=
 bindS_     -> Monad instance, >>

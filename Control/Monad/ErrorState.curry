@@ -7,7 +7,7 @@
 --- ----------------------------------------------------------------------------
 -- NOTE: This module will be changed when Monad Transformers are possible
 
-module Control.Monad.ErrorState
+module Control.Monad.ErrorState where
 
 import Data.Either
 
@@ -45,7 +45,7 @@ instance Monad (ErrorState e s a) where
 
 
 --- Sequence operator of the `ES` monad
-(*>) :: ErrorState e s _ -> ErrorState e s a -> ErrorState e s a
+(*>) :: ErrorState e s a -> ErrorState e s b -> ErrorState e s b
 m *> n = m >>= (\_ -> n)
 
 --- Apply a pure function onto a monadic value.
@@ -62,7 +62,7 @@ get = ErrorState (\s -> Right (s, s))
 
 --- Replace the current state
 puts :: s -> ErrorState e s ()
-puts s = ErrorState (\_ -> Right ((), s)
+puts s = ErrorState (\_ -> Right ((), s))
 
 --- Modify the current state
 modify :: (s -> s) -> ErrorState e s ()
