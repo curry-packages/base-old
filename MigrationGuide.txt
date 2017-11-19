@@ -90,15 +90,15 @@ mapS_      -> mapM_
 liftS      -> liftM
 liftS2     -> liftM2
 
-ErrorState -> Control.Monad.ErrorState
+ErrorState -> removed, use Control.Monad.Trans.Error
+                       with Control.Monad.Trans.State
 Renames:
-evalES      -> runError
 returnES    -> Monad instance, return
 >+=         -> Monad instance, >>=
 >+          -> *>
-getS        -> get
-putS        -> put
-modifyS     -> modify
+getS        -> lift . get
+putS        -> lift . put
+modifyS     -> lift . modify
 mapS        -> mapM
 concatMapES -> concatMapM
 mapAccumES  -> mapAccumM
