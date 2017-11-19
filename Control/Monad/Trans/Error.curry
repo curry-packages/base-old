@@ -10,6 +10,7 @@
 module Control.Monad.Trans.Error where
 
 import Data.Either
+import Control.Monad.Trans.Class
 
 --- Error monad.
 newtype ErrorT e m a = ErrorT { runErrorT :: m (Either e a) }
