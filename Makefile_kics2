@@ -20,8 +20,12 @@ prefix     = $(patsubst ./%,%,$(dir $(2))$(1)$(notdir $(2)))
 # comma_sep "a b c" = "a, b, c"
 comma_sep  = $(subst $(space),$(comma)$(space),$(1))
 
+MODULE_FOLDERS:=$(shell find * -type d)
+TRACE_FOLDERS  =$(addprefix .curry/kics2/,$(MODULE_FOLDERS))
+CURRY_FILES   :=$(shell find * -name "*.curry")
+
 # Curry library files
-LIB_CURRY     = $(filter-out $(EXCLUDES), $(wildcard *.curry Test/*.curry))
+LIB_CURRY     = $(filter-out $(EXCLUDES), $(CURRY_FILES))
 # lib names without directory prefix
 LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
@@ -145,20 +149,16 @@ hs: $(LIB_HS) # .curry/kics2/Curry_$(ALLLIBS).hs
 # generate the compiled Haskell target files with tracing of all libraries:
 .NOTPARALLEL: hstrace
 .PHONY: hstrace
-hs: $(LIB_HS_TRACE)
+hstrace: $(LIB_HS_TRACE)
 
-# generate Haskell file in subdirectory .curry/kics2
-.curry/kics2/Curry_Trace_%.hs: %.curry
-	$(COMP) -v0 -i. --trace-failure $*
+define TRACERULE
+$(dir .curry/kics2/$1)Curry_$(notdir $1).hs: $1.curry
+	$$(COMP) -v0 -i. $$(subst /,.,$$<)
+$(dir .curry/kics2/$1)Curry_Trace_$(notdir $1).hs: $1.curry
+	$$(COMP) -v0 -i. --trace-failure $$(subst /,.,$$<)
+endef
 
-.curry/kics2/Curry_%.hs: %.curry
-	$(COMP) -v0 -i. $*
-
-.curry/kics2/Test/Curry_Trace_%.hs: Test/%.curry
-	$(COMP) -v0 -i. --trace-failure Test.$*
-
-.curry/kics2/Test/Curry_%.hs: Test/%.curry
-	$(COMP) -v0 -i. Test.$*
+$(foreach module, $(basename $(LIB_CURRY)),$(eval $(call TRACERULE,$(module))))
 
 # generate the typed FlatCurry files of all libraries:
 .NOTPARALLEL: tfcy
@@ -203,11 +203,14 @@ $(INDEXHTML): $(filter-out $(HTMLEXCLUDES), $(wildcard $(LIBDOCDIR)/*.html))
 	$(CURRYDOC) --libsindexhtml "$(LIBDOCDIR)" $(LIB_DOCNAMES)
 
 # generate individual documentations for libraries
-$(LIBDOCDIR)/Test.%.html: Test/%.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+define HTMLRULE
+$(LIBDOCDIR)/$1.html: $(subst .,/,$1).curry
+	$$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $$(subst /,.,$$<)
+endef
 
-$(LIBDOCDIR)/%.html: %.curry
-	$(CURRYDOC) --noindexhtml "$(LIBDOCDIR)" $(subst /,.,$<)
+$(foreach module, $(LIB_NAMES),$(eval $(call HTMLRULE,$(module))))
+# uncomment for rule debugging
+# $(foreach module, $(LIB_NAMES),$(info $(call HTMLRULE,$(module))))
 
 ##############################################################################
 # create LaTeX documentation files for system libraries
@@ -219,9 +222,9 @@ texdoc: checkcurrydoc $(LIB_CURRY)
 	$(MAKE) $(LIB_TEX)
 
 # generate individual LaTeX documentations for libraries
-$(TEXDOCDIR)/Test.%.tex: Test/%.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
+define TEXRULE
+$(TEXDOCDIR)/$1.tex: $(subst .,/,$1).curry
+	$$(CURRYDOC) --tex "$(TEXDOCDIR)" $$(subst /,.,$$<)
+endef
 
-$(TEXDOCDIR)/%.tex: %.curry
-	$(CURRYDOC) --tex "$(TEXDOCDIR)" $(subst /,.,$<)
-
+$(foreach module, $(LIB_NAMES),$(eval $(call TEXRULE,$(module))))
