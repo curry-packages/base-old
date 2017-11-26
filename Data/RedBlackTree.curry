@@ -11,15 +11,15 @@
 --- @category algorithm
 ----------------------------------------------------------------------------
 
-module RedBlackTree
+module Data.RedBlackTree
   ( RedBlackTree, empty, isEmpty, lookup, update
-  , tree2list, sortBy, newTreeLike, setInsertEquivalence, delete
+  , toList, sortBy, newTreeLike, setInsertEquivalence, delete
   ) where
 
 ----------------------------------------------------------------------------
 -- the main interface:
 
---- A red-black tree consists of a tree structure and three order predicates.
+--- A red-black tree consists of a tree structure and two order predicates.
 --- These predicates generalize the red black tree. They define
 --- 1) equality when inserting into the tree<br>
 ---    eg for a set eqInsert is (==),
@@ -29,80 +29,76 @@ module RedBlackTree
 ---    eg for a set eqLookUp is (==),
 ---       for a multiset it is (==)
 ---       for a lookUp-table it is ((==) . fst)
---- 3) the (less than) relation for the binary search tree
 
 data RedBlackTree a
   = RedBlackTree
     (a -> a -> Bool) -- equality for insertion
     (a -> a -> Bool) -- equality for lookup
-    (a -> a -> Bool) -- lessThan for search
     (Tree a)         -- contents
 
 --- The three relations are inserted into the structure by function empty.
 --- Returns an empty tree, i.e., an empty red-black tree
 --- augmented with the order predicates.
 
-empty :: (a -> a -> Bool) -> (a -> a -> Bool) -> (a -> a -> Bool)
-      -> RedBlackTree a
-empty eqInsert eqLookUp lessThan = RedBlackTree eqInsert eqLookUp lessThan Empty
+empty :: (a -> a -> Bool) -> (a -> a -> Bool) -> RedBlackTree a
+empty eqInsert eqLookUp = RedBlackTree eqInsert eqLookUp Empty
 
 --- Test on emptyness
 isEmpty :: RedBlackTree _ -> Bool
-isEmpty  (RedBlackTree _ _ _ Empty)          = True
-isEmpty  (RedBlackTree _ _ _ (Tree _ _ _ _)) = False
+isEmpty  (RedBlackTree _ _  Empty)         = True
+isEmpty  (RedBlackTree _ _ (Tree _ _ _ _)) = False
 
 --- Creates a new empty red black tree from with the same ordering as a give one.
 newTreeLike :: RedBlackTree a -> RedBlackTree a
-newTreeLike (RedBlackTree eqIns eqLk lt _) = RedBlackTree eqIns eqLk lt Empty
+newTreeLike (RedBlackTree eqIns eqLk _) = RedBlackTree eqIns eqLk Empty
 
 --- Returns an element if it is contained in a red-black tree.
 --- @param p - a pattern for an element to look up in the tree
 --- @param t - a red-black tree
 --- @return the contained True if p matches in t
 
-lookup :: a -> RedBlackTree a -> Maybe a
-lookup p (RedBlackTree _ eqLk lt t) = lookupTree eqLk lt p t
+lookup :: Ord a => a -> RedBlackTree a -> Maybe a
+lookup p (RedBlackTree _ eqLk t) = lookupTree eqLk p t
 
-lookupTree :: (a -> a -> Bool) -> (a -> a -> Bool) -> a -> Tree a -> Maybe a
-lookupTree _ _ _ Empty = Nothing
-lookupTree eq lt p (Tree _ e l r)
+lookupTree :: Ord a => (a -> a -> Bool) -> a -> Tree a -> Maybe a
+lookupTree _ _ Empty = Nothing
+lookupTree eq p (Tree _ e l r)
      | eq p e    = Just e
-     | lt p e    = lookupTree eq lt p l
-     | otherwise = lookupTree eq lt p r
+     | p  < e    = lookupTree eq p l
+     | otherwise = lookupTree eq p r
 
 --- Updates/inserts an element into a RedBlackTree.
-update :: a -> RedBlackTree a -> RedBlackTree a
-update e (RedBlackTree eqIns eqLk lt t) =
-          RedBlackTree eqIns eqLk lt (updateTree eqIns lt e t)
+update :: Ord a => a -> RedBlackTree a -> RedBlackTree a
+update e (RedBlackTree eqIns eqLk t) =
+          RedBlackTree eqIns eqLk (updateTree eqIns e t)
 
-updateTree :: (a -> a -> Bool) -> (a -> a -> Bool) -> a -> Tree a -> Tree a
-updateTree eq lt e t = let (Tree _     e2 l r) = upd t
-                        in  Tree Black e2 l r
+updateTree :: Ord a => (a -> a -> Bool) -> a -> Tree a -> Tree a
+updateTree eq e t = let (Tree _    e2 l r) = upd t
+                    in  Tree Black e2 l r
   where
     upd Empty = Tree Red e Empty Empty
     upd (Tree c e2 l r) | eq e e2   = Tree c e l r
-                        | lt e e2   = balanceL (Tree c e2 (upd l) r)
+                        | e  < e2   = balanceL (Tree c e2 (upd l) r)
                         | otherwise = balanceR (Tree c e2 l (upd r))
 
 --- Deletes entry from red black tree.
-delete :: a -> RedBlackTree a -> RedBlackTree a
-delete e (RedBlackTree eqIns eqLk lt t) =
-          RedBlackTree eqIns eqLk lt (blackenRoot (deleteTree eqLk lt e t))
+delete :: Ord a => a -> RedBlackTree a -> RedBlackTree a
+delete e (RedBlackTree eqIns eqLk t) =
+          RedBlackTree eqIns eqLk (blackenRoot (deleteTree eqLk e t))
   where
     blackenRoot Empty = Empty
     blackenRoot (Tree _ x l r) = Tree Black x l r
 
-deleteTree :: (a -> a -> Prelude.Bool)
-           -> (a -> a -> Prelude.Bool) -> a -> Tree a -> Tree a
-deleteTree _ _ _ Empty = Empty  -- no error for non existence
-deleteTree eq lt e (Tree c e2 l r)
-      | eq e e2 = if isEmptyTree l then addColor c r else
-                  if isEmptyTree r
-                    then addColor c l
-                    else let el = rightMost l
-                          in delBalanceL (Tree c el (deleteTree eq lt el l) r)
-      | lt e e2 = delBalanceL (Tree c e2 (deleteTree eq lt e l) r)
-      | otherwise = delBalanceR (Tree c e2 l (deleteTree eq lt e r))
+deleteTree :: Ord a => (a -> a -> Bool) -> a -> Tree a -> Tree a
+deleteTree _ _ Empty = Empty  -- no error for non existence
+deleteTree eq e (Tree c e2 l r)
+      | eq e e2   = if isEmptyTree l then addColor c r else
+                    if isEmptyTree r
+                      then addColor c l
+                      else let el = rightMost l
+                            in delBalanceL (Tree c el (deleteTree eq el l) r)
+      | e  < e2   = delBalanceL (Tree c e2 (deleteTree eq e l) r)
+      | otherwise = delBalanceR (Tree c e2 l (deleteTree eq e r))
   where
     addColor DoublyBlack tree = tree -- should not occur
     addColor Red tree = tree
@@ -116,8 +112,8 @@ deleteTree eq lt e (Tree c e2 l r)
 
 
 --- Transforms a red-black tree into an ordered list of its elements.
-tree2list :: RedBlackTree a -> [a]
-tree2list (RedBlackTree _ _ _ t) = tree2listTree t
+toList :: RedBlackTree a -> [a]
+toList (RedBlackTree _ _ t) = tree2listTree t
 
 tree2listTree :: Tree a -> [a]
 tree2listTree tree = t2l tree []
@@ -125,21 +121,20 @@ tree2listTree tree = t2l tree []
      t2l Empty es = es
      t2l (Tree _ e l r) es = t2l l (e : t2l r es)
 
---- Generic sort based on insertion into red-black trees.
---- The first argument is the order for the elements.
-
-sortBy :: Eq a => (a -> a -> Bool) -> [a] -> [a]
-sortBy cmp xs = tree2list (foldr update (empty (\_ _->False) (==) cmp) xs)
+--- Generic sort based on insertion into red-black trees
+--- and the Ord context for a.
+sortBy :: Ord a => [a] -> [a]
+sortBy xs = toList (foldr update (empty (\_ _->False) (==)) xs)
 
 --- For compatibility with old version only
 setInsertEquivalence :: (a -> a -> Bool) -> RedBlackTree a -> RedBlackTree a
-setInsertEquivalence eqIns (RedBlackTree _ eqLk lt t) = RedBlackTree eqIns eqLk lt t
+setInsertEquivalence eqIns (RedBlackTree _ eqLk t) = RedBlackTree eqIns eqLk t
 
 ----------------------------------------------------------------------------
 -- implementation of red-black trees:
 
 rbt :: RedBlackTree a -> Tree a
-rbt (RedBlackTree _ _ _ t) = t
+rbt (RedBlackTree _ _ t) = t
 
 --- The colors of a node in a red-black tree.
 data Color = Red | Black | DoublyBlack
@@ -260,4 +255,3 @@ reviseRight tree
   where
     l = left tree
     blackl = isBlack l
-

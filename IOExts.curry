@@ -23,7 +23,7 @@ import Char      (isAlphaNum)
 import Directory (removeFile)
 import Read      (readNat)
 #endif
-import IO
+import System.IO
 import System
 
 --- Executes a command with a new default shell process.

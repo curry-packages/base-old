@@ -9,9 +9,9 @@
 --- @category algorithm
 ----------------------------------------------------------------------------
 
-module SetRBT where
+module Data.Set.RBTree where
 
-import qualified RedBlackTree as RBT
+import qualified Data.RedBlackTree as RBT
 import           Maybe               (isJust)
 
 type SetRBT a = RBT.RedBlackTree a

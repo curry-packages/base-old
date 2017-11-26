@@ -11,8 +11,8 @@ module Debug
   , assert, assertIO
   ) where
 
-import IO     (hPutStrLn, stderr)
-import Unsafe (unsafePerformIO)
+import System.IO        (hPutStrLn, stderr)
+import System.IO.Unsafe (unsafePerformIO)
 
 --- Prints the first argument as a side effect and behaves as identity on the
 --- second argument.

@@ -24,6 +24,10 @@ module Data.Either
 data Either a b = Left a | Right b
  deriving (Eq, Ord, Show, Read)
 
+instance Functor (Either a) where
+  fmap _ (Left  a) = Left     a
+  fmap f (Right b) = Right (f b)
+
 either               :: (a -> c) -> (b -> c) -> Either a b -> c
 either f _ (Left x)  = f x
 either _ g (Right x) = g x

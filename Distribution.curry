@@ -40,7 +40,7 @@ import FilePath     ( FilePath, (</>), (<.>), addTrailingPathSeparator
                     , splitExtension, splitFileName, splitSearchPath
                     , takeFileName
                     )
-import IO
+import System.IO
 import PropertyFile
 import System
 

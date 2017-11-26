@@ -58,26 +58,16 @@ catchError m h = ErrorT (do a <- runErrorT m
 
 --- Sequence operator of the ErrorT monad
 (*>) :: (Error e, Monad m) => ErrorT e m a -> ErrorT e m b -> ErrorT e m b
-m *> n = m >>= (\x -> case x of
-                        Left  e -> return (Left e)
-                        Right _ -> n)
+m *> n = m >>= (\x -> n)
 
 --- Apply a pure function onto a monadic value.
 (<$>) :: (Error e, Monad m) => (a -> b) -> ErrorT e m a -> ErrorT e m b
-f <$> act = act >>= (\x -> case x of
-                             Left  e -> return (Left e)
-                             Right k -> return (Right (f k))
+f <$> act = act >>= (\x -> return (f x))
 
 --- Apply a function yielded by a monadic action to a monadic value.
 (<*>) :: (Error e, Monad m) => ErrorT e m (a -> b)
       -> ErrorT e m a -> ErrorT e m b
-f <*> v = ErrorT (do mf <- runErrorT f
-                     case mf of
-                       Left  e -> return (Left e)
-                       Right k -> do mv <- runErrorT v
-                                     case mv of
-                                       Left  e -> return (Left e)
-                                       Right x -> return (Right (k x)))
+f <*> v = f >>= (\f' -> v >>= (\x -> return (f' x)))
 
 
 --- Map a monadic function on all elements of a list by sequencing
