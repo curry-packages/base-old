@@ -6,7 +6,7 @@
 --- @category general
 ------------------------------------------------------------------------------
 
-module Debug
+module Debug.Trace
   ( trace, traceId, traceShow, traceShowId, traceIO
   , assert, assertIO
   ) where
