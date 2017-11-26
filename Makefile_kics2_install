@@ -19,7 +19,7 @@ CURRENT_MAKEFILE = $(CURRYLIBSDIR)/Makefile_$(CURRYSYSTEM)_install
 .PHONY: install
 install:
 	mkdir -p $(LIBDIR)
-	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) $(MODULE_FOLDERS) $(CURRYONLY_FILES) $(GHC_CURRY_FILES) $(LIBDIR)/Makefile $(LIBDIR)/test.sh
+	cd $(LIBDIR) && $(MAKE) -f $(CURRENT_MAKEFILE) $(MODULE_FOLDERS) $(CURRYONLY_FILES) $(GHC_CURRY_FILES) $(LIBDIR)/Makefile $(LIBDIR)/VERSION $(LIBDIR)/test.sh
 
 $(MODULE_FOLDERS): %: $(CURRYLIBSDIR)/%
 	mkdir -p $@
@@ -34,6 +34,9 @@ $(GHC_CURRY_FILES): %.curry: $(CURRYLIBSDIR)/%.curry %.kics2
 	cp $< $@
 
 $(LIBDIR)/Makefile: $(CURRYLIBSDIR)/Makefile_$(CURRYSYSTEM)
+	cp $< $@
+
+$(LIBDIR)/VERSION: $(CURRYLIBSDIR)/VERSION
 	cp $< $@
 
 $(LIBDIR)/test.sh: $(CURRYLIBSDIR)/test.sh
