@@ -35,7 +35,7 @@
 --- > of Declarative Programming (PPDP'13), pp. 49-60, ACM Press, 2013
 ---
 --- Restrictions of the PAKCS implementation of set functions:
---- 
+---
 --- 1. The set is a multiset, i.e., it might contain multiple values.
 --- 2. The multiset of values is completely evaluated when demanded.
 ---    Thus, if it is infinite, its evaluation will not terminate
@@ -63,7 +63,7 @@ module SetFunctions
   ,values2list,printValues,sortValues,sortValuesBy
   ) where
 
-import List(delete)
+import Data.List(delete)
 import Sort(mergeSortBy)
 #ifdef __PAKCS__
 import Language.Curry.Findall

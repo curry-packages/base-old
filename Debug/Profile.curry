@@ -7,7 +7,7 @@
 ------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 
-module Profile
+module Debug.Profile
   ( ProcessInfo(..), getProcessInfos, showMemInfo, printMemInfo
   , garbageCollectorOff, garbageCollectorOn, garbageCollect
   , profileTime, profileTimeNF, profileSpace, profileSpaceNF
@@ -17,7 +17,7 @@ module Profile
   )
  where
 
-import List(intersperse)
+import Data.List(intersperse)
 
 --- The data type for representing information about the state
 --- of a Curry process.

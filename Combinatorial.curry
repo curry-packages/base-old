@@ -15,7 +15,7 @@
 module Combinatorial(permute, subset, allSubsets, splitSet,
                      sizedSubset, partition) where
 
-import List(sum)
+import Data.List(sum)
 import SetFunctions
 import Test.Prop
 
