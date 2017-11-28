@@ -127,3 +127,29 @@ SearchTreeGenerators -> SearchTree.Generators
 SearchTreeTraversal -> SearchTree.Traversal
 
 ShowS -> Text.Show
+
+FileGoodies -> Removed
+
+SCC -> Removed
+
+Nat -> Removed
+
+System-> split into System.CPUTime, System.Environment, System.Process
+
+FunctionInversion -> Data.Function.Inversion
+
+TableRBT -> Data.Table.RBTree
+Renames: removed TableRBT suffix
+
+SetRBT -> Data.Set.RBTree
+Renames: removed SetRBT suffix
+
+Debug -> Debug.Trace
+
+Profile -> Debug.Profile
+
+Time -> Data.Time
+
+Integer -> removed
+
+Float -> removed

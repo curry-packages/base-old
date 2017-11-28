@@ -1,2 +1,15 @@
 System.Process braucht environ
 Rename Functions in Network.Socket and ValueSequence
+IOExts
+Combinatorial, Findall & Konsorten
+PropertyFile (wird in Distribution genutzt)
+ReadNumeric
+Format
+SearchTree
+Shows, Reads
+ValueSequence
+Distribution
+Array
+Traversal
+
+ich habe even, odd zur Prelude hinzugefügt.
