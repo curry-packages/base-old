@@ -43,7 +43,7 @@ module System.Random
   , shuffle
   ) where
 
-import System  ( getCPUTime )
+import System.CPUTime (getCPUTime)
 import Data.Time
 
 #ifdef __PAKCS__

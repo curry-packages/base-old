@@ -15,8 +15,7 @@ module Network.Socket
    socketAccept, waitForSocketAccept, sClose, connectToSocket)
  where
 
-import System
-import System.IO(Handle)
+import System.IO (Handle)
 
 --- The abstract type of sockets.
 external data Socket

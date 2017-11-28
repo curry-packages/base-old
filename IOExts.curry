@@ -23,7 +23,7 @@ import Data.Char        (isAlphaNum)
 import System.Directory (removeFile)
 #endif
 import System.IO
-import System
+import System.Process
 
 --- Executes a command with a new default shell process.
 --- The standard I/O streams of the new process (stdin,stdout,stderr)

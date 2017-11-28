@@ -1,8 +1,5 @@
 {-# LANGUAGE CPP, ForeignFunctionInterface, MultiParamTypeClasses #-}
 import Control.Exception as C (IOException, handle)
-import Network.BSD            (getHostName)
-import System.CPUTime         (getCPUTime)
-import System.Environment     (getArgs, getEnv, getProgName)
 import System.Exit            (ExitCode (..), exitWith)
 import System.Process         (system)
 
@@ -19,33 +16,10 @@ foreign import stdcall unsafe "windows.h GetCurrentProcessId"
   getProcessID :: IO ProcessId
 #endif
 
-external_d_C_getCPUTime :: Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.C_Int
-external_d_C_getCPUTime _ _ = toCurry (getCPUTime >>= return . (`div` (10 ^ 9)))
-
-external_d_C_getElapsedTime :: Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.C_Int
-external_d_C_getElapsedTime _ _ = toCurry (return 0 :: IO Int)
-
-external_d_C_getArgs :: Cover -> ConstStore -> Curry_Prelude.C_IO (Curry_Prelude.OP_List Curry_Prelude.C_String)
-external_d_C_getArgs _ _ = toCurry getArgs
-
-external_d_C_prim_getEnviron :: Curry_Prelude.C_String -> Cover -> ConstStore
-                             -> Curry_Prelude.C_IO Curry_Prelude.C_String
-external_d_C_prim_getEnviron str _ _ =
-  toCurry (handle handleIOException . getEnv) str
-  where
-  handleIOException :: IOException -> IO String
-  handleIOException _ = return ""
-
-external_d_C_getHostname :: Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.C_String
-external_d_C_getHostname _ _ = toCurry getHostName
-
 external_d_C_getPID :: Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.C_Int
 external_d_C_getPID _ _ = toCurry $ do
   pid <- getProcessID
   return (fromIntegral pid :: Int)
-
-external_d_C_getProgName :: Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.C_String
-external_d_C_getProgName _ _ = toCurry getProgName
 
 external_d_C_prim_system :: Curry_Prelude.C_String -> Cover -> ConstStore
                          -> Curry_Prelude.C_IO Curry_Prelude.C_Int

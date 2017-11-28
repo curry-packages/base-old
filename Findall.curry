@@ -17,7 +17,7 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 
-module Language.Curry.Findall
+module Findall
   ( getAllValues, getSomeValue
   , allValues, someValue
   , allSolutions, someSolution

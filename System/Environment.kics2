@@ -1,0 +1,28 @@
+{-# LANGUAGE CPP #-}
+import Control.Exception as C (IOException, handle)
+import Network.BSD            (getHostName)
+import System.Environment     (getArgs, getEnv, getProgName)
+
+external_d_C_getArgs :: Cover -> ConstStore -> Curry_Prelude.C_IO (Curry_Prelude.OP_List Curry_Prelude.C_String)
+external_d_C_getArgs _ _ = toCurry getArgs
+
+external_d_C_prim_getEnviron :: Curry_Prelude.C_String -> Cover -> ConstStore
+                             -> Curry_Prelude.C_IO Curry_Prelude.C_String
+external_d_C_prim_getEnviron str _ _ =
+  toCurry (handle handleIOException . getEnv) str
+  where
+  handleIOException :: IOException -> IO String
+  handleIOException _ = return ""
+
+external_d_C_getHostname :: Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.C_String
+external_d_C_getHostname _ _ = toCurry getHostName
+
+external_d_C_getProgName :: Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.C_String
+external_d_C_getProgName _ _ = toCurry getProgName
+
+external_d_C_isWindows :: Cover -> ConstStore -> Curry_Prelude.C_Bool
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+external_d_C_isWindows _ _ = Curry_Prelude.C_True
+#else
+external_d_C_isWindows _ _ = Curry_Prelude.C_False
+#endif

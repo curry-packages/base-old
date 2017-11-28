@@ -41,7 +41,8 @@ import System.FilePath  ( FilePath, (</>), (<.>), addTrailingPathSeparator
                         , takeFileName, takeExtension, dropExtension)
 import System.IO
 import PropertyFile
-import System
+import System.Process
+import System.Environment
 
 -----------------------------------------------------------------
 -- Compiler and run-time environment name and version
@@ -219,7 +220,7 @@ getLoadPathForModule modpath = do
   mblib  <- getRcVar "libraries"
   let fileDir = dropFileName modpath
   if curryCompiler `elem` ["pakcs","kics","kics2"] then
-    do currypath <- getEnviron "CURRYPATH"
+    do currypath <- getEnv "CURRYPATH"
        let llib = maybe [] (\l -> if null l then [] else splitSearchPath l)
                         mblib
        return $ (fileDir : (if null currypath

@@ -16,11 +16,11 @@ module System.Directory
   , findFileWithSuffix, getFileWithSuffix
   ) where
 
-import System.FilePath ( FilePath, (</>), splitDirectories, isAbsolute
-                       , normalise, pathSeparator, searchPathSeparator)
-import Data.List       (isPrefixOf, scanl1, last, intersperse)
-import System          (getEnviron, isWindows)
-import Data.Time       (ClockTime)
+import System.FilePath    ( FilePath, (</>), splitDirectories, isAbsolute
+                          , normalise, pathSeparator, searchPathSeparator)
+import Data.List          (isPrefixOf, scanl1, last, intersperse)
+import System.Environment (getEnv, isWindows)
+import Data.Time          (ClockTime)
 
 
 --- Returns true if the argument is the name of an existing file.
@@ -109,12 +109,12 @@ prim_renameDirectory external
 --- Returns the home directory of the current user.
 getHomeDirectory :: IO FilePath
 getHomeDirectory = if isWindows
-                      then getEnviron "USERPROFILE"
-                      else getEnviron "HOME"
+                      then getEnv "USERPROFILE"
+                      else getEnv "HOME"
 
 --- Returns the temporary directory of the operating system.
 getTemporaryDirectory :: IO FilePath
-getTemporaryDirectory = if isWindows then getEnviron "TMP" else return "/tmp"
+getTemporaryDirectory = if isWindows then getEnv "TMP" else return "/tmp"
 
 --- Convert a path name into an absolute one.
 --- For instance, a leading `~` is replaced by the current home directory.

@@ -72,10 +72,10 @@ module System.FilePath
   )
   where
 
-import Data.Char   (toLower, toUpper)
-import Data.List   (isPrefixOf, init, last)
-import Data.Maybe  (isJust, fromJust)
-import System      (getEnviron, isPosix, isWindows)
+import Data.Char          (toLower, toUpper)
+import Data.List          (isPrefixOf, init, last)
+import Data.Maybe         (isJust, fromJust)
+import System.Environment (getEnv, isPosix, isWindows)
 
 infixr 7  <.>
 infixr 5  </>
@@ -167,7 +167,7 @@ splitSearchPath = f
 
 -- | Get a list of filepaths in the $PATH.
 getSearchPath :: IO [FilePath]
-getSearchPath = getEnviron "PATH" >>= return . splitSearchPath
+getSearchPath = getEnv "PATH" >>= return . splitSearchPath
 
 
 ---------------------------------------------------------------------

@@ -40,9 +40,9 @@ module Test.EasyCheck (
 
   ) where
 
-import Language.Curry.Findall (getAllValues)
-import Data.List              ( (\\), delete, diagonal, nub )
-import SearchTree             ( SearchTree, someSearchTree )
+import Findall              (getAllValues)
+import Data.List            ( (\\), delete, diagonal, nub )
+import SearchTree           ( SearchTree, someSearchTree )
 import SearchTree.Traversal
 
 infix  1 `is`, `isAlways`, `isEventually`

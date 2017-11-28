@@ -16,7 +16,7 @@
 ------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 
-module Language.Curry.AllSolutions
+module AllSolutions
   ( getAllValues, getAllSolutions, getOneValue, getOneSolution
   , getAllFailures
 #ifdef __PAKCS__
@@ -25,7 +25,7 @@ module Language.Curry.AllSolutions
   )  where
 
 #ifdef __PAKCS__
-import Language.Curry.Findall
+import Findall
 #else
 import Algorithm.SearchTree
 #endif

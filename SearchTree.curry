@@ -23,10 +23,10 @@ module SearchTree
   ) where
 
 #ifdef __PAKCS__
-import Language.Curry.Findall (allValues)
+import Findall   (allValues)
 #endif
-import System.IO               (hFlush,stdout)
-import Data.List              (diagonal)
+import System.IO (hFlush,stdout)
+import Data.List (diagonal)
 import ValueSequence
 
 --- A search tree is a value, a failure, or a choice between two search trees.

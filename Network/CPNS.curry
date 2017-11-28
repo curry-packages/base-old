@@ -12,13 +12,14 @@ module Network.CPNS(registerPort,getPortInfo,unregisterPort,
             cpnsStart,cpnsStop,cpnsShow,cpnsAlive,main) where
 
 import Data.Char
-import Distribution(installDir)
-import System.FilePath((</>))
+import Distribution    (installDir)
+import System.FilePath ((</>))
 import System.IO
-import Data.List(delete,intersperse)
+import Data.List       (delete,intersperse)
 import Debug.Profile
 import Network.Socket
-import System
+import System.Process
+import System.Environment
 import Data.Time
 import Data.Either
 

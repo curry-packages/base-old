@@ -21,8 +21,8 @@ module Network.NamedSocket(Socket,
                            sClose, socketName, connectToSocket)
  where
 
-import System
-import System.IO(Handle)
+import System.Process (sleep)
+import System.IO      (Handle)
 import qualified Network.Socket as Socket
 import Network.CPNS
 

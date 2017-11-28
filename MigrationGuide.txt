@@ -103,37 +103,27 @@ mapS        -> mapM
 concatMapES -> concatMapM
 mapAccumES  -> mapAccumM
 
-SearchTree -> Algorithm.SearchTree
-
-AllSolutions -> Language.Curry.AllSolutions
-
-Findall -> Language.Curry.Findall
-
 AnsiCodes -> System.Console.ANSI.Codes
 
-CPNS -> Network.CPNS //TODO: get rid of ReadShowTerm
+CPNS -> Network.CPNS
 
-Socket -> Network.Socket //TODO: Function renaming?
+Socket -> Network.Socket
 
-ValueSequence -> Algorithm.ValueSequence //TODO: rename functions
-
-Dequeue -> Algorithm.Queue
+Dequeue -> Data.Queue
 
 GetOpt -> System.Console.GetOpt
 
-Global -> System.IO.Global
+Global -> Data.Global
 
 NamedSocket -> Network.NamedSocket
 
-Pretty -> Text.PrettyPrint
-
-RedBlackTree -> Algorithm.RedBlackTree
+RedBlackTree -> Data.RedBlackTree
 Now uses Ord Context instead of explicit ordering function.
 Renames:
 tree2list -> toList
 
-SearchTreeGenerators -> Algorithm.SearchTree.Generators
+SearchTreeGenerators -> SearchTree.Generators
 
-SearchTreeTraversal -> Algorithm.SearchTree.Traversal
+SearchTreeTraversal -> SearchTree.Traversal
 
 ShowS -> Text.Show
