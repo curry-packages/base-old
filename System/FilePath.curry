@@ -75,7 +75,7 @@ module System.FilePath
 import Data.Char   (toLower, toUpper)
 import Data.List   (isPrefixOf, init, last)
 import Data.Maybe  (isJust, fromJust)
-import System (getEnviron, isPosix, isWindows)
+import System      (getEnviron, isPosix, isWindows)
 
 infixr 7  <.>
 infixr 5  </>
@@ -623,7 +623,6 @@ splitDirectories path =
 -- Note that this definition on c:\\c:\\, join then split will give c:\\.
 joinPath :: [FilePath] -> FilePath
 joinPath x = foldr combine "" x
-
 
 ---------------------------------------------------------------------
 -- File name manipulators

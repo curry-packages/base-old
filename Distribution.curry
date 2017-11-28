@@ -31,15 +31,14 @@ module Distribution (
   callFrontend, callFrontendWithParams
   ) where
 
-import List         (intercalate, nub, split)
-import Char         (toLower, toUpper)
-import Directory    (doesFileExist, getHomeDirectory)
-import FileGoodies  (lookupFileInPath, getFileInPath, fileSuffix, stripSuffix)
-import FilePath     ( FilePath, (</>), (<.>), addTrailingPathSeparator
-                    , dropFileName, joinPath, normalise, splitDirectories
-                    , splitExtension, splitFileName, splitSearchPath
-                    , takeFileName
-                    )
+import Data.List        (intercalate, nub, split)
+import Data.Char        (toLower, toUpper)
+import System.Directory ( doesFileExist, getHomeDirectory
+                        , findFileWithSuffix, getFileWithSuffix)
+import System.FilePath  ( FilePath, (</>), (<.>), addTrailingPathSeparator
+                        , dropFileName, joinPath, normalise, splitDirectories
+                        , splitExtension, splitFileName, splitSearchPath
+                        , takeFileName, takeExtension, dropExtension)
 import System.IO
 import PropertyFile
 import System
@@ -152,8 +151,8 @@ joinModuleIdentifiers = foldr1 combine
 --- Strips the suffix ".curry" or ".lcurry" from a file name.
 stripCurrySuffix :: String -> String
 stripCurrySuffix s =
-  if fileSuffix s `elem` ["curry","lcurry"]
-  then stripSuffix s
+  if takeExtension s `elem` ["curry","lcurry"]
+  then dropExtension s
   else s
 
 --- A module path consists of a directory prefix (which can be omitted)

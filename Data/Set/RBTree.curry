@@ -12,7 +12,7 @@
 module Data.Set.RBTree where
 
 import qualified Data.RedBlackTree as RBT
-import           Maybe               (isJust)
+import           Data.Maybe               (isJust)
 
 type SetRBT a = RBT.RedBlackTree a
 

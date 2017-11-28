@@ -15,10 +15,8 @@
 ------------------------------------------------------------------------------
 module Format(showChar,showInt,showFloat,showString) where
 
-import Char
-import Integer
-import Float
-import List
+import Data.Char
+import Data.List
 import ReadNumeric
 
 -- Basic type for show functions
@@ -53,7 +51,7 @@ showChar _ mf mw _ c =
 --- @param i - The Int which should be formatted
 --- @return A string containing the formatted Int
 showInt :: ShowSpec Int
-showInt t mf mw mp i = 
+showInt t mf mw mp i =
   -- convert to better format
   let flags           = convertFlags mf
       width           = convertWidth mw
@@ -203,7 +201,7 @@ floater :: Sign -> MantissaBeforePoint -> MantissaAfterPoint -> Exponent
 floater = Floater
 
 floaterCreator :: MantissaSigned -> Exponent -> Floater
-floaterCreator ms e = setExponent (setMantissaSigned zeroFloater ms) e                        
+floaterCreator ms e = setExponent (setMantissaSigned zeroFloater ms) e
 
 zeroFloater :: Floater
 zeroFloater = Floater Positive "0" "" 0
@@ -224,7 +222,7 @@ getMantissaBeforePoint :: Floater -> MantissaBeforePoint
 getMantissaBeforePoint (Floater _ m1 _ _) = m1
 
 setMantissaBeforePoint :: Floater -> MantissaBeforePoint -> Floater
-setMantissaBeforePoint (Floater s _ m2 e) m1 = Floater s m1 m2 e 
+setMantissaBeforePoint (Floater s _ m2 e) m1 = Floater s m1 m2 e
 
 getMantissaAfterPoint :: Floater -> MantissaAfterPoint
 getMantissaAfterPoint (Floater _ _ m2 _) = m2
@@ -283,7 +281,7 @@ onePrePoint (Floater s m1 m2 e) | m1 == "0" && m2 == ""       =
 roundFloater :: Int -> Floater -> Floater
 roundFloater n (Floater s m1 m2 e) =
   if (length m2 <= n) then Floater s m1 (m2 ++ replicate (n - length m2) '0') e
-  else Floater s m1 (round (take (n+1) m2)) e     
+  else Floater s m1 (round (take (n+1) m2)) e
 
 round :: String -> String
 round ""          = ""
@@ -392,14 +390,14 @@ showIntAsHex :: Int -> String
 showIntAsHex = convertToBase 16
 
 convertToBase :: Int -> Int -> String
-convertToBase b n = 
+convertToBase b n =
     if (b < 2 || b > 16)
       then error $ "Can't handle base " ++ (show b)
                    ++ ". Can only handle bases between 2 and 16."
       else if (n < -2147483647)
             then error $ "Can only handle integers geq -2147483648."
       else if (n == 0) then "0"
-      else if (n < 0)  then let num = bitNot ((n*(-1))-1) 
+      else if (n < 0)  then let num = bitNot ((n*(-1))-1)
                             in  cTB "" b num
       else cTB "" b n
   where
@@ -418,4 +416,16 @@ convertToBase b n =
               15 -> "f"
       in cTB (st ++ acc) b d
 
+--- Returns the bitwise NOT of the argument.
+--- Since integers have unlimited precision,
+--- only the 32 least significant bits are computed.
+---
+--- @param n - Argument.
+--- @return the bitwise negation of `n` truncated to 32 bits.
+bitNot :: Int -> Int
+bitNot n = aux 32 n
+  where aux c m = if c==0 then 0
+                  else let p = 2 * aux (c-1) (m `div` 2)
+                           q = 1 - m `mod` 2
+                        in p + q
 ------------------------------------------------------------------------------

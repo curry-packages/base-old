@@ -12,9 +12,9 @@
 
 module PropertyFile(readPropertyFile,updatePropertyFile) where
 
-import Directory
+import System.Directory
 import IOExts
-import Char
+import Data.Char
 
 --- Reads a property file and returns the list of properties.
 --- Returns empty list if the property file does not exist.
@@ -54,4 +54,3 @@ changePropertyInFile file pname pval = do
                   in if null l || not (isAlpha (head l)) || null s2
                      then l
                      else if s1==pname then s1++"="++pval else l
-

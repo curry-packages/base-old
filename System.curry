@@ -13,7 +13,7 @@ module System
   , isPosix, isWindows
   ) where
 
-import Global
+import Data.Global
 
 --- Returns the current cpu time of the process in milliseconds.
 

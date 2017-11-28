@@ -19,9 +19,8 @@ module IOExts
   ) where
 
 #ifdef __PAKCS__
-import Char      (isAlphaNum)
-import Directory (removeFile)
-import Read      (readNat)
+import Data.Char        (isAlphaNum)
+import System.Directory (removeFile)
 #endif
 import System.IO
 import System
@@ -60,7 +59,7 @@ evalCmd cmd args input = do
   errs <- hGetEOF he
   ecodes <- readCompleteFile tmpfile
   removeFile tmpfile
-  return (readNat ecodes, outs, errs)
+  return (read ecodes, outs, errs)
  where
   wrapArg str
     | null str         = "''"

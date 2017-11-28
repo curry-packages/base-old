@@ -10,7 +10,8 @@ module ReadNumeric
   ( readInt, readNat, readHex, readOct, readBin
   ) where
 
-import Char (digitToInt, isBinDigit, isOctDigit, isDigit, isHexDigit, isSpace)
+import Data.Char ( digitToInt, isBinDigit, isOctDigit
+                 , isDigit, isHexDigit, isSpace)
 
 --- Read a (possibly negative) integer as a first token in a string.
 --- The string might contain leadings blanks and the integer is read

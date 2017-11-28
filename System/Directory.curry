@@ -13,12 +13,14 @@ module System.Directory
   , getHomeDirectory, getTemporaryDirectory
   , getAbsolutePath
   , removeFile, renameFile, copyFile
+  , findFileWithSuffix, getFileWithSuffix
   ) where
 
-import System.FilePath (FilePath, (</>), splitDirectories, isAbsolute, normalise)
-import Data.List     (isPrefixOf, scanl1, last)
-import System   (getEnviron, isWindows)
-import Data.Time     (ClockTime)
+import System.FilePath ( FilePath, (</>), splitDirectories, isAbsolute
+                       , normalise, pathSeparator, searchPathSeparator)
+import Data.List       (isPrefixOf, scanl1, last, intersperse)
+import System          (getEnviron, isWindows)
+import Data.Time       (ClockTime)
 
 
 --- Returns true if the argument is the name of an existing file.
@@ -142,3 +144,33 @@ prim_renameFile external
 --- Copy the contents from one file to another file
 copyFile :: FilePath -> FilePath -> IO ()
 copyFile src dest = readFile src >>= writeFile dest
+
+--- Looks up the first file with a possible suffix in a list of directories.
+--- Returns Nothing if such a file does not exist.
+findFileWithSuffix :: String -> [String] -> [String] -> IO (Maybe String)
+findFileWithSuffix file suffixes path =
+  if isAbsolute file
+  then lookupFirstFileWithSuffix file suffixes
+  else lookupFirstFile path
+ where
+   lookupFirstFile [] = return Nothing
+   lookupFirstFile (dir:dirs) = do
+     mbfile <- lookupFirstFileWithSuffix (dir++pathSeparator:file) suffixes
+     maybe (lookupFirstFile dirs) (return . Just) mbfile
+
+   lookupFirstFileWithSuffix _ [] = return Nothing
+   lookupFirstFileWithSuffix f (suf:sufs) = do
+     let fsuf = f++suf
+     exfile <- doesFileExist fsuf
+     if exfile then return (Just fsuf)
+               else lookupFirstFileWithSuffix f sufs
+
+--- Gets the first file with a possible suffix in a list of directories.
+--- An error message is delivered if there is no such file.
+getFileWithSuffix :: String -> [String] -> [String] -> IO String
+getFileWithSuffix file suffixes path = do
+  mbfile <- findFileWithSuffix file suffixes path
+  maybe (error $ "File "++file++" not found in path "++
+                 concat (intersperse [searchPathSeparator] path))
+        return
+        mbfile

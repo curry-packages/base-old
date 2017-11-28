@@ -6,7 +6,7 @@
 --- @category general
 --- ----------------------------------------------------------------------------
 
-module FunctionInversion where
+module Data.Function.Inversion where
 
 --- Inverts a unary function.
 invf1 :: (a -> b) -> (b -> a)

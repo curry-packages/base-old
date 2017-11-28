@@ -25,7 +25,7 @@
 ------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 
-module System.IO.Global( Global, GlobalSpec(..), global
+module Data.Global( Global, GlobalSpec(..), global
                        , readGlobal, safeReadGlobal, writeGlobal)
  where
 

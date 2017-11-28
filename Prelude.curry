@@ -41,6 +41,7 @@ module Prelude
   , when, unless, forIO, forIO_, liftIO, foldIO
   , normalForm, groundNormalForm, apply, cond, (=:<=)
   , enumFrom_, enumFromTo_, enumFromThen_, enumFromThenTo_, negate_, negateFloat
+  , even, odd
   , PEVAL
   , Monad(..)
   , Functor(..)
@@ -706,6 +707,21 @@ prim_negateFloat external
 #else
 negateFloat external
 #endif
+
+
+--- Returns whether an integer is even
+---
+--- @param n - Argument.
+--- @return whether `n` is even.
+even :: Int -> Bool
+even n = n `mod` 2 == 0
+
+--- Returns whether an integer is odd
+---
+--- @param n - Argument.
+--- @return whether `n` is odd.
+odd :: Int -> Bool
+odd n = n `mod` 2 /= 0
 
 -- Constraints (included for backward compatibility)
 type Success = Bool

@@ -16,8 +16,7 @@ import Distribution(installDir)
 import System.FilePath((</>))
 import System.IO
 import Data.List(delete,intersperse)
-import Profile
-import ReadShowTerm
+import Debug.Profile
 import Network.Socket
 import System
 import Data.Time
@@ -58,6 +57,7 @@ data CPNSMessage = Terminate
                  | GetRegister String
                  | Unregister String
                  | ShowRegistry
+  deriving (Read, Show)
 
 -- The lock file to coordinate the startup of the CPNS demon:
 cpnsStartupLockfile = "/tmp/CurryPNSD.lock"
@@ -113,18 +113,18 @@ cpnsServer regs socket = do
           hClose h
           putStrLn "CPNS demon terminated."
         Ping -> do
-          hPutStrLn h (showQTerm ())
+          hPutStrLn h (show ())
           hClose h
           cpnsServer regs socket
         Register pname pid sn pn -> doIfLocalHost rhost $ do
           (ack, newregs) <- tryRegisterPortName regs pname pid sn pn
-          hPutStrLn h (showQTerm ack)
+          hPutStrLn h (show ack)
           hClose h
           cpnsServer newregs socket
         GetRegister pname -> do
           --putStrLn $ "Request for port name: " ++ pname
           (newregs,pinfo) <- getRegisteredPortName regs pname
-          hPutStrLn h (showQTerm pinfo)
+          hPutStrLn h (show pinfo)
           hClose h
           cpnsServer newregs socket
         Unregister pname -> doIfLocalHost rhost $ do
@@ -214,10 +214,10 @@ doesProcessExists pid = do
   return (status>0)
 
 -- Read a line from a stream and check syntactical correctness of message:
-readMsgLine :: Handle -> IO (Either String a)
+readMsgLine :: Read a => Handle -> IO (Either String a)
 readMsgLine handle = do
   line <- hGetLine handle
-  case readsQTerm line of
+  case reads line of
      [(msg,rem)] -> return (if all isSpace rem then Right msg else Left line)
      _ -> return (Left line)
 
@@ -234,7 +234,7 @@ doIfAlive host action = do
 sendToLocalCPNS :: CPNSMessage -> IO ()
 sendToLocalCPNS msg = doIfAlive "localhost" $ do
   h <- connectToSocket "localhost" cpnsSocket
-  hPutStrLn h (showQTerm msg)
+  hPutStrLn h (show msg)
   hClose h
 
 --- Shows all registered ports at the local CPNS demon (in its logfile).
@@ -245,12 +245,12 @@ cpnsStop = sendToLocalCPNS Terminate
 
 --- Gets an answer from a Curry port name server on a host,
 --- or reports an error.
-cpnsTryGetAnswer :: String -> CPNSMessage -> IO _
+cpnsTryGetAnswer :: Read a => String -> CPNSMessage -> IO a
 cpnsTryGetAnswer host msg = catch tryGetAnswer connectError
  where
   tryGetAnswer = do
     h <- connectToSocket host cpnsSocket
-    hPutStrLn h (showQTerm msg)
+    hPutStrLn h (show msg)
     hFlush h
     ready <- hWaitForInput h cpnsTimeOut
     if ready
@@ -288,7 +288,7 @@ cpnsAlive timeout host = catch tryPingCPNS (\_ -> return False)
  where
   tryPingCPNS = do
     h <- connectToSocket host cpnsSocket
-    hPutStrLn h (showQTerm Ping)
+    hPutStrLn h (show Ping)
     hFlush h
     answer <- hWaitForInput h timeout
     hClose h

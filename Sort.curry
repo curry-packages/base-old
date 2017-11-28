@@ -17,7 +17,7 @@ module Sort( sort, sortBy, sorted, sortedBy
            , leqString, leqStringIgnoreCase, leqLexGerman
            ) where
 
-import Char
+import Data.Char
 import Test.Prop
 
 --- The default sorting operation, mergeSort, with standard ordering `<=`.
