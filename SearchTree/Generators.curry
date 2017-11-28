@@ -29,7 +29,7 @@
 --- @category algorithm
 ------------------------------------------------------------------------------
 
-module Control.Monad.SearchTree.Generators
+module SearchTree.Generators
   ( genBool, genNat, genInt, genFloat, genChar, genList
   , genMaybe, genEither, genUnit, genPair, genTriple, genTuple4, genTuple5
   , genOrdering
@@ -39,8 +39,8 @@ module Control.Monad.SearchTree.Generators
 
 import Float
 import Data.Either
-import Control.Monad.SearchTree
-import Control.Monad.SearchTree.Traversal
+import SearchTree
+import SearchTree.Traversal
 
 infixr 1 |||
 

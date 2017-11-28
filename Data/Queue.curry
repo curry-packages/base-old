@@ -8,7 +8,7 @@
 --- @category algorithm
 ------------------------------------------------------------------------------
 
-module Algorithm.Queue
+module Data.Queue
   ( -- Abstract data type, constructors and queries
     Queue, empty, cons, snoc, isEmpty, deqLength
     -- Selectors

@@ -10,7 +10,7 @@
 ------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 
-module Control.Monad.SearchTree
+module SearchTree
   ( SearchTree (..), someSearchTree, getSearchTree
   , isDefined, showSearchTree, searchTreeSize, limitSearchTree
   , Strategy

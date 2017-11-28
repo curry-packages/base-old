@@ -42,8 +42,8 @@ module Test.EasyCheck (
 
 import Language.Curry.Findall (getAllValues)
 import Data.List              ( (\\), delete, diagonal, nub )
-import Algorithm.SearchTree   ( SearchTree, someSearchTree )
-import Algorithm.SearchTree.Traversal
+import SearchTree             ( SearchTree, someSearchTree )
+import SearchTree.Traversal
 
 infix  1 `is`, `isAlways`, `isEventually`
 infix  1 -=-, <~>, ~>, <~, <~~>, `trivial`, #, #<, #>

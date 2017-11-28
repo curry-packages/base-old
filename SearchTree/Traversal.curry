@@ -6,7 +6,7 @@
 --- @category algorithm
 ------------------------------------------------------------------------------
 
-module Control.Monad.SearchTree.Traversal
+module SearchTree.Traversal
   (
     depthDiag, rndDepthDiag, levelDiag, rndLevelDiag, rndLevelDiagFlat
   ) where
@@ -14,7 +14,7 @@ module Control.Monad.SearchTree.Traversal
 import Data.List         ( diagonal )
 import System.Random     ( nextInt, nextIntRange, shuffle )
 import Data.Maybe
-import Control.Monad.SearchTree
+import SearchTree
 
 --- Splits a random seeds into new seeds.
 --- The range avoids large negative seeds (which cause problems with PAKCS).
