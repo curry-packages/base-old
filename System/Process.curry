@@ -13,7 +13,7 @@ getPID external
 
 system :: String -> IO Int
 system cmd = do
-  envs <- readGlobal environ
+  envs <- getEnvironment
   prim_system $## (concatMap envToExport envs ++ escapedCmd)
  where
   win       = isWindows
@@ -31,10 +31,6 @@ system cmd = do
                                             else [c]
   encodeShellSpecials c = if c == '\'' then map chr [39,34,39,34,39]
                                        else [c]
-
---- internal state of environment variables set via setEnviron
-environ :: Global [(String,String)]
-environ = global [] Temporary
 
 prim_system :: String -> IO Int
 prim_system external

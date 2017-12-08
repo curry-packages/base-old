@@ -7,7 +7,7 @@
 ------------------------------------------------------------------------------
 
 module System.Environment
-  ( getArgs, getEnv, setEnv, unsetEnv, getProgName
+  ( getArgs, getEnv, getEnvironment, setEnv, unsetEnv, getProgName
   , getHostname, isPosix, isWindows
   ) where
 
@@ -24,11 +24,14 @@ getArgs external
 
 getEnv :: String -> IO String
 getEnv evar = do
-  envs <- readGlobal environ
+  envs <- getEnvironment
   maybe (prim_getEnviron $## evar) return (lookup evar envs)
 
 prim_getEnviron :: String -> IO String
 prim_getEnviron external
+
+getEnvironment :: IO [(String, String)]
+getEnvironment = readGlobal environ
 
 --- internal state of environment variables set via setEnviron
 environ :: Global [(String,String)]
@@ -42,7 +45,7 @@ environ = global [] Temporary
 
 setEnv :: String -> String -> IO ()
 setEnv evar val = do
-  envs <- readGlobal environ
+  envs <- getEnvironment
   writeGlobal environ ((evar,val) : filter ((/=evar) . fst) envs)
 
 --- Removes an environment variable that has been set by
@@ -50,7 +53,7 @@ setEnv evar val = do
 
 unsetEnv :: String -> IO ()
 unsetEnv evar = do
-  envs <- readGlobal environ
+  envs <- getEnvironment
   writeGlobal environ (filter ((/=evar) . fst) envs)
 
 --- Returns the hostname of the machine running this process.
