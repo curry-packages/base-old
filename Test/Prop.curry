@@ -26,11 +26,11 @@ module Test.Prop (
   -- test specification:
   PropIO, returns, sameReturns, toError, toIOError,
 
-  Prop, (==>), for,
+  Prop, (==>), for, forAll,
 
   is, isAlways, isEventually, uniquely, always, eventually,
   failing, successful, deterministic, (-=-), (<~>), (~>), (<~), (<~~>),
-  (#), (#<), (#>),
+  (#), (#<), (#>), (<=>),
   solutionOf,
 
   -- test annotations
@@ -42,7 +42,7 @@ module Test.Prop (
   ) where
 
 infix  1 `is`, `isAlways`, `isEventually`
-infix  1 -=-, <~>, ~>, <~, <~~>, `trivial`, #, #<, #>
+infix  1 -=-, <~>, ~>, <~, <~~>, `trivial`, #, #<, #>, <=>
 infix  1 `returns`, `sameReturns`
 infixr 0 ==>
 
@@ -168,6 +168,17 @@ _ #> _ = propUndefinedError "#>"
 --- satisfy property `p y`.
 for :: Show a => a -> (a -> Prop) -> Prop
 for _ _ = propUndefinedError "for"
+
+--- The property `forAll xs p` is satisfied if all values `x` of the list `xs`
+--- satisfy property `p x`.
+forAll :: Show a => [a] -> (a -> Prop) -> Prop
+forAll _ _ = propUndefinedError "forAll"
+
+--- The property `f <=> g` is satisfied if `f` and `g` are equivalent
+--- operations, i.e., they can be replaced in any context without changing
+--- the computed results.
+(<=>) :: a -> a -> Prop
+_ <=> _ = propUndefinedError "#"
 
 -------------------------------------------------------------------------
 -- Test Annotations
