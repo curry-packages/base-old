@@ -40,7 +40,7 @@ environ = global [] Temporary
 --- Set an environment variable to a value.
 --- The new value will be passed to subsequent shell commands
 --- (see <code>system</code>) and visible to subsequent calls to
---- <code>getEnviron</code> (but it is not visible in the environment
+--- <code>getEnv</code> (but it is not visible in the environment
 --- of the process that started the program execution).
 
 setEnv :: String -> String -> IO ()
@@ -49,7 +49,7 @@ setEnv evar val = do
   writeGlobal environ ((evar,val) : filter ((/=evar) . fst) envs)
 
 --- Removes an environment variable that has been set by
---- <code>setEnviron</code>.
+--- <code>setEnv</code>.
 
 unsetEnv :: String -> IO ()
 unsetEnv evar = do

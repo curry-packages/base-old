@@ -2,7 +2,7 @@ FiniteMap --> Data.Map
 
 The data type changed from "FM" to "Map".
 The explicit ordering function is not necessary anymore,
-instead an "Ord" context is needed.
+an "Ord" context is needed instead.
 The type "Set" in now in Data.Set.
 Renames from "Set":
 
@@ -108,6 +108,9 @@ AnsiCodes -> System.Console.ANSI.Codes
 CPNS -> Network.CPNS
 
 Socket -> Network.Socket
+Renames:
+sClose       -> close
+socketAccept -> accept
 
 Dequeue -> Data.Queue
 
@@ -135,6 +138,12 @@ SCC -> Removed
 Nat -> Removed
 
 System-> split into System.CPUTime, System.Environment, System.Process
+Renames:
+setEnviron -> setEnv
+unsetEnviron -> unsetEnv
+getEnviron -> getEnv | Note: getEnvironment was added, but has a different purpose
+setEnviron -> setEnv
+
 
 FunctionInversion -> Data.Function.Inversion
 

@@ -12,7 +12,7 @@
 
 module Network.Socket
   (Socket, listenOn, listenOnFresh,
-   socketAccept, waitForSocketAccept, sClose, connectToSocket)
+   socketAccept, waitForSocketAccept, close, connectToSocket)
  where
 
 import System.IO (Handle)
@@ -41,8 +41,8 @@ listenOnFresh external
 --- the client (the format of this string is implementation-dependent)
 --- and a handle to a stream communication with the client.
 --- The handle is both readable and writable.
-socketAccept :: Socket -> IO (String,Handle)
-socketAccept s = prim_socketAccept $## s
+accept :: Socket -> IO (String,Handle)
+accept s = prim_socketAccept $## s
 
 prim_socketAccept :: Socket -> IO (String,Handle)
 prim_socketAccept external
@@ -64,8 +64,8 @@ prim_waitForSocketAccept external
 
 
 --- Closes a server socket.
-sClose :: Socket -> IO ()
-sClose s = prim_sClose $## s
+close :: Socket -> IO ()
+close s = prim_sClose $## s
 
 prim_sClose :: Socket -> IO ()
 prim_sClose external
