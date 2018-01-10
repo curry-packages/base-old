@@ -44,6 +44,7 @@ module Prelude
   , PEVAL
   , Monad(..)
   , Functor(..)
+  , sequenceM, sequenceM_, mapM, mapM_
 #ifdef __PAKCS__
   , (=:<<=), letrec
 #endif
@@ -1804,3 +1805,30 @@ instance Monad [] where
   xs >>= f = [y | x <- xs, y <- f x]
   return x = [x]
   fail _ = []
+
+----------------------------------------------------------------------------
+-- Some further useful monad operations which might be later generalized
+-- or moved into some other base module.
+
+--- Evaluates a sequence of monadic actions and collects all results in a list.
+sequenceM :: Monad m => [m a] -> m [a]
+sequenceM []     = return []
+sequenceM (c:cs) = do x  <- c
+                      xs <- sequenceM cs
+                      return (x:xs)
+
+--- Evaluates a sequence of monadic actions and ignores the results.
+sequenceM_ :: Monad m => [m _] -> m ()
+sequenceM_ = foldr (>>) (return ())
+
+--- Maps a monadic action function on a list of elements.
+--- The results of all monadic actions are collected in a list.
+mapM :: Monad m => (a -> m b) -> [a] -> m [b]
+mapM f = sequenceM . map f
+
+--- Maps a monadic action function on a list of elements.
+--- The results of all monadic actions are ignored.
+mapM_ :: Monad m => (a -> m _) -> [a] -> m ()
+mapM_ f = sequenceM_ . map f
+
+----------------------------------------------------------------------------
