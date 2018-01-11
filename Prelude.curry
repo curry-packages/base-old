@@ -44,7 +44,7 @@ module Prelude
   , PEVAL
   , Monad(..)
   , Functor(..)
-  , sequenceM, sequenceM_, mapM, mapM_, foldM, liftM, forM, forM_
+  , sequence, sequence_, mapM, mapM_, foldM, liftM, liftM2, forM, forM_
   , unlessM, whenM
 #ifdef __PAKCS__
   , (=:<<=), letrec
@@ -1812,25 +1812,22 @@ instance Monad [] where
 -- or moved into some other base module.
 
 --- Evaluates a sequence of monadic actions and collects all results in a list.
-sequenceM :: Monad m => [m a] -> m [a]
-sequenceM []     = return []
-sequenceM (c:cs) = do x  <- c
-                      xs <- sequenceM cs
-                      return (x:xs)
+sequence :: Monad m => [m a] -> m [a]
+sequence = foldr (\m n -> m >>= \x -> n >>= \xs -> return (x:xs)) (return [])
 
 --- Evaluates a sequence of monadic actions and ignores the results.
-sequenceM_ :: Monad m => [m _] -> m ()
-sequenceM_ = foldr (>>) (return ())
+sequence_ :: Monad m => [m _] -> m ()
+sequence_ = foldr (>>) (return ())
 
 --- Maps a monadic action function on a list of elements.
 --- The results of all monadic actions are collected in a list.
 mapM :: Monad m => (a -> m b) -> [a] -> m [b]
-mapM f = sequenceM . map f
+mapM f = sequence . map f
 
 --- Maps a monadic action function on a list of elements.
 --- The results of all monadic actions are ignored.
 mapM_ :: Monad m => (a -> m _) -> [a] -> m ()
-mapM_ f = sequenceM_ . map f
+mapM_ f = sequence_ . map f
 
 --- Folds a list of elements using a binary monadic action and a value
 --- for the empty list.
@@ -1841,6 +1838,12 @@ foldM f z (x:xs)  =  f z x >>= \z' -> foldM f z' xs
 --- Apply a pure function to the result of a monadic action.
 liftM :: Monad m => (a -> b) -> m a -> m b
 liftM f m = m >>= return . f
+
+--- Apply a pure binary function to the result of two monadic actions.
+liftM2  :: (Monad m) => (a1 -> a2 -> r) -> m a1 -> m a2 -> m r
+liftM2 f m1 m2 = do x1 <- m1
+                    x2 <- m2
+                    return (f x1 x2)
 
 --- Like `mapM`, but with flipped arguments.
 ---
