@@ -44,7 +44,8 @@ module Prelude
   , PEVAL
   , Monad(..)
   , Functor(..)
-  , sequenceM, sequenceM_, mapM, mapM_
+  , sequenceM, sequenceM_, mapM, mapM_, foldM, liftM, forM, forM_
+  , unlessM, whenM
 #ifdef __PAKCS__
   , (=:<<=), letrec
 #endif
@@ -1807,7 +1808,7 @@ instance Monad [] where
   fail _ = []
 
 ----------------------------------------------------------------------------
--- Some further useful monad operations which might be later generalized
+-- Some useful monad operations which might be later generalized
 -- or moved into some other base module.
 
 --- Evaluates a sequence of monadic actions and collects all results in a list.
@@ -1830,5 +1831,43 @@ mapM f = sequenceM . map f
 --- The results of all monadic actions are ignored.
 mapM_ :: Monad m => (a -> m _) -> [a] -> m ()
 mapM_ f = sequenceM_ . map f
+
+--- Folds a list of elements using a binary monadic action and a value
+--- for the empty list.
+foldM :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
+foldM _ z []      =  return z
+foldM f z (x:xs)  =  f z x >>= \z' -> foldM f z' xs
+
+--- Apply a pure function to the result of a monadic action.
+liftM :: Monad m => (a -> b) -> m a -> m b
+liftM f m = m >>= return . f
+
+--- Like `mapM`, but with flipped arguments.
+---
+--- This can be useful if the definition of the function is longer
+--- than those of the list, like in
+---
+--- forM [1..10] $ \n -> do
+---   ...
+forM :: Monad m => [a] -> (a -> m b) -> m [b]
+forM xs f = mapM f xs
+
+--- Like `mapM_`, but with flipped arguments.
+---
+--- This can be useful if the definition of the function is longer
+--- than those of the list, like in
+---
+--- forM_ [1..10] $ \n -> do
+---   ...
+forM_ :: Monad m => [a] -> (a -> m b) -> m ()
+forM_ xs f = mapM_ f xs
+
+--- Performs a monadic action unless the condition is met.
+unlessM :: Monad m => Bool -> m () -> m ()
+unlessM p act = if p then return () else act
+
+--- Performs a monadic action when the condition is met.
+whenM :: Monad m => Bool -> m () -> m ()
+whenM p act = if p then act else return ()
 
 ----------------------------------------------------------------------------
