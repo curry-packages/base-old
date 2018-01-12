@@ -84,7 +84,7 @@ pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
 
 # generate all Prolog translations:
 .curry/pakcs/%.pl: .curry/%.fcy
-	rm -f $@ && "$(PAKCS)" --quiet :compile $(subst /,.,$*) :quit
+	rm -f $@ && "$(PAKCS)" --nocypm --quiet :compile $(subst /,.,$*) :quit
 
 ##############################################################################
 # create HTML documentation files for system libraries
