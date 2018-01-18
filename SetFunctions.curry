@@ -46,25 +46,27 @@
 ---    the set functions itself will be evaluated.
 ---
 --- @author Michael Hanus, Fabian Reck
---- @version June 2017
+--- @version January 2018
 --- @category general
 ------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 
 module SetFunctions
-  (set0,set1,set2,set3,set4,set5,set6,set7
+  (set0, set1, set2, set3, set4, set5, set6, set7
 #ifdef __PAKCS__
 #else
-  ,set0With,set1With,set2With,set3With,set4With,set5With,set6With,set7With
+  , set0With, set1With, set2With, set3With, set4With, set5With, set6With
+  , set7With
 #endif
-  ,Values,isEmpty,notEmpty,valueOf
-  ,choose,chooseValue,select,selectValue
-  ,mapValues,foldValues,filterValues,minValue,maxValue
-  ,values2list,printValues,sortValues,sortValuesBy
+  , Values, isEmpty, notEmpty, valueOf
+  , choose, chooseValue, select, selectValue
+  , mapValues, foldValues, filterValues
+  , minValue, minValueBy, maxValue, maxValueBy
+  , values2list, printValues, sortValues, sortValuesBy
   ) where
 
-import List(delete)
-import Sort(mergeSortBy)
+import List   ( delete, minimum, minimumBy, maximum, maximumBy )
+import Sort   ( mergeSortBy )
 #ifdef __PAKCS__
 import Findall
 #else
@@ -259,11 +261,24 @@ data Values a = Values (Maybe a) [a]
 data Values a = Values [a]
 #endif
 
+--- Internal operation to extract all elements of a multiset of values.
+valuesOf :: Values a -> [a]
 #ifdef __PAKCS__
+valuesOf (Values _ s) = s
+#else
+valuesOf (Values s) = s
+#endif
+
+----------------------------------------------------------------------
+
 --- Is a multiset of values empty?
 isEmpty :: Values a -> Bool
+#ifdef __PAKCS__
 isEmpty (Values firstval _) = case firstval of Nothing -> True
                                                Just _  -> False
+#else
+isEmpty (Values vs) = null vs
+#endif
 
 --- Is a multiset of values not empty?
 notEmpty :: Values a -> Bool
@@ -271,20 +286,7 @@ notEmpty vs = not (isEmpty vs)
 
 --- Is some value an element of a multiset of values?
 valueOf :: Eq a => a -> Values a -> Bool
-valueOf e (Values _ s) = e `elem` s
-#else
---- Is a multiset of values empty?
-isEmpty :: Values _ -> Bool
-isEmpty (Values vs) = null vs
-
---- Is a multiset of values not empty?
-notEmpty :: Values _ -> Bool
-notEmpty vs = not (isEmpty vs)
-
---- Is some value an element of a multiset of values?
-valueOf :: Eq a => a -> Values a -> Bool
-valueOf e (Values s) = e `elem` s
-#endif
+valueOf e s = e `elem` valuesOf s
 
 --- Chooses (non-deterministically) some value in a multiset of values
 --- and returns the chosen value and the remaining multiset of values.
@@ -359,11 +361,7 @@ mapValues f (Values s) = Values (map f s)
 --- must be <b>commutative</b> so that the result is independent of the order
 --- of applying this operation to all elements in the multiset.
 foldValues :: (a -> a -> a) -> a -> Values a -> a
-#ifdef __PAKCS__
-foldValues f z (Values _ s) = foldr f z s
-#else
-foldValues f z (Values s) = foldr f z s
-#endif
+foldValues f z s = foldr f z (valuesOf s)
 
 --- Keeps all elements of a multiset of values that satisfy a predicate.
 filterValues :: (a -> Bool) -> Values a -> Values a
@@ -376,41 +374,31 @@ filterValues p (Values _ s) = Values val xs
 filterValues p (Values s) = Values (filter p s)
 #endif
 
---- Returns the minimal element of a non-empty multiset of values
---- with respect to a given total ordering on the elements.
-minValue :: (a -> a -> Bool) -> Values a -> a
-#ifdef __PAKCS__
-minValue leq (Values _ s) = minOf s
-#else
-minValue leq (Values s) = minOf s
-#endif
- where
-  minOf [x] = x
-  minOf (x:y:ys) = let m1 = minOf (y:ys)
-                    in if leq x m1 then x else m1
+--- Returns the minimum of a non-empty multiset of values
+--- according to the given comparison function on the elements.
+minValue :: Ord a => Values a -> a
+minValue s = minimum (valuesOf s)
 
---- Returns the maximal element of a non-empty multiset of value
---- with respect to a given total ordering on the elements.
-maxValue :: (a -> a -> Bool) -> Values a -> a
-#ifdef __PAKCS__
-maxValue leq (Values _ s) = maxOf s
-#else
-maxValue leq (Values s) = maxOf s
-#endif
- where
-  maxOf [x] = x
-  maxOf (x:y:ys) = let m1 = maxOf (y:ys)
-                    in if leq x m1 then m1 else x
+--- Returns the minimum of a non-empty multiset of values
+--- according to the given comparison function on the elements.
+minValueBy :: (a -> a -> Ordering) -> Values a -> a
+minValueBy cmp s = minimumBy cmp (valuesOf s)
+
+--- Returns the maximum of a non-empty multiset of values
+--- according to the given comparison function on the elements.
+maxValue :: Ord a => Values a -> a
+maxValue s = maximum (valuesOf s)
+
+--- Returns the maximum of a non-empty multiset of values
+--- according to the given comparison function on the elements.
+maxValueBy :: (a -> a -> Ordering) -> Values a -> a
+maxValueBy cmp s = maximumBy cmp (valuesOf s)
 
 --- Puts all elements of a multiset of values in a list.
 --- Since the order of the elements in the list might depend on
 --- the time of the computation, this operation is an I/O action.
 values2list :: Values a -> IO [a]
-#ifdef __PAKCS__
-values2list (Values _ s) = return s
-#else
-values2list (Values s) = return s
-#endif
+values2list s = return (valuesOf s)
 
 --- Prints all elements of a multiset of values.
 printValues :: Show a => Values a -> IO ()
@@ -428,10 +416,6 @@ sortValues = sortValuesBy (<=)
 --- In order to ensure that the result of this operation is independent of the
 --- evaluation order, the given ordering must be a total order.
 sortValuesBy :: (a -> a -> Bool) -> Values a -> [a]
-#ifdef __PAKCS__
-sortValuesBy leq (Values _ s) = mergeSortBy leq s
-#else
-sortValuesBy leq (Values s) = mergeSortBy leq s
-#endif
+sortValuesBy leq s = mergeSortBy leq (valuesOf s)
 
 ------------------------------------------------------------------------
