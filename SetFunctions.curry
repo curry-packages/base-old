@@ -261,11 +261,12 @@ data Values a = Values [a]
 
 #ifdef __PAKCS__
 --- Is a multiset of values empty?
-isEmpty :: Eq a => Values a -> Bool
-isEmpty (Values firstval _) = firstval == Nothing
+isEmpty :: Values a -> Bool
+isEmpty (Values firstval _) = case firstval of Nothing -> True
+                                               Just _  -> False
 
 --- Is a multiset of values not empty?
-notEmpty :: Eq a => Values a -> Bool
+notEmpty :: Values a -> Bool
 notEmpty vs = not (isEmpty vs)
 
 --- Is some value an element of a multiset of values?
