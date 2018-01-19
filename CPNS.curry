@@ -31,10 +31,13 @@ import Time
 -- Distributed Curry! If this port is occupied by another process
 -- on a host, you cannot run Distributed Curry on it.)
 
-cpnsSocket = 8767  -- standard port number of CPNS demon
+-- The standard port number of CPNS demon.
+cpnsSocket :: Int
+cpnsSocket = 8767
 
 
 -- The time out before considering the server as unreachable:
+cpnsTimeOut :: Int
 cpnsTimeOut = 3000
 
 --- Type of messages to be processed by the Curry Port Name Server.
@@ -59,6 +62,7 @@ data CPNSMessage = Terminate
                  | ShowRegistry
 
 -- The lock file to coordinate the startup of the CPNS demon:
+cpnsStartupLockfile :: String
 cpnsStartupLockfile = "/tmp/CurryPNSD.lock"
 
 --- Starts the "Curry Port Name Server" (CPNS) running on the local machine.
@@ -138,6 +142,8 @@ cpnsServer regs socket = do
           cpnsServer newregs socket )
       msg
 
+tryRegisterPortName :: [(String,Int,Int,Int)] -> String -> Int -> Int -> Int
+                    -> IO (Bool, [(String, Int, Int, Int)])
 tryRegisterPortName regs name pid sn pn = do
   let nameregs = filter (\(n,_,_,_)->name==n) regs
   ack <- if null nameregs
@@ -157,6 +163,8 @@ tryRegisterPortName regs name pid sn pn = do
   return (ack, newregs)
 
 -- Delete all registrations for a given port name:
+unregisterPortName :: [(String,Int,Int,Int)] -> String
+                   -> IO [(String,Int,Int,Int)]
 unregisterPortName regs name = do
   ctime <- getLocalTime
   putStrLn $ "Unregister port \""++name++"\" at "++calendarTimeToString ctime
@@ -237,9 +245,11 @@ sendToLocalCPNS msg = doIfAlive "localhost" $ do
   hClose h
 
 --- Shows all registered ports at the local CPNS demon (in its logfile).
+cpnsShow :: IO ()
 cpnsShow = sendToLocalCPNS ShowRegistry
 
 --- Terminates the local CPNS demon
+cpnsStop :: IO ()
 cpnsStop = sendToLocalCPNS Terminate
 
 --- Gets an answer from a Curry port name server on a host,
@@ -300,6 +310,7 @@ startCPNSDIfNecessary = do
   done
 
 --- Main function for CPNS demon. Check arguments and execute command.
+main :: IO ()
 main = do
   args <- getArgs
   case args of

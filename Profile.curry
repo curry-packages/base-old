@@ -77,6 +77,7 @@ showMemInfo infos = concat $ intersperse ", " $
 
 --- Print a human readable version of the current memory situation
 --- of the Curry process.
+printMemInfo :: IO ()
 printMemInfo = getProcessInfos >>= putStrLn . showMemInfo
 
 --- Print the time needed to execute a given IO action.
@@ -129,6 +130,8 @@ profileSpace action = do
 profileSpaceNF :: a -> IO ()
 profileSpaceNF exp = profileSpace (seq (id $!! exp) done)
 
+showInfoDiff :: [(ProcessInfo, Int)] -> [(ProcessInfo, Int)] -> ProcessInfo
+             -> String
 showInfoDiff infos1 infos2 item =
   show (maybe 0 id (lookup item infos2) - maybe 0 id (lookup item infos1))
 
