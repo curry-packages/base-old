@@ -44,21 +44,6 @@ put s = state (\ _ -> ((), s))
 modify :: Monad m => (s -> s) -> StateT s m ()
 modify f = state (\ s -> ((), f s))
 
-{- instance foldable? -}
-sequence :: Monad m => [StateT s m a] -> StateT s m [a]
-sequence = foldr (\s newS -> s >>=
-                    (\a -> newS >>= (\as -> return (a:as))))
-                  (return [])
-
-sequence_ :: Monad m => [StateT s m a] -> StateT s m ()
-sequence_ = foldr (>>) (return ())
-
-mapM :: Monad m => (a -> StateT s m b) -> [a] -> StateT s m [b]
-mapM f = sequence . (map f)
-
-mapM_ :: Monad m => (a -> StateT s m b) -> [a] -> StateT s m ()
-mapM_ f = sequence_ . (map f)
-
 type State s a = StateT s (Identity) a
 
 runState :: State s a -> s -> (a, s)
@@ -79,10 +64,3 @@ execStateT :: (Monad m) => StateT s m a -> s -> m s
 execStateT m s = do
     ~(_, s') <- runStateT m s
     return s'
-
-liftM :: Monad m => (a -> b) -> StateT s m a -> StateT s m b
-liftM f act = act >>= (return . f)
-
-liftM2 :: Monad m => (a -> b -> c) -> StateT s m a
-       -> StateT s m b -> StateT s m c
-liftM2 f a b = a >>= (\x -> b >>= (\y -> return (f x y)))

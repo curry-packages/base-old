@@ -69,13 +69,6 @@ f <$> act = act >>= (\x -> return (f x))
       -> ErrorT e m a -> ErrorT e m b
 f <*> v = f >>= (\f' -> v >>= (\x -> return (f' x)))
 
-
---- Map a monadic function on all elements of a list by sequencing
---- the effects.
-mapM :: (Error e, Monad m) => (a -> ErrorT e m b) -> [a] -> ErrorT e m [b]
-mapM _ [] = return []
-mapM f (x:xs) = f x >>= (\x' -> (mapM f xs) >>= (\xs' -> return (x' : xs')))
-
 --- Same as `concatMap`, but for a monadic function.
 concatMapM :: (Error e, Monad m) => (a -> ErrorT e m [b])
            -> [a] -> ErrorT e m [b]
