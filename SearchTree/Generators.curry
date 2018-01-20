@@ -126,11 +126,11 @@ genPosFloat :: SearchTree Float
 genPosFloat = valsTo (genPair genNat genNat) ii2f
  where
   -- Combine two naturals to a float value:
-  ii2f (x,y) = Value (fromInteger x + nat2float 0.1 y)
+  ii2f (x,y) = Value (fromInt x + nat2float 0.1 y)
   -- Transform an natural to float<1, e.g., nat2float 0.1 135 = 0.531
   nat2float m i =
     if i == 0 then 0.0
-              else nat2float (m/10) (i `div` 10) + m * fromInteger (i `mod` 10)
+              else nat2float (m/10) (i `div` 10) + m * fromInt (i `mod` 10)
 
 --- Generates a search tree for Boolean values.
 genBool :: SearchTree Bool

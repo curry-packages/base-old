@@ -45,6 +45,8 @@ module Prelude
   , PEVAL
   , Monad(..)
   , Functor(..)
+  , sequence, sequence_, mapM, mapM_, foldM, liftM, liftM2, forM, forM_
+  , unlessM, whenM
 #ifdef __PAKCS__
   , (=:<<=), letrec
 #endif
@@ -1650,7 +1652,7 @@ class Num a where
   abs :: a -> a
   signum :: a -> a
 
-  fromInteger :: Int -> a
+  fromInt :: Int -> a
 
   x - y = x + negate y
   negate x = 0 - x
@@ -1669,7 +1671,7 @@ instance Num Int where
            | x == 0    = 0
            | otherwise = -1
 
-  fromInteger x = x
+  fromInt x = x
 
 instance Num Float where
   x + y = x +. y
@@ -1686,9 +1688,9 @@ instance Num Float where
            | x == 0    = 0
            | otherwise = -1
 
-  fromInteger x = i2f x
+  fromInt x = i2f x
 
--- minimal definition: fromRational and (recip or (/))
+-- minimal definition: fromFloat and (recip or (/))
 class Num a => Fractional a where
 
   (/) :: a -> a -> a
@@ -1697,16 +1699,16 @@ class Num a => Fractional a where
   recip x = 1/x
   x / y = x * recip y
 
-  fromRational :: Float -> a -- since we have no type Rational
+  fromFloat :: Float -> a -- since we have no type Rational
 
 instance Fractional Float where
   x / y = x /. y
   recip x = 1.0/x
 
-  fromRational x = x
+  fromFloat x = x
 
 class (Num a, Ord a) => Real a where
-  -- toRational :: a -> Rational
+  -- toFloat :: a -> Float
 
 class Real a => Integral a where
   div  :: a -> a -> a
@@ -1809,3 +1811,71 @@ instance Monad [] where
   xs >>= f = [y | x <- xs, y <- f x]
   return x = [x]
   fail _ = []
+
+----------------------------------------------------------------------------
+-- Some useful monad operations which might be later generalized
+-- or moved into some other base module.
+
+--- Evaluates a sequence of monadic actions and collects all results in a list.
+sequence :: Monad m => [m a] -> m [a]
+sequence = foldr (\m n -> m >>= \x -> n >>= \xs -> return (x:xs)) (return [])
+
+--- Evaluates a sequence of monadic actions and ignores the results.
+sequence_ :: Monad m => [m _] -> m ()
+sequence_ = foldr (>>) (return ())
+
+--- Maps a monadic action function on a list of elements.
+--- The results of all monadic actions are collected in a list.
+mapM :: Monad m => (a -> m b) -> [a] -> m [b]
+mapM f = sequence . map f
+
+--- Maps a monadic action function on a list of elements.
+--- The results of all monadic actions are ignored.
+mapM_ :: Monad m => (a -> m _) -> [a] -> m ()
+mapM_ f = sequence_ . map f
+
+--- Folds a list of elements using a binary monadic action and a value
+--- for the empty list.
+foldM :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
+foldM _ z []      =  return z
+foldM f z (x:xs)  =  f z x >>= \z' -> foldM f z' xs
+
+--- Apply a pure function to the result of a monadic action.
+liftM :: Monad m => (a -> b) -> m a -> m b
+liftM f m = m >>= return . f
+
+--- Apply a pure binary function to the result of two monadic actions.
+liftM2  :: (Monad m) => (a1 -> a2 -> r) -> m a1 -> m a2 -> m r
+liftM2 f m1 m2 = do x1 <- m1
+                    x2 <- m2
+                    return (f x1 x2)
+
+--- Like `mapM`, but with flipped arguments.
+---
+--- This can be useful if the definition of the function is longer
+--- than those of the list, like in
+---
+--- forM [1..10] $ \n -> do
+---   ...
+forM :: Monad m => [a] -> (a -> m b) -> m [b]
+forM xs f = mapM f xs
+
+--- Like `mapM_`, but with flipped arguments.
+---
+--- This can be useful if the definition of the function is longer
+--- than those of the list, like in
+---
+--- forM_ [1..10] $ \n -> do
+---   ...
+forM_ :: Monad m => [a] -> (a -> m b) -> m ()
+forM_ xs f = mapM_ f xs
+
+--- Performs a monadic action unless the condition is met.
+unlessM :: Monad m => Bool -> m () -> m ()
+unlessM p act = if p then return () else act
+
+--- Performs a monadic action when the condition is met.
+whenM :: Monad m => Bool -> m () -> m ()
+whenM p act = if p then act else return ()
+
+----------------------------------------------------------------------------

@@ -37,8 +37,9 @@ import System.Directory ( doesFileExist, getHomeDirectory
                         , findFileWithSuffix, getFileWithSuffix)
 import System.FilePath  ( FilePath, (</>), (<.>), addTrailingPathSeparator
                         , dropFileName, joinPath, normalise, splitDirectories
-                        , splitExtension, splitFileName, splitSearchPath
-                        , takeFileName, takeExtension, dropExtension)
+                        , takeDirectory, splitExtension, splitFileName
+                        , splitSearchPath, takeFileName
+                        , takeExtension, dropExtension)
 import System.IO
 import PropertyFile
 import System.Process
@@ -458,7 +459,9 @@ callFrontendWithParams target params modpath = do
    else ioError (userError "Illegal source program")
  where
    callParseCurry = do
-     path <- maybe (getLoadPathForModule modpath) return (fullPath params)
+     path <- maybe (getLoadPathForModule modpath)
+                   (\p -> return (nub (takeDirectory modpath : p)))
+                   (fullPath params)
      return (quote (installDir </> "bin" </> curryCompiler ++ "-frontend")
              ++ concatMap ((" -i" ++) . quote) path)
 

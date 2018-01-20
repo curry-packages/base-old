@@ -12,7 +12,7 @@
 
 module Network.Socket
   (Socket, listenOn, listenOnFresh,
-   socketAccept, waitForSocketAccept, close, connectToSocket)
+   accept, waitForSocketAccept, close, connectToSocket)
  where
 
 import System.IO (Handle)
