@@ -22,6 +22,7 @@ module Findall
   , allValues, someValue
   , allSolutions, someSolution
 #ifdef __PAKCS__
+  , allHNFs
   , try, inject, solveAll, once, best
   , findall, findfirst, browse, browseList, unpack
   , rewriteAll, rewriteSome
@@ -116,6 +117,14 @@ someSolution p = someValue (let x free in p x &> x)
 #endif
 
 #ifdef __PAKCS__
+--- Returns all head normal forms of an expression (currently, via an incomplete
+--- depth-first strategy).
+---
+--- Note that this operation is not purely declarative since the ordering
+--- of the computed values depends on the ordering of the program rules.
+allHNFs :: a -> [a]
+allHNFs external
+
 ------------------------------------------------------------------------------
 --- Basic search control operator.
 try     :: (a -> Bool) -> [a -> Bool]

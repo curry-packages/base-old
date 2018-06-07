@@ -9,6 +9,10 @@
   <library>prim_standard</library>
   <entry>prim_findfirst[raw]</entry>
  </primitive>
+ <primitive name="allHNFs" arity="1">
+  <library>prim_standard</library>
+  <entry>prim_allHNFs[raw]</entry>
+ </primitive>
  <primitive name="try" arity="1">
   <library>prim_standard</library>
   <entry>prim_try[raw]</entry>
