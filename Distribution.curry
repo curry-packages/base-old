@@ -274,7 +274,8 @@ lookupModuleSource loadpath mod = lookupSourceInPath loadpath
 --- @cons HTML - colored HTML representation of source program
 --- @cons CY   - source representation employed by the frontend
 --- @cons TOKS - token stream of source program
-data FrontendTarget = FCY | TFCY | FINT | ACY | UACY | HTML | CY | TOKS
+--- @cons TAFC - type-annotated Flat Curry file ending with .tafcy
+data FrontendTarget = FCY | TFCY | FINT | ACY | UACY | HTML | CY | TOKS | TAFCY
   deriving Eq
 
 --- Abstract data type for representing parameters supported by the front end
@@ -466,14 +467,16 @@ callFrontendWithParams target params modpath = do
 
    quote s = '"' : s ++ "\""
 
-   showFrontendTarget FCY  = "--flat"
-   showFrontendTarget TFCY = "--typed-flat"
-   showFrontendTarget FINT = "--flat"
-   showFrontendTarget ACY  = "--acy"
-   showFrontendTarget UACY = "--uacy"
-   showFrontendTarget HTML = "--html"
-   showFrontendTarget CY   = "--parse-only"
-   showFrontendTarget TOKS = "--tokens"
+   showFrontendTarget FCY   = "--flat"
+   showFrontendTarget TFCY  = "--typed-flat"
+   showFrontendTarget TFCY  = "--typed-flat"
+   showFrontendTarget TAFCY = "--type-annotated-flat"
+   showFrontendTarget FINT  = "--flat"
+   showFrontendTarget ACY   = "--acy"
+   showFrontendTarget UACY  = "--uacy"
+   showFrontendTarget HTML  = "--html"
+   showFrontendTarget CY    = "--parse-only"
+   showFrontendTarget TOKS  = "--tokens"
 
    showFrontendParams = unwords
     [ if quiet       params then runQuiet     else ""
