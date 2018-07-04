@@ -9,9 +9,9 @@
   <library>prim_standard</library>
   <entry>prim_findfirst[raw]</entry>
  </primitive>
- <primitive name="allHNFs" arity="1">
+ <primitive name="isFail" arity="1">
   <library>prim_standard</library>
-  <entry>prim_allHNFs[raw]</entry>
+  <entry>prim_isFail[raw]</entry>
  </primitive>
  <primitive name="try" arity="1">
   <library>prim_standard</library>
