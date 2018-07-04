@@ -191,9 +191,9 @@ getRandomSeed =
   getCPUTime >>= \msecs ->
   let (CalendarTime y mo d h m s _) = toUTCTime time
 #ifdef __PAKCS__
-   in return ((y+mo+d+h+m*s*msecs) `rem` mask)
+   in return ((y+mo+d+h+(m+1)*(s+1)*(msecs+1)) `rem` mask)
 #else
-   in return ((y+mo+d+h+m*s*(msecs+1)) `mod` two16)
+   in return ((y+mo+d+h+(m+1)*(s+1)*(msecs+1)) `mod` two16)
 #endif
 
 --- Computes a random permutation of the given list.
