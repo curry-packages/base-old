@@ -92,6 +92,7 @@ clean:
 # clean all generated files
 .PHONY: cleanall
 cleanall:
+	rm -fr "$(LIBDOCDIR)"/bt3
 	rm -rf "$(LIBDOCDIR)"
 	rm -rf "$(TEXDOCDIR)"
 	rm -rf dist
