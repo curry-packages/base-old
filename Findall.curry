@@ -11,7 +11,7 @@
 --- in order to support a more portable standard prelude.
 ---
 --- @author Michael Hanus
---- @version July 2015
+--- @version July 2018
 --- @category general
 ------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
@@ -21,6 +21,7 @@ module Findall
   ( getAllValues, getSomeValue
   , allValues, someValue
   , allSolutions, someSolution
+  , isFail
 #ifdef __PAKCS__
   , try, inject, solveAll, once, best
   , findall, findfirst, browse, browseList, unpack
@@ -113,6 +114,16 @@ someSolution :: (a->Bool) -> a
 someSolution p = findfirst (\x -> p x =:= True)
 #else
 someSolution p = someValue (let x free in p x &> x)
+#endif
+
+--- Does the computation of the argument to a head-normal form fail?
+--- Conceptually, the argument is evaluated on a copy, i.e.,
+--- even if the computation does not fail, it has not been evaluated.
+isFail :: a -> Bool
+#ifdef __PAKCS__
+isFail external
+#else
+isFail x = null (allValues (x `seq` ()))
 #endif
 
 #ifdef __PAKCS__

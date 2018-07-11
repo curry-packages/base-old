@@ -50,6 +50,7 @@ allsources:
 # clean all generated files
 .PHONY: clean
 clean:
+	rm -fr "$(LIBDOCDIR)"/bt3
 	rm -f "$(LIBDOCDIR)"/*
 	rm -f "$(TEXDOCDIR)"/*
 	rm -fr .curry

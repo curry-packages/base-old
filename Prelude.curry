@@ -795,7 +795,11 @@ prim_readFileContents external
 --- @param filename - The name of the file to be written.
 --- @param contents - The contents to be written to the file.
 writeFile         :: String -> String -> IO ()
+#ifdef __PAKCS__
 writeFile f s = (prim_writeFile $## f) s
+#else
+writeFile f s = (prim_writeFile $## f) $## s
+#endif
 
 prim_writeFile         :: String -> String -> IO ()
 prim_writeFile external
@@ -805,7 +809,11 @@ prim_writeFile external
 --- @param filename - The name of the file to be written.
 --- @param contents - The contents to be appended to the file.
 appendFile        :: String -> String -> IO ()
+#ifdef __PAKCS__
 appendFile f s = (prim_appendFile $## f) s
+#else
+appendFile f s = (prim_appendFile $## f) $## s
+#endif
 
 prim_appendFile         :: String -> String -> IO ()
 prim_appendFile external
