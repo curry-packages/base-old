@@ -73,7 +73,7 @@ module System.FilePath
   where
 
 import Data.Char          (toLower, toUpper)
-import Data.List          (isPrefixOf, init, last)
+import Data.List          (isPrefixOf, init, last, intersperse)
 import Data.Maybe         (isJust, fromJust)
 import System.Environment (getEnv, isPosix, isWindows)
 

@@ -1,7 +1,6 @@
 IOExts
 Combinatorial, Findall & Konsorten
 PropertyFile (wird in Distribution genutzt)
-ReadNumeric
 Format
 SearchTree
 Shows, Reads
@@ -9,3 +8,5 @@ ValueSequence
 Distribution
 Array
 Traversal
+ReadShowTerm
+SCC

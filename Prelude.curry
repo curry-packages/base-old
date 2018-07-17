@@ -21,7 +21,7 @@ module Prelude
   , Num(..), Fractional(..), Real(..), Integral(..)
   -- data types
   , Bool (..) , Char (..) , Int (..) , Float (..), String , Ordering (..)
-  , Success, Maybe (..), IO (..), IOError (..)
+  , Success, Maybe (..), IO (..), IOError (..), Either(..)
   , DET
   -- functions
   , (.), id, const, curry, uncurry, flip, until, seq, ensureNotFree
@@ -32,7 +32,7 @@ module Prelude
   , concat, concatMap, iterate, repeat, replicate, take, drop, splitAt
   , takeWhile, dropWhile, span, break, lines, unlines, words, unwords
   , reverse, and, or, any, all
-  , ord, chr, (=:=), success, (&), (&>), maybe
+  , ord, chr, (=:=), success, (&), (&>), maybe, either
   , (>>=), return, (>>), done, putChar, getChar, readFile
   , writeFile, appendFile
   , putStr, putStrLn, getLine, userError, ioError, showError
@@ -47,6 +47,7 @@ module Prelude
   , Functor(..)
   , sequence, sequence_, mapM, mapM_, foldM, liftM, liftM2, forM, forM_
   , unlessM, whenM
+  , pi, (^)
 #ifdef __PAKCS__
   , (=:<<=), letrec
 #endif
@@ -740,6 +741,15 @@ data Maybe a = Nothing | Just a
 maybe              :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
 maybe _ f (Just x) = f x
+
+-- Either type
+
+data Either a b = Left a | Right b
+ deriving (Eq, Ord, Show, Read)
+
+either               :: (a -> c) -> (b -> c) -> Either a b -> c
+either f _ (Left x)  = f x
+either _ g (Right x) = g x
 
 -- Monadic IO
 
@@ -1796,6 +1806,10 @@ class Functor f where
 instance Functor [] where
   fmap = map
 
+instance Functor (Either a) where
+  fmap _ (Left  a) = Left     a
+  fmap f (Right b) = Right (f b)
+
 class Monad m where
   (>>=) :: m a -> (a -> m b) -> m b
   (>>) :: m a -> m b -> m b
@@ -1887,3 +1901,26 @@ whenM :: Monad m => Bool -> m () -> m ()
 whenM p act = if p then act else return ()
 
 ----------------------------------------------------------------------------
+--some useful numerical operations and constants
+
+infixr 8 ^
+
+--- The number pi. 
+pi :: Float 
+pi = 3.141592653589793238 
+
+--- The value of `a ^. b` is `a` raised to the power of `b`. 
+--- Executes in `O(log b)` steps. 
+--- 
+--- @param a - The base. 
+--- @param b - The exponent. 
+--- @return `a` raised to the power of `b`. 
+ 
+(^) :: Fractional a => a -> Int -> a 
+a ^ b | b < 0     = 1 / a ^ (b * (-1)) 
+      | otherwise = powaux 1 a b 
+  where 
+    powaux n x y = if y == 0 then n 
+                   else powaux (n * if (y `mod` 2 == 1) then x else 1) 
+                               (x * x) 
+                               (y `div` 2) 

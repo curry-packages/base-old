@@ -6,64 +6,60 @@
 --- @category general
 ------------------------------------------------------------------------------
 
-module ReadNumeric
+module Numeric
   ( readInt, readNat, readHex, readOct, readBin
   ) where
 
 import Data.Char ( digitToInt, isBinDigit, isOctDigit
                  , isDigit, isHexDigit, isSpace)
+import Data.Maybe
 
 --- Read a (possibly negative) integer as a first token in a string.
 --- The string might contain leadings blanks and the integer is read
 --- up to the first non-digit.
---- If the string does not start with an integer token, `Nothing` is returned,
---- otherwise the result is `Just (v, s)`, where `v` is the value of the integer
+--- On success returns `[(v,s)]`, where `v` is the value of the integer
 --- and `s` is the remaing string without the integer token.
-readInt :: String -> Maybe (Int, String)
+readInt :: ReadS Int
 readInt str = case dropWhile isSpace str of
-  []       -> Nothing
-  '-':str1 -> maybe Nothing (\ (val,rstr) -> Just (-val,rstr)) (readNat str1)
+  []       -> []
+  '-':str1 -> map (\(n,s) -> (-n, s)) (readNat str1)
   str1     -> readNat str1
 
 --- Read a natural number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
 --- up to the first non-digit.
---- If the string does not start with a natural number token,
---- `Nothing` is returned,
---- otherwise the result is `Just (v, s)` where `v` is the value of the number
+--- On success returns `[(v,s)]`, where `v` is the value of the number
 --- and s is the remaing string without the number token.
-readNat :: String -> Maybe (Int, String)
-readNat str = readNumPrefix (dropWhile isSpace str) Nothing 10 isDigit digitToInt
+readNat :: ReadS Int
+readNat str = maybeToList $
+  readNumPrefix (dropWhile isSpace str) Nothing 10 isDigit digitToInt
 
 --- Read a hexadecimal number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
 --- up to the first non-hexadecimal digit.
---- If the string does not start with a hexadecimal number token,
---- `Nothing` is returned,
---- otherwise the result is `Just (v, s)` where `v` is the value of the number
+--- On success returns `[(v,s)]`, where `v` is the value of the number
 --- and s is the remaing string without the number token.
-readHex :: String -> Maybe (Int, String)
-readHex l = readNumPrefix (dropWhile isSpace l) Nothing 16 isHexDigit digitToInt
+readHex :: ReadS Int
+readHex l = maybeToList $
+  readNumPrefix (dropWhile isSpace l) Nothing 16 isHexDigit digitToInt
 
 --- Read an octal number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
 --- up to the first non-octal digit.
---- If the string does not start with an octal number token,
---- `Nothing` is returned,
---- otherwise the result is `Just (v, s)` where `v` is the value of the number
+--- On success returns `[(v,s)]`, where `v` is the value of the number
 --- and s is the remaing string without the number token.
-readOct :: String -> Maybe (Int, String)
-readOct l = readNumPrefix (dropWhile isSpace l) Nothing 8 isOctDigit digitToInt
+readOct :: ReadS Int
+readOct l = maybeToList $
+  readNumPrefix (dropWhile isSpace l) Nothing 8 isOctDigit digitToInt
 
 --- Read a binary number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
 --- up to the first non-binary digit.
---- If the string does not start with a binary number token,
---- `Nothing` is returned,
---- otherwise the result is `Just (v, s)` where `v` is the value of the number
+--- On success returns `[(v,s)]`, where `v` is the value of the number
 --- and s is the remaing string without the number token.
-readBin :: String -> Maybe (Int, String)
-readBin l = readNumPrefix (dropWhile isSpace l) Nothing 2 isBinDigit digitToInt
+readBin :: ReadS Int
+readBin l = maybeToList $
+  readNumPrefix (dropWhile isSpace l) Nothing 2 isBinDigit digitToInt
 
 --- Read an integral number prefix where the value of an already read number
 --- prefix is provided as the second argument.

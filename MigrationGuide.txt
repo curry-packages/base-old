@@ -131,9 +131,19 @@ SearchTreeTraversal -> SearchTree.Traversal
 
 ShowS -> Text.Show
 
-FileGoodies -> Removed
-
-SCC -> Removed
+FileGoodies -> Removed and migrated to System.FilePath or System.Directory
+seperatorChar removed
+pathSeperatorChar -> System.FilePath.pathSeperator
+suffixSeperatorChar -> System.FilePath.extSeperator
+dirName -> System.FilePath.takeDirectory
+baseName -> System.FilePath.takeBaseName
+splitDirectoryBaseName -> System.FilePath.splitFileName
+stripSuffix -> System.FilePath.dropExtension
+fileSuffix -> System.FilePath.takeExtension
+splitBaseName -> System.FilePath.splitExtension
+splitPath -> System.FilePath.splitPath
+lookupFileInPath -> System.Directory.findFileWithSuffix
+getFileInPath -> System.Directory.getFileWithSuffix
 
 Nat -> Removed
 
@@ -152,6 +162,8 @@ Renames: removed TableRBT suffix
 
 SetRBT -> Data.Set.RBTree
 Renames: removed SetRBT suffix
+
+ReadNumeric -> Numeric
 
 Debug -> Debug.Trace
 

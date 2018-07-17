@@ -17,7 +17,7 @@ module Format(showChar,showInt,showFloat,showString) where
 
 import Data.Char
 import Data.List
-import ReadNumeric
+import Numeric
 
 -- Basic type for show functions
 type ShowSpec a = Typ -> Maybe Flag -> Maybe Width -> Maybe Precision
@@ -210,7 +210,7 @@ floatToFloater :: Float -> Floater
 floatToFloater f = let (mantissa,exp) = break ((==) 'e') (consistentShowFloat f)
                    in if (exp == "") then floaterCreator mantissa 0
                         else floaterCreator mantissa
-                              (maybe failed fst (readInt (tail exp)))
+                              (fst (head (readInt (tail exp))))
 
 getSign :: Floater -> Sign
 getSign (Floater s _ _ _) = s

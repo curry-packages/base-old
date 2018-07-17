@@ -65,7 +65,7 @@ module SetFunctions
   , values2list, printValues, sortValues, sortValuesBy
   ) where
 
-import List   ( delete, minimum, minimumBy, maximum, maximumBy )
+import Data.List   ( delete, minimum, minimumBy, maximum, maximumBy )
 import Sort   ( mergeSortBy )
 #ifdef __PAKCS__
 import Findall

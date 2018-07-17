@@ -470,7 +470,6 @@ callFrontendWithParams target params modpath = do
 
    showFrontendTarget FCY   = "--flat"
    showFrontendTarget TFCY  = "--typed-flat"
-   showFrontendTarget TFCY  = "--typed-flat"
    showFrontendTarget TAFCY = "--type-annotated-flat"
    showFrontendTarget FINT  = "--flat"
    showFrontendTarget ACY   = "--acy"
