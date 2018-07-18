@@ -10,7 +10,8 @@ module Control.Monad.Trans.State
   ( State, StateT(runStateT)
   , evalStateT, execStateT
   , get, put, modify, sequence, sequence_, mapM
-  , mapM_, runState, evalState, execState, liftM, liftM2
+  , mapM_, runState, evalState, execState, liftM, liftM2,
+  module Control.Monad.Trans.Class
   ) where
 
 import Control.Monad.Trans.Class

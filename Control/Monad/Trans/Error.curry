@@ -7,7 +7,10 @@
 --- @category general
 --- ----------------------------------------------------------------------------
 
-module Control.Monad.Trans.Error where
+module Control.Monad.Trans.Error (
+  module Control.Monad.Trans.Error,
+  module Control.Monad.Trans.Class
+  ) where
 
 import Data.Either
 import Control.Monad.Trans.Class
