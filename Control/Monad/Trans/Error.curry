@@ -13,7 +13,9 @@ module Control.Monad.Trans.Error (
   ) where
 
 import Data.Either
+import Data.Functor.Identity
 import Control.Monad.Trans.Class
+import Control.Applicative
 
 --- Error monad.
 newtype ErrorT e m a = ErrorT { runErrorT :: m (Either e a) }
@@ -34,19 +36,24 @@ instance ErrorList a => Error [a] where
   strMsg = listMsg
 
 instance (Functor m) => Functor (ErrorT e m) where
-    fmap f = ErrorT . fmap (fmap f) . runErrorT
+  fmap f = ErrorT . fmap (fmap f) . runErrorT
+
+-- defined in terms of the monad instance for ErrorT
+instance (Functor m, Monad m, Error e) => Applicative (ErrorT e m) where
+  pure = return
+  f <*> v = f >>= (\f' -> v >>= (\x -> return (f' x)))
 
 instance (Monad m, Error e) => Monad (ErrorT e m) where
-    return a = ErrorT $ return (Right a)
-    m >>= k  = ErrorT (do a <- runErrorT m
-                          case a of
-                            Left  l -> return (Left l)
-                            Right r -> runErrorT (k r))
-    fail msg = ErrorT $ return (Left (strMsg msg))
+  return a = ErrorT $ return (Right a)
+  m >>= k  = ErrorT (do a <- runErrorT m
+                        case a of
+                          Left  l -> return (Left l)
+                          Right r -> runErrorT (k r))
+  fail msg = ErrorT $ return (Left (strMsg msg))
 
 instance MonadTrans (ErrorT e) where
-    lift m = ErrorT (do a <- m
-                        return (Right a))
+  lift m = ErrorT (do a <- m
+                      return (Right a))
 
 -- Signal an error value e.
 throwError :: (Monad m) => e -> ErrorT e m a
@@ -59,21 +66,11 @@ catchError m h = ErrorT (do a <- runErrorT m
                               Left  l -> runErrorT (h l)
                               Right r -> return (Right r))
 
---- Sequence operator of the ErrorT monad
-(*>) :: (Error e, Monad m) => ErrorT e m a -> ErrorT e m b -> ErrorT e m b
-m *> n = m >>= (\x -> n)
-
---- Apply a pure function onto a monadic value.
-(<$>) :: (Error e, Monad m) => (a -> b) -> ErrorT e m a -> ErrorT e m b
-f <$> act = act >>= (\x -> return (f x))
-
---- Apply a function yielded by a monadic action to a monadic value.
-(<*>) :: (Error e, Monad m) => ErrorT e m (a -> b)
-      -> ErrorT e m a -> ErrorT e m b
-f <*> v = f >>= (\f' -> v >>= (\x -> return (f' x)))
+runError :: ErrorT e Identity a -> Either e a
+runError = runIdentity . runErrorT
 
 --- Same as `concatMap`, but for a monadic function.
-concatMapM :: (Error e, Monad m) => (a -> ErrorT e m [b])
+concatMapM :: (Error e, Functor m, Monad m) => (a -> ErrorT e m [b])
            -> [a] -> ErrorT e m [b]
 concatMapM f xs = concat <$> mapM f xs
 

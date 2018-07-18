@@ -33,7 +33,7 @@ module Prelude
   , takeWhile, dropWhile, span, break, lines, unlines, words, unwords
   , reverse, and, or, any, all
   , ord, chr, (=:=), success, (&), (&>), maybe, either
-  , (>>=), return, (>>), done, putChar, getChar, readFile
+  , (<$>), (<$), (>>=), return, (>>), done, putChar, getChar, readFile
   , writeFile, appendFile
   , putStr, putStrLn, getLine, userError, ioError, showError
   , catch, doSolve, sequenceIO, sequenceIO_, mapIO
@@ -61,6 +61,7 @@ module Prelude
 
 infixl 9 !!
 infixr 9 .
+infixr 8 ^
 infixl 7 *, `div`, `mod`, `quot`, `rem`, /
 infixl 6 +, -
 -- infixr 5 :                          -- declared together with list
@@ -69,6 +70,7 @@ infix  4 =:=, ==, /=, <, >, <=, >=, =:<=
 #ifdef __PAKCS__
 infix  4 =:<<=
 #endif
+infixl 4 <$>, <$
 infix  4 `elem`, `notElem`
 infixr 3 &&
 infixr 2 ||
@@ -1806,6 +1808,18 @@ class Functor f where
 instance Functor [] where
   fmap = map
 
+instance Functor Maybe where
+  fmap f (Just x) = Just (f x)
+  fmap _ Nothing  = Nothing
+
+--- Operator alias for fmap
+(<$>) :: Functor f => (a -> b) -> f a -> f b
+(<$>) = fmap
+
+--- Replace all locations in the input with the same value.
+(<$) :: Functor f => a -> f b -> f a
+(<$) =  fmap . const
+
 instance Functor (Either a) where
   fmap _ (Left  a) = Left     a
   fmap f (Right b) = Right (f b)
@@ -1903,24 +1917,22 @@ whenM p act = if p then act else return ()
 ----------------------------------------------------------------------------
 --some useful numerical operations and constants
 
-infixr 8 ^
+--- The number pi.
+pi :: Float
+pi = 3.141592653589793238
 
---- The number pi. 
-pi :: Float 
-pi = 3.141592653589793238 
+--- The value of `a ^. b` is `a` raised to the power of `b`.
+--- Executes in `O(log b)` steps.
+---
+--- @param a - The base.
+--- @param b - The exponent.
+--- @return `a` raised to the power of `b`.
 
---- The value of `a ^. b` is `a` raised to the power of `b`. 
---- Executes in `O(log b)` steps. 
---- 
---- @param a - The base. 
---- @param b - The exponent. 
---- @return `a` raised to the power of `b`. 
- 
-(^) :: Fractional a => a -> Int -> a 
-a ^ b | b < 0     = 1 / a ^ (b * (-1)) 
-      | otherwise = powaux 1 a b 
-  where 
-    powaux n x y = if y == 0 then n 
-                   else powaux (n * if (y `mod` 2 == 1) then x else 1) 
-                               (x * x) 
-                               (y `div` 2) 
+(^) :: Fractional a => a -> Int -> a
+a ^ b | b < 0     = 1 / a ^ (b * (-1))
+      | otherwise = powaux 1 a b
+  where
+    powaux n x y = if y == 0 then n
+                   else powaux (n * if (y `mod` 2 == 1) then x else 1)
+                               (x * x)
+                               (y `div` 2)

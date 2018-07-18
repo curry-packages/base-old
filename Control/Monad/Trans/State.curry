@@ -16,12 +16,18 @@ module Control.Monad.Trans.State
 
 import Control.Monad.Trans.Class
 import Data.Functor.Identity
+import Control.Applicative
 
 newtype StateT s m a = StateT { runStateT :: s -> m (a, s) }
 
 instance (Functor m) => Functor (StateT s m) where
     fmap f m = StateT (\ s ->
         fmap (\ ~(a, s') -> (f a, s')) $ runStateT m s)
+
+-- defined in terms of the monad instance for StateT
+instance (Functor m, Monad m) => Applicative (StateT s m) where
+  pure = return
+  f <*> v = f >>= (\f' -> v >>= (\x -> return (f' x)))
 
 instance (Monad m) => Monad (StateT s m) where
   m >>= k  = StateT (\ s -> do ~(a, s') <- runStateT m s
@@ -45,7 +51,7 @@ put s = state (\ _ -> ((), s))
 modify :: Monad m => (s -> s) -> StateT s m ()
 modify f = state (\ s -> ((), f s))
 
-type State s a = StateT s (Identity) a
+type State s = StateT s Identity
 
 runState :: State s a -> s -> (a, s)
 runState m = runIdentity . runStateT m
