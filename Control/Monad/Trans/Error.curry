@@ -69,14 +69,3 @@ catchError m h = ErrorT (do a <- runErrorT m
 runError :: ErrorT e Identity a -> Either e a
 runError = runIdentity . runErrorT
 
---- Same as `concatMap`, but for a monadic function.
-concatMapM :: (Error e, Functor m, Monad m) => (a -> ErrorT e m [b])
-           -> [a] -> ErrorT e m [b]
-concatMapM f xs = concat <$> mapM f xs
-
---- Same as `mapM` but with an additional accumulator threaded through.
-mapAccumM :: (Error e, Monad m) => (a -> b -> ErrorT e m (a, c))
-          -> a -> [b] -> ErrorT e m (a, [c])
-mapAccumM _ s []       = return (s, [])
-mapAccumM f s (x : xs) = f s x >>= (\(s', x') -> (mapAccumM f s' xs) >>=
-                                     (\(s'', xs') -> return (s'', x' : xs')))

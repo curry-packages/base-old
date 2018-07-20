@@ -9,9 +9,8 @@
 module Control.Monad.Trans.State
   ( State, StateT(runStateT)
   , evalStateT, execStateT
-  , get, put, modify, sequence, sequence_, mapM
-  , mapM_, runState, evalState, execState, liftM, liftM2,
-  module Control.Monad.Trans.Class
+  , get, put, modify, runState, evalState, execState
+  , module Control.Monad.Trans.Class
   ) where
 
 import Control.Monad.Trans.Class
@@ -71,3 +70,4 @@ execStateT :: (Monad m) => StateT s m a -> s -> m s
 execStateT m s = do
     ~(_, s') <- runStateT m s
     return s'
+
