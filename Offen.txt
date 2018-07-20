@@ -1,12 +1,15 @@
-IOExts
-Combinatorial, Findall & Konsorten
-PropertyFile (wird in Distribution genutzt)
-Format
-SearchTree
-Shows, Reads
-ValueSequence
-Distribution
+AllSolutions
 Array
-Traversal
+COmbinatorial
+Distribution
+Findall
+IOExts
+PropertyFile (wird in Distribution genutzt)
 ReadShowTerm
 SCC
+SearchTree
+SetFunctions
+ShowS
+Sort
+Traversal
+ValueSequence

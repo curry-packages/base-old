@@ -73,9 +73,10 @@ Random -> System.Random
 Function ->  Data.Function    (on, fix)
          bzw Data.Tuple.Extra (first, second, (***), (&&&), both)
 
-Prelude -> Removed Either type
+Prelude -> added pi, ^, <$>, <$
 
 State -> Control.Monad.Trans.State, now with monad transformer
+has Applicative instance
 Renames:
 bindS      -> Monad instance, >>=
 bindS_     -> Monad instance, >>
@@ -95,13 +96,14 @@ ErrorState -> removed, use Control.Monad.Trans.Error
 Renames:
 returnES    -> Monad instance, return
 >+=         -> Monad instance, >>=
->+          -> *>
+>+          -> >>
 getS        -> lift . get
 putS        -> lift . put
 modifyS     -> lift . modify
 mapS        -> mapM
-concatMapES -> concatMapM
-mapAccumES  -> mapAccumM
+concatMapES -> Control.Monad.Extra.concatMapM
+mapAccumES  -> Control.Monad.Extra.mapAccumM
+<*>,<*,     -> Applicative instance
 
 AnsiCodes -> System.Console.ANSI.Codes
 
@@ -154,7 +156,6 @@ unsetEnviron -> unsetEnv
 getEnviron -> getEnv | Note: getEnvironment was added, but has a different purpose
 setEnviron -> setEnv
 
-
 FunctionInversion -> Data.Function.Inversion
 
 TableRBT -> Data.Table.RBTree
@@ -163,7 +164,7 @@ Renames: removed TableRBT suffix
 SetRBT -> Data.Set.RBTree
 Renames: removed SetRBT suffix
 
-ReadNumeric -> Numeric
+ReadNumeric -> Numeric | Note: Types changed
 
 Debug -> Debug.Trace
 
@@ -171,6 +172,8 @@ Profile -> Debug.Profile
 
 Time -> Data.Time
 
-Integer -> removed
+Integer -> removed, important functions integrated in prelude
 
-Float -> removed
+Float -> removed, important functions integrated in prelude
+
+Read -> use read instance
