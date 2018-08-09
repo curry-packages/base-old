@@ -28,7 +28,7 @@ addListToFM_C       --> insertListWith        | argument order changed!
 delFromFM           --> delete                | argument order changed!
 delListFromFM       --> deleteAll             | argument order changed!
 updFM               --> adjust                | argument order changed!
-splitFM             --> splitLookup           | return type changed!
+splitFM             --> removed, can be user-defined (split lookup is different)
 plusFM              --> union                 | first two arguments are swapped!
 plusFM_C            --> unionWith
 minusFM             --> difference
@@ -175,5 +175,6 @@ Time -> Data.Time
 Integer -> removed, important functions integrated in prelude
 
 Float -> removed, important functions integrated in prelude
+i2f -> Prelude.fromInt
 
 Read -> use read instance

@@ -144,7 +144,6 @@ adjust f i (Bin k x h l r)
             | i <  k    =  Bin k x h (adjust f i l) r
             | otherwise =  Bin k x h l (adjust f i r)
 
---TODO: this is a complete rewrite
 --- Combines delFrom and lookup.
 splitLookup :: Ord k => k -> Map k a -> (Map k a, Maybe a, Map k a)
 splitLookup _ Tip = (Tip, Nothing, Tip)
