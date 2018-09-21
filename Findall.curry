@@ -11,7 +11,7 @@
 --- in order to support a more portable standard prelude.
 ---
 --- @author Michael Hanus
---- @version July 2018
+--- @version September 2018
 --- @category general
 ------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
@@ -19,7 +19,7 @@
 
 module Findall
   ( getAllValues, getSomeValue
-  , allValues, someValue
+  , allValues, someValue, oneValue
   , allSolutions, someSolution
   , isFail
 #ifdef __PAKCS__
@@ -62,7 +62,7 @@ getSomeValue e = return (someValue e)
 --- of the computed values depends on the ordering of the program rules.
 allValues :: a -> [a]
 #ifdef __PAKCS__
-allValues e = findall (\x -> x=:=e)
+allValues external
 #else
 allValues e = ST.allValuesDFS (ST.someSearchTree e)
 #endif
@@ -80,9 +80,29 @@ allValues e = ST.allValuesDFS (ST.someSearchTree e)
 --- has a single value.
 someValue :: a -> a
 #ifdef __PAKCS__
-someValue e = findfirst (=:=e)
+someValue external
 #else
 someValue = ST.someValueWith ST.dfsStrategy
+#endif
+
+--- Returns just one value for an expression (currently, via an incomplete
+--- depth-first strategy). If the expression has no value, `Nothing`
+--- is returned. Conceptually, the value is computed on a copy
+--- of the expression, i.e., the evaluation of the expression does not share
+--- any results. In PAKCS, the evaluation suspends as long as the expression
+--- contains unbound variables.
+---
+--- Note that this operation is not purely declarative since
+--- the computed value depends on the ordering of the program rules.
+--- Thus, this operation should be used only if the expression
+--- has a single value.
+oneValue :: a -> Maybe a
+#ifdef __PAKCS__
+oneValue external
+#else
+oneValue x =
+  let vals = ST.allValuesWith ST.dfsStrategy (ST.someSearchTree x)
+  in (if null vals then Nothing else Just (head vals))
 #endif
 
 --- Returns all values satisfying a predicate, i.e., all arguments such that
@@ -208,13 +228,13 @@ best g cmp = bestHelp [] (try g) []
 --- the values from the lambda-abstractions.
 --- Similar to Prolog's findall.
 findall :: (a -> Bool) -> [a]
-findall g = map unpack (solveAll g)
+findall external
 
 
 --- Gets the first solution via a depth-first strategy
 --- and unpack the values from the search goals.
 findfirst :: (a -> Bool) -> a
-findfirst g = head (findall g)
+findfirst external
 
 --- Shows the solution of a solved constraint.
 browse  :: Show a => (a -> Bool) -> IO ()

@@ -46,10 +46,11 @@
 ---    the set functions itself will be evaluated.
 ---
 --- @author Michael Hanus, Fabian Reck
---- @version January 2018
+--- @version September 2018
 --- @category general
 ------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 
 module SetFunctions
   (set0, set1, set2, set3, set4, set5, set6, set7
@@ -77,31 +78,31 @@ import SearchTree
 ------------------------------------------------------------------------
 --- Combinator to transform a 0-ary function into a corresponding set function.
 set0 :: b -> Values b
-set0 f = Values (someValue f) (findall (=:=f))
+set0 f = Values (oneValue f) (allValues f)
 
 --- Combinator to transform a unary function into a corresponding set function.
 set1 :: (a1 -> b) -> a1 -> Values b
-set1 f x | x=:=x = Values (someValue (f x)) (findall (=:=(f x)))
+set1 f x | x=:=x = Values (oneValue (f x)) (allValues (f x))
 
 --- Combinator to transform a binary function into a corresponding set function.
 set2 :: (a1 -> a2 -> b) -> a1 -> a2 -> Values b
 set2 f x1 x2
   | x1=:=x1 & x2=:=x2
-  = Values (someValue (f x1 x2)) (findall (=:=(f x1 x2)))
+  = Values (oneValue (f x1 x2)) (allValues (f x1 x2))
 
 --- Combinator to transform a function of arity 3
 --- into a corresponding set function.
 set3 :: (a1 -> a2 -> a3 -> b) -> a1 -> a2 -> a3 -> Values b
 set3 f x1 x2 x3
   | x1=:=x1 & x2=:=x2 & x3=:=x3
-  = Values (someValue (f x1 x2 x3)) (findall (=:=(f x1 x2 x3)))
+  = Values (oneValue (f x1 x2 x3)) (allValues (f x1 x2 x3))
 
 --- Combinator to transform a function of arity 4
 --- into a corresponding set function.
 set4 :: (a1 -> a2 -> a3 -> a4 -> b) -> a1 -> a2 -> a3 -> a4 -> Values b
 set4 f x1 x2 x3 x4
   | x1=:=x1 & x2=:=x2 & x3=:=x3 & x4=:=x4
-  = Values (someValue (f x1 x2 x3 x4)) (findall (=:=(f x1 x2 x3 x4)))
+  = Values (oneValue (f x1 x2 x3 x4)) (allValues (f x1 x2 x3 x4))
 
 --- Combinator to transform a function of arity 5
 --- into a corresponding set function.
@@ -109,7 +110,7 @@ set5 :: (a1 -> a2 -> a3 -> a4 -> a5 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> Values b
 set5 f x1 x2 x3 x4 x5
   | x1=:=x1 & x2=:=x2 & x3=:=x3 & x4=:=x4 & x5=:=x5
-  = Values (someValue (f x1 x2 x3 x4 x5)) (findall (=:=(f x1 x2 x3 x4 x5)))
+  = Values (oneValue (f x1 x2 x3 x4 x5)) (allValues (f x1 x2 x3 x4 x5))
 
 --- Combinator to transform a function of arity 6
 --- into a corresponding set function.
@@ -117,8 +118,8 @@ set6 :: (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> Values b
 set6 f x1 x2 x3 x4 x5 x6
   | x1=:=x1 & x2=:=x2 & x3=:=x3 & x4=:=x4 & x5=:=x5 & x6=:=x6
-  = Values (someValue (f x1 x2 x3 x4 x5 x6))
-           (findall (=:=(f x1 x2 x3 x4 x5 x6)))
+  = Values (oneValue (f x1 x2 x3 x4 x5 x6))
+           (allValues (f x1 x2 x3 x4 x5 x6))
 
 --- Combinator to transform a function of arity 7
 --- into a corresponding set function.
@@ -126,20 +127,8 @@ set7 :: (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> b)
       -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> Values b
 set7 f x1 x2 x3 x4 x5 x6 x7
   | x1=:=x1 & x2=:=x2 & x3=:=x3 & x4=:=x4 & x5=:=x5 & x6=:=x6 & x7=:=x7
-  = Values (someValue (f x1 x2 x3 x4 x5 x6 x7))
-           (findall (=:=(f x1 x2 x3 x4 x5 x6 x7)))
-
-------------------------------------------------------------------------
--- Auxiliaries:
-
---- Computes some value of a given expression.
---- This implementation is specific to PAKCS in order to
---- to implement `notEmpty` and `selectValue` efficiently and
---- also for possibly infinite result sets.
-someValue :: a -> Maybe a
-someValue e =
-  let xs = findall (=:= (findfirst (=:=e)))
-   in if null xs then Nothing else Just (head xs)
+  = Values (oneValue (f x1 x2 x3 x4 x5 x6 x7))
+           (allValues (f x1 x2 x3 x4 x5 x6 x7))
 
 ------------------------------------------------------------------------
 #else
