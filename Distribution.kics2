@@ -9,6 +9,9 @@ external_d_C_curryCompilerMajorVersion _ _ = toCurry I.majorVersion
 external_d_C_curryCompilerMinorVersion ::  Cover -> ConstStore -> Curry_Prelude.C_Int
 external_d_C_curryCompilerMinorVersion _ _ = toCurry I.minorVersion
 
+external_d_C_curryCompilerRevisionVersion ::  Cover -> ConstStore -> Curry_Prelude.C_Int
+external_d_C_curryCompilerRevisionVersion _ _ = toCurry I.revisionVersion
+
 external_d_C_curryRuntime ::  Cover -> ConstStore -> Curry_Prelude.C_String
 external_d_C_curryRuntime _ _ = toCurry I.runtime
 

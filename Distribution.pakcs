@@ -13,6 +13,10 @@
   <library>prim_distribution</library>
   <entry>prim_curryCompilerMinorVersion</entry>
  </primitive>
+ <primitive name="curryCompilerRevisionVersion" arity="0">
+  <library>prim_distribution</library>
+  <entry>prim_curryCompilerRevisionVersion</entry>
+ </primitive>
  <primitive name="curryRuntime" arity="0">
   <library>prim_distribution</library>
   <entry>prim_curryRuntime</entry>

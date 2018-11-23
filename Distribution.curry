@@ -4,12 +4,13 @@
 --- compiler version, load paths, front end.
 ---
 --- @author Bernd Brassel, Michael Hanus, Bjoern Peemoeller, Finn Teegen
---- @version July 2017
+--- @version November 2018
 --- @category general
 --------------------------------------------------------------------------------
 
 module Distribution (
   curryCompiler, curryCompilerMajorVersion, curryCompilerMinorVersion,
+  curryCompilerRevisionVersion,
   curryRuntime, curryRuntimeMajorVersion, curryRuntimeMinorVersion,
   baseVersion, installDir, stripCurrySuffix, modNameToPath,
   currySubdir, inCurrySubdir, addCurrySubdir,
@@ -66,6 +67,10 @@ curryCompilerMajorVersion external
 --- The minor version number of the Curry compiler.
 curryCompilerMinorVersion :: Int
 curryCompilerMinorVersion external
+
+--- The revision version number of the Curry compiler.
+curryCompilerRevisionVersion :: Int
+curryCompilerRevisionVersion external
 
 --- The name of the run-time environment (e.g., "sicstus", "swi", or "ghc")
 curryRuntime :: String
