@@ -1,0 +1,38 @@
+AllSolutions
+Array
+Combinatorial
+Control.Monad.Extra
+Control.Monad.Trans.Class
+Control.Monad.Trans.Error
+Control.Monad.Trans.State
+Data.Function.Inversion
+Data.Global
+Data.Map
+Data.Queue
+Data.RedBlackTree
+Data.Set
+Data.Set.RBTree
+Data.Time
+Data.Tuple.Extra
+Debug.Profile
+Distribution
+Findall
+Format
+IOExts (IORefs sind noch enthalten)
+Network.*
+PropertyFile
+ReadShowTerm
+SCC
+SearchTree.*
+SetFunctions
+Sort
+Syystem.Console.ANSI.Codes
+System.Directory
+System.Environment  (wegen Data.Global muss es raus)
+System.FilePath
+System.Process
+System.Random
+Test.*
+Text.Show (Der Großteil ist noch dabei)
+Traversal
+ValueSequence
