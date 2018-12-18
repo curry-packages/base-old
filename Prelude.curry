@@ -1392,7 +1392,7 @@ lex xs = case xs of
       | otherwise -> []
   where
   isSingle c = c `elem` ",;()[]{}_`"
-  isSym c = c `elem` "!@#$%&⋆+./<=>?\\^|:-~"
+  isSym c = c `elem` "!@#$%&*+./<=>?\\^|:-~"
   isIdChar c = isAlphaNum c || c `elem` "_'"
   lexFracExp s = case s of
     ('.':c:cs)
