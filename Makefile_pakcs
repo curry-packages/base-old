@@ -83,9 +83,9 @@ pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
 .curry/%.acy: %.curry
 	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $(subst /,.,$*) -D__PAKCS__=$(shell printf '%d%02d' $(MAJORVERSION) $(MINORVERSION))
 
-# generate all Prolog translations:
+# generate all Prolog translation (without binding optimization):
 .curry/pakcs/%.pl: .curry/%.fcy
-	rm -f $@ && "$(PAKCS)" --nocypm --quiet :compile $(subst /,.,$*) :quit
+	rm -f $@ && "$(PAKCS)" -Dbindingoptimization=no --nocypm --quiet :compile $(subst /,.,$*) :quit
 
 ##############################################################################
 # create HTML documentation files for system libraries
