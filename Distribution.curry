@@ -16,7 +16,7 @@ module Distribution
   ) where
 
 import Directory ( getHomeDirectory )
-import FilePath  ( (</>) )
+import FilePath  ( FilePath, (</>) )
 
 -----------------------------------------------------------------
 -- Compiler and run-time environment name and version
