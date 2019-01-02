@@ -17,8 +17,7 @@
 --- (execept for the prelude).
 ---
 --- @author Sebastian Fischer (with extensions by Michael Hanus)
---- @version April 2017
---- @category general
+--- @version January 2019
 -------------------------------------------------------------------------
 
 module Test.Prop (
@@ -41,15 +40,15 @@ module Test.Prop (
 
   ) where
 
+import Test.Prop.Types
+
 infix  1 `is`, `isAlways`, `isEventually`
 infix  1 -=-, <~>, ~>, <~, <~~>, `trivial`, #, #<, #>, <=>
 infix  1 `returns`, `sameReturns`
 infixr 0 ==>
 
-
 -------------------------------------------------------------------------
---- Abstract type to represent properties involving IO actions.
-data PropIO = PropIO
+-- Properties involving I/O actions:
 
 --- The property `returns a x` is satisfied if the execution of the
 --- I/O action `a` returns the value `x`.
@@ -73,10 +72,7 @@ toIOError _ = propUndefinedError "toIOError"
 
 
 -------------------------------------------------------------------------
---- Abstract type to represent properties to be checked.
---- Basically, it contains all tests to be executed to check the property.
-data Prop = Prop
-
+-- Standard properties to be checked:
 
 --- The property `x -=- y` is satisfied if `x` and `y` have deterministic
 --- values that are equal.
