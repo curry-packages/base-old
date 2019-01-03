@@ -3,7 +3,7 @@
 
 CURRYBIN="../bin"
 
-ALLTESTS="Combinatorial ShowS Sort"
+ALLTESTS="ShowS Sort"
 
 VERBOSE=no
 if [ "$1" = "-v" ] ; then
