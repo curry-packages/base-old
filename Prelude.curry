@@ -15,8 +15,7 @@ module Prelude
     Char (..), Int (..), Float (..)
 --++   , () (..), (,) (..), (,,) (..), (,,,) (..), (,,,,) (..)
 --++   , [] (..), (->) (..)
-  , Bool (..), Ordering (..)
-  , Maybe (..)
+  , Bool (..), Ordering (..), Maybe (..), Either (..)
 
   -- * Type Classes
   , Eq (..) , Ord (..) , Show (..), shows, showChar, showString, showParen
@@ -35,12 +34,12 @@ module Prelude
   , isBinDigit, isOctDigit, isHexDigit, isSpace
   , ord, chr
   , String, lines, unlines, words, unwords
-  
+
   -- * Operations on Lists
   , head, tail, null, (++), length, (!!), map, foldl, foldl1, foldr, foldr1
   , filter, zip, zip3, zipWith, zipWith3, unzip, unzip3, concat, concatMap
   , iterate, repeat, replicate, take, drop, splitAt, takeWhile, dropWhile
-  , span, break, reverse, and, or, any, all, elem, notElem, lookup
+  , span, break, reverse, and, or, any, all, elem, notElem, lookup, (<$>)
 
   -- * Evaluation
   , ($), ($!), ($!!), ($#), ($##), seq, ensureNotFree, ensureSpine
@@ -48,11 +47,11 @@ module Prelude
 
   -- * Other Functions
   , (.), id, const, asTypeOf, curry, uncurry, flip, until
-  , (&&), (||), not, otherwise, ifThenElse, maybe, fst, snd
+  , (&&), (||), not, otherwise, ifThenElse, maybe, either, fst, snd
   , failed, error
 
   -- * IO-Type and Operations
-  , IO, done, getChar, getLine, putChar, putStr, putStrLn, print
+  , IO, getChar, getLine, putChar, putStr, putStrLn, print
   , FilePath, readFile, writeFile, appendFile
   , IOError (..), userError, ioError, catch
 
@@ -1156,7 +1155,7 @@ instance Monoid Ordering where
   EQ `mappend` y = y
   GT `mappend` _ = GT
 
-infixl 4 <$
+infixl 4 <$, <$>
 
 class Functor f where
   fmap :: (a -> b) -> f a -> f b
@@ -1169,6 +1168,9 @@ instance Functor [] where
 
 instance Functor ((->) r) where
   fmap = (.)
+
+(<$>) :: Functor f => (a -> b) -> f a -> f b
+(<$>) = fmap
 
 infixl 4 <*>, <*, *>
 
@@ -1659,10 +1661,6 @@ lookup _ []          = Nothing
 lookup k ((x,y):xys) | k == x    = Just y
                      | otherwise = lookup k xys
 
--- -----------------------------------------------------------------------------
--- Base.Maybe
--- -----------------------------------------------------------------------------
-
 data Maybe a = Nothing | Just a
  deriving (Eq, Ord, Show, Read)
 
@@ -1696,6 +1694,14 @@ maybe :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
 maybe _ f (Just x) = f x
 
+data Either a b = Left a
+                | Right b
+  deriving (Eq, Ord, Show, Read)
+
+either :: (a -> c) -> (b -> c) -> Either a b -> c
+either left _     (Left  a) = left a
+either _    right (Right b) = right b
+
 external data IO _
 
 instance Monoid a => Monoid (IO a) where
@@ -1728,11 +1734,6 @@ seqIO external
 
 returnIO :: a -> IO a
 returnIO external
-
---- The empty IO action that returns nothing.
---TODO: remove
-done :: IO ()
-done = return ()
 
 --- An action that reads a character from standard output and returns it.
 getChar :: IO Char
@@ -1859,7 +1860,7 @@ solve True = True
 --- Solves a constraint as an I/O action.
 --- Note: The constraint should be always solvable in a deterministic way.
 doSolve :: Bool -> IO ()
-doSolve b | b = done
+doSolve b | b = return ()
 
 --- The equational constraint.
 --- `(e1 =:= e2)` is satisfiable if both sides `e1` and `e2` can be

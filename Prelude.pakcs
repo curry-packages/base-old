@@ -129,11 +129,11 @@
   <library>prim_standard</library>
   <entry>prim_failure[raw]</entry>
  </primitive>
- <primitive name="&gt;&gt;=$" arity="2">
+ <primitive name="bindIO" arity="2">
   <library>prim_standard</library>
   <entry>prim_Monad_bind[raw]</entry>
  </primitive>
- <primitive name="&gt;&gt;$" arity="2">
+ <primitive name="seqIO" arity="2">
   <library>prim_standard</library>
   <entry>prim_Monad_seq[raw]</entry>
  </primitive>
