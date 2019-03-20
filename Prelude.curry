@@ -26,8 +26,9 @@ module Prelude
   , Integral (..), even, odd, fromIntegral, realToFrac
   , RealFrac (..), Floating (..), Monoid (..)
   -- Type Constructor Classes
-  , Functor (..), Applicative (..)
-  , Monad (..), liftM2, sequence, sequence_, mapM, mapM_
+  , Functor (..), Applicative (..), Alternative (..)
+  , Monad (..)
+  , liftM2, sequence, sequence_, mapM, mapM_
 
   -- * Operations on Characters
   , isUpper, isLower, isAlpha, isDigit, isAlphaNum
@@ -1197,6 +1198,40 @@ instance Applicative ((->) a) where
   (<*>) f g x = f x (g x)
   liftA2 q f g x = q (f x) (g x)
 
+infixl 3 <|>
+
+-- | A monoid on applicative functors.
+--
+-- If defined, 'some' and 'many' should be the least solutions
+-- of the equations:
+--
+-- * @'some' v = (:) '<$>' v '<*>' 'many' v@
+--
+-- * @'many' v = 'some' v '<|>' 'pure' []@
+class Applicative f => Alternative f where
+    -- | The identity of '<|>'
+    empty :: f a
+    -- | An associative binary operation
+    (<|>) :: f a -> f a -> f a
+
+    -- | One or more.
+    some :: f a -> f [a]
+    some v = some_v
+      where
+        many_v = some_v <|> pure []
+        some_v = liftA2 (:) v many_v
+
+    -- | Zero or more.
+    many :: f a -> f [a]
+    many v = many_v
+      where
+        many_v = some_v <|> pure []
+        some_v = liftA2 (:) v many_v
+
+instance Alternative [] where
+    empty = []
+    (<|>) = (++)
+
 infixl 1 >>, >>=
 
 class Applicative m => Monad m where
@@ -1684,6 +1719,11 @@ instance Applicative Maybe where
   liftA2 _ (Just _) Nothing  = Nothing
   liftA2 _ Nothing  _        = Nothing
 
+instance Alternative Maybe where
+    empty = Nothing
+    Nothing <|> r = r
+    Just l  <|> _ = Just l
+
 instance Monad Maybe where
   Nothing >>= _ = Nothing
   Just x  >>= k = k x
@@ -1720,6 +1760,11 @@ instance Applicative IO where
 #endif
   (<*>) = ap
   liftA2 = liftM2
+
+instance Alternative IO where
+    empty = fail "mzero"
+
+    m <|> n = m `catch` const n
 
 instance Monad IO where
   (>>=) = bindIO
