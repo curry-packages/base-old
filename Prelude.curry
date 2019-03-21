@@ -27,7 +27,7 @@ module Prelude
   , RealFrac (..), Floating (..), Monoid (..)
   -- Type Constructor Classes
   , Functor (..), Applicative (..), Alternative (..)
-  , Monad (..)
+  , Monad (..), MonadFail(..)
   , liftM2, sequence, sequence_, mapM, mapM_
 
   -- * Operations on Characters
@@ -1238,19 +1238,22 @@ class Applicative m => Monad m where
   (>>=) :: m a -> (a -> m b) -> m b
   (>>) :: m a -> m b -> m b
   return :: a -> m a
-  fail :: String -> m a
 
   return = pure
   m >> k = m >>= \_ -> k
-  fail = error
 
 instance Monad [] where
   xs >>= f = [y | x <- xs, y <- f x]
   (>>) = (*>)
-  fail _ = []
 
 instance Monad ((->) r) where
   f >>= k = \ r -> k (f r) r
+
+class Monad m => MonadFail m where
+  fail :: String -> m a
+
+instance MonadFail [] where
+  fail _ = []
 
 ap :: Monad m => m (a -> b) -> m a -> m b
 ap m1 m2 = do
@@ -1728,6 +1731,8 @@ instance Monad Maybe where
   Nothing >>= _ = Nothing
   Just x  >>= k = k x
   (>>) = (*>)
+
+instance MonadFail Maybe where
   fail _ = Nothing
 
 maybe :: b -> (a -> b) -> Maybe a -> b
@@ -1769,6 +1774,8 @@ instance Alternative IO where
 instance Monad IO where
   (>>=) = bindIO
   (>>) = (*>)
+
+instance MonadFail IO where
   fail s = ioError (userError s)
 
 bindIO :: IO a -> (a -> IO b) -> IO b
