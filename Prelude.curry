@@ -18,12 +18,13 @@ module Prelude
   , Bool (..), Ordering (..), Maybe (..), Either (..)
 
   -- * Type Classes
-  , Eq (..) , Ord (..) , Show (..), shows, showChar, showString, showParen
-  , Read (..), reads, readParen, read, lex
+  , Eq (..) , Ord (..)
+  , Show (..), ShowS, shows, showChar, showString, showParen
+  , Read (..), ReadS, reads, readParen, read, lex
   , Bounded (..), Enum (..)
   -- ** Numerical Typeclasses
   , Num (..), Fractional (..), Real (..)
-  , Integral (..), even, odd, fromIntegral, realToFrac
+  , Integral (..), even, odd, fromIntegral, realToFrac, (^)
   , RealFrac (..), Floating (..), Monoid (..)
   -- Type Constructor Classes
   , Functor (..), Applicative (..), Alternative (..)
@@ -1107,6 +1108,20 @@ atanhFloat x = prim_atanhFloat $# x
 
 prim_atanhFloat :: Float -> Float
 prim_atanhFloat external
+
+
+(^) :: (Num a, Integral b) => a -> b -> a
+x0 ^ y0 | y0 < 0    = error "Negative exponent"
+        | y0 == 0   = 1
+        | otherwise = f x0 y0
+    where -- f : x0 ^ y0 = x ^ y
+          f x y | even y    = f (x * x) (y `quot` 2)
+                | y == 1    = x
+                | otherwise = g (x * x) (y `quot` 2) x
+          -- g : x0 ^ y0 = (x ^ y) * z
+          g x y z | even y = g (x * x) (y `quot` 2) z
+                  | y == 1 = x * z
+                  | otherwise = g (x * x) (y `quot` 2) (x * z)
 
 class Monoid a where
   mempty  :: a

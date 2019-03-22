@@ -14,7 +14,7 @@ module Data.List
   , intersperse, intercalate, transpose, diagonal, permutations, partition
   , group, groupBy, splitOn, split, inits, tails, replace
   , isPrefixOf, isSuffixOf, isInfixOf
-  , sortBy, insertBy
+  , sort, sortBy, insertBy
   , unionBy, intersectBy
   , last, init
   , sum, product, maximum, minimum, maximumBy, minimumBy
@@ -133,11 +133,11 @@ diagonal :: [[a]] -> [a]
 diagonal = concat . foldr diags []
  where
   diags []     ys = ys
-  diags (x:xs) ys = [x] : merge xs ys
+  diags (x:xs) ys = [x] : merge' xs ys
 
-  merge []       ys     = ys
-  merge xs@(_:_) []     = map (:[]) xs
-  merge (x:xs)   (y:ys) = (x:y) : merge xs ys
+  merge' []       ys     = ys
+  merge' xs@(_:_) []     = map (:[]) xs
+  merge' (x:xs)   (y:ys) = (x:y) : merge' xs ys
 
 --- Returns the list of all permutations of the argument.
 permutations           :: [a] -> [[a]]
@@ -248,9 +248,41 @@ isSuffixOf xs ys = isPrefixOf (reverse xs) (reverse ys)
 isInfixOf :: Eq a => [a] -> [a] -> Bool
 isInfixOf xs ys = any (isPrefixOf xs) (tails ys)
 
+--- The default sorting operation, mergeSort, with standard ordering `<=`.
+sort :: Ord a => [a] -> [a]
+sort = sortBy (<=)
+
 --- Sorts a list w.r.t. an ordering relation by the insertion method.
 sortBy :: (a -> a -> Bool) -> [a] -> [a]
-sortBy le = foldr (insertBy le) []
+sortBy = mergeSortBy
+
+--- Bottom-up mergesort with ordering as first parameter.
+mergeSortBy :: (a -> a -> Bool) -> [a] -> [a]
+mergeSortBy leq zs =  mergeLists (genRuns zs)
+ where
+  -- generate runs of length 2:
+  genRuns []               =  []
+  genRuns [x]              =  [[x]]
+  genRuns (x1:x2:xs) | leq x1 x2 =  [x1,x2] : genRuns xs
+                     | otherwise =  [x2,x1] : genRuns xs
+
+  -- merge the runs:
+  mergeLists []         =  []
+  mergeLists [x]        =  x
+  mergeLists (x1:x2:xs) =  mergeLists (merge leq x1 x2 : mergePairs xs)
+
+  mergePairs []         =  []
+  mergePairs [x]        =  [x]
+  mergePairs (x1:x2:xs) =  merge leq x1 x2 : mergePairs xs
+
+
+--- Merges two lists with respect to an ordering predicate.
+
+merge :: (a -> a -> Bool) -> [a] -> [a] -> [a]
+merge _   [] ys     = ys
+merge _   (x:xs) [] = x : xs
+merge leq (x:xs) (y:ys) | leq x y   = x : merge leq xs (y:ys)
+                        | otherwise = y : merge leq (x:xs) ys
 
 --- Inserts an object into a list according to an ordering relation.
 --- @param le - an ordering relation (e.g., less-or-equal)
