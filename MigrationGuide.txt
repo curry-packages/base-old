@@ -1,3 +1,5 @@
+Distribution -> Language.Curry.Distribution
+
 FiniteMap --> Data.Map
 
 The data type changed from "FM" to "Map".
@@ -123,7 +125,6 @@ Global -> Data.Global
 NamedSocket -> Network.NamedSocket
 
 RedBlackTree -> Data.RedBlackTree
-Now uses Ord Context instead of explicit ordering function.
 Renames:
 tree2list -> toList
 

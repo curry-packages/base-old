@@ -7,11 +7,9 @@
 ------------------------------------------------------------------------------
 
 module System.Environment
-  ( getArgs, getEnv, getEnvironment, setEnv, unsetEnv, getProgName
+  ( getArgs, getEnv, setEnv, unsetEnv, getProgName
   , getHostname, isPosix, isWindows
   ) where
-
-import Global
 
 --- Returns the list of the program's command line arguments.
 --- The program name is not included.
@@ -23,19 +21,10 @@ getArgs external
 --- The empty string is returned for undefined environment variables.
 
 getEnv :: String -> IO String
-getEnv evar = do
-  envs <- getEnvironment
-  maybe (prim_getEnviron $## evar) return (lookup evar envs)
+getEnv evar = prim_getEnviron $## evar
 
 prim_getEnviron :: String -> IO String
 prim_getEnviron external
-
-getEnvironment :: IO [(String, String)]
-getEnvironment = readGlobal environ
-
---- internal state of environment variables set via setEnviron
-environ :: Global [(String,String)]
-environ = global [] Temporary
 
 --- Set an environment variable to a value.
 --- The new value will be passed to subsequent shell commands
@@ -44,17 +33,19 @@ environ = global [] Temporary
 --- of the process that started the program execution).
 
 setEnv :: String -> String -> IO ()
-setEnv evar val = do
-  envs <- getEnvironment
-  writeGlobal environ ((evar,val) : filter ((/=evar) . fst) envs)
+setEnv evar val = (prim_setEnviron $## evar) $## val
+
+prim_setEnviron :: String -> String -> IO ()
+prim_setEnviron external
 
 --- Removes an environment variable that has been set by
 --- <code>setEnv</code>.
 
 unsetEnv :: String -> IO ()
-unsetEnv evar = do
-  envs <- getEnvironment
-  writeGlobal environ (filter ((/=evar) . fst) envs)
+unsetEnv evar = prim_unsetEnviron $ evar
+
+prim_unsetEnviron :: String -> IO ()
+prim_unsetEnviron external
 
 --- Returns the hostname of the machine running this process.
 

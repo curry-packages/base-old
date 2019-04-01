@@ -15,24 +15,23 @@ Data.Set.RBTree
 Data.Time
 Data.Tuple.Extra
 Debug.Profile
-Distribution
 Findall
 Format
 IOExts (IORefs sind noch enthalten)
 Network.*
 PropertyFile
 ReadShowTerm
+Distribution
 SCC
 SearchTree.*
 SetFunctions
 Sort
 Syystem.Console.ANSI.Codes
 System.Directory
-System.Environment  (wegen Abhängigkeit von Data.Global muss es raus)
 System.FilePath
 System.Process
 System.Random
-Test.*
+Test.* (nur teilweise)
 Text.Show (Der Großteil ist noch dabei in der Prelude)
 Traversal
 ValueSequence

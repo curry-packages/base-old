@@ -9,6 +9,18 @@
   <library>prim_system</library>
   <entry>prim_getEnviron</entry>
  </primitive>
+ <primitive name="getEnvironment" arity="0">
+  <library>prim_system</library>
+  <entry>prim_getEnviron</entry>
+ </primitive>
+ <primitive name="prim_setEnviron" arity="2">
+  <library>prim_system</library>
+  <entry>prim_setEnviron</entry>
+ </primitive>
+ <primitive name="prim_unsetEnviron" arity="1">
+  <library>prim_system</library>
+  <entry>prim_unsetEnviron</entry>
+ </primitive>
  <primitive name="getHostname" arity="0">
   <library>prim_system</library>
   <entry>prim_getHostname</entry>
