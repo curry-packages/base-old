@@ -1200,7 +1200,24 @@ instance (Show a, Show b, Show c, Show d) => Show (a, b, c, d) where
   showsPrec _ (a, b, c, d) = showTuple [shows a, shows b, shows c, shows d]
 
 instance (Show a, Show b, Show c, Show d, Show e) => Show (a, b, c, d, e) where
-  showsPrec _ (a, b, c, d, e) = showTuple [shows a, shows b, shows c, shows d, shows e]
+  showsPrec _ (a, b, c, d, e) =
+    showTuple [shows a, shows b, shows c, shows d, shows e]
+
+instance (Show a, Show b, Show c, Show d, Show e, Show f)
+      => Show (a, b, c, d, e, f) where
+  showsPrec _ (a, b, c, d, e, f) =
+    showTuple [shows a, shows b, shows c, shows d, shows e, shows f]
+
+instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g)
+      => Show (a, b, c, d, e, f, g) where
+  showsPrec _ (a, b, c, d, e, f, g) =
+    showTuple [shows a, shows b, shows c, shows d, shows e, shows f, shows g]
+
+instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h)
+      => Show (a, b, c, d, e, f, g, h) where
+  showsPrec _ (a, b, c, d, e, f, g, h) =
+    showTuple [shows a, shows b, shows c, shows d, shows e, shows f, shows g
+              ,shows h]
 
 instance Show a => Show [a] where
   showsPrec _ = showList
