@@ -9,10 +9,6 @@
   <library>prim_system</library>
   <entry>prim_getEnviron</entry>
  </primitive>
- <primitive name="getEnvironment" arity="0">
-  <library>prim_system</library>
-  <entry>prim_getEnviron</entry>
- </primitive>
  <primitive name="prim_setEnviron" arity="2">
   <library>prim_system</library>
   <entry>prim_setEnviron</entry>
