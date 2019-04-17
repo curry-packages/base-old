@@ -511,8 +511,8 @@ words s    = let s1 = dropWhile isSpace s
 
 --- Concatenates a list of strings with a blank between two strings.
 unwords    :: [String] -> String
-unwords ws = if ws==[] then []
-                       else foldr1 (\w s -> w ++ ' ':s) ws
+unwords ws = if null ws then []
+                        else foldr1 (\w s -> w ++ ' ':s) ws
 
 --- Reverses the order of all elements in a list.
 reverse    :: [a] -> [a]
@@ -1398,12 +1398,11 @@ instance (Read a, Read b, Read c, Read d, Read e) => Read (a, b, c, d, e) where
 lex :: ReadS String
 lex xs = case xs of
     "" -> [("","")]
-    (c:cs)
-      | isSpace c -> lex $ dropWhile isSpace cs
     ('\'':s) ->
       [('\'' : ch ++ "'", t) | (ch, '\'' : t)  <- lexLitChar s, ch /= "'"]
     ('"':s) -> [('"' : str, t) | (str, t) <- lexString s]
     (c:cs)
+      | isSpace c -> lex $ dropWhile isSpace cs
       | isSingle c -> [([c], cs)]
       | isSym c -> [(c : sym, t) | (sym, t) <- [span isSym cs]]
       | isAlpha c -> [(c : nam, t) | (nam, t) <- [span isIdChar cs]]
