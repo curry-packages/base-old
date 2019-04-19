@@ -576,11 +576,13 @@ ord c = prim_ord $# c
 prim_ord :: Char -> Int
 prim_ord external
 
---- Converts a Unicode value into a character, fails iff the value is out of bounds
+--- Converts a Unicode value into a character.
+--- The conversion is total, i.e., for out-of-bound values, the smallest
+--- or largest character is generated.
 chr :: Int -> Char
-chr n | n >= 0 = prim_chr $# n
--- chr n | n < 0 || n > 1114111 = failed
---       | otherwise = prim_chr $# n
+chr n | n < 0       = prim_chr 0
+      | n > 1114111 = prim_chr 1114111
+      | otherwise   = prim_chr $# n
 
 prim_chr :: Int -> Char
 prim_chr external
