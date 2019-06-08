@@ -44,8 +44,8 @@ module FilePath
 
   -- * Extension methods
   splitExtension,
-  takeExtension, replaceExtension, dropExtension, addExtension, hasExtension, (<.>),
-  splitExtensions, dropExtensions, takeExtensions,
+  takeExtension, replaceExtension, dropExtension, addExtension, hasExtension,
+  (<.>), splitExtensions, dropExtensions, takeExtensions, isExtensionOf,
 
   -- * Drive methods
   splitDrive, joinDrive,
@@ -275,6 +275,18 @@ dropExtensions = fst . splitExtensions
 takeExtensions :: FilePath -> String
 takeExtensions = snd . splitExtensions
 
+-- | Does the given filename have the specified extension?
+--
+-- > "png" `isExtensionOf` "/directory/file.png" == True
+-- > ".png" `isExtensionOf` "/directory/file.png" == True
+-- > ".tar.gz" `isExtensionOf` "bar/foo.tar.gz" == True
+-- > "ar.gz" `isExtensionOf` "bar/foo.tar.gz" == False
+-- > "png" `isExtensionOf` "/directory/file.png.jpg" == False
+-- > "csv/table.csv" `isExtensionOf` "/data/csv/table.csv" == False
+isExtensionOf :: String -> FilePath -> Bool
+isExtensionOf extension path = case extension of
+  ext@('.':_) -> isSuffixOf ext       $ takeExtensions path
+  ext         -> isSuffixOf ('.':ext) $ takeExtensions path
 
 ---------------------------------------------------------------------
 -- Drive methods
