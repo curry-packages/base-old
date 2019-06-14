@@ -73,7 +73,7 @@ module FilePath
   where
 
 import Char   (toLower, toUpper)
-import List   (isPrefixOf, init, last)
+import List   (isPrefixOf, isSuffixOf, init, last)
 import Maybe  (isJust, fromJust)
 import System (getEnviron, isPosix, isWindows)
 
