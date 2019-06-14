@@ -1,9 +1,7 @@
 ----------------------------------------------------------------------------
 --- The standard prelude of Curry (with type classes).
---- All top-level functions, data types, classes and methods defined
+--- All exported functions, data types, classes, and methods defined
 --- in this module are always available in any Curry program.
----
---- @category general
 ----------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
@@ -24,9 +22,10 @@ module Prelude
   , Success, Maybe (..), Either (..), IO (..), IOError (..)
   , DET
   -- functions
-  , (.), id, const, curry, uncurry, flip, until, seq, ensureNotFree
-  , ensureSpine, ($), ($!), ($!!), ($#), ($##), error
-  , failed, (&&), (||), not, otherwise, if_then_else, solve
+  , (.), id, const, curry, uncurry, flip, until
+  , seq, ensureNotFree, ensureSpine, ($), ($!), ($!!), ($#), ($##)
+  , error, failed
+  , (&&), (||), not, otherwise, if_then_else, solve
   , fst, snd, head, tail, null, (++), length, (!!), map, foldl, foldl1
   , foldr, foldr1, filter, zip, zip3, zipWith, zipWith3, unzip, unzip3
   , concat, concatMap, iterate, repeat, replicate, take, drop, splitAt
@@ -46,8 +45,9 @@ module Prelude
   , Functor(..)
   , sequence, sequence_, mapM, mapM_, foldM, liftM, liftM2, forM, forM_
   , unlessM, whenM
+  , letrec
 #ifdef __PAKCS__
-  , (=:<<=), letrec
+  , (=:<<=)
 #endif
   ) where
 
@@ -1011,11 +1011,17 @@ apply external
 cond :: Bool -> a -> a
 cond external
 
-#ifdef __PAKCS__
--- Only for internal use:
--- letrec ones (1:ones) -> bind ones to (1:ones)
+--- This operation is internally used by PAKCS to implement recursive
+--- `let`s by using cyclic term structures. Basically, the effect of
+---
+---     letrec ones (1:ones)
+---
+--- (where `ones` is a logic variable) is the binding of `ones` to `(1:ones)`.
 letrec :: a -> a -> Bool
+#ifdef __PAKCS__
 letrec external
+#else
+letrec x y = let x = y in True -- not a real implementation
 #endif
 
 --- Non-strict equational constraint. Used to implement functional patterns.
