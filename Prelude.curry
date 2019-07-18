@@ -1234,14 +1234,14 @@ class Applicative f => Alternative f where
     some v = some_v
       where
         many_v = some_v <|> pure []
-        some_v = liftA2 (:) v many_v
+        some_v = (:) <$> v <*> many_v
 
     -- | Zero or more.
     many :: f a -> f [a]
     many v = many_v
       where
         many_v = some_v <|> pure []
-        some_v = liftA2 (:) v many_v
+        some_v = (:) <$> v <*> many_v
 
 instance Alternative [] where
     empty = []
