@@ -120,7 +120,7 @@ prim_showAnyQTerm external
 --- containing a pair of the data term and the remaining unparsed string.
 
 readsAnyUnqualifiedTerm :: [String] -> String -> [(_,String)]
-readsAnyUnqualifiedTerm [] _ =
+readsAnyUnqualifiedTerm []                _ =
   error "ReadShowTerm.readsAnyUnqualifiedTerm: list of module prefixes is empty"
 readsAnyUnqualifiedTerm (prefix:prefixes) s =
   readsAnyUnqualifiedTermWithPrefixes (prefix:prefixes) s
@@ -135,20 +135,24 @@ prim_readsAnyUnqualifiedTerm external
 
 --- Transforms a string containing a term in standard prefix notation
 --- without module qualifiers into the corresponding data term.
---- The string might contain logical variable encodings produced by showAnyTerm.
+--- The string might contain logical variable encodings produced by
+--- `showAnyTerm`.
 
 readAnyUnqualifiedTerm :: [String] -> String -> _
 readAnyUnqualifiedTerm prefixes s = case result of
   [(term,tail)]
-     -> if all isSpace tail then term
-        else error ("Unsafe.readAnyUnqualifiedTerm: no parse, unmatched string after term: "++tail)
+     -> if all isSpace tail
+          then term
+          else error ("Unsafe.readAnyUnqualifiedTerm: no parse, " ++
+                      "unmatched string after term: " ++ tail)
   [] ->  error "Unsafe.readAnyUnqualifiedTerm: no parse"
   _  ->  error "Unsafe.readAnyUnqualifiedTerm: ambiguous parse"
  where result = readsAnyUnqualifiedTerm prefixes s
 
 --- Transforms a string containing a term in standard prefix notation
 --- with qualified constructor names into the corresponding data term.
---- The string might contain logical variable encodings produced by showAnyQTerm.
+--- The string might contain logical variable encodings produced by
+--- `showAnyQTerm`.
 --- In case of a successful parse, the result is a one element list
 --- containing a pair of the data term and the remaining unparsed string.
 
@@ -160,25 +164,29 @@ prim_readsAnyQTerm external
 
 --- Transforms a string containing a term in standard prefix notation
 --- with qualified constructor names into the corresponding data term.
---- The string might contain logical variable encodings produced by showAnyQTerm.
+--- The string might contain logical variable encodings produced by
+--- `showAnyQTerm`.
 
 readAnyQTerm :: String -> _
 readAnyQTerm s = case result of
-  [(term,tail)] -> if all isSpace tail then term
-                   else error "Unsafe.readAnyQTerm: no parse"
-  [] ->  error "Unsafe.readAnyQTerm: no parse"
-  _  ->  error "Unsafe.readAnyQTerm: ambiguous parse"
+  [(term,tail)] -> if all isSpace tail
+                     then term
+                     else error "Unsafe.readAnyQTerm: no parse"
+  []            ->  error "Unsafe.readAnyQTerm: no parse"
+  _             ->  error "Unsafe.readAnyQTerm: ambiguous parse"
  where result = readsAnyQTerm s
 
 
---- Transforms any expression (even not in normal form) into a string representation
+--- Transforms any expression (even not in normal form)
+--- into a string representation
 --- in standard prefix notation without module qualifiers.
 --- The result depends on the evaluation and binding status of
 --- logic variables so that it should be used with care!
 showAnyExpression :: _ -> String
 showAnyExpression external
 
---- Transforms any expression (even not in normal form) into a string representation
+--- Transforms any expression (even not in normal form)
+--- into a string representation
 --- in standard prefix notation with module qualifiers.
 --- The result depends on the evaluation and binding status of
 --- logic variables so that it should be used with care!
@@ -206,9 +214,10 @@ prim_readsAnyQExpression external
 
 readAnyQExpression :: String -> _
 readAnyQExpression s = case result of
-  [(term,tail)] -> if all isSpace tail then term
-                   else error "Unsafe.readAnyQExpression: no parse"
-  [] ->  error "Unsafe.readAnyQExpression: no parse"
-  _  ->  error "Unsafe.readAnyQExpression: ambiguous parse"
+  [(term,tail)] -> if all isSpace tail
+                     then term
+                     else error "Unsafe.readAnyQExpression: no parse"
+  []            ->  error "Unsafe.readAnyQExpression: no parse"
+  _             ->  error "Unsafe.readAnyQExpression: ambiguous parse"
  where result = readsAnyQExpression s
 #endif

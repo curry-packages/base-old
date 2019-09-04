@@ -9,16 +9,16 @@
 
 {-# OPTIONS_CYMAKE -Wno-overlapping #-}
 
-module Sort( sort, sortBy, sorted, sortedBy
-           , permSort, permSortBy, insertionSort, insertionSortBy
-           , quickSort, quickSortBy, mergeSort, mergeSortBy
-           , cmpChar, cmpList, cmpString
-           , leqChar, leqCharIgnoreCase, leqList
-           , leqString, leqStringIgnoreCase, leqLexGerman
-           ) where
+module Sort
+  ( sort, sortBy, sorted, sortedBy
+  , permSort, permSortBy, insertionSort, insertionSortBy
+  , quickSort, quickSortBy, mergeSort, mergeSortBy
+  , cmpChar, cmpList, cmpString
+  , leqChar, leqCharIgnoreCase, leqList
+  , leqString, leqStringIgnoreCase, leqLexGerman
+  ) where
 
-import Char
-import Test.Prop
+import Char       ( toLower, toUpper )
 
 --- The default sorting operation, mergeSort, with standard ordering `<=`.
 sort :: Ord a => [a] -> [a]
@@ -69,8 +69,9 @@ permSortBy leq xs | sortedBy leq ys = ys
 perm :: [a] -> [a]
 perm []     = []
 perm (x:xs) = insert (perm xs)
- where insert ys     = x : ys
-       insert (y:ys) = y : insert ys
+ where
+  insert ys     = x : ys
+  insert (y:ys) = y : insert ys
 
 ------------------------------------------------------------------------------
 --- Insertion sort with standard ordering `<=`.
@@ -92,10 +93,10 @@ insertionSort'spec = permSort
 --- The list is sorted by repeated sorted insertion of the elements
 --- into the already sorted part of the list.
 insertionSortBy  :: (a -> a -> Bool) -> [a] -> [a]
-insertionSortBy _ [] = []
+insertionSortBy _   []     = []
 insertionSortBy leq (x:xs) = insert (insertionSortBy leq xs)
  where
-  insert [] = [x]
+  insert []        = [x]
   insert zs@(y:ys) | leq x y   = x : zs
                    | otherwise = y : insert ys
 
@@ -120,12 +121,12 @@ quickSort'spec = permSort
 quickSortBy :: (a -> a -> Bool) -> [a] -> [a]
 quickSortBy _   []     = []
 quickSortBy leq (x:xs) = let (l,r) = split x xs
-                          in quickSortBy leq l ++ (x : quickSortBy leq r)
+                         in quickSortBy leq l ++ (x : quickSortBy leq r)
  where
-  split _ [] = ([],[])
+  split _ []     = ([],[])
   split e (y:ys) | leq y e   = (y:l,r)
                  | otherwise = (l,y:r)
-              where (l,r) = split e ys
+   where (l,r) = split e ys
 
 
 ------------------------------------------------------------------------------
@@ -147,8 +148,8 @@ mergeSortBy :: (a -> a -> Bool) -> [a] -> [a]
 mergeSortBy leq zs =  mergeLists (genRuns zs)
  where
   -- generate runs of length 2:
-  genRuns []               =  []
-  genRuns [x]              =  [[x]]
+  genRuns []         =  []
+  genRuns [x]        =  [[x]]
   genRuns (x1:x2:xs) | leq x1 x2 =  [x1,x2] : genRuns xs
                      | otherwise =  [x2,x1] : genRuns xs
 
@@ -165,8 +166,8 @@ mergeSortBy leq zs =  mergeLists (genRuns zs)
 --- Merges two lists with respect to an ordering predicate.
 
 merge :: (a -> a -> Bool) -> [a] -> [a] -> [a]
-merge _   [] ys     = ys
-merge _   (x:xs) [] = x : xs
+merge _   [] ys         = ys
+merge _   (x:xs) []     = x : xs
 merge leq (x:xs) (y:ys) | leq x y   = x : merge leq xs (y:ys)
                         | otherwise = y : merge leq (x:xs) ys
 
@@ -217,22 +218,22 @@ leqStringIgnoreCase = leqList leqCharIgnoreCase
 --- Thus, upper/lowercase are not distinguished and Umlauts are sorted
 --- as vocals.
 leqLexGerman :: String -> String -> Bool
-leqLexGerman []    _  = True
-leqLexGerman (_:_) [] = False
+leqLexGerman []     _      = True
+leqLexGerman (_:_)  []     = False
 leqLexGerman (x:xs) (y:ys) | x' == y'  = leqLexGerman xs ys
                            | otherwise = x' < y'
-  where
-    x' = glex (ord x)
-    y' = glex (ord y)
-    -- map umlauts to vocals and make everything lowercase:
-    glex o | o >= ord 'A' && o <= ord 'Z'  =  o + (ord 'a' - ord 'A')
-           | o == 228  = ord 'a'
-           | o == 246  = ord 'o'
-           | o == 252  = ord 'u'
-           | o == 196  = ord 'a'
-           | o == 214  = ord 'o'
-           | o == 220  = ord 'u'
-           | o == 223  = ord 's'
-           | otherwise = o
+ where
+  x' = glex (ord x)
+  y' = glex (ord y)
+  -- map umlauts to vocals and make everything lowercase:
+  glex o | o >= ord 'A' && o <= ord 'Z'  =  o + (ord 'a' - ord 'A')
+         | o == 228                      = ord 'a'
+         | o == 246                      = ord 'o'
+         | o == 252                      = ord 'u'
+         | o == 196                      = ord 'a'
+         | o == 214                      = ord 'o'
+         | o == 220                      = ord 'u'
+         | o == 223                      = ord 's'
+         | otherwise                     = o
 
 -- end module Sort

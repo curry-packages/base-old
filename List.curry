@@ -36,7 +36,8 @@ elemIndex x              = findIndex (x ==)
 elemIndices             :: Eq a => a -> [a] -> [Int]
 elemIndices x            = findIndices (x ==)
 
---- Returns the first element `e` of a list satisfying a predicate as `(Just e)`,
+--- Returns the first element `e` of a list satisfying a predicate
+--- as `(Just e)`,
 --- otherwise `Nothing` is returned.
 find                    :: (a -> Bool) -> [a] -> Maybe a
 find p                   = listToMaybe . filter p
@@ -142,13 +143,13 @@ diagonal = concat . foldr diags []
 --- Returns the list of all permutations of the argument.
 permutations           :: [a] -> [[a]]
 permutations xs0       =  xs0 : perms xs0 []
-  where
+ where
   perms []     _  = []
   perms (t:ts) is = foldr interleave (perms ts (t:is)) (permutations is)
     where interleave    xs     r = let (_, zs) = interleave' id xs r in zs
           interleave' _ []     r = (ts, r)
           interleave' f (y:ys) r = let (us, zs) = interleave' (f . (y:)) ys r
-                                    in  (y:us, f (t:y:us) : zs)
+                                   in (y:us, f (t:y:us) : zs)
 
 --- Partitions a list into a pair of lists where the first list
 --- contains those elements that satisfy the predicate argument
@@ -157,8 +158,9 @@ permutations xs0       =  xs0 : perms xs0 []
 --- Example: `(partition (<4) [8,1,5,2,4,3]) = ([1,2,3],[8,5,4])`
 partition       :: (a -> Bool) -> [a] -> ([a],[a])
 partition p xs  = foldr select ([],[]) xs
-       where select x (ts,fs) = if p x then (x:ts,fs)
-                                       else (ts,x:fs)
+ where
+  select x (ts,fs) = if p x then (x:ts,fs)
+                            else (ts,x:fs)
 
 --- Splits the list argument into a list of lists of equal adjacent
 --- elements.
@@ -184,10 +186,11 @@ splitOn :: Eq a => [a] -> [a] -> [[a]]
 splitOn []          _  = error "splitOn called with an empty pattern"
 splitOn [x]         xs = split (x ==) xs
 splitOn sep@(_:_:_) xs = go xs
-  where go []                           = [[]]
-        go l@(y:ys) | sep `isPrefixOf` l = [] : go (drop len l)
-                    | otherwise         = let (zs:zss) = go ys in (y:zs):zss
-        len = length sep
+ where
+  go []       = [[]]
+  go l@(y:ys) | sep `isPrefixOf` l = [] : go (drop len l)
+              | otherwise          = let (zs:zss) = go ys in (y:zs):zss
+  len = length sep
 
 --- Splits a list into components delimited by separators,
 --- where the predicate returns True for a separator element.
@@ -197,7 +200,7 @@ splitOn sep@(_:_:_) xs = go xs
 --- > split (=='a') "aabbaca" == ["","","bb","c",""]
 --- > split (=='a') ""        == [""]
 split :: (a -> Bool) -> [a] -> [[a]]
-split _ []                 = [[]]
+split _ []     = [[]]
 split p (x:xs) | p x       = [] : split p xs
                | otherwise = let (ys:yss) = split p xs in (x:ys):yss
 
@@ -221,7 +224,7 @@ tails xxs@(_:xs) =  xxs : tails xs
 --- @param ys - the old list
 --- @return the new list where the `p`. element is replaced by `x`
 replace :: a -> Int -> [a] -> [a]
-replace _ _ [] = []
+replace _ _ []     = []
 replace x p (y:ys) | p==0      = x:ys
                    | otherwise = y:(replace x (p-1) ys)
 
@@ -230,8 +233,8 @@ replace x p (y:ys) | p==0      = x:ys
 --- @param ys - a list
 --- @return `True` if `xs` is a prefix of `ys`
 isPrefixOf :: Eq a => [a] -> [a] -> Bool
-isPrefixOf [] _ = True
-isPrefixOf (_:_) [] = False
+isPrefixOf []     _      = True
+isPrefixOf (_:_)  []     = False
 isPrefixOf (x:xs) (y:ys) = x==y && (isPrefixOf xs ys)
 
 --- Checks whether a list is a suffix of another.
@@ -258,7 +261,7 @@ sortBy le = foldr (insertBy le) []
 --- @param xs - a list
 --- @return a list where the element has been inserted
 insertBy :: (a -> a -> Bool) -> a -> [a] -> [a]
-insertBy _ x []     = [x]
+insertBy _ x []      = [x]
 insertBy le x (y:ys) = if le x y
                          then x : y : ys
                          else y : insertBy le x ys
@@ -289,9 +292,10 @@ maximum xs@(_:_) =  foldl1 max xs
 --- according to the given comparison function
 maximumBy :: (a -> a -> Ordering) -> [a] -> a
 maximumBy cmp xs@(_:_) = foldl1 maxBy xs
-  where maxBy x y = case cmp x y of
-          GT -> x
-          _  -> y
+ where
+  maxBy x y = case cmp x y of
+                GT -> x
+                _  -> y
 
 --- Returns the minimum of a non-empty list.
 minimum :: Ord a => [a] -> a
@@ -301,17 +305,18 @@ minimum xs@(_:_) =  foldl1 min xs
 --- according to the given comparison function
 minimumBy :: (a -> a -> Ordering) -> [a] -> a
 minimumBy cmp xs@(_:_) = foldl1 minBy xs
-  where minBy x y = case cmp x y of
-          GT -> y
-          _  -> x
+ where
+  minBy x y = case cmp x y of
+                GT -> y
+                _  -> x
 
 --- `scanl` is similar to `foldl`, but returns a list of successive
 --- reduced values from the left:
 ---   scanl f z [x1, x2, ...] == [z, z `f` x1, (z `f` x1) `f` x2, ...]
 scanl        :: (a -> b -> a) -> a -> [b] -> [a]
 scanl f q ls =  q : (case ls of
-                      []   -> []
-                      x:xs -> scanl f (f q x) xs)
+                       []   -> []
+                       x:xs -> scanl f (f q x) xs)
 
 --- `scanl1` is a variant of `scanl` that has no starting value argument:
 ---  scanl1 f [x1, x2, ...] == [x1, x1 `f` x2, ...]

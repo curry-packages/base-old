@@ -107,8 +107,8 @@ prim_renameDirectory external
 --- Returns the home directory of the current user.
 getHomeDirectory :: IO FilePath
 getHomeDirectory = if isWindows
-                      then getEnviron "USERPROFILE"
-                      else getEnviron "HOME"
+                     then getEnviron "USERPROFILE"
+                     else getEnviron "HOME"
 
 --- Returns the temporary directory of the operating system.
 getTemporaryDirectory :: IO FilePath
@@ -124,7 +124,7 @@ getAbsolutePath path
                                 return (normalise (homedir </> drop 2 path))
   | otherwise              = do curdir <- getCurrentDirectory
                                 return (normalise (curdir </> path))
-  
+
 --- Deletes a file from the file system.
 removeFile :: FilePath -> IO ()
 removeFile file = prim_removeFile $## file

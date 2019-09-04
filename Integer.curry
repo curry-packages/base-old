@@ -8,10 +8,11 @@
 --- @category general
 ------------------------------------------------------------------------------
 
-module Integer((^), pow, ilog, isqrt, factorial, binomial,
-               max3, min3, maxlist, minlist,
-               bitTrunc, bitAnd, bitOr, bitNot, bitXor,
-               even, odd) where
+module Integer
+  ( (^), pow, ilog, isqrt, factorial, binomial
+  , max3, min3, maxlist, minlist
+  , bitTrunc, bitAnd, bitOr, bitNot, bitXor
+  , even, odd ) where
 
 infixr 8 ^
 
@@ -41,8 +42,9 @@ a ^ b = pow a b
 
 pow :: Int -> Int -> Int
 pow a b | b>= 0 = powaux 1 a b
-  where
-    powaux n x y = if y == 0 then n
+ where
+  powaux n x y = if y == 0
+                   then n
                    else powaux (n * if (y `mod` 2 == 1) then x else 1)
                                (x * x)
                                (y `div` 2)
@@ -68,14 +70,15 @@ ilog n | n>0 = if n<10 then 0 else 1 + ilog (n `div` 10)
 --- @return the floor of the square root of `n`.
 
 isqrt :: Int -> Int
-isqrt n | n >= 0 =
-  if n == 0 then 0 else
-  if n <  4 then 1 else
-  aux 2 n
-  where aux low past = -- invariant low <= result < past
-          if past == low+1 then low
-          else let cand = (past + low) `div` 2
-                in if cand*cand > n then aux low cand else aux cand past
+isqrt n | n >= 0 = if n == 0 then 0
+                             else if n <  4 then 1
+                                            else aux 2 n
+ where
+  aux low past = -- invariant low <= result < past
+    if past == low+1
+      then low
+      else let cand = (past + low) `div` 2
+           in if cand*cand > n then aux low cand else aux cand past
 
 --- The value of `factorial n` is the factorial of `n`.
 --- Fails if `n &lt; 0`.
@@ -86,8 +89,7 @@ isqrt n | n >= 0 =
 factorial :: Int -> Int
 factorial n | n >= 0 = if n == 0 then 1 else n * factorial (n-1)
 
---- The value of `binomial n m` is 
---- n*(n-1)*...*(n-m+1)/m*(m-1)*...1
+--- The value of `binomial n m` is `n*(n-1)*...*(n-m+1)/m*(m-1)*...1`.
 --- Fails if `m &lt;= 0` or `n &lt; m`.
 ---
 --- @param n - Argument.
@@ -125,7 +127,7 @@ min3 n m p = min n (min m p)
 --- @return the maximum element of `l`.
 
 maxlist :: Ord a => [a] -> a
-maxlist [n] = n
+maxlist [n]      = n
 maxlist (n:m:ns) = max n (maxlist (m:ns))
 
 --- Returns the minimum of a list of integer values.
@@ -135,7 +137,7 @@ maxlist (n:m:ns) = max n (maxlist (m:ns))
 --- @return the minimum element of `l`.
 
 minlist :: Ord a => [a] -> a
-minlist [n] = n
+minlist [n]      = n
 minlist (n:m:ns) = min n  (minlist (m:ns))
 
 --- The value of `bitTrunc n m` is the value of the `n`
@@ -155,10 +157,11 @@ bitTrunc n m = bitAnd (pow 2 n - 1) m
 --- @return the bitwise and of `n` and `m`.
 
 bitAnd :: Int -> Int -> Int
-bitAnd n m = if m == 0 then 0
-             else let p = 2 * bitAnd (n `div` 2) (m `div` 2)
-                      q = if m `mod` 2 == 0 then 0 else n `mod` 2
-                   in p + q
+bitAnd n m = if m == 0
+               then 0
+               else let p = 2 * bitAnd (n `div` 2) (m `div` 2)
+                        q = if m `mod` 2 == 0 then 0 else n `mod` 2
+                    in p + q
 
 --- Returns the bitwise inclusive OR of the two arguments.
 ---
@@ -167,10 +170,11 @@ bitAnd n m = if m == 0 then 0
 --- @return the bitwise inclusive or of `n` and `m`.
 
 bitOr :: Int -> Int -> Int
-bitOr n m = if m == 0 then n
-            else let p = 2 * bitOr (n `div` 2) (m `div` 2)
-                     q = if m `mod` 2 == 1 then 1 else n `mod` 2
-                  in p + q
+bitOr n m = if m == 0
+              then n
+              else let p = 2 * bitOr (n `div` 2) (m `div` 2)
+                       q = if m `mod` 2 == 1 then 1 else n `mod` 2
+                   in p + q
 
 --- Returns the bitwise NOT of the argument.
 --- Since integers have unlimited precision,
@@ -181,10 +185,12 @@ bitOr n m = if m == 0 then n
 
 bitNot :: Int -> Int
 bitNot n = aux 32 n
-  where aux c m = if c==0 then 0
-                  else let p = 2 * aux (c-1) (m `div` 2)
-                           q = 1 - m `mod` 2
-                        in p + q
+ where
+  aux c m = if c==0
+              then 0
+              else let p = 2 * aux (c-1) (m `div` 2)
+                       q = 1 - m `mod` 2
+                   in p + q
 
 --- Returns the bitwise exclusive OR of the two arguments.
 ---
@@ -193,10 +199,11 @@ bitNot n = aux 32 n
 --- @return the bitwise exclusive of `n` and `m`.
 
 bitXor :: Int -> Int -> Int
-bitXor n m = if m == 0 then n
-             else let p = 2 * bitXor (n `div` 2) (m `div` 2)
-                      q = if m `mod` 2 == n `mod` 2 then 0 else 1
-                   in p + q
+bitXor n m = if m == 0
+               then n
+               else let p = 2 * bitXor (n `div` 2) (m `div` 2)
+                        q = if m `mod` 2 == n `mod` 2 then 0 else 1
+                    in p + q
 
 --- Returns whether an integer is even
 ---

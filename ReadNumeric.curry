@@ -32,7 +32,8 @@ readInt str = case dropWhile isSpace str of
 --- otherwise the result is `Just (v, s)` where `v` is the value of the number
 --- and s is the remaing string without the number token.
 readNat :: String -> Maybe (Int, String)
-readNat str = readNumPrefix (dropWhile isSpace str) Nothing 10 isDigit digitToInt
+readNat str =
+  readNumPrefix (dropWhile isSpace str) Nothing 10 isDigit digitToInt
 
 --- Read a hexadecimal number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
@@ -42,7 +43,8 @@ readNat str = readNumPrefix (dropWhile isSpace str) Nothing 10 isDigit digitToIn
 --- otherwise the result is `Just (v, s)` where `v` is the value of the number
 --- and s is the remaing string without the number token.
 readHex :: String -> Maybe (Int, String)
-readHex l = readNumPrefix (dropWhile isSpace l) Nothing 16 isHexDigit digitToInt
+readHex l =
+  readNumPrefix (dropWhile isSpace l) Nothing 16 isHexDigit digitToInt
 
 --- Read an octal number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
@@ -52,7 +54,8 @@ readHex l = readNumPrefix (dropWhile isSpace l) Nothing 16 isHexDigit digitToInt
 --- otherwise the result is `Just (v, s)` where `v` is the value of the number
 --- and s is the remaing string without the number token.
 readOct :: String -> Maybe (Int, String)
-readOct l = readNumPrefix (dropWhile isSpace l) Nothing 8 isOctDigit digitToInt
+readOct l =
+  readNumPrefix (dropWhile isSpace l) Nothing 8 isOctDigit digitToInt
 
 --- Read a binary number as a first token in a string.
 --- The string might contain leadings blanks and the number is read
@@ -62,7 +65,8 @@ readOct l = readNumPrefix (dropWhile isSpace l) Nothing 8 isOctDigit digitToInt
 --- otherwise the result is `Just (v, s)` where `v` is the value of the number
 --- and s is the remaing string without the number token.
 readBin :: String -> Maybe (Int, String)
-readBin l = readNumPrefix (dropWhile isSpace l) Nothing 2 isBinDigit digitToInt
+readBin l =
+  readNumPrefix (dropWhile isSpace l) Nothing 2 isBinDigit digitToInt
 
 --- Read an integral number prefix where the value of an already read number
 --- prefix is provided as the second argument.
@@ -74,8 +78,8 @@ readNumPrefix :: String -> Maybe Int -> Int -> (Char -> Bool) -> (Char -> Int)
 readNumPrefix []     Nothing  _    _       _       = Nothing
 readNumPrefix []     (Just n) _    _       _       = Just (n,"")
 readNumPrefix (c:cs) (Just n) base isdigit valueof
-   | isdigit c = readNumPrefix cs (Just (base*n+valueof c)) base isdigit valueof
-   | otherwise = Just (n,c:cs)
+  | isdigit c = readNumPrefix cs (Just (base*n+valueof c)) base isdigit valueof
+  | otherwise = Just (n,c:cs)
 readNumPrefix (c:cs) Nothing base isdigit valueof
-   | isdigit c = readNumPrefix cs (Just (valueof c)) base isdigit valueof
-   | otherwise = Nothing
+  | isdigit c = readNumPrefix cs (Just (valueof c)) base isdigit valueof
+  | otherwise = Nothing

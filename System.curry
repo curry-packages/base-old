@@ -13,7 +13,7 @@ module System
   , isPosix, isWindows
   ) where
 
-import Global
+import Global ( Global, GlobalSpec(..), global, readGlobal, writeGlobal )
 
 --- Returns the current cpu time of the process in milliseconds.
 
@@ -98,9 +98,9 @@ system cmd = do
                       else cmd
   envToExport (var, val) =
     if win
-    then "set " ++ var ++ "=" ++ concatMap escapeWinSpecials val ++ " && "
-    else var ++ "='" ++ concatMap encodeShellSpecials val
-         ++ "' ; export " ++ var ++ " ; "
+      then "set " ++ var ++ "=" ++ concatMap escapeWinSpecials val ++ " && "
+      else var ++ "='" ++ concatMap encodeShellSpecials val
+           ++ "' ; export " ++ var ++ " ; "
 
   escapeWinSpecials c = if c `elem` "<>|&^" then ['^', c]
                                             else [c]

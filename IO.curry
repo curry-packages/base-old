@@ -7,13 +7,14 @@
 --- @category general
 -----------------------------------------------------------------------------
 
-module IO(Handle,IOMode(..),SeekMode(..),stdin,stdout,stderr,
-          openFile,hClose,hFlush,hIsEOF,isEOF,
-          hSeek,hWaitForInput,hWaitForInputs,
-          hWaitForInputOrMsg,hWaitForInputsOrMsg,hReady,
-          hGetChar,hGetLine,hGetContents,getContents,
-          hPutChar,hPutStr,hPutStrLn,hPrint,
-          hIsReadable,hIsWritable,hIsTerminalDevice) where
+module IO
+  ( Handle, IOMode(..), SeekMode(..), stdin, stdout, stderr
+  , openFile, hClose, hFlush, hIsEOF, isEOF
+  , hSeek, hWaitForInput, hWaitForInputs
+  , hWaitForInputOrMsg, hWaitForInputsOrMsg, hReady
+  , hGetChar, hGetLine, hGetContents, getContents
+  , hPutChar, hPutStr, hPutStrLn, hPrint
+  , hIsReadable, hIsWritable, hIsTerminalDevice ) where
 
 --- The abstract type of a handle for a stream.
 external data Handle -- internally defined
@@ -101,8 +102,8 @@ prim_hWaitForInput external
 
 --- Waits until input is available on some of the given handles.
 --- If no input is available within t milliseconds, it returns -1,
---- otherwise it returns the index of the corresponding handle with the available
---- data.
+--- otherwise it returns the index of the corresponding handle
+--  with the available data.
 --- @param handles - a list of handles for input streams
 --- @param timeout - milliseconds to wait for input (< 0 : no time out)
 --- @return -1 if no input is available within the time out, otherwise i
@@ -115,7 +116,8 @@ prim_hWaitForInputs external
 
 
 --- Waits until input is available on a given handles or a message
---- in the message stream. Usually, the message stream comes from an external port.
+--- in the message stream.
+--- Usually, the message stream comes from an external port.
 --- Thus, this operation implements a committed choice over receiving input
 --- from an IO handle or an external port.
 ---
@@ -124,7 +126,8 @@ prim_hWaitForInputs external
 --- of Sicstus-Prolog).</EM>
 ---
 --- @param handle - a handle for an input stream
---- @param msgs   - a stream of messages received via an external port (see Ports)
+--- @param msgs   - a stream of messages received via an external port
+---                 (see Ports)
 --- @return (Left handle) if the handle has some data available
 ---         (Right msgs) if the stream msgs is instantiated
 ---                      with at least one new message at the head
@@ -135,7 +138,8 @@ hWaitForInputOrMsg handle msgs = do
   return $ either (\_ -> Left handle) Right input
 
 --- Waits until input is available on some of the given handles or a message
---- in the message stream. Usually, the message stream comes from an external port.
+--- in the message stream.
+--- Usually, the message stream comes from an external port.
 --- Thus, this operation implements a committed choice over receiving input
 --- from IO handles or an external port.
 ---
@@ -144,7 +148,8 @@ hWaitForInputOrMsg handle msgs = do
 --- of Sicstus-Prolog).</EM>
 ---
 --- @param handles - a list of handles for input streams
---- @param msgs    - a stream of messages received via an external port (see Ports)
+--- @param msgs    - a stream of messages received via an external port
+---                  (see Ports)
 --- @return (Left i) if (handles!!i) has some data available
 ---         (Right msgs) if the stream msgs is instantiated
 ---                      with at least one new message at the head
@@ -179,11 +184,11 @@ prim_hGetChar external
 hGetLine  :: Handle -> IO String
 hGetLine h = do c  <- hGetChar h
                 if c == '\n'
-                   then return []
-                   else do eof <- hIsEOF h
-                           if eof then return [c]
-                                  else do cs <- hGetLine h
-                                          return (c:cs)
+                  then return []
+                  else do eof <- hIsEOF h
+                          if eof then return [c]
+                                 else do cs <- hGetLine h
+                                         return (c:cs)
 
 
 --- Reads the complete contents from an input handle and closes the input handle

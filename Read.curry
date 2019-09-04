@@ -10,9 +10,9 @@
 --- @category general
 ------------------------------------------------------------------------------
 
-module Read(readNat,readInt,readHex)  where
+module Read ( readNat, readInt, readHex ) where
 
-import Char
+import Char ( isDigit )
 
 --- Read a natural number in a string.
 --- The string might contain leadings blanks and the the number is read
@@ -20,11 +20,11 @@ import Char
 readNat :: String -> Int   -- result >= 0
 readNat l = readNatPrefix (dropWhile (\c->c==' ') l) 0
  where
-  readNatPrefix [] n = n
+  readNatPrefix []     n = n
   readNatPrefix (c:cs) n =
-   let oc = ord c in
-     if oc>=ord '0' && oc<=ord '9' then readNatPrefix cs (n*10+oc-(ord '0'))
-                                   else n
+    let oc = ord c
+    in if oc>=ord '0' && oc<=ord '9' then readNatPrefix cs (n*10+oc-(ord '0'))
+                                     else n
 
 
 --- Read a (possibly negative) integer in a string.
@@ -43,16 +43,16 @@ readInt l = readIntPrefix (dropWhile (\c->c==' ') l)
 readHex :: String -> Int   -- result >= 0
 readHex l = readHexPrefix (dropWhile (\c->c==' ') l) 0
  where
-  readHexPrefix [] n = n
+  readHexPrefix []     n = n
   readHexPrefix (c:cs) n =
-   let cv = hex2int c in
-     if cv>=0 then readHexPrefix cs (n*16+cv)
-              else n
+    let cv = hex2int c
+    in if cv>=0 then readHexPrefix cs (n*16+cv)
+                else n
 
   hex2int c = if isDigit c then ord c - ord '0'
                            else if ord c >= ord 'A' && ord c <= ord 'F'
-                                then ord c - ord 'A' + 10
-                                else -1
+                                  then ord c - ord 'A' + 10
+                                  else -1
 
 -- end of library Read
 

@@ -3,28 +3,28 @@
 ---
 --- @author Michael Hanus
 --- @version January 2018
---- @category general
 ------------------------------------------------------------------------------
 
-module Time(ClockTime,
-            CalendarTime(..),ctYear,ctMonth,ctDay,ctHour,ctMin,ctSec,ctTZ,
-            getClockTime,getLocalTime,toUTCTime,toClockTime,toCalendarTime,
-            clockTimeToInt,calendarTimeToString,toDayString,toTimeString,
-            addSeconds,addMinutes,addHours,addDays,addMonths,addYears,
-            daysOfMonth,validDate,compareCalendarTime,compareClockTime,
-            compareDate) where
+module Time
+  ( ClockTime
+  , CalendarTime(..), ctYear, ctMonth, ctDay, ctHour, ctMin, ctSec, ctTZ
+  , getClockTime, getLocalTime, toUTCTime, toClockTime, toCalendarTime
+  , clockTimeToInt, calendarTimeToString, toDayString, toTimeString
+  , addSeconds, addMinutes, addHours, addDays, addMonths, addYears
+  , daysOfMonth, validDate, compareCalendarTime, compareClockTime
+  , compareDate) where
 
 
 --- ClockTime represents a clock time in some internal representation.
 data ClockTime = CTime Int
- deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read)
 
 --- A calendar time is presented in the following form:
 --- (CalendarTime year month day hour minute second timezone)
 --- where timezone is an integer representing the timezone as a difference
 --- to UTC time in seconds.
 data CalendarTime = CalendarTime Int Int Int Int Int Int Int
- deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read)
 
 --- The year of a calendar time.
 ctYear :: CalendarTime -> Int
@@ -101,23 +101,38 @@ calendarTimeToString :: CalendarTime -> String
 calendarTimeToString ctime@(CalendarTime y mo d _ _ _ _) =
     shortMonths!!(mo-1) ++ " " ++ show d ++ " " ++
     toTimeString ctime ++ " " ++ show y
-  where shortMonths = ["Jan","Feb","Mar","Apr","May","Jun",
-                       "Jul","Aug","Sep","Oct","Nov","Dec"]
+ where
+  shortMonths =
+    [ "Jan","Feb","Mar","Apr","May","Jun", "Jul","Aug","Sep","Oct","Nov","Dec"]
 
 --- Transforms a calendar time into a string containing the day, e.g.,
 --- "September 23, 2006".
 toDayString :: CalendarTime -> String
 toDayString (CalendarTime y mo d _ _ _ _) =
-    longMonths!!(mo-1) ++ " " ++ show d ++ ", " ++ show y
-  where longMonths = ["January","February","March","April","May","June","July",
-                      "August","September","October","November","December"]
+  longMonths!!(mo-1) ++ " " ++ show d ++ ", " ++ show y
+ where
+  longMonths =
+    [ "January"
+    , "February"
+    , "March"
+    , "April"
+    , "May"
+    , "June"
+    , "July"
+    , "August"
+    , "September"
+    , "October"
+    , "November"
+    , "December"
+    ]
 
 --- Transforms a calendar time into a string containing the time.
 toTimeString :: CalendarTime -> String
 toTimeString (CalendarTime _ _ _ h mi s _) =
    digit2 h ++":"++ digit2 mi ++":"++ digit2 s
-  where digit2 n = if n<10 then ['0',chr(ord '0' + n)]
-                           else show n
+ where
+  digit2 n = if n<10 then ['0',chr(ord '0' + n)]
+                     else show n
 
 --- Adds seconds to a given time.
 addSeconds :: Int -> ClockTime -> ClockTime
@@ -140,27 +155,28 @@ addMonths :: Int -> ClockTime -> ClockTime
 addMonths n ctime =
  let CalendarTime y mo d h mi s tz = toUTCTime ctime
      nmo = (mo-1+n) `mod` 12 + 1
- in
- if nmo>0
- then addYears ((mo-1+n) `div` 12)
-               (toClockTime (CalendarTime y nmo d h mi s tz))
- else addYears ((mo-1+n) `div` 12 - 1)
-               (toClockTime (CalendarTime y (nmo+12) d h mi s tz))
+ in if nmo>0
+      then addYears ((mo-1+n) `div` 12)
+                    (toClockTime (CalendarTime y nmo d h mi s tz))
+      else addYears ((mo-1+n) `div` 12 - 1)
+                    (toClockTime (CalendarTime y (nmo+12) d h mi s tz))
 
 --- Adds years to a given time.
 addYears :: Int -> ClockTime -> ClockTime
-addYears n ctime = if n==0 then ctime else
-  let CalendarTime y mo d h mi s tz = toUTCTime ctime
-   in toClockTime (CalendarTime (y+n) mo d h mi s tz)
+addYears n ctime =
+  if n==0
+    then ctime
+    else let CalendarTime y mo d h mi s tz = toUTCTime ctime
+         in toClockTime (CalendarTime (y+n) mo d h mi s tz)
 
 --- Gets the days of a month in a year.
 daysOfMonth :: Int -> Int -> Int
 daysOfMonth mo yr =
-  if mo/=2 
-  then [31,28,31,30,31,30,31,31,30,31,30,31] !! (mo-1)
-  else if yr `mod` 4 == 0 && (yr `mod` 100 /= 0 || yr `mod` 400 == 0)
-       then 29
-       else 28
+  if mo/=2
+    then [31,28,31,30,31,30,31,31,30,31,30,31] !! (mo-1)
+    else if yr `mod` 4 == 0 && (yr `mod` 100 /= 0 || yr `mod` 400 == 0)
+           then 29
+           else 28
 
 --- Is a date consisting of year/month/day valid?
 validDate :: Int -> Int -> Int -> Bool
@@ -178,6 +194,6 @@ compareCalendarTime ct1 ct2 =
 --- Compares two clock times.
 compareClockTime :: ClockTime -> ClockTime -> Ordering
 compareClockTime (CTime time1) (CTime time2)
- | time1<time2 = LT
- | time1>time2 = GT
- | otherwise   = EQ
+  | time1<time2 = LT
+  | time1>time2 = GT
+  | otherwise   = EQ

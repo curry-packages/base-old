@@ -23,8 +23,8 @@ import Char      (isAlphaNum)
 import Directory (removeFile)
 import Read      (readNat)
 #endif
-import IO
-import System
+import IO        ( Handle, hClose, hGetChar, hIsEOF, hPutStrLn )
+import System    ( getPID, system )
 
 --- Executes a command with a new default shell process.
 --- The standard I/O streams of the new process (stdin,stdout,stderr)
@@ -69,20 +69,20 @@ evalCmd cmd args input = do
     -- do any quoting or escaping
     | all goodChar str = str
     | otherwise        = '\'' : foldr escape "'" str
-      where escape c s
-              | c == '\'' = "'\\''" ++ s
-              | otherwise = c : s
-            goodChar c    = isAlphaNum c || c `elem` "-_.,/"
+   where
+    escape c s | c == '\'' = "'\\''" ++ s
+               | otherwise = c : s
+    goodChar c    = isAlphaNum c || c `elem` "-_.,/"
 
   --- Reads from an input handle until EOF and returns the input.
   hGetEOF  :: Handle -> IO String
   hGetEOF h = do
     eof <- hIsEOF h
     if eof
-     then hClose h >> return ""
-     else do c <- hGetChar h
-             cs <- hGetEOF h
-             return (c:cs)
+      then hClose h >> return ""
+      else do c <- hGetChar h
+              cs <- hGetEOF h
+              return (c:cs)
 #else
 evalCmd cmd args input = ((prim_evalCmd $## cmd) $## args) $## input
 
@@ -118,8 +118,8 @@ readCompleteFile file = do
   s <- readFile file
   f s (return s)
  where
-   f []     r = r
-   f (_:cs) r = f cs r
+  f []     r = r
+  f (_:cs) r = f cs r
 
 
 --- An action that updates the contents of a file.

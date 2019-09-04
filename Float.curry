@@ -4,9 +4,10 @@
 --- @category general
 ------------------------------------------------------------------------------
 
-module Float(pi,(+.),(-.),(*.),(/.),(^.),i2f,truncate,round,recip,sqrt,log
-             ,logBase, exp,sin,cos,tan,asin,acos,atan,sinh,cosh,tanh
-            ,asinh,acosh,atanh) where
+module Float
+  ( pi, (+.), (-.), (*.), (/.), (^.), i2f, truncate, round, recip, sqrt, log
+  , logBase,  exp, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh
+  , asinh, acosh, atanh) where
 
 -- The operator declarations are similar to the standard arithmetic operators.
 
@@ -57,8 +58,9 @@ prim_Float_div external
 (^.) :: Float -> Int -> Float
 a ^. b | b < 0     = 1 /. a ^. (b * (-1))
        | otherwise = powaux 1.0 a b
-  where
-    powaux n x y = if y == 0 then n
+ where
+  powaux n x y = if y == 0
+                   then n
                    else powaux (n *. if (y `mod` 2 == 1) then x else 1.0)
                                (x *. x)
                                (y `div` 2)

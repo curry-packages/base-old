@@ -72,7 +72,7 @@ Just x  >>- f = f x
 
 --- Monadic `sequence` for `Maybe`.
 sequenceMaybe :: [Maybe a] -> Maybe [a]
-sequenceMaybe [] = Just []
+sequenceMaybe []     = Just []
 sequenceMaybe (c:cs) = c >>- \x -> sequenceMaybe cs >>- \xs -> Just (x:xs)
 
 --- Monadic `map` for `Maybe`.
