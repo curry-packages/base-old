@@ -25,7 +25,7 @@ module Prelude
   -- ** Numerical Typeclasses
   , Num (..), Fractional (..), Real (..)
   , Integral (..), even, odd, fromIntegral, realToFrac, (^)
-  , RealFrac (..), Floating (..), Monoid (..)
+  , Floating (..), Monoid (..)
   -- Type Constructor Classes
   , Functor (..), Applicative (..), Alternative (..)
   , Monad (..), MonadFail(..)
@@ -946,12 +946,6 @@ class (Real a, Fractional a) => RealFrac a where
    where (n, r) = properFraction x
   floor x = if r < 0 then n - 1 else n
    where (n, r) = properFraction x
-
-instance RealFrac Float where
-  properFraction x = (n, x - fromIntegral n)
-   where n = truncate x
-  truncate = fromInt . truncateFloat
-  round = fromInt . roundFloat
 
 -- Conversion function from floating point numbers to integers.
 -- The result is the closest integer between the argument and 0.
