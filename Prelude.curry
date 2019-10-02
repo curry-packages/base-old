@@ -1934,7 +1934,7 @@ doSolve b | b = return ()
 --- reduced to a unifiable data term (i.e., a term without defined
 --- function symbols).
 --TODO: note
-(=:=) :: Eq a => a -> a -> Bool
+(=:=) :: a -> a -> Bool
 (=:=) external
 
 --- Non-strict equational constraint. Used to implement functional patterns.
