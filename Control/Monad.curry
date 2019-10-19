@@ -2,7 +2,7 @@ module Control.Monad
     ( Functor(..), Applicative(..), Monad(..)
     , filterM, (>=>), (<=<), forever, mapAndUnzipM, zipWithM
     , zipWithM_, foldM, foldM_, replicateM, replicateM_
-    , when, unless
+    , when, unless, liftM3
     ) where
 
 import Control.Applicative
@@ -81,3 +81,11 @@ replicateM_ cnt0 f =
 --- The reverse of 'when'.
 unless :: (Applicative f) => Bool -> f () -> f ()
 unless p s =  if p then pure () else s
+
+liftM3 :: Monad m => (a -> b -> c -> d) -> m a -> m b -> m c -> m d
+liftM3 f ma mb mc = do
+  a <- ma 
+  b <- mb 
+  c <- mc
+  return (f a b c)
+
