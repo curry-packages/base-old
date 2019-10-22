@@ -76,8 +76,11 @@ infixr 0 $, $!, $!!, $#, $##, `seq`, &, &>, ?
 
 -- externally defined types for numbers and characters
 external data Int
+
 external data Float
+
 external data Char
+
 
 type String = [Char]
 
@@ -125,8 +128,9 @@ ensureNotFree external
 --- Suspends until the result is bound to a non-variable spine.
 ensureSpine :: [a] -> [a]
 ensureSpine l = ensureList (ensureNotFree l)
- where ensureList []     = []
-       ensureList (x:xs) = x : ensureSpine xs
+ where
+  ensureList []     = []
+  ensureList (x:xs) = x : ensureSpine xs
 
 --- Right-associative application.
 ($)     :: (a -> b) -> a -> b
@@ -169,7 +173,7 @@ failed external
 -- Boolean values
 -- already defined as builtin, since it is required for if-then-else
 data Bool = False | True
- deriving (Eq, Ord, Show, Read)
+          deriving (Eq, Ord, Show, Read)
 
 --- Sequential conjunction on Booleans.
 (&&)            :: Bool -> Bool -> Bool
@@ -256,7 +260,7 @@ eqFloat external
 
 --- Ordering type. Useful as a result of comparison functions.
 data Ordering = LT | EQ | GT
- deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read)
 
 -- used for comparison of standard types like Int, Float and Char
 ltEqChar :: Char -> Char -> Bool
@@ -335,7 +339,7 @@ length          :: [_] -> Int
 length []       = 0
 length (_:xs)   = 1 + length xs
 
-{- 
+{-
 -- This version is more efficient but less usable for verification:
 length :: [_] -> Int
 length xs = len xs 0
@@ -449,9 +453,10 @@ replicate n x     = take n (repeat x)
 
 --- Returns prefix of length n.
 take              :: Int -> [a] -> [a]
-take n l          = if n<=0 then [] else takep n l
-   where takep _ []     = []
-         takep m (x:xs) = x : take (m-1) xs
+take n l = if n<=0 then [] else takep n l
+ where
+  takep _ []     = []
+  takep m (x:xs) = x : take (m-1) xs
 
 --- Returns suffix without first n elements.
 drop :: Int -> [a] -> [a]
@@ -462,8 +467,9 @@ drop n xs = if n<=0 then xs
 --- (splitAt n xs) is equivalent to (take n xs, drop n xs)
 splitAt           :: Int -> [a] -> ([a],[a])
 splitAt n l       = if n<=0 then ([],l) else splitAtp n l
-   where splitAtp _ []     = ([],[])
-         splitAtp m (x:xs) = let (ys,zs) = splitAt (m-1) xs in (x:ys,zs)
+ where
+  splitAtp _ []     = ([],[])
+  splitAtp m (x:xs) = let (ys,zs) = splitAt (m-1) xs in (x:ys,zs)
 
 --- Returns longest prefix with elements satisfying a predicate.
 takeWhile          :: (a -> Bool) -> [a] -> [a]
@@ -477,10 +483,9 @@ dropWhile p (x:xs) = if p x then dropWhile p xs else x:xs
 
 --- (span p xs) is equivalent to (takeWhile p xs, dropWhile p xs)
 span               :: (a -> Bool) -> [a] -> ([a],[a])
-span _ []          = ([],[])
-span p (x:xs)
-       | p x       = let (ys,zs) = span p xs in (x:ys, zs)
-       | otherwise = ([],x:xs)
+span _ []     = ([],[])
+span p (x:xs) | p x       = let (ys,zs) = span p xs in (x:ys, zs)
+              | otherwise = ([],x:xs)
 
 --- (break p xs) is equivalent to (takeWhile (not.p) xs, dropWhile (not.p) xs).
 --- Thus, it breaks a list at the first occurrence of an element satisfying p.
@@ -492,10 +497,11 @@ break p            = span (not . p)
 lines        :: String -> [String]
 lines []     = []
 lines (x:xs) = let (l,xs_l) = splitline (x:xs) in l : lines xs_l
- where splitline []     = ([],[])
-       splitline (c:cs) = if c=='\n'
-                          then ([],cs)
-                          else let (ds,es) = splitline cs in (c:ds,es)
+ where
+  splitline []     = ([],[])
+  splitline (c:cs) = if c=='\n'
+                       then ([],cs)
+                       else let (ds,es) = splitline cs in (c:ds,es)
 
 --- Concatenates a list of strings with terminating newlines.
 unlines    :: [String] -> String
@@ -505,9 +511,9 @@ unlines ls = concatMap (++"\n") ls
 --- white spaces.
 words      :: String -> [String]
 words s    = let s1 = dropWhile isSpace s
-              in if s1=="" then []
-                           else let (w,s2) = break isSpace s1
-                                 in w : words s2
+             in if s1=="" then []
+                          else let (w,s2) = break isSpace s1
+                               in w : words s2
 
 --- Concatenates a list of strings with a blank between two strings.
 unwords    :: [String] -> String
@@ -544,10 +550,9 @@ notElem x = all (x /=)
 
 --- Looks up a key in an association list.
 lookup :: Eq a => a -> [(a, b)] -> Maybe b
-lookup _ []       = Nothing
-lookup k ((x,y):xys)
-      | k==x      = Just y
-      | otherwise = lookup k xys
+lookup _ []          = Nothing
+lookup k ((x,y):xys) | k==x      = Just y
+                     | otherwise = lookup k xys
 
 --- Generates an infinite sequence of ascending integers.
 enumFrom_ :: Int -> [Int]                   -- [n..]
@@ -724,7 +729,7 @@ success = True
 -- Maybe type
 
 data Maybe a = Nothing | Just a
- deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read)
 
 maybe              :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
@@ -734,7 +739,7 @@ maybe _ f (Just x) = f x
 -- Either type
 
 data Either a b = Left a | Right b
- deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read)
 
 either               :: (a -> c) -> (b -> c) -> Either a b -> c
 either f _ (Left x)  = f x
@@ -845,12 +850,12 @@ getLine           = do c <- getChar
 --- Each error contains a string shortly explaining the error.
 --- This type might be extended in the future to distinguish
 --- further error situations.
-data IOError
-  = IOError     String -- normal IO error
+data IOError =
+    IOError     String -- normal IO error
   | UserError   String -- user-specified error
   | FailError   String -- failing computation
   | NondetError String -- non-deterministic computation
- deriving (Eq,Show,Read)
+  deriving (Eq,Show,Read)
 
 --- A user error value is created by providing a description of the
 --- error situation as a string.
@@ -1030,8 +1035,8 @@ letrec x y = let x = y in True -- not a real implementation
 
 #ifdef __PAKCS__
 --- Non-strict equational constraint for linear functional patterns.
---- Thus, it must be ensured that the first argument is always (after evalutation
---- by narrowing) a linear pattern. Experimental.
+--- Thus, it must be ensured that the first argument is always
+--- (after evalutation by narrowing) a linear pattern. Experimental.
 (=:<<=) :: a -> a -> Bool
 (=:<<=) external
 
@@ -1064,9 +1069,9 @@ instance Eq Float where
   f == f' = f `eqFloat` f'
 
 instance Eq a => Eq [a] where
-  []    == []    = True
-  []    == (_:_) = False
-  (_:_) == []    = False
+  []     == []     = True
+  []     == (_:_)  = False
+  (_:_)  == []     = False
   (x:xs) == (y:ys) = x == y && xs == ys
 
 instance Eq () where
@@ -1082,13 +1087,17 @@ instance (Eq a, Eq b, Eq c, Eq d) => Eq (a, b, c, d) where
   (a, b, c, d) == (a', b', c', d') = a == a' && b == b' && c == c' && d == d'
 
 instance (Eq a, Eq b, Eq c, Eq d, Eq e) => Eq (a, b, c, d, e) where
-  (a, b, c, d, e) == (a', b', c', d', e') = a == a' && b == b' && c == c' && d == d' && e == e'
+  (a, b, c, d, e) == (a', b', c', d', e') =
+    a == a' && b == b' && c == c' && d == d' && e == e'
 
 instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq (a, b, c, d, e, f) where
-  (a, b, c, d, e, f) == (a', b', c', d', e', f') = a == a' && b == b' && c == c' && d == d' && e == e' && f == f'
+  (a, b, c, d, e, f) == (a', b', c', d', e', f') =
+    a == a' && b == b' && c == c' && d == d' && e == e' && f == f'
 
-instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq (a, b, c, d, e, f, g) where
-  (a, b, c, d, e, f, g) == (a', b', c', d', e', f', g') = a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g'
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g)
+      => Eq (a, b, c, d, e, f, g) where
+  (a, b, c, d, e, f, g) == (a', b', c', d', e', f', g') =
+    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g'
 
 -- -------------------------------------------------------------------------
 -- Ord class and related instances and functions
@@ -1110,8 +1119,8 @@ class Eq a => Ord a where
   x >= y = y <= x
   x <= y = compare x y == EQ || compare x y == LT
 
-  compare x y | x == y = EQ
-              | x <= y = LT
+  compare x y | x == y    = EQ
+              | x <= y    = LT
               | otherwise = GT
 
   min x y | x <= y    = x
@@ -1130,9 +1139,9 @@ instance Ord Float where
   f1 <= f2 = f1 `ltEqFloat` f2
 
 instance Ord a => Ord [a] where
-  []    <= []    = True
-  (_:_) <= []    = False
-  []    <= (_:_) = True
+  []     <= []     = True
+  (_:_)  <= []     = False
+  []     <= (_:_)  = True
   (x:xs) <= (y:ys) | x == y    = xs <= ys
                    | otherwise = x < y
 
@@ -1180,9 +1189,9 @@ class Show a where
 showList' :: (a -> ShowS) ->  [a] -> ShowS
 showList' _     []     s = "[]" ++ s
 showList' showx (x:xs) s = '[' : showx x (showl xs)
-  where
-    showl []     = ']' : s
-    showl (y:ys) = ',' : showx y (showl ys)
+ where
+  showl []     = ']' : s
+  showl (y:ys) = ',' : showx y (showl ys)
 
 shows :: Show a => a -> ShowS
 shows = showsPrec 0
@@ -1278,11 +1287,12 @@ class Read a where
 readListDefault :: Read a => ReadS [a]
 readListDefault = readParen False (\r -> [pr | ("[",s)  <- lex r
                                         , pr       <- readl s])
-    where readl s = [([], t) | ("]", t) <- lex s] ++
-                      [(x : xs, u) | (x, t) <- reads s, (xs, u) <- readl' t]
-          readl' s = [([], t) | ("]", t) <- lex s] ++
-                       [(x : xs, v) | (",", t)  <- lex s, (x, u) <- reads t
-                                    , (xs,v) <- readl' u]
+ where
+  readl  s = [([], t) | ("]", t) <- lex s] ++
+             [(x : xs, u) | (x, t) <- reads s, (xs, u) <- readl' t]
+  readl' s = [([], t) | ("]", t) <- lex s] ++
+             [(x : xs, v) | (",", t)  <- lex s, (x, u) <- reads t
+                          , (xs,v) <- readl' u]
 
 reads :: Read a => ReadS a
 reads = readsPrec 0
@@ -1296,8 +1306,8 @@ readParen b g = if b then mandatory else optional
 read :: (Read a) => String -> a
 read s =  case [x | (x, t) <- reads s, ("", "") <- lex t] of
   [x] -> x
-  [] -> error "Prelude.read: no parse"
-  _ -> error "Prelude.read: ambiguous parse"
+  []  -> error "Prelude.read: no parse"
+  _   -> error "Prelude.read: ambiguous parse"
 
 instance Read () where
   readsPrec _ = readParen False (\r -> [ ((), t) | ("(", s) <- lex r
@@ -1417,14 +1427,15 @@ lex xs = case xs of
       | isDigit c -> [(c : ds ++ fe, t) | (ds, s) <- [span isDigit cs]
                                         , (fe, t)  <- lexFracExp s]
       | otherwise -> []
-  where
+ where
   isSingle c = c `elem` ",;()[]{}_`"
   isSym c = c `elem` "!@#$%&*+./<=>?\\^|:-~"
   isIdChar c = isAlphaNum c || c `elem` "_'"
   lexFracExp s = case s of
     ('.':c:cs)
       | isDigit c ->
-        [('.' : ds ++ e, u) | (ds, t) <- lexDigits (c : cs), (e, u)  <- lexExp t]
+        [('.' : ds ++ e, u) | (ds, t) <- lexDigits (c : cs),
+                              (e, u)  <- lexExp t]
     _ -> lexExp s
   lexExp s = case s of
     (e:cs) | e `elem` "eE" ->
@@ -1443,23 +1454,23 @@ lex xs = case xs of
 
 lexLitChar :: ReadS String
 lexLitChar xs = case xs of
-    "" -> []
-    ('\\':cs) -> map (prefix '\\') (lexEsc cs)
-    (c:cs) -> [([c], cs)]
+  ""        -> []
+  ('\\':cs) -> map (prefix '\\') (lexEsc cs)
+  (c:cs)    -> [([c], cs)]
  where
   lexEsc s = case s of
     (c:cs)
       | c `elem` "abfnrtv\\\"'" -> [([c], cs)]
     ('^':c:cs)
       | c >= '@' && c <= '_'    -> [(['^',c], cs)]
-    ('b':cs) -> [prefix 'b' (span isBinDigit cs)]
-    ('o':cs) -> [prefix 'o' (span isOctDigit cs)]
-    ('x':cs) -> [prefix 'x' (span isHexDigit cs)]
+    ('b':cs)                    -> [prefix 'b' (span isBinDigit cs)]
+    ('o':cs)                    -> [prefix 'o' (span isOctDigit cs)]
+    ('x':cs)                    -> [prefix 'x' (span isHexDigit cs)]
     cs@(d:_)
-      | isDigit d -> [span isDigit cs]
+      | isDigit d               -> [span isDigit cs]
     cs@(c:_)
-      | isUpper c -> [span isCharName cs]
-    _ -> []
+      | isUpper c               -> [span isCharName cs]
+    _                           -> []
   isCharName c = isUpper c || isDigit c
   prefix c (t, cs) = (c : t, cs)
 
@@ -1562,8 +1573,8 @@ instance Enum Bool where
   pred False = error "Prelude.Enum.Bool.pred: bad argument"
   pred True  = False
 
-  toEnum n | n == 0 = False
-           | n == 1 = True
+  toEnum n | n == 0    = False
+           | n == 1    = True
            | otherwise = error "Prelude.Enum.Bool.toEnum: bad argument"
 
   fromEnum False = 0
@@ -1581,11 +1592,15 @@ instance (Bounded a, Bounded b, Bounded c) => Bounded (a, b, c) where
   minBound = (minBound, minBound, minBound)
   maxBound = (maxBound, maxBound, maxBound)
 
-instance (Bounded a, Bounded b, Bounded c, Bounded d) => Bounded (a, b, c, d) where
+instance (Bounded a, Bounded b, Bounded c, Bounded d)
+         => Bounded (a, b, c, d)
+ where
   minBound = (minBound, minBound, minBound, minBound)
   maxBound = (maxBound, maxBound, maxBound, maxBound)
 
-instance (Bounded a, Bounded b, Bounded c, Bounded d, Bounded e) => Bounded (a, b, c, d, e) where
+instance (Bounded a, Bounded b, Bounded c, Bounded d, Bounded e)
+         => Bounded (a, b, c, d, e)
+ where
   minBound = (minBound, minBound, minBound, minBound, minBound)
   maxBound = (maxBound, maxBound, maxBound, maxBound, maxBound)
 
@@ -1604,9 +1619,9 @@ instance Enum Ordering where
   pred EQ = LT
   pred GT = EQ
 
-  toEnum n | n == 0 = LT
-           | n == 1 = EQ
-           | n == 2 = GT
+  toEnum n | n == 0    = LT
+           | n == 1    = EQ
+           | n == 2    = GT
            | otherwise = error "Prelude.Enum.Ordering.toEnum: bad argument"
 
   fromEnum LT = 0
@@ -1620,17 +1635,21 @@ uppermostCharacter :: Int
 uppermostCharacter = 0x10FFFF
 
 instance Bounded Char where
-   minBound = chr 0
-   maxBound = chr uppermostCharacter
+  minBound = chr 0
+  maxBound = chr uppermostCharacter
 
 
 instance Enum Char where
 
-  succ c | ord c < uppermostCharacter = chr $ ord c + 1
-         | otherwise = error "Prelude.Enum.Char.succ: no successor"
+  succ c | ord c < uppermostCharacter
+         = chr $ ord c + 1
+         | otherwise
+         = error "Prelude.Enum.Char.succ: no successor"
 
-  pred c | ord c > 0 = chr $ ord c - 1
-         | otherwise = error "Prelude.Enum.Char.succ: no predecessor"
+  pred c | ord c > 0
+         = chr $ ord c - 1
+         | otherwise
+         = error "Prelude.Enum.Char.succ: no predecessor"
 
   toEnum = chr
   fromEnum = ord
@@ -1667,9 +1686,9 @@ boundedEnumFromThen :: (Enum a, Bounded a) => a -> a -> [a]
 boundedEnumFromThen n1 n2
   | i_n2 >= i_n1  = map toEnum [i_n1, i_n2 .. fromEnum (maxBound `asTypeOf` n1)]
   | otherwise     = map toEnum [i_n1, i_n2 .. fromEnum (minBound `asTypeOf` n1)]
-  where
-    i_n1 = fromEnum n1
-    i_n2 = fromEnum n2
+ where
+  i_n1 = fromEnum n1
+  i_n2 = fromEnum n2
 
 -- -------------------------------------------------------------------------
 -- Numeric classes and instances
@@ -1694,7 +1713,7 @@ instance Num Int where
 
   negate x = 0 - x
 
-  abs x | x >= 0 = x
+  abs x | x >= 0    = x
         | otherwise = negate x
 
   signum x | x > 0     = 1
@@ -1710,7 +1729,7 @@ instance Num Float where
 
   negate x = negateFloat x
 
-  abs x | x >= 0 = x
+  abs x | x >= 0    = x
         | otherwise = negate x
 
 
@@ -1832,7 +1851,7 @@ instance Monad IO where
   return x = returnIO x
 
 instance Monad Maybe where
-  Nothing >>= _ = Nothing
+  Nothing  >>= _ = Nothing
   (Just x) >>= f = f x
   return = Just
   fail _ = Nothing
