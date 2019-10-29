@@ -18,7 +18,7 @@ module Prelude
   , Bool (..), Ordering (..), Maybe (..), Either (..)
 
   -- * Type Classes
-  , Eq (..) , Ord (..)
+  , Data(..), Eq (..) , Ord (..)
   , Show (..), ShowS, shows, showChar, showString, showParen
   , Read (..), ReadS, reads, readParen, read, lex
   , Bounded (..), Enum (..)
@@ -99,6 +99,53 @@ data Bool = False | True
 data Ordering = LT | EQ | GT
 
 infix 4 ==, /=
+
+class Data a where
+  (===)  :: a -> a -> Bool
+  aValue :: a
+
+instance Data Char where
+  (===) = (==)
+  aValue = a where a free
+
+instance Data Int where
+  (===) = (==)
+  aValue = a where a free
+
+instance Data Float where
+  (===) = (==)
+  aValue = a where a free
+
+instance Data a => Data [a] where
+  []     === []     = True
+  []     === (_:_)  = False
+  (_:_)  === []     = False
+  (x:xs) === (y:ys) = x === y && xs === ys
+
+  aValue = [] ? (aValue:aValue)
+
+instance Data () where
+  () === () = True
+  aValue = ()
+
+instance (Data a, Data b) => Data (a, b) where
+  (a1, b1) === (a2, b2) = a1 === a2 && b1 === b2
+  aValue = (aValue, aValue)
+
+instance (Data a, Data b, Data c) => Data (a, b, c) where
+  (a1, b1, c1) === (a2, b2, c2) = a1 === a2 && b1 === b2 && c1 === c2
+  aValue = (aValue, aValue, aValue)
+
+instance (Data a, Data b, Data c, Data d) => Data (a, b, c, d) where
+  (a1, b1, c1, d1) === (a2, b2, c2, d2) =
+    a1 === a2 && b1 === b2 && c1 === c2 && d1 === d2
+  aValue = (aValue, aValue, aValue, aValue)
+
+instance (Data a, Data b, Data c, Data d, Data e) => Data (a, b, c, d, e) where
+  (a1, b1, c1, d1, e1) === (a2, b2, c2, d2, e2) =
+    a1 === a2 && b1 === b2 && c1 === c2 && d1 === d2 && e1 === e2
+  aValue = (aValue, aValue, aValue, aValue, aValue)
+
 
 class Eq a where
   (==), (/=) :: a -> a -> Bool
@@ -1933,7 +1980,6 @@ doSolve b | b = return ()
 --- `(e1 =:= e2)` is satisfiable if both sides `e1` and `e2` can be
 --- reduced to a unifiable data term (i.e., a term without defined
 --- function symbols).
---TODO: note
 (=:=) :: a -> a -> Bool
 (=:=) external
 
@@ -1979,7 +2025,7 @@ anyOf :: [a] -> a
 anyOf = foldr1 (?)
 
 --- Evaluates to a fresh free variable.
-unknown :: _
+unknown :: Data a => a
 unknown = let x free in x
 
 --- A non-reducible polymorphic function.
