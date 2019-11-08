@@ -47,10 +47,14 @@ toLower c       |  isUpper c = chr (ord c - ord 'A' + ord 'a')
 --- Converts a (hexadecimal) digit character into an integer.
 digitToInt      :: Char -> Int
 digitToInt c
-  | isDigit c                            =  ord c - ord '0'
-  | ord c >= ord 'A' && ord c <= ord 'F' =  ord c - ord 'A' + 10
-  | ord c >= ord 'a' && ord c <= ord 'f' =  ord c - ord 'a' + 10
-  | otherwise  =  error "Char.digitToInt: argument is not a digit"
+  | isDigit c
+  =  ord c - ord '0'
+  | ord c >= ord 'A' && ord c <= ord 'F'
+  =  ord c - ord 'A' + 10
+  | ord c >= ord 'a' && ord c <= ord 'f'
+  =  ord c - ord 'a' + 10
+  | otherwise
+  =  error "Char.digitToInt: argument is not a digit"
 
 --- Converts an integer into a (hexadecimal) digit character.
 intToDigit      :: Int -> Char
