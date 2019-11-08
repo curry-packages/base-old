@@ -1,0 +1,181 @@
+Distribution -> Language.Curry.Distribution
+
+FiniteMap --> Data.Map
+
+The data type changed from "FM" to "Map".
+The explicit ordering function is not necessary anymore,
+an "Ord" context is needed instead.
+The type "Set" in now in Data.Set.
+Renames from "Set":
+
+FiniteSet  --> Set
+emptySet   --> empty
+mkSet      --> fromList
+isEmptySet --> null
+elementOf  --> member
+minusSet   --> difference
+setToList  --> toList
+union      --> union
+
+Renames from "Map":
+
+FM                  --> Map
+emptyFM             --> empty
+unitFM              --> singleton
+listToFM            --> fromList
+addToFM             --> insert                | argument order changed!
+addToFM_C           --> insertWith            | argument order changed!
+addListToFM         --> insertList            | argument order changed!
+addListToFM_C       --> insertListWith        | argument order changed!
+delFromFM           --> delete                | argument order changed!
+delListFromFM       --> deleteAll             | argument order changed!
+updFM               --> adjust                | argument order changed!
+splitFM             --> removed, can be user-defined (split lookup is different)
+plusFM              --> union                 | first two arguments are swapped!
+plusFM_C            --> unionWith
+minusFM             --> difference
+intersectFM         --> intersection
+intersectFM_C       --> intersectionWith
+foldFM              --> foldrWithKey
+mapFM               --> mapWithKey
+filterFM            --> filterWithKey
+sizeFM              --> size
+eqFM                --> Map has "Eq" context instead
+isEmptyFM           --> null
+elemFM              --> member                | argument order changed!
+lookupFM            --> lookup                | argument order changed!
+lookupWithDefaultFM --> findWithDefault       | argument order changed!
+keyOrder            --> removed, because "Ord" context is used now
+fmToList            --> toList
+keysFM              --> keys
+eltsFM              --> elems
+fmSortBy            --> sortWithMap    | Will sort given by "<" of "Ord" context
+minFM               --> lookupMin
+maxFM               --> lookupMax
+fmToListPreOrder    --> toPreOrderList
+
+List -> Data.list
+
+Maybe -> Data.Maybe   | now using Monad instance
+
+Either -> Data.Either
+
+Char -> Data.Char
+
+Directory -> System.Directory
+Renames:
+fileSize -> getFileSize
+
+FilePath -> System.FilePath
+
+IO -> System.IO
+
+Random -> System.Random
+
+Function ->  Data.Function    (on, fix)
+         bzw Data.Tuple.Extra (first, second, (***), (&&&), both)
+
+Prelude -> added pi, ^, <$>, <$
+
+State -> Control.Monad.Trans.State, now with monad transformer
+has Applicative instance
+Renames:
+bindS      -> Monad instance, >>=
+bindS_     -> Monad instance, >>
+returnS    -> Monad instance, return
+getS       -> get
+putS       -> put
+modifyS    -> modify
+sequenceS  -> sequence
+sequenceS_ -> sequence_
+mapS       -> mapM
+mapS_      -> mapM_
+liftS      -> liftM
+liftS2     -> liftM2
+
+ErrorState -> removed, use Control.Monad.Trans.Error
+                       with Control.Monad.Trans.State
+Renames:
+returnES    -> Monad instance, return
+>+=         -> Monad instance, >>=
+>+          -> >>
+getS        -> lift . get
+putS        -> lift . put
+modifyS     -> lift . modify
+mapS        -> mapM
+concatMapES -> Control.Monad.Extra.concatMapM
+mapAccumES  -> Control.Monad.Extra.mapAccumM
+<*>,<*,     -> Applicative instance
+
+AnsiCodes -> System.Console.ANSI.Codes
+
+CPNS -> Network.CPNS
+
+Socket -> Network.Socket
+Renames:
+sClose       -> close
+socketAccept -> accept
+
+Dequeue -> Data.Queue
+
+GetOpt -> System.Console.GetOpt
+
+Global -> Data.Global
+
+NamedSocket -> Network.NamedSocket
+
+RedBlackTree -> Data.RedBlackTree
+Renames:
+tree2list -> toList
+
+SearchTreeGenerators -> SearchTree.Generators
+
+SearchTreeTraversal -> SearchTree.Traversal
+
+ShowS -> Text.Show
+
+FileGoodies -> Removed and migrated to System.FilePath or System.Directory
+seperatorChar removed
+pathSeperatorChar -> System.FilePath.pathSeperator
+suffixSeperatorChar -> System.FilePath.extSeperator
+dirName -> System.FilePath.takeDirectory
+baseName -> System.FilePath.takeBaseName
+splitDirectoryBaseName -> System.FilePath.splitFileName
+stripSuffix -> System.FilePath.dropExtension
+fileSuffix -> System.FilePath.takeExtension
+splitBaseName -> System.FilePath.splitExtension
+splitPath -> System.FilePath.splitPath
+lookupFileInPath -> System.Directory.findFileWithSuffix
+getFileInPath -> System.Directory.getFileWithSuffix
+
+Nat -> Removed
+
+System-> split into System.CPUTime, System.Environment, System.Process
+Renames:
+setEnviron -> setEnv
+unsetEnviron -> unsetEnv
+getEnviron -> getEnv | Note: getEnvironment was added, but has a different purpose
+setEnviron -> setEnv
+
+FunctionInversion -> Data.Function.Inversion
+
+TableRBT -> Data.Table.RBTree
+Renames: removed TableRBT suffix
+
+SetRBT -> Data.Set.RBTree
+Renames: removed SetRBT suffix
+
+ReadNumeric -> Numeric | Note: Types changed
+
+Debug -> Debug.Trace
+
+Profile -> Debug.Profile
+
+Time -> Data.Time
+
+Integer -> removed, important functions integrated in prelude
+
+Float -> removed, important functions integrated in prelude
+i2f -> Prelude.fromInt
+
+Read -> use read instance
