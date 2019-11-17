@@ -1,55 +1,21 @@
-----------------------------------------------------------------------------
---- The standard prelude of Curry (with type classes).
---- All exported functions, data types, classes, and methods defined
---- in this module are always available in any Curry program.
-----------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--- The standard prelude of Curry with type classes.
+--- All exported functions, data types, type classes
+--- and methods defined in this module are always
+--- available in any Curry program.
+---
+--- @category general
+--------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_FRONTEND -Wno-incomplete-patterns -Wno-overlapping #-}
 
 module Prelude
   (
-    -- classes and overloaded functions
-    Eq(..)
-  , elem, notElem, lookup
-  , Ord(..)
-  , Show(..), ShowS, print, shows, showChar, showString, showParen
-  , Read (..), ReadS, lex, read, reads, readParen
-  , Bounded (..), Enum (..), boundedEnumFrom, boundedEnumFromThen
-  , asTypeOf
-  , Num(..), Fractional(..), Real(..), Integral(..)
-  -- data types
-  , Bool (..) , Char (..) , Int (..) , Float (..), String , Ordering (..)
-  , Success, Maybe (..), Either (..), IO (..), IOError (..)
-  , DET
-  -- functions
-  , (.), id, const, curry, uncurry, flip, until
-  , seq, ensureNotFree, ensureSpine, ($), ($!), ($!!), ($#), ($##)
-  , error, failed
-  , (&&), (||), not, otherwise, if_then_else, solve
-  , fst, snd, head, tail, null, (++), length, (!!), map, foldl, foldl1
-  , foldr, foldr1, filter, zip, zip3, zipWith, zipWith3, unzip, unzip3
-  , concat, concatMap, iterate, repeat, replicate, take, drop, splitAt
-  , takeWhile, dropWhile, span, break, lines, unlines, words, unwords
-  , reverse, and, or, any, all
-  , ord, chr, (=:=), success, (&), (&>), maybe
-  , either, (>>=), return, (>>), done, putChar, getChar, readFile
-  , writeFile, appendFile
-  , putStr, putStrLn, getLine, userError, ioError, showError
-  , catch, doSolve, sequenceIO, sequenceIO_, mapIO
-  , mapIO_, (?), anyOf, unknown
-  , when, unless, forIO, forIO_, liftIO, foldIO
-  , normalForm, groundNormalForm, apply, cond, (=:<=)
-  , enumFrom_, enumFromTo_, enumFromThen_, enumFromThenTo_, negate_, negateFloat
-  , PEVAL
-  , Monad(..)
-  , Functor(..)
-  , sequence, sequence_, mapM, mapM_, foldM, liftM, liftM2, forM, forM_
-  , unlessM, whenM
-  , letrec
-#ifdef __PAKCS__
-  , (=:<<=)
-#endif
-  ) where
+  -- * Basic Datatypes
+    Char (..), Int (..), Float (..)
+--++   , () (..), (,) (..), (,,) (..), (,,,) (..), (,,,,) (..)
+--++   , [] (..), (->) (..)
+  , Bool (..), Ordering (..), Maybe (..), Either (..)
 
   -- * Type Classes
   , Data(..), Eq (..) , Ord (..)
@@ -101,15 +67,18 @@ module Prelude
   -- * Non-determinism
   , (?), anyOf, unknown
 
--- externally defined types for numbers and characters
-external data Int
+  -- * Internal Functions
+  , apply, cond
+#ifdef __PAKCS__
+  , letrec, failure
+#endif
+  ) where
 
-external data Float
+--++ infixr 5 :
 
 external data Char
 
-
-type String = [Char]
+external data Int
 
 external data Float
 
@@ -139,13 +108,9 @@ instance Data Char where
   (===) = (==)
   aValue = a where a free
 
---- Evaluates the argument to spine form and returns it.
---- Suspends until the result is bound to a non-variable spine.
-ensureSpine :: [a] -> [a]
-ensureSpine l = ensureList (ensureNotFree l)
- where
-  ensureList []     = []
-  ensureList (x:xs) = x : ensureSpine xs
+instance Data Int where
+  (===) = (==)
+  aValue = a where a free
 
 instance Data Float where
   (===) = (==)
@@ -182,10 +147,8 @@ instance (Data a, Data b, Data c, Data d, Data e) => Data (a, b, c, d, e) where
   aValue = (aValue, aValue, aValue, aValue, aValue)
 
 
--- Boolean values
--- already defined as builtin, since it is required for if-then-else
-data Bool = False | True
-          deriving (Eq, Ord, Show, Read)
+class Eq a where
+  (==), (/=) :: a -> a -> Bool
 
   x == y = not (x /= y)
   x /= y = not (x == y)
@@ -271,9 +234,7 @@ prim_eqFloat :: Float -> Float -> Bool
 prim_eqFloat external
 #endif
 
---- Ordering type. Useful as a result of comparison functions.
-data Ordering = LT | EQ | GT
-  deriving (Eq, Ord, Show, Read)
+infix 4 <, >, <=, >=
 
 class Eq a => Ord a where
   compare :: a -> a -> Ordering
@@ -427,19 +388,13 @@ instance Show Bool where
   showsPrec _ False = showString "False"
   showsPrec _ True  = showString "True"
 
---- Computes the length of a list.
-length          :: [_] -> Int
-length []       = 0
-length (_:xs)   = 1 + length xs
+instance Show Ordering where
+  showsPrec _ LT = showString "LT"
+  showsPrec _ EQ = showString "EQ"
+  showsPrec _ GT = showString "GT"
 
-{-
--- This version is more efficient but less usable for verification:
-length :: [_] -> Int
-length xs = len xs 0
-  where
-    len []     n = n
-    len (_:ys) n = let np1 = n + 1 in len ys $!! np1
--}
+shows :: Show a => a -> ShowS
+shows = showsPrec 0
 
 showChar :: Char -> ShowS
 showChar = (:)
@@ -521,12 +476,12 @@ instance Read () where
   readsPrec _ = readParen False (\r -> [ ((), t) | ("(", s) <- lex r
                                                  , (")", t) <- lex s ])
 
---- Returns prefix of length n.
-take              :: Int -> [a] -> [a]
-take n l = if n<=0 then [] else takep n l
- where
-  takep _ []     = []
-  takep m (x:xs) = x : take (m-1) xs
+instance (Read a, Read b) => Read (a, b) where
+  readsPrec _ = readParen False (\r -> [ ((a, b), w) | ("(", s) <- lex r
+                                                     , (a, t) <- reads s
+                                                     , (",", u) <- lex t
+                                                     , (b, v) <- reads u
+                                                     , (")", w) <- lex v ])
 
 instance (Read a, Read b, Read c) => Read (a, b, c) where
   readsPrec _ = readParen False (\r -> [ ((a, b, c), y) | ("(", s) <- lex r
@@ -537,12 +492,17 @@ instance (Read a, Read b, Read c) => Read (a, b, c) where
                                                         , (c, x) <- reads w
                                                         , (")", y) <- lex x ])
 
---- (splitAt n xs) is equivalent to (take n xs, drop n xs)
-splitAt           :: Int -> [a] -> ([a],[a])
-splitAt n l       = if n<=0 then ([],l) else splitAtp n l
- where
-  splitAtp _ []     = ([],[])
-  splitAtp m (x:xs) = let (ys,zs) = splitAt (m-1) xs in (x:ys,zs)
+instance (Read a, Read b, Read c, Read d) => Read (a, b, c, d) where
+  readsPrec _ = readParen False
+                  (\q -> [ ((a, b, c, d), z) | ("(", r) <- lex q
+                                             , (a, s) <- reads r
+                                             , (",", t) <- lex s
+                                             , (b, u) <- reads t
+                                             , (",", v) <- lex u
+                                             , (c, w) <- reads v
+                                             , (",", x) <- lex w
+                                             , (d, y) <- reads x
+                                             , (")", z) <- lex y ])
 
 instance (Read a, Read b, Read c, Read d, Read e) => Read (a, b, c, d, e) where
   readsPrec _ = readParen False
@@ -561,11 +521,10 @@ instance (Read a, Read b, Read c, Read d, Read e) => Read (a, b, c, d, e) where
 instance Read a => Read [a] where
   readsPrec _ = readList
 
---- (span p xs) is equivalent to (takeWhile p xs, dropWhile p xs)
-span               :: (a -> Bool) -> [a] -> ([a],[a])
-span _ []     = ([],[])
-span p (x:xs) | p x       = let (ys,zs) = span p xs in (x:ys, zs)
-              | otherwise = ([],x:xs)
+instance Read Bool where
+  readsPrec _ r =
+    readParen False (\s -> [(False, t) | ("False", t) <- lex s]) r ++
+      readParen False (\s -> [(True, t) | ("True", t) <- lex s]) r
 
 instance Read Ordering where
   readsPrec _ r =
@@ -573,16 +532,8 @@ instance Read Ordering where
       readParen False (\s -> [(EQ, t) | ("EQ", t) <- lex s]) r ++
       readParen False (\s -> [(GT, t) | ("GT", t) <- lex s]) r
 
---- Breaks a string into a list of lines where a line is terminated at a
---- newline character. The resulting lines do not contain newline characters.
-lines        :: String -> [String]
-lines []     = []
-lines (x:xs) = let (l,xs_l) = splitline (x:xs) in l : lines xs_l
- where
-  splitline []     = ([],[])
-  splitline (c:cs) = if c=='\n'
-                       then ([],cs)
-                       else let (ds,es) = splitline cs in (c:ds,es)
+reads :: Read a => ReadS a
+reads = readsPrec 0
 
 readListDefault :: Read a => ReadS [a]
 readListDefault = readParen False (\r -> [pr | ("[",s) <- lex r, pr <- readl s])
@@ -592,18 +543,16 @@ readListDefault = readParen False (\r -> [pr | ("[",s) <- lex r, pr <- readl s])
                    [ (x : xs, v) | (",", t)  <- lex s, (x, u) <- reads t
                                  , (xs,v) <- readl' u ]
 
---- Breaks a string into a list of words where the words are delimited by
---- white spaces.
-words      :: String -> [String]
-words s    = let s1 = dropWhile isSpace s
-             in if s1=="" then []
-                          else let (w,s2) = break isSpace s1
-                               in w : words s2
+readParen :: Bool -> ReadS a -> ReadS a
+readParen b g = if b then mandatory else optional
+ where optional r = g r ++ mandatory r
+       mandatory r =
+         [(x, u) | ("(", s) <- lex r, (x, t) <- optional s, (")", u) <- lex t]
 
---- Concatenates a list of strings with a blank between two strings.
-unwords    :: [String] -> String
-unwords ws = if null ws then []
-                        else foldr1 (\w s -> w ++ ' ':s) ws
+readSigned :: Real a => ReadS a -> ReadS a
+readSigned p = readParen False read'
+ where read' r = read'' r ++ [(-x, t) | ("-", s) <- lex r, (x, t) <- read'' s]
+       read'' r = [(n, s) | (str, s) <- lex r, (n, "") <- p str]
 
 read :: Read a => String -> a
 read s =  case [x | (x, t) <- reads s, ("", "") <- lex t] of
@@ -675,11 +624,8 @@ prim_readCharLiteral external
 readStringLiteral :: ReadS String
 readStringLiteral s = prim_readStringLiteral $## s
 
---- Looks up a key in an association list.
-lookup :: Eq a => a -> [(a, b)] -> Maybe b
-lookup _ []          = Nothing
-lookup k ((x,y):xys) | k==x      = Just y
-                     | otherwise = lookup k xys
+prim_readStringLiteral :: String -> [(String, String)]
+prim_readStringLiteral external
 
 readNatLiteral :: ReadS Int
 readNatLiteral s = prim_readNatLiteral $## s
@@ -704,13 +650,9 @@ instance Bounded () where
   minBound = ()
   maxBound = ()
 
---- Converts a Unicode value into a character.
---- The conversion is total, i.e., for out-of-bound values, the smallest
---- or largest character is generated.
-chr :: Int -> Char
-chr n | n < 0       = prim_chr 0
-      | n > 1114111 = prim_chr 1114111
-      | otherwise   = prim_chr $# n
+instance (Bounded a, Bounded b) => Bounded (a, b) where
+  minBound = (minBound, minBound)
+  maxBound = (maxBound, maxBound)
 
 instance (Bounded a, Bounded b, Bounded c) => Bounded (a, b, c) where
   minBound = (minBound, minBound, minBound)
@@ -880,8 +822,8 @@ prim_timesInt external
 plusFloat :: Float -> Float -> Float
 x `plusFloat` y = (prim_plusFloat $# y) $# x
 
-data Maybe a = Nothing | Just a
-  deriving (Eq, Ord, Show, Read)
+prim_plusFloat :: Float -> Float -> Float
+prim_plusFloat external
 
 -- Subtracts two floating point numbers.
 minusFloat :: Float -> Float -> Float
@@ -894,8 +836,8 @@ prim_minusFloat external
 timesFloat :: Float -> Float -> Float
 x `timesFloat` y = (prim_timesFloat $# y) $# x
 
-data Either a b = Left a | Right b
-  deriving (Eq, Ord, Show, Read)
+prim_timesFloat :: Float -> Float -> Float
+prim_timesFloat external
 
 -- Negates a floating point number.
 negateFloat :: Float -> Float
@@ -984,20 +926,13 @@ fromIntegral = fromInt . toInt
 realToFrac :: (Real a, Fractional b) => a -> b
 realToFrac = fromFloat . toFloat
 
---- The (abstract) type of error values.
---- Currently, it distinguishes between general IO errors,
---- user-generated errors (see 'userError'), failures and non-determinism
---- errors during IO computations. These errors can be caught by 'catch'
---- and shown by 'showError'.
---- Each error contains a string shortly explaining the error.
---- This type might be extended in the future to distinguish
---- further error situations.
-data IOError =
-    IOError     String -- normal IO error
-  | UserError   String -- user-specified error
-  | FailError   String -- failing computation
-  | NondetError String -- non-deterministic computation
-  deriving (Eq,Show,Read)
+-- Integer division. The value is the integer quotient of its arguments
+-- and always truncated towards negative infinity.
+divInt :: Int -> Int -> Int
+#ifdef __KICS2__
+divInt external
+#elif defined(__PAKCS__)
+x `divInt` y = (prim_divInt $# y) $# x
 
 prim_divInt :: Int -> Int -> Int
 prim_divInt external
@@ -1169,29 +1104,15 @@ prim_asinFloat external
 acosFloat :: Float -> Float
 acosFloat x = prim_acosFloat $# x
 
---- This operation is internally used by PAKCS to implement recursive
---- `let`s by using cyclic term structures. Basically, the effect of
----
----     letrec ones (1:ones)
----
---- (where `ones` is a logic variable) is the binding of `ones` to `(1:ones)`.
-letrec :: a -> a -> Bool
-#ifdef __PAKCS__
-letrec external
-#else
-letrec x y = let x = y in True -- not a real implementation
-#endif
+prim_acosFloat :: Float -> Float
+prim_acosFloat external
 
 -- Arcus tangent.
 atanFloat :: Float -> Float
 atanFloat x = prim_atanFloat $# x
 
-#ifdef __PAKCS__
---- Non-strict equational constraint for linear functional patterns.
---- Thus, it must be ensured that the first argument is always
---- (after evalutation by narrowing) a linear pattern. Experimental.
-(=:<<=) :: a -> a -> Bool
-(=:<<=) external
+prim_atanFloat :: Float -> Float
+prim_atanFloat external
 
 -- Hyperbolic sine.
 sinhFloat :: Float -> Float
@@ -1221,11 +1142,9 @@ asinhFloat x = prim_asinhFloat $# x
 prim_asinhFloat :: Float -> Float
 prim_asinhFloat external
 
-instance Eq a => Eq [a] where
-  []     == []     = True
-  []     == (_:_)  = False
-  (_:_)  == []     = False
-  (x:xs) == (y:ys) = x == y && xs == ys
+-- Hyperbolic arcus cosine.
+acoshFloat :: Float -> Float
+acoshFloat x = prim_acoshFloat $# x
 
 prim_acoshFloat :: Float -> Float
 prim_acoshFloat external
@@ -1238,18 +1157,25 @@ prim_atanhFloat :: Float -> Float
 prim_atanhFloat external
 
 
-instance (Eq a, Eq b, Eq c, Eq d, Eq e) => Eq (a, b, c, d, e) where
-  (a, b, c, d, e) == (a', b', c', d', e') =
-    a == a' && b == b' && c == c' && d == d' && e == e'
+(^) :: (Num a, Integral b) => a -> b -> a
+x0 ^ y0 | y0 < 0    = error "Negative exponent"
+        | y0 == 0   = 1
+        | otherwise = f x0 y0
+    where -- f : x0 ^ y0 = x ^ y
+          f x y | even y    = f (x * x) (y `quot` 2)
+                | y == 1    = x
+                | otherwise = g (x * x) (y `quot` 2) x
+          -- g : x0 ^ y0 = (x ^ y) * z
+          g x y z | even y = g (x * x) (y `quot` 2) z
+                  | y == 1 = x * z
+                  | otherwise = g (x * x) (y `quot` 2) (x * z)
 
-instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq (a, b, c, d, e, f) where
-  (a, b, c, d, e, f) == (a', b', c', d', e', f') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f'
+class Monoid a where
+  mempty  :: a
+  mappend :: a -> a -> a
+  mconcat :: [a] -> a
 
-instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g)
-      => Eq (a, b, c, d, e, f, g) where
-  (a, b, c, d, e, f, g) == (a', b', c', d', e', f', g') =
-    a == a' && b == b' && c == c' && d == d' && e == e' && f == f' && g == g'
+  mconcat = foldr mappend mempty
 
 instance Monoid () where
   mempty = ()
@@ -1270,9 +1196,12 @@ instance (Monoid a, Monoid b, Monoid c, Monoid d) => Monoid (a, b, c, d) where
   (a1, b1, c1, d1) `mappend` (a2, b2, c2, d2) =
     (a1 `mappend` a2, b1 `mappend` b2, c1 `mappend` c2, d1 `mappend` d2)
 
-  compare x y | x == y    = EQ
-              | x <= y    = LT
-              | otherwise = GT
+instance (Monoid a, Monoid b, Monoid c, Monoid d, Monoid e) =>
+           Monoid (a, b, c, d, e) where
+  mempty = (mempty, mempty, mempty, mempty, mempty)
+  (a1, b1, c1, d1, e1) `mappend` (a2, b2, c2, d2, e2) =
+    (a1 `mappend` a2, b1 `mappend` b2, c1 `mappend` c2, d1 `mappend` d2,
+      e1 `mappend` e2)
 
 instance Monoid [a] where
   mempty  = []
@@ -1295,12 +1224,7 @@ class Functor f where
   fmap :: (a -> b) -> f a -> f b
   (<$) :: a -> f b -> f a
 
-instance Ord a => Ord [a] where
-  []     <= []     = True
-  (_:_)  <= []     = False
-  []     <= (_:_)  = True
-  (x:xs) <= (y:ys) | x == y    = xs <= ys
-                   | otherwise = x < y
+  (<$) = fmap . const
 
 instance Functor [] where
   fmap = map
@@ -1359,12 +1283,12 @@ class Applicative f => Alternative f where
         many_v = some_v <|> pure []
         some_v = (:) <$> v <*> many_v
 
-showList' :: (a -> ShowS) ->  [a] -> ShowS
-showList' _     []     s = "[]" ++ s
-showList' showx (x:xs) s = '[' : showx x (showl xs)
- where
-  showl []     = ']' : s
-  showl (y:ys) = ',' : showx y (showl ys)
+    -- | Zero or more.
+    many :: f a -> f [a]
+    many v = many_v
+      where
+        many_v = some_v <|> pure []
+        some_v = (:) <$> v <*> many_v
 
 instance Alternative [] where
     empty = []
@@ -1399,28 +1323,18 @@ ap m1 m2 = do
   x2 <- m2
   return (x1 x2)
 
-instance (Show a, Show b, Show c, Show d, Show e) => Show (a, b, c, d, e) where
-  showsPrec _ (a, b, c, d, e) =
-    showTuple [shows a, shows b, shows c, shows d, shows e]
+liftM2 :: Monad m => (a1 -> a2 -> r) -> m a1 -> m a2 -> m r
+liftM2 f m1 m2 = do
+  x1 <- m1
+  x2 <- m2
+  return (f x1 x2)
 
-instance (Show a, Show b, Show c, Show d, Show e, Show f)
-      => Show (a, b, c, d, e, f) where
-  showsPrec _ (a, b, c, d, e, f) =
-    showTuple [shows a, shows b, shows c, shows d, shows e, shows f]
-
-instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g)
-      => Show (a, b, c, d, e, f, g) where
-  showsPrec _ (a, b, c, d, e, f, g) =
-    showTuple [shows a, shows b, shows c, shows d, shows e, shows f, shows g]
-
-instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h)
-      => Show (a, b, c, d, e, f, g, h) where
-  showsPrec _ (a, b, c, d, e, f, g, h) =
-    showTuple [shows a, shows b, shows c, shows d, shows e, shows f, shows g
-              ,shows h]
-
-instance Show a => Show [a] where
-  showsPrec _ = showList
+--- Executes a sequence of monadic actions and collects all results in a list.
+sequence :: Monad m => [m a] -> m [a]
+sequence []     = return []
+sequence (c:cs) = do x <- c
+                     xs <- sequence cs
+                     return (x : xs)
 
 --- Executes a sequence of monadic actions and ignores the results.
 sequence_ :: Monad m => [m _] -> m ()
@@ -1479,15 +1393,8 @@ isSpace c = c == ' '    || c == '\t' || c == '\n' ||
 ord :: Char -> Int
 ord c = prim_ord $# c
 
-readListDefault :: Read a => ReadS [a]
-readListDefault = readParen False (\r -> [pr | ("[",s)  <- lex r
-                                        , pr       <- readl s])
- where
-  readl  s = [([], t) | ("]", t) <- lex s] ++
-             [(x : xs, u) | (x, t) <- reads s, (xs, u) <- readl' t]
-  readl' s = [([], t) | ("]", t) <- lex s] ++
-             [(x : xs, v) | (",", t)  <- lex s, (x, u) <- reads t
-                          , (xs,v) <- readl' u]
+prim_ord :: Char -> Int
+prim_ord external
 
 --- Converts a Unicode value into a character.
 --- Fails if the value is out of bounds.
@@ -1497,11 +1404,7 @@ chr n | n >= 0 && n <= 1114111 = prim_chr $# n
 prim_chr :: Int -> Char
 prim_chr external
 
-read :: (Read a) => String -> a
-read s =  case [x | (x, t) <- reads s, ("", "") <- lex t] of
-  [x] -> x
-  []  -> error "Prelude.read: no parse"
-  _   -> error "Prelude.read: ambiguous parse"
+type String = [Char]
 
 --- Breaks a string into a list of lines where a line is terminated at a
 --- newline character. The resulting lines do not contain newline characters.
@@ -1602,66 +1505,13 @@ const x _ = x
 asTypeOf :: a -> a -> a
 asTypeOf = const
 
-lex :: ReadS String
-lex xs = case xs of
-    "" -> [("","")]
-    ('\'':s) ->
-      [('\'' : ch ++ "'", t) | (ch, '\'' : t)  <- lexLitChar s, ch /= "'"]
-    ('"':s) -> [('"' : str, t) | (str, t) <- lexString s]
-    (c:cs)
-      | isSpace c -> lex $ dropWhile isSpace cs
-      | isSingle c -> [([c], cs)]
-      | isSym c -> [(c : sym, t) | (sym, t) <- [span isSym cs]]
-      | isAlpha c -> [(c : nam, t) | (nam, t) <- [span isIdChar cs]]
-      | isDigit c -> [(c : ds ++ fe, t) | (ds, s) <- [span isDigit cs]
-                                        , (fe, t)  <- lexFracExp s]
-      | otherwise -> []
- where
-  isSingle c = c `elem` ",;()[]{}_`"
-  isSym c = c `elem` "!@#$%&*+./<=>?\\^|:-~"
-  isIdChar c = isAlphaNum c || c `elem` "_'"
-  lexFracExp s = case s of
-    ('.':c:cs)
-      | isDigit c ->
-        [('.' : ds ++ e, u) | (ds, t) <- lexDigits (c : cs),
-                              (e, u)  <- lexExp t]
-    _ -> lexExp s
-  lexExp s = case s of
-    (e:cs) | e `elem` "eE" ->
-      [(e : c : ds, u) | (c:t)  <- [cs], c `elem` "+-"
-                       , (ds, u) <- lexDigits t] ++
-        [(e : ds, t) | (ds, t) <- lexDigits cs]
-    _ -> [("", s)]
-  lexString s = case s of
-    ('"':cs) -> [("\"", cs)]
-    _ -> [(ch ++ str, u) | (ch, t) <- lexStrItem s, (str, u) <- lexString t]
-  lexStrItem s = case s of
-    ('\\':'&':cs) -> [("\\&", cs)]
-    ('\\':c:cs)
-      | isSpace c -> [("\\&", t) | '\\':t <- [dropWhile isSpace cs]]
-    _ -> lexLitChar s
+--- Converts an uncurried function to a curried function.
+curry :: ((a, b) -> c) -> a -> b -> c
+curry f a b =  f (a, b)
 
-lexLitChar :: ReadS String
-lexLitChar xs = case xs of
-  ""        -> []
-  ('\\':cs) -> map (prefix '\\') (lexEsc cs)
-  (c:cs)    -> [([c], cs)]
- where
-  lexEsc s = case s of
-    (c:cs)
-      | c `elem` "abfnrtv\\\"'" -> [([c], cs)]
-    ('^':c:cs)
-      | c >= '@' && c <= '_'    -> [(['^',c], cs)]
-    ('b':cs)                    -> [prefix 'b' (span isBinDigit cs)]
-    ('o':cs)                    -> [prefix 'o' (span isOctDigit cs)]
-    ('x':cs)                    -> [prefix 'x' (span isHexDigit cs)]
-    cs@(d:_)
-      | isDigit d               -> [span isDigit cs]
-    cs@(c:_)
-      | isUpper c               -> [span isCharName cs]
-    _                           -> []
-  isCharName c = isUpper c || isDigit c
-  prefix c (t, cs) = (c : t, cs)
+--- Converts an curried function to a function on pairs.
+uncurry :: (a -> b -> c) -> (a, b) -> c
+uncurry f (a, b) = f a b
 
 --- `flip f` is identical to `f`, but with the order of arguments reversed.
 flip :: (a -> b -> c) -> b -> a -> c
@@ -1732,9 +1582,8 @@ null (_:_) = False
 
 --- Computes the length of a list.
 length :: [_] -> Int
-length xs = len xs 0
- where len []     n = n
-       len (_:ys) n = let np1 = n + 1 in len ys $!! np1
+length [] = 0
+length (_:xs) = 1 + length xs
 
 --- List index (subscript) operator, head has index 0.
 (!!) :: [a] -> Int -> a
@@ -1780,9 +1629,13 @@ zip []     _      = []
 zip (_:_)  []     = []
 zip (x:xs) (y:ys) = (x, y) : zip xs ys
 
-  toEnum n | n == 0    = False
-           | n == 1    = True
-           | otherwise = error "Prelude.Enum.Bool.toEnum: bad argument"
+--- Joins three lists into one list of triples. If one input list is shorter
+--- than the other, the additional elements of the longer lists are discarded.
+zip3 :: [a] -> [b] -> [c] -> [(a, b, c)]
+zip3 []     _      _      = []
+zip3 (_:_)  []     _      = []
+zip3 (_:_)  (_:_)  []     = []
+zip3 (x:xs) (y:ys) (z:zs) = (x, y, z) : zip3 xs ys zs
 
 --- Joins two lists into one list by applying a combination function to
 --- corresponding pairs of elements. Thus `zip = zipWith (,)`
@@ -1815,17 +1668,14 @@ unzip3 ((x, y, z):ts) = (x : xs, y : ys, z : zs)
 concat :: [[a]] -> [a]
 concat = foldr (++) []
 
-instance (Bounded a, Bounded b, Bounded c, Bounded d)
-         => Bounded (a, b, c, d)
- where
-  minBound = (minBound, minBound, minBound, minBound)
-  maxBound = (maxBound, maxBound, maxBound, maxBound)
+--- Maps a function from elements to lists and merges the result into one list.
+concatMap :: (a -> [b]) -> [a] -> [b]
+concatMap f = concat . map f
 
-instance (Bounded a, Bounded b, Bounded c, Bounded d, Bounded e)
-         => Bounded (a, b, c, d, e)
- where
-  minBound = (minBound, minBound, minBound, minBound, minBound)
-  maxBound = (maxBound, maxBound, maxBound, maxBound, maxBound)
+--- Infinite list of repeated applications of a function f to an element x.
+--- Thus, `iterate f x = [x, f x, f (f x), ...]`.
+iterate :: (a -> a) -> a -> [a]
+iterate f x = x : iterate f (f x)
 
 --- Infinite list where all elements have the same value.
 --- Thus, `repeat x = [x, x, x, ...]`.
@@ -1854,10 +1704,10 @@ splitAt n l = if n <= 0 then ([], l) else splitAtp n l
   where splitAtp _ []     = ([], [])
         splitAtp m (x:xs) = let (ys, zs) = splitAt (m - 1) xs in (x : ys, zs)
 
-  toEnum n | n == 0    = LT
-           | n == 1    = EQ
-           | n == 2    = GT
-           | otherwise = error "Prelude.Enum.Ordering.toEnum: bad argument"
+--- Returns longest prefix with elements satisfying a predicate.
+takeWhile :: (a -> Bool) -> [a] -> [a]
+takeWhile _ []     = []
+takeWhile p (x:xs) = if p x then x : takeWhile p xs else []
 
 --- Returns suffix without takeWhile prefix.
 dropWhile :: (a -> Bool) -> [a] -> [a]
@@ -1876,9 +1726,9 @@ span p (x:xs) | p x       = let (ys, zs) = span p xs in (x : ys, zs)
 break :: (a -> Bool) -> [a] -> ([a], [a])
 break p = span (not . p)
 
-instance Bounded Char where
-  minBound = chr 0
-  maxBound = chr uppermostCharacter
+--- Reverses the order of all elements in a list.
+reverse :: [a] -> [a]
+reverse = foldl (flip (:)) []
 
 --- Computes the conjunction of a Boolean list.
 and :: [Bool] -> Bool
@@ -1888,15 +1738,13 @@ and = foldr (&&) True
 or :: [Bool] -> Bool
 or = foldr (||) False
 
-  succ c | ord c < uppermostCharacter
-         = chr $ ord c + 1
-         | otherwise
-         = error "Prelude.Enum.Char.succ: no successor"
+--- Is there an element in a list satisfying a given predicate?
+any :: (a -> Bool) -> [a] -> Bool
+any p = or . map p
 
-  pred c | ord c > 0
-         = chr $ ord c - 1
-         | otherwise
-         = error "Prelude.Enum.Char.succ: no predecessor"
+--- Is a given predicate satisfied by all elements in a list?
+all :: (a -> Bool) -> [a] -> Bool
+all p = and . map p
 
 --- Element of a list?
 elem :: Eq a => a -> [a] -> Bool
@@ -1945,13 +1793,8 @@ instance Monad Maybe where
   Just x  >>= k = k x
   (>>) = (*>)
 
-boundedEnumFromThen :: (Enum a, Bounded a) => a -> a -> [a]
-boundedEnumFromThen n1 n2
-  | i_n2 >= i_n1  = map toEnum [i_n1, i_n2 .. fromEnum (maxBound `asTypeOf` n1)]
-  | otherwise     = map toEnum [i_n1, i_n2 .. fromEnum (minBound `asTypeOf` n1)]
- where
-  i_n1 = fromEnum n1
-  i_n2 = fromEnum n2
+instance MonadFail Maybe where
+  fail _ = Nothing
 
 maybe :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
@@ -1974,8 +1817,15 @@ instance Monoid a => Monoid (IO a) where
 instance  Functor IO where
   fmap f x = x >>= (pure . f)
 
-  abs x | x >= 0    = x
-        | otherwise = negate x
+instance Applicative IO where
+  pure = returnIO
+#ifdef __PAKCS__
+  (*>) = seqIO
+#else
+  m *> k = m >>= \_ -> k
+#endif
+  (<*>) = ap
+  liftA2 = liftM2
 
 instance Alternative IO where
     empty = fail "mzero"
@@ -1989,8 +1839,8 @@ instance Monad IO where
 instance MonadFail IO where
   fail s = ioError (userError s)
 
-  abs x | x >= 0    = x
-        | otherwise = negate x
+bindIO :: IO a -> (a -> IO b) -> IO b
+bindIO external
 
 seqIO :: IO a -> IO b -> IO b
 seqIO external
@@ -2161,11 +2011,7 @@ ifVar external
 (&>) :: Bool -> a -> a
 True &> x = x
 
-instance Monad Maybe where
-  Nothing  >>= _ = Nothing
-  (Just x) >>= f = f x
-  return = Just
-  fail _ = Nothing
+infixr 0 ?
 
 --- Non-deterministic choice _par excellence_.
 --- The value of `x ? y` is either `x` or `y`.
