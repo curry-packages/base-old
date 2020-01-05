@@ -93,15 +93,15 @@
   <library>prim_standard</library>
   <entry>prim_failed[raw]</entry>
  </primitive>
- <primitive name="=:=" arity="2">
+ <primitive name="constrEq" arity="2">
   <library>prim_standard</library>
   <entry>constrEq[raw]</entry>
  </primitive>
- <primitive name="=:&lt;=" arity="2">
+ <primitive name="=:&lt;=" arity="3">
   <library>prim_standard</library>
   <entry>unifEq[raw]</entry>
  </primitive>
- <primitive name="=:&lt;&lt;=" arity="2">
+ <primitive name="=:&lt;&lt;=" arity="3">
   <library>prim_standard</library>
   <entry>unifEqLinear[raw]</entry>
  </primitive>

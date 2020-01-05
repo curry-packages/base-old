@@ -1980,7 +1980,16 @@ doSolve b | b = return ()
 --- reduced to a unifiable data term (i.e., a term without defined
 --- function symbols).
 (=:=) :: Data a => a -> a -> Bool
+#ifdef __PAKCS__
+(=:=) = constrEq
+
+-- For this operator we cannot remove the Data dictionary in the prolog code
+-- Thus, we generalize the type of the external definition.
+constrEq :: a -> a -> Bool
+constrEq external
+#else
 (=:=) external
+#endif
 
 --- Non-strict equational constraint. Used to implement functional patterns.
 (=:<=) :: Data a => a -> a -> Bool
