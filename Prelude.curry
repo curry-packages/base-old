@@ -98,8 +98,6 @@ data Bool = False | True
 
 data Ordering = LT | EQ | GT
 
-infix 4 ==, /=
-
 class Data a where
   (===)  :: a -> a -> Bool
   aValue :: a
@@ -145,7 +143,8 @@ instance (Data a, Data b, Data c, Data d, Data e) => Data (a, b, c, d, e) where
   (a1, b1, c1, d1, e1) === (a2, b2, c2, d2, e2) =
     a1 === a2 && b1 === b2 && c1 === c2 && d1 === d2 && e1 === e2
   aValue = (aValue, aValue, aValue, aValue, aValue)
-
+  
+infix 4 ==, /=
 
 class Eq a where
   (==), (/=) :: a -> a -> Bool
@@ -1953,7 +1952,7 @@ prim_ioError external
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch external
 
-infix 4 =:=, =:<=
+infix 4 =:=, =:<=, ===
 #ifdef __PAKCS__
 infix 4 =:<<=
 #endif
