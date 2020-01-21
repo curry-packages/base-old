@@ -1983,8 +1983,6 @@ doSolve b | b = return ()
 #ifdef __PAKCS__
 (=:=) = constrEq
 
--- For this operator we cannot remove the Data dictionary in the prolog code
--- Thus, we generalize the type of the external definition.
 constrEq :: a -> a -> Bool
 constrEq external
 #else
@@ -1993,14 +1991,24 @@ constrEq external
 
 --- Non-strict equational constraint. Used to implement functional patterns.
 (=:<=) :: Data a => a -> a -> Bool
+#ifdef __PAKCS__
+(=:<=) = unifEq
+
+unifEq :: a -> a -> Bool
+unifEq external
+#else
 (=:<=) external
+#endif
 
 #ifdef __PAKCS__
 --- Non-strict equational constraint for linear functional patterns.
 --- Thus, it must be ensured that the first argument is always (after evalutation
 --- by narrowing) a linear pattern. Experimental.
 (=:<<=) :: Data a => a -> a -> Bool
-(=:<<=) external
+(=:<<=) = unifEqLinear
+
+unifEqLinear :: a -> a -> Bool
+unifEqLinear external
 
 --- internal function to implement =:<=
 ifVar :: _ -> a -> a -> a

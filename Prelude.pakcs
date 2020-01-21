@@ -97,11 +97,11 @@
   <library>prim_standard</library>
   <entry>constrEq[raw]</entry>
  </primitive>
- <primitive name="=:&lt;=" arity="3">
+ <primitive name="unifEq" arity="2">
   <library>prim_standard</library>
   <entry>unifEq[raw]</entry>
  </primitive>
- <primitive name="=:&lt;&lt;=" arity="3">
+ <primitive name="unifEqLinear" arity="2">
   <library>prim_standard</library>
   <entry>unifEqLinear[raw]</entry>
  </primitive>
