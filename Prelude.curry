@@ -1988,32 +1988,18 @@ doSolve b | b = return ()
 --- reduced to a unifiable data term (i.e., a term without defined
 --- function symbols).
 (=:=) :: Data a => a -> a -> Bool
-#ifdef __PAKCS__
-(=:=) = constrEq
-
-constrEq :: a -> a -> Bool
-constrEq external
-#else
 (=:=) external
-#endif
 
 --- Non-strict equational constraint. Used to implement functional patterns.
 (=:<=) :: Data a => a -> a -> Bool
-#ifdef __PAKCS__
-(=:<=) = unifEq
-
-unifEq :: a -> a -> Bool
-unifEq external
-#else
 (=:<=) external
-#endif
 
 #ifdef __PAKCS__
 --- Non-strict equational constraint for linear functional patterns.
 --- Thus, it must be ensured that the first argument is always (after evalutation
 --- by narrowing) a linear pattern. Experimental.
 (=:<<=) :: Data a => a -> a -> Bool
-(=:<<=) = unifEqLinear
+x =:<<= y = unifEqLinear x y
 
 unifEqLinear :: a -> a -> Bool
 unifEqLinear external
