@@ -65,7 +65,20 @@
   <library>prim_standard</library>
   <entry>prim_chr</entry>
  </primitive>
- <primitive name="prim_show" arity="1">
+
+ <primitive name="prim_showIntLiteral" arity="1">
+  <library>prim_readshowterm</library>
+  <entry>prim_showTerm</entry>
+ </primitive>
+ <primitive name="prim_showFloatLiteral" arity="1">
+  <library>prim_readshowterm</library>
+  <entry>prim_showTerm</entry>
+ </primitive>
+ <primitive name="prim_showCharLiteral" arity="1">
+  <library>prim_readshowterm</library>
+  <entry>prim_showTerm</entry>
+ </primitive>
+ <primitive name="prim_showStringLiteral" arity="1">
   <library>prim_readshowterm</library>
   <entry>prim_showTerm</entry>
  </primitive>
@@ -85,6 +98,7 @@
   <library>prim_readshowterm</library>
   <entry>prim_readStringLiteral</entry>
  </primitive>
+
  <primitive name="prim_error" arity="1">
   <library>prim_standard</library>
   <entry>prim_error</entry>

@@ -422,22 +422,31 @@ showTuple ss = showChar '('
 
 -- Returns the string representation of a character.
 showCharLiteral :: Char -> String
-showCharLiteral x = prim_show $## x
+showCharLiteral x = prim_showCharLiteral $## x
+
+prim_showCharLiteral :: Char -> String
+prim_showCharLiteral external
 
 -- Returns the string representation of a string.
 showStringLiteral :: String -> String
-showStringLiteral x = prim_show $## x
+showStringLiteral x = prim_showStringLiteral $## x
+
+prim_showStringLiteral :: String -> String
+prim_showStringLiteral external
 
 -- Returns the string representation of an integer.
 showIntLiteral :: Int -> String
-showIntLiteral x = prim_show $## x
+showIntLiteral x = prim_showIntLiteral $## x
+
+prim_showIntLiteral :: Int -> String
+prim_showIntLiteral external
 
 -- Returns the string representation of a floating point number.
 showFloatLiteral :: Float -> String
-showFloatLiteral x = prim_show $## x
+showFloatLiteral x = prim_showFloatLiteral $## x
 
-prim_show :: _ -> String
-prim_show external
+prim_showFloatLiteral :: Float -> String
+prim_showFloatLiteral external
 
 type ReadS a = String -> [(a, String)]
 
