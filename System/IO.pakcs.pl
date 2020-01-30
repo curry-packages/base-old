@@ -3,12 +3,6 @@
 % Definitions of builtins of module System.IO
 %
 
-:- (current_module(prologbasics) -> true ; use_module('../prologbasics')).
-:- (current_module(basics)       -> true ; use_module('../basics')).
-% to implement IO.prim_hWaitForInputsOrMsg:
-:- (current_module(prim_ports)   -> true ; ensure_loaded(prim_ports)).
-
-
 % equality of two handles:
 'System.IO.handle_eq'(H1,H2,B) :-
         (H1=H2 -> B='Prelude.True' ; B='Prelude.False').

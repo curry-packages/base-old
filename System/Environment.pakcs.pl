@@ -3,9 +3,6 @@
 % Definitions of builtins of module System.Environment
 %
 
-:- (current_module(prologbasics) -> true ; use_module('../prologbasics')).
-:- (current_module(basics)       -> true ; use_module('../basics')).
-
 'System.Environment.getArgs'(StringArgs) :-
         (rtArgs(Args) -> true ; getProgramArgs(Args)),
         map2M(basics:atom2String,Args,StringArgs).

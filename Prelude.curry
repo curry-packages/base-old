@@ -3,8 +3,6 @@
 --- All exported functions, data types, type classes
 --- and methods defined in this module are always
 --- available in any Curry program.
----
---- @category general
 --------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_FRONTEND -Wno-incomplete-patterns -Wno-overlapping #-}

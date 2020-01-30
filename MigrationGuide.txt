@@ -148,7 +148,7 @@ splitPath -> System.FilePath.splitPath
 lookupFileInPath -> System.Directory.findFileWithSuffix
 getFileInPath -> System.Directory.getFileWithSuffix
 
-Nat -> Removed
+Nat -> removed
 
 System-> split into System.CPUTime, System.Environment, System.Process
 Renames:
@@ -179,3 +179,5 @@ Float -> removed, important functions integrated in prelude
 i2f -> Prelude.fromInt
 
 Read -> use read instance
+
+ReadShowTerm -> in package read-legacy
