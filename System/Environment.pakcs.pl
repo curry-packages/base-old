@@ -15,13 +15,11 @@
 'System.Environment.prim_setEnviron'(Var,Value,'Prelude.()') :-
 	string2Atom(Var,AtomVar),
 	string2Atom(Value,AtomValue),
-	catch(setEnv(AtomVar,AtomValue), _,
-              prolog:set_system_property(AtomVar,AtomValue)).
+	setEnv(AtomVar,AtomValue).
 
 'System.Environment.prim_unsetEnviron'(Var,'Prelude.()') :-
 	string2Atom(Var,AtomVar),
-	catch(unsetEnv(AtomVar), _,
-              'System.Environment.prim_setEnviron'(Var,[],'Prelude.()')).
+	unsetEnv(AtomVar).
 
 'System.Environment.getHostname'(String) :-
         getHostname(Name),
