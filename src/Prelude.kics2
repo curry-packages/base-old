@@ -635,6 +635,18 @@ showsPrec4CurryList d cl =
 external_d_C_prim_show :: Show a => a -> Cover -> ConstStore -> C_String
 external_d_C_prim_show a _ _ = toCurry (show a)
 
+external_d_C_prim_showCharLiteral :: C_Char -> Cover -> ConstStore -> C_String
+external_d_C_prim_showCharLiteral a _ _ = toCurry (show a)
+
+external_d_C_prim_showIntLiteral :: C_Int -> Cover -> ConstStore -> C_String
+external_d_C_prim_showIntLiteral a _ _ = toCurry (show a)
+
+external_d_C_prim_showFloatLiteral :: C_Float -> Cover -> ConstStore -> C_String
+external_d_C_prim_showFloatLiteral a _ _ = toCurry (show a)
+
+external_d_C_prim_showStringLiteral :: C_String -> Cover -> ConstStore -> C_String
+external_d_C_prim_showStringLiteral a _ _ = toCurry (show a)
+
 external_d_C_prim_readNatLiteral :: C_String -> Cover -> ConstStore -> OP_List (OP_Tuple2 C_Int C_String)
 external_d_C_prim_readNatLiteral s _ _ = toCurry (reads (fromCurry s) :: [(Integer, String)])
 
