@@ -33,11 +33,11 @@
   <library>prim_standard</library>
   <entry>prim_failed[raw]</entry>
  </primitive>
- <primitive name="=:=" arity="3">
+ <primitive name="=:=" arity="2">
   <library>prim_standard</library>
   <entry>Prelude.=:=[raw]</entry>
  </primitive>
- <primitive name="=:&lt;=" arity="3">
+ <primitive name="=:&lt;=" arity="2">
   <library>prim_standard</library>
   <entry>Prelude.=:&lt;=[raw]</entry>
  </primitive>
