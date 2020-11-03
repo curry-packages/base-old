@@ -2,15 +2,12 @@
 <!DOCTYPE primitives SYSTEM "http://www.informatik.uni-kiel.de/~pakcs/primitives.dtd">
 <primitives>
  <primitive name="newIORef" arity="1">
-  <library>prim_ioexts</library>
   <entry>prim_newIORef[raw]</entry>
  </primitive>
  <primitive name="prim_readIORef" arity="1">
-  <library>prim_ioexts</library>
   <entry>prim_readIORef[raw]</entry>
  </primitive>
  <primitive name="prim_writeIORef" arity="2">
-  <library>prim_ioexts</library>
   <entry>prim_writeIORef[raw]</entry>
  </primitive>
 </primitives>
