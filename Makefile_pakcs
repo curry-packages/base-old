@@ -19,10 +19,10 @@ LIB_NAMES     = $(subst /,., $(basename $(LIB_CURRY)))
 # lib names included in library documentation page (without directory prefix)
 LIB_DOCNAMES = $(filter-out $(DOCEXCLUDES), $(LIB_NAMES))
 # Generated files:
-LIB_FCY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.fcy), $(lib))
-LIB_TFCY  = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.tfcy),$(lib))
-LIB_ACY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/%.acy), $(lib))
-LIB_PL    = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs/%.pl), $(lib))
+LIB_FCY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs-$(VERSION)/%.fcy), $(lib))
+LIB_TFCY  = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs-$(VERSION)/%.tfcy),$(lib))
+LIB_ACY   = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs-$(VERSION)/%.acy), $(lib))
+LIB_PL    = $(foreach lib, $(LIB_CURRY:%.curry=.curry/pakcs-$(VERSION)/%.pl), $(lib))
 LIB_HTML  = $(foreach lib, $(LIB_CURRY:.curry=.html), $(LIBDOCDIR)/$(subst /,.,$(lib)))
 LIB_TEX   = $(foreach lib, $(LIB_CURRY:.curry=.tex),  $(TEXDOCDIR)/$(subst /,.,$(lib)))
 
@@ -59,7 +59,7 @@ clean:
 # clean all generated Prolog files
 .PHONY: cleanpl
 cleanpl:
-	rm -f .curry/pakcs/*.pl .curry/pakcs/*.po
+	rm -f .curry/pakcs-$(VERSION)/*.pl .curry/pakcs-$(VERSION)/*.po
 
 ##########################################################################
 # generate the FlatCurry files of all libraries:
@@ -78,22 +78,22 @@ acy: $(LIB_ACY)
 # generate the compiled Prolog target files of all libraries:
 .NOTPARALLEL: pl
 .PHONY: pl
-pl: .curry/pakcs/$(ALLLIBS).pl $(LIB_PL)
+pl: .curry/pakcs-$(VERSION)/$(ALLLIBS).pl $(LIB_PL)
 
-# generate FlatCurry file in subdirectory .curry:
-.curry/%.fcy: %.curry
-	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*) -Odesugar-newtypes -D__PAKCS__=$(shell printf '%d%02d' $(MAJORVERSION) $(MINORVERSION))
+# generate FlatCurry file in subdirectory of .curry:
+.curry/pakcs-$(VERSION)/%.fcy: %.curry
+	"$(CYMAKE)" --flat $(CYMAKEPARAMS) $(subst /,.,$*) -Odesugar-newtypes -o .curry/pakcs-$(VERSION) -D__PAKCS__=$(shell printf '%d%02d' $(MAJORVERSION) $(MINORVERSION))
 
-# generate type-annotated FlatCurry file in subdirectory .curry:
-.curry/%.tfcy: %.curry
-	"$(CYMAKE)" --typed-flat $(CYMAKEPARAMS) $(subst /,.,$*) -Odesugar-newtypes -D__PAKCS__=$(shell printf '%d%02d' $(MAJORVERSION) $(MINORVERSION))
+# generate type-annotated FlatCurry file in subdirectory of .curry:
+.curry/pakcs-$(VERSION)/%.tfcy: %.curry
+	"$(CYMAKE)" --typed-flat $(CYMAKEPARAMS) $(subst /,.,$*) -Odesugar-newtypes -o .curry/pakcs-$(VERSION) -D__PAKCS__=$(shell printf '%d%02d' $(MAJORVERSION) $(MINORVERSION))
 
-# generate all AbstractCurry files in subdirectory .curry:
-.curry/%.acy: %.curry
-	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $(subst /,.,$*) -Odesugar-newtypes -D__PAKCS__=$(shell printf '%d%02d' $(MAJORVERSION) $(MINORVERSION))
+# generate all AbstractCurry files in subdirectory of .curry:
+.curry/pakcs-$(VERSION)/%.acy: %.curry
+	"$(CYMAKE)" --acy $(CYMAKEPARAMS) $(subst /,.,$*) -Odesugar-newtypes -o .curry/pakcs-$(VERSION) -D__PAKCS__=$(shell printf '%d%02d' $(MAJORVERSION) $(MINORVERSION))
 
 # generate all Prolog translation (without binding optimization):
-.curry/pakcs/%.pl: .curry/%.fcy
+.curry/pakcs-$(VERSION)/%.pl: .curry/pakcs-$(VERSION)/%.fcy
 	rm -f $@ && "$(PAKCS)" -Dbindingoptimization=no --nocypm --quiet :compile $(subst /,.,$*) :quit
 
 ##############################################################################
