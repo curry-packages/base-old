@@ -1,9 +1,9 @@
 AllSolutions
 Array
 Combinatorial
-Control.Monad.Extra
+Control.Monad.Extra  (aber benoetigt in flatcurry-annotated!)
 Control.Monad.Trans.Class
-Control.Monad.Trans.Error
+Control.Monad.Trans.Error  (aber benoetigt in flatcurry-annotated!)
 Control.Monad.Trans.State
 Data.Function.Inversion
 Data.Global
@@ -13,7 +13,7 @@ Data.RedBlackTree
 Data.Set
 Data.Set.RBTree
 Data.Time
-Data.Tuple.Extra
+Data.Tuple.Extra  (aber benoetigt in rewriting!)
 Debug.Profile
 Findall
 Format

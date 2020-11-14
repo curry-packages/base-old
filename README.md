@@ -2,12 +2,15 @@ Curry Libraries
 ===============
 
 This repository contains the standard libraries of
-the Curry distributions PAKCS and KiCS2.
+Curry distributions like PAKCS or KiCS2.
 
-Since there are slight differences in the implementation
-of some libraries that are available for both PAKCS and KiCS2,
-libraries specific to PAKCS are suffixed by `.pakcs`.
-During the make process of PAKCS, these libraries
-are copied into the default `lib` directory where the
-suffix is removed. The makefiles `Makefiles.*.install`
-are responsible for this system-specific installation process.
+The structure of the repository is similar to a Curry package
+so that the dependency on this package can be specified
+in other Curry packages.
+
+*Important note:*
+The file `VERSION` must contain the version number of this package
+as specified in the `version` field of `package.json`.
+This file is used during the build process of Curry systems
+like PAKCS or KICS2 in order to avoid reading and parsing the
+JSON file.

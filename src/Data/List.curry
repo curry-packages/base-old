@@ -293,7 +293,7 @@ merge leq (x:xs) (y:ys) | leq x y   = x : merge leq xs (y:ys)
 --- @param xs - a list
 --- @return a list where the element has been inserted
 insertBy :: (a -> a -> Bool) -> a -> [a] -> [a]
-insertBy _ x []      = [x]
+insertBy _  x []     = [x]
 insertBy le x (y:ys) = if le x y
                          then x : y : ys
                          else y : insertBy le x ys

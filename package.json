@@ -1,0 +1,24 @@
+{
+    "name": "base",
+    "version": "3.0.0",
+    "author": "Michael Hanus <mh@informatik.uni-kiel.de>",
+    "synopsis": "Base libraries for Curry systems",
+    "description": "This package contains the base libraries which are directly distributed with Curry systems like PAKCS or KiCS2.",
+    "category": [ "Programming" ],
+    "compilerCompatibility": {
+        "kics2": ">= 3.0.0, < 4.0.0",
+        "pakcs": ">= 3.0.0, < 4.0.0"
+    },
+    "license": "BSD-3-Clause",
+    "licenseFile": "LICENSE",
+    "dependencies": {
+    },
+    "testsuite": {
+        "src-dir": "test",
+        "modules":  [ "TestDataChar", "TestTextShow" ]
+    },
+    "source": {
+      "git": "https://git.ps.informatik.uni-kiel.de/curry/curry-libs.git",
+      "tag": "$version"
+    }
+}

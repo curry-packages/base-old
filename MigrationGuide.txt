@@ -76,6 +76,10 @@ Function ->  Data.Function    (on, fix)
          bzw Data.Tuple.Extra (first, second, (***), (&&&), both)
 
 Prelude -> added pi, ^, <$>, <$
+Renames:
+showError -> show
+
+Sort: removed, use ????
 
 State -> Control.Monad.Trans.State, now with monad transformer
 has Applicative instance
@@ -90,7 +94,7 @@ sequenceS  -> sequence
 sequenceS_ -> sequence_
 mapS       -> mapM
 mapS_      -> mapM_
-liftS      -> liftM
+liftS      -> liftM  -> fmap
 liftS2     -> liftM2
 
 ErrorState -> removed, use Control.Monad.Trans.Error
