@@ -1,9 +1,11 @@
+Libraries deleted in version 3:
+
 AllSolutions
 Array
 Combinatorial
-Control.Monad.Extra  (aber benoetigt in flatcurry-annotated!)
+Control.Monad.Extra  (required in flatcurry-annotated?)
 Control.Monad.Trans.Class
-Control.Monad.Trans.Error  (aber benoetigt in flatcurry-annotated!)
+Control.Monad.Trans.Error  (required in flatcurry-annotated?)
 Control.Monad.Trans.State
 Data.Function.Inversion
 Data.Global
@@ -32,6 +34,6 @@ System.FilePath
 System.Process
 System.Random
 Test.* (nur teilweise)
-Text.Show (Der Großteil ist noch dabei in der Prelude)
+Text.Show (the main part is in the Prelude)
 Traversal
 ValueSequence
