@@ -2,7 +2,7 @@
 --- Library to access parts of the system environment.
 ---
 --- @author Michael Hanus, Bernd Brassel, Bjoern Peemoeller
---- @version July 2012
+--- @version November 2020
 --- @category general
 ------------------------------------------------------------------------------
 
@@ -42,7 +42,7 @@ prim_setEnviron external
 --- <code>setEnv</code>.
 
 unsetEnv :: String -> IO ()
-unsetEnv evar = prim_unsetEnviron $ evar
+unsetEnv evar = prim_unsetEnviron $## evar
 
 prim_unsetEnviron :: String -> IO ()
 prim_unsetEnviron external
