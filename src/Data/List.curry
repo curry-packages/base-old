@@ -6,7 +6,7 @@
 --- @category general
 ------------------------------------------------------------------------------
 
---{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
 
 module Data.List
   ( elemIndex, elemIndices, find, findIndex, findIndices
