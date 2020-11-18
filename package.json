@@ -15,7 +15,8 @@
     },
     "testsuite": {
         "src-dir": "test",
-        "modules":  [ "TestDataChar", "TestTextShow" ]
+        "modules":  [ "TestPrelude", "TestDataChar", "TestList",
+                      "TestIORefs", "TestEnvironment", "TestTextShow" ]
     },
     "source": {
       "git": "https://git.ps.informatik.uni-kiel.de/curry/curry-libs.git",
