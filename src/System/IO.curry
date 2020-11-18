@@ -29,7 +29,7 @@ handle_eq external
 --- The modes for opening a file.
 data IOMode = ReadMode | WriteMode | AppendMode
 
---- The modes for positioning with <code>hSeek</code> in a file.
+--- The modes for positioning with `hSeek` in a file.
 data SeekMode = AbsoluteSeek | RelativeSeek | SeekFromEnd
 
 
@@ -79,8 +79,8 @@ isEOF = hIsEOF stdin
 
 
 --- Set the position of a handle to a seekable stream (e.g., a file).
---- If the second argument is <code>AbsoluteSeek</code>,
---- <code>SeekFromEnd</code>, or <code>RelativeSeek</code>,
+--- If the second argument is `AbsoluteSeek`,
+--- `SeekFromEnd`, or `RelativeSeek`,
 --- the position is set relative to the beginning of the file,
 --- to the end of the file, or to the current position, respectively.
 hSeek :: Handle -> SeekMode -> Int -> IO ()
@@ -121,9 +121,9 @@ prim_hWaitForInputs external
 --- Thus, this operation implements a committed choice over receiving input
 --- from an IO handle or an external port.
 ---
---- <EM>Note that the implementation of this operation works only with
+--- _Note that the implementation of this operation works only with
 --- Sicstus-Prolog 3.8.5 or higher (due to a bug in previous versions
---- of Sicstus-Prolog).</EM>
+--- of Sicstus-Prolog)._
 ---
 --- @param handle - a handle for an input stream
 --- @param msgs   - a stream of messages received via an external port (see Ports)

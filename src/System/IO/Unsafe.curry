@@ -58,13 +58,13 @@ prim_isVar external
 
 --- Tests whether both arguments evaluate to the identical currently unbound
 --- variable (use with care!).
---- For instance, <code>identicalVar (id x) (fst (x,1))</code> evaluates to
---- <code>True</code> whereas <code>identicalVar x y</code> and
---- <code>let x=1 in identicalVar x x</code> evaluate to <code>False</code>
+--- For instance, `identicalVar (id x) (fst (x,1))` evaluates to
+--- `True` whereas `identicalVar x y` and
+--- `let x=1 in identicalVar x x` evaluate to `False`
 identicalVar :: a -> a -> Bool
 identicalVar x y = (prim_identicalVar $! y) $! x
 
---- <code>let x=1 in identicalVar x x</code> evaluate to <code>False</code>
+--- `let x=1 in identicalVar x x` evaluate to `False`
 prim_identicalVar :: a -> a -> Bool
 prim_identicalVar external
 
@@ -87,9 +87,9 @@ compareAnyTerm external
 --- Transforms the normal form of a term into a string representation
 --- in standard prefix notation.
 --- Thus, showAnyTerm evaluates its argument to normal form.
---- This function is similar to the function <code>ReadShowTerm.showTerm</code>
+--- This function is similar to the function `ReadShowTerm.showTerm`
 --- but it also transforms logic variables into a string representation
---- that can be read back by <code>Unsafe.read(s)AnyUnqualifiedTerm</code>.
+--- that can be read back by `Unsafe.read(s)AnyUnqualifiedTerm`.
 --- Thus, the result depends on the evaluation and binding status of
 --- logic variables so that it should be used with care!
 showAnyTerm :: _ -> String
@@ -101,9 +101,9 @@ prim_showAnyTerm external
 --- Transforms the normal form of a term into a string representation
 --- in standard prefix notation.
 --- Thus, showAnyQTerm evaluates its argument to normal form.
---- This function is similar to the function <code>ReadShowTerm.showQTerm</code>
+--- This function is similar to the function `ReadShowTerm.showQTerm`
 --- but it also transforms logic variables into a string representation
---- that can be read back by <code>Unsafe.read(s)AnyQTerm</code>.
+--- that can be read back by `Unsafe.read(s)AnyQTerm`.
 --- Thus, the result depends on the evaluation and binding status of
 --- logic variables so that it should be used with care!
 showAnyQTerm :: _ -> String

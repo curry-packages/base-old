@@ -2,11 +2,11 @@
 --- Library with some useful operations on lists.
 ---
 --- @author Michael Hanus, Bjoern Peemoeller
---- @version Februar 2016
+--- @version November 2020
 --- @category general
 ------------------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
+{-# OPTIONS_FRONTEND -Wno-incomplete-patterns #-}
 
 module Data.List
   ( elemIndex, elemIndices, find, findIndex, findIndices

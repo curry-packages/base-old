@@ -2,10 +2,10 @@
 --- Library with some useful operations for the `Either` data type.
 ---
 --- @author   Bjoern Peemoeller
---- @version  March 2015
+--- @version  November 2020
 --- @category general
 --- ----------------------------------------------------------------------------
-{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
+{-# OPTIONS_FRONTEND -Wno-incomplete-patterns #-}
 module Data.Either
   ( Either (..)
   , either
