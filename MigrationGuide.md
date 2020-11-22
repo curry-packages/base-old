@@ -37,11 +37,13 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Data.Function.Inversion` |
 | `Data.Global`             |
 
-## Finite Map
+## Finite Map Package
 
 Note that the explicit ordering function is not necessary anymore. Instead, an `Ord` context is needed.
 
 ### Renamed Types and Functions
+
+#### Map
 
 | Old                   | New                     | Notes                   |
 | --------------------- | ----------------------- | ----------------------- |
@@ -79,3 +81,16 @@ Note that the explicit ordering function is not necessary anymore. Instead, an `
 | `minFM`               | `lookupMin`             |                         |
 | `maxFM`               | `lookupMax`             |                         |
 | `fmToListPreOrder`    | `toPreOrderList`        |                         |
+
+#### Set
+
+| Old          | New            |
+| ------------ | -------------- |
+| `FiniteSet`  | `Set`          |
+| `emptySet`   | `empty`        |
+| `mkSet`      | `fromList`     |
+| `isEmptySet` | `null`         |
+| `elementOf`  | `member`       |
+| `minusSet`   | `difference`   |
+| `setToList`  | `toList`       |
+| `union`      | `union`        |
