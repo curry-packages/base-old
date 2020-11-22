@@ -12,8 +12,10 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | ----------- | ----------------------- | --------------------------- |
 | `List`      | `Data.List`             |                             |
 | `Maybe`     | `Data.Maybe`            | Now using `Monad` instance. |
-| `Either`    | `Data.Either`           |                             |
 | `Char`      | `Data.Char`             |                             |
+| `Either`    | `Data.Either`           |                             |
+| `Function`  | `Data.Function`         |                             |
+| `IO`        | `System.IO`             |                             |
 
 ### Moved and Renamed Modules
 
@@ -22,6 +24,8 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `FiniteMap`    | `Data.Map`                    | `finite-map`   |
 | `Distribution` | `Language.Curry.Distribution` | `distribution` |
 | `Directory`    | `System.Directory`            | `directory`    |
+| `FilePath`     | `System.FilePath`             | `filepath`     |
+| `Random`       | `System.Random`               | `random`       |
 
 ### Moved Modules
 
@@ -36,6 +40,26 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | ------------------------- |
 | `Data.Function.Inversion` |
 | `Data.Global`             |
+| `Sort`                    |
+
+### Renamed Functions
+
+#### Prelude
+
+| Old          | New            |
+| ------------ | -------------- |
+| `showError`  | `show`         |
+
+### Added Functions
+
+#### Prelude
+
+| New            |
+| -------------- |
+| `pi`           |
+| `(^)`          |
+| `(<$>)`        |
+| `(<$)`         |
 
 ## Finite Map Package
 
@@ -94,3 +118,33 @@ Note that the explicit ordering function is not necessary anymore. Instead, an `
 | `minusSet`   | `difference`   |
 | `setToList`  | `toList`       |
 | `union`      | `union`        |
+
+## Directory Package
+
+### Renamed Functions
+
+| Old          | New            |
+| ------------ | -------------- |
+| `fileSize`   | `getFileSize`  |
+
+## Transformers Package
+
+### Renamed Functions
+
+#### State
+
+| Old            | New                        |
+| -------------- | -------------------------- |
+| `bindS`        | Monad instance, `(>>=)`    |
+| `bindS_`       | Monad instance, `(>>)`     |
+| `returnS`      | Monad instance, `return`   |
+| `getS`         | `get`                      |
+| `putS`         | `put`                      |
+| `modifyS`      | `modify`                   |
+| `sequenceS`    | `sequence`                 |
+| `sequenceS_`   | `sequence_`                |
+| `mapS`         | `mapM`                     |
+| `mapS_`        | `mapM_`                    |
+| `liftS`        | `fmap`                     |
+| `liftM`        | `fmap`                     |
+| `liftS2`       | `liftM2`                   |
