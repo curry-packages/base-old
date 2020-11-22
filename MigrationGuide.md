@@ -16,18 +16,25 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Either`    | `Data.Either`           |                             |
 | `Function`  | `Data.Function`         |                             |
 | `IO`        | `System.IO`             |                             |
+| `GetOpt`    | `System.Console.GetOpt` |                             |
 
 ### Moved and Renamed Modules
 
-| Old            | New                           | New Package    |
-| -------------- | ----------------------------- | -------------- |
-| `FiniteMap`    | `Data.Map`                    | `finite-map`   |
-| `Distribution` | `Language.Curry.Distribution` | `distribution` |
-| `Directory`    | `System.Directory`            | `directory`    |
-| `FilePath`     | `System.FilePath`             | `filepath`     |
-| `Random`       | `System.Random`               | `random`       |
-| `State`        | `Control.Monad.Trans.State`   | `transformers` |
-| `ErrorState`   | `Control.Monad.Trans.Error`   | `transformers` |
+| Old            | New                           | New Package     |
+| -------------- | ----------------------------- | --------------- |
+| `FiniteMap`    | `Data.Map`                    | `finite-map`    |
+| `Distribution` | `Language.Curry.Distribution` | `distribution`  |
+| `Directory`    | `System.Directory`            | `directory`     |
+| `FilePath`     | `System.FilePath`             | `filepath`      |
+| `Random`       | `System.Random`               | `random`        |
+| `State`        | `Control.Monad.Trans.State`   | `transformers`  |
+| `ErrorState`   | `Control.Monad.Trans.Error`   | `transformers`  |
+| `AnsiCodes`    | `System.Console.ANSI.Codes`   | `ansi-terminal` |
+| `CPNS`         | `Network.CPNS`                | `cpns`          |
+| `NamedSocket`  | `Network.NamedSocket`         | `cpns`          |
+| `Socket`       | `Network.Socket`              | `socket`        |
+| `Dequeue`      | `Data.Queue`                  | `queue`         |
+| `RedBlackTree` | `Data.RedBlackTree`           | `redblacktree`  |
 
 ### Moved Modules
 
@@ -173,3 +180,20 @@ Note that the explicit ordering function is not necessary anymore. Instead, an `
 | -------------- | -------------------------------- | ----------- |
 | `concatMapES`  | `Control.Monad.Extra.concatMapM` | `extra`     |
 | `mapAccumES`   | `Control.Monad.Extra.mapAccumM`  | `extra`     |
+
+## Socket Package
+
+### Renamed Functions
+
+| Old            | New      |
+| -------------- | -------- |
+| `sClose`       | `close`  |
+| `socketAccept` | `accept` |
+
+## RedBlackTree Package
+
+### Renamed Functions
+
+| Old            | New      |
+| -------------- | -------- |
+| `tree2list`    | `toList` |
