@@ -8,12 +8,12 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 
 ### Renamed Modules
 
-| Old         | New                     |
-| ----------- | ----------------------- |
-| `List`      | `Data.List`             |
-| `Maybe`     | `Data.Maybe`            |
-| `Either`    | `Data.Either`           |
-| `Char`      | `Data.Char`             |
+| Old         | New                     | Notes                       |
+| ----------- | ----------------------- | --------------------------- |
+| `List`      | `Data.List`             |                             |
+| `Maybe`     | `Data.Maybe`            | Now using `Monad` instance. |
+| `Either`    | `Data.Either`           |                             |
+| `Char`      | `Data.Char`             |                             |
 
 ### Moved and Renamed Modules
 
