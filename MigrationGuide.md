@@ -26,13 +26,16 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Directory`    | `System.Directory`            | `directory`    |
 | `FilePath`     | `System.FilePath`             | `filepath`     |
 | `Random`       | `System.Random`               | `random`       |
+| `State`        | `Control.Monad.Trans.State`   | `transformers` |
+| `ErrorState`   | `Control.Monad.Trans.Error`   | `transformers` |
 
 ### Moved Modules
 
 | Old                     | New Package    |
 | ----------------------- | -------------- |
-| `Control.Monad.Extra`   | `directory`    |
+| `Control.Monad.Extra`   | `extra`        |
 | `Control.Monad.Trans.*` | `transformers` |
+| `Data.Tuple.Extra`      | `extra`        |
 
 ### Deleted Modules
 
@@ -148,3 +151,25 @@ Note that the explicit ordering function is not necessary anymore. Instead, an `
 | `liftS`        | `fmap`                     |
 | `liftM`        | `fmap`                     |
 | `liftS2`       | `liftM2`                   |
+
+#### ErrorState
+
+| Old            | New                              |
+| -------------- | -------------------------------- |
+| `returnES`     | Monad instance, `return`         |
+| `>+=`          | Monad instance, `(>>=)`          |
+| `>+`           | `(>>)`                           |
+| `getS`         | `lift . get`                     |
+| `putS`         | `lift . put`                     |
+| `modifyS`      | `lift . modify`                  |
+| `mapS`         | `mapM`                           |
+| `<*>,<*,`      | `Applicative instance`           |
+
+### Moved and Renamed Functions
+
+#### ErrorState
+
+| Old            | New                              | New Package |
+| -------------- | -------------------------------- | ----------- |
+| `concatMapES`  | `Control.Monad.Extra.concatMapM` | `extra`     |
+| `mapAccumES`   | `Control.Monad.Extra.mapAccumM`  | `extra`     |
