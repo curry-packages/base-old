@@ -39,6 +39,8 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 
 ## Finite Map
 
+Note that the explicit ordering function is not necessary anymore. Instead, an `Ord` context is needed.
+
 ### Renamed Types and Functions
 
 | Old                   | New                     | Notes                   |
