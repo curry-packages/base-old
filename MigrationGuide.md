@@ -59,6 +59,7 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Control.Monad.Extra`   | `extra`         |
 | `Control.Monad.Trans.*` | `transformers`  |
 | `Data.Tuple.Extra`      | `extra`         |
+| `System.Process`        | `process`       |
 | `ReadShowTerm`          | `read-legacy`   |
 | `Test.*`                | `easycheck`     |
 | `Combinatorial`         | `combinatorial` |
