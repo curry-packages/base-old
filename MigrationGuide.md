@@ -40,9 +40,14 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `RedBlackTree`         | `Data.RedBlackTree`             | `redblacktree`  |
 | `TableRBT`             | `Data.Table.RBTree`             | `redblacktree`  |
 | `SetRBT`               | `Data.Set.RBTree`               | `redblacktree`  |
-| `SearchTreeGenerators` | `Control.SearchTree.Generators` | `searchtree` |
-| `SearchTreeTraversal`  | `Control.SearchTree.Traversal`  | `searchtree` |
-| `Profile`              | `Debug.Profile`                 | `profiling`  |
+| `AllSolutions`         | `Control.AllSolutions`          | `searchtree`    |
+| `Findall`              | `Control.Findall`               | `searchtree`    |
+| `SearchTree`           | `Control.SearchTree`            | `searchtree`    |
+| `ValueSequence`        | `Control.ValueSequence`         | `searchtree`    |
+| `SearchTreeGenerators` | `Control.SearchTree.Generators` | `searchtree`    |
+| `SearchTreeTraversal`  | `Control.SearchTree.Traversal`  | `searchtree`    |
+| `Profile`              | `Debug.Profile`                 | `profiling`     |
+| `SCC`                  | `Data.SCC`                      | `scc`           |
 
 ### Moved Modules
 
