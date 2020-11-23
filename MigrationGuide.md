@@ -17,6 +17,7 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Function`  | `Data.Function`         |                             |
 | `IO`        | `System.IO`             |                             |
 | `GetOpt`    | `System.Console.GetOpt` |                             |
+| `ShowS`     | `Text.Show`             |                             |
 
 ### Moved and Renamed Modules
 
@@ -35,6 +36,8 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Socket`       | `Network.Socket`              | `socket`        |
 | `Dequeue`      | `Data.Queue`                  | `queue`         |
 | `RedBlackTree` | `Data.RedBlackTree`           | `redblacktree`  |
+| `SearchTreeGenerators` | `Control.SearchTree.Generators` | `searchtree` |
+| `SearchTreeTraversal`  | `Control.SearchTree.Traversal`  | `searchtree` |
 
 ### Moved Modules
 
@@ -44,13 +47,21 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Control.Monad.Trans.*` | `transformers` |
 | `Data.Tuple.Extra`      | `extra`        |
 
+### Renamed and Deleted Modules
+
+| Old                 | New                           |
+| ------------------- | ----------------------------- |
+| `FunctionInversion` | `Data.Function.Inversion`     |
+| `Global`            | `Data.Global`                 |
+
 ### Deleted Modules
 
-| Old                       |
-| ------------------------- |
-| `Data.Function.Inversion` |
-| `Data.Global`             |
-| `Sort`                    |
+| Old                       | Notes                                                |
+| ------------------------- | ---------------------------------------------------- |
+| `Sort`                    |                                                      |
+| `FileGoodies`             | Migrated to `System.FilePath` and `System.Directory` |
+| `System`                  | Split into `System.CPUTime` and `System.Environment` |
+| `Nat`                     |                                                      |
 
 ### Renamed Functions
 
@@ -59,6 +70,34 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | Old          | New            |
 | ------------ | -------------- |
 | `showError`  | `show`         |
+
+#### System (previously)
+
+| Old            | New            | Notes                                                    |
+| -------------- | -------------- | -------------------------------------------------------- |
+| `setEnviron`   | `setEnv`       |                                                          |
+| `unsetEnviron` | `unsetEnv`     |                                                          |
+| `getEnviron`   | `getEnv`       | `getEnvironment` was added, but has a different purpose. |
+| `setEnviron`   | `setEnv`       |                                                          |
+
+### Moved and Renamed Functions
+
+#### FileGoodies (previously)
+
+| Old                    | New                                      | Notes             |
+| ---------------------- | ---------------------------------------- | ----------------- |
+| `separatorChar`        |                                          | removed           |
+| `pathSeparatorChar`    | `System.FilePath.pathSeparator`          |                   |
+| `suffixSeparatorChar`  | `System.FilePath.extSeparator`           |                   |
+| `dirName`              | `System.FilePath.takeDirectory`          |                   |
+| `baseName`             | `System.FilePath.takeBaseName`           |                   |
+| `splitDirectoryBaseName` | `System.FilePath.splitFileName`        |                   |
+| `stripSuffix`          | `System.FilePath.dropExtension`          |                   |
+| `fileSuffix`           | `System.FilePath.takeExtension`          |                   |
+| `splitBaseName`        | `System.FilePath.splitExtension`         |                   |
+| `splitPath`            | `System.FilePath.splitPath`              |                   |
+| `lookupFileInPat`      | `System.FilePath.findFileWithSuffix`     |                   |
+| `getFileInPath`        | `System.FilePath.getFileWithSuffix`      |                   |
 
 ### Added Functions
 
