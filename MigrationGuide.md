@@ -8,36 +8,41 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 
 ### Renamed Modules
 
-| Old         | New                     | Notes                       |
-| ----------- | ----------------------- | --------------------------- |
-| `List`      | `Data.List`             |                             |
-| `Maybe`     | `Data.Maybe`            | Now using `Monad` instance. |
-| `Char`      | `Data.Char`             |                             |
-| `Either`    | `Data.Either`           |                             |
-| `Function`  | `Data.Function`         |                             |
-| `IO`        | `System.IO`             |                             |
-| `GetOpt`    | `System.Console.GetOpt` |                             |
-| `ShowS`     | `Text.Show`             |                             |
+| Old          | New                     | Notes                       |
+| ------------ | ----------------------- | --------------------------- |
+| `List`       | `Data.List`             |                             |
+| `Maybe`      | `Data.Maybe`            | Now using `Monad` instance. |
+| `Char`       | `Data.Char`             |                             |
+| `Either`     | `Data.Either`           |                             |
+| `Function`   | `Data.Function`         |                             |
+| `IO`         | `System.IO`             |                             |
+| `GetOpt`     | `System.Console.GetOpt` |                             |
+| `ShowS`      | `Text.Show`             |                             |
+| `RedNumeric` | `Numeric`               | Types changed.              |
+| `Debug`      | `Debug.Trace`           |                             |
 
 ### Moved and Renamed Modules
 
-| Old            | New                           | New Package     |
-| -------------- | ----------------------------- | --------------- |
-| `FiniteMap`    | `Data.Map`                    | `finite-map`    |
-| `Distribution` | `Language.Curry.Distribution` | `distribution`  |
-| `Directory`    | `System.Directory`            | `directory`     |
-| `FilePath`     | `System.FilePath`             | `filepath`      |
-| `Random`       | `System.Random`               | `random`        |
-| `State`        | `Control.Monad.Trans.State`   | `transformers`  |
-| `ErrorState`   | `Control.Monad.Trans.Error`   | `transformers`  |
-| `AnsiCodes`    | `System.Console.ANSI.Codes`   | `ansi-terminal` |
-| `CPNS`         | `Network.CPNS`                | `cpns`          |
-| `NamedSocket`  | `Network.NamedSocket`         | `cpns`          |
-| `Socket`       | `Network.Socket`              | `socket`        |
-| `Dequeue`      | `Data.Queue`                  | `queue`         |
-| `RedBlackTree` | `Data.RedBlackTree`           | `redblacktree`  |
+| Old                    | New                             | New Package     |
+| ---------------------- | ------------------------------- | --------------- |
+| `FiniteMap`            | `Data.Map`                      | `finite-map`    |
+| `Distribution`         | `Language.Curry.Distribution`   | `distribution`  |
+| `Directory`            | `System.Directory`              | `directory`     |
+| `FilePath`             | `System.FilePath`               | `filepath`      |
+| `Random`               | `System.Random`                 | `random`        |
+| `State`                | `Control.Monad.Trans.State`     | `transformers`  |
+| `ErrorState`           | `Control.Monad.Trans.Error`     | `transformers`  |
+| `AnsiCodes`            | `System.Console.ANSI.Codes`     | `ansi-terminal` |
+| `CPNS`                 | `Network.CPNS`                  | `cpns`          |
+| `NamedSocket`          | `Network.NamedSocket`           | `cpns`          |
+| `Socket`               | `Network.Socket`                | `socket`        |
+| `Dequeue`              | `Data.Queue`                    | `queue`         |
+| `RedBlackTree`         | `Data.RedBlackTree`             | `redblacktree`  |
+| `TableRBT`             | `Data.Table.RBTree`             | `redblacktree`  |
+| `SetRBT`               | `Data.Set.RBTree`               | `redblacktree`  |
 | `SearchTreeGenerators` | `Control.SearchTree.Generators` | `searchtree` |
 | `SearchTreeTraversal`  | `Control.SearchTree.Traversal`  | `searchtree` |
+| `Profile`              | `Debug.Profile`                 | `profiling`  |
 
 ### Moved Modules
 
@@ -46,6 +51,7 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Control.Monad.Extra`   | `extra`        |
 | `Control.Monad.Trans.*` | `transformers` |
 | `Data.Tuple.Extra`      | `extra`        |
+| `ReadShowTerm`          | `read-legacy`  |
 
 ### Renamed and Deleted Modules
 
@@ -62,6 +68,9 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `FileGoodies`             | Migrated to `System.FilePath` and `System.Directory` |
 | `System`                  | Split into `System.CPUTime` and `System.Environment` |
 | `Nat`                     |                                                      |
+| `Integer`                 | Removed, important functions moved to `Prelude`.     |
+| `Float`                   | Removed, important functions moved to `Prelude`.     |
+| `Read`                    | Use `Read` instance                                  |
 
 ### Renamed Functions
 
@@ -81,6 +90,12 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `setEnviron`   | `setEnv`       |                                                          |
 
 ### Moved and Renamed Functions
+
+#### Float (previously)
+
+| Old          | New               |
+| ------------ | ----------------- |
+| `i2f`        | `Prelude.fromInt` |
 
 #### FileGoodies (previously)
 
