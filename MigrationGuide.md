@@ -20,6 +20,7 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `ShowS`      | `Text.Show`             |                             |
 | `RedNumeric` | `Numeric`               | Types changed.              |
 | `Debug`      | `Debug.Trace`           |                             |
+| `IOExts`     | `Data.IORef`            | Only includes the `IORef`   |
 
 ### Moved and Renamed Modules
 
@@ -48,15 +49,19 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `SearchTreeTraversal`  | `Control.SearchTree.Traversal`  | `searchtree`    |
 | `Profile`              | `Debug.Profile`                 | `profiling`     |
 | `SCC`                  | `Data.SCC`                      | `scc`           |
+| `Traversal`            | `Data.Traversal`                | `traversal`     |
+| `Array`                | `Data.Array`                    | `array`         |
 
 ### Moved Modules
 
-| Old                     | New Package    |
-| ----------------------- | -------------- |
-| `Control.Monad.Extra`   | `extra`        |
-| `Control.Monad.Trans.*` | `transformers` |
-| `Data.Tuple.Extra`      | `extra`        |
-| `ReadShowTerm`          | `read-legacy`  |
+| Old                     | New Package     |
+| ----------------------- | --------------- |
+| `Control.Monad.Extra`   | `extra`         |
+| `Control.Monad.Trans.*` | `transformers`  |
+| `Data.Tuple.Extra`      | `extra`         |
+| `ReadShowTerm`          | `read-legacy`   |
+| `Test.*`                | `easycheck`     |
+| `Combinatorial`         | `combinatorial` |
 
 ### Renamed and Deleted Modules
 
