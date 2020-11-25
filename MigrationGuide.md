@@ -8,19 +8,19 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 
 ### Renamed Modules
 
-| Old          | New                     | Notes                       |
-| ------------ | ----------------------- | --------------------------- |
-| `List`       | `Data.List`             |                             |
-| `Maybe`      | `Data.Maybe`            | Now using `Monad` instance. |
-| `Char`       | `Data.Char`             |                             |
-| `Either`     | `Data.Either`           |                             |
-| `Function`   | `Data.Function`         |                             |
-| `IO`         | `System.IO`             |                             |
-| `GetOpt`     | `System.Console.GetOpt` |                             |
-| `ShowS`      | `Text.Show`             |                             |
-| `RedNumeric` | `Numeric`               | Types changed.              |
-| `Debug`      | `Debug.Trace`           |                             |
-| `IOExts`     | `Data.IORef`            | Only includes the `IORef`   |
+| Old           | New                     | Notes                       |
+| ------------- | ----------------------- | --------------------------- |
+| `List`        | `Data.List`             |                             |
+| `Maybe`       | `Data.Maybe`            | Now using `Monad` instance. |
+| `Char`        | `Data.Char`             |                             |
+| `Either`      | `Data.Either`           |                             |
+| `Function`    | `Data.Function`         |                             |
+| `IO`          | `System.IO`             |                             |
+| `GetOpt`      | `System.Console.GetOpt` |                             |
+| `ShowS`       | `Text.Show`             |                             |
+| `ReadNumeric` | `Numeric`               | Types changed.              |
+| `Debug`       | `Debug.Trace`           |                             |
+| `IOExts`      | `Data.IORef`            | Only includes the `IORef`   |
 
 ### Moved and Renamed Modules
 
