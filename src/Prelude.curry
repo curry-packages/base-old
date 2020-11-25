@@ -141,7 +141,20 @@ instance (Data a, Data b, Data c, Data d, Data e) => Data (a, b, c, d, e) where
   (a1, b1, c1, d1, e1) === (a2, b2, c2, d2, e2) =
     a1 === a2 && b1 === b2 && c1 === c2 && d1 === d2 && e1 === e2
   aValue = (aValue, aValue, aValue, aValue, aValue)
-  
+
+instance (Data a, Data b, Data c, Data d, Data e, Data f) =>
+         Data (a, b, c, d, e, f) where
+  (a1, b1, c1, d1, e1, f1) === (a2, b2, c2, d2, e2, f2) =
+    a1 === a2 && b1 === b2 && c1 === c2 && d1 === d2 && e1 === e2 && f1 === f2
+  aValue = (aValue, aValue, aValue, aValue, aValue, aValue)
+
+instance (Data a, Data b, Data c, Data d, Data e, Data f, Data g) =>
+         Data (a, b, c, d, e, f, g) where
+  (a1, b1, c1, d1, e1, f1, g1) === (a2, b2, c2, d2, e2, f2, g2) =
+    a1 === a2 && b1 === b2 && c1 === c2 && d1 === d2 && e1 === e2 &&
+    f1 === f2 && g1 === g2
+  aValue = (aValue, aValue, aValue, aValue, aValue, aValue, aValue)
+
 infix 4 ==, /=
 
 class Eq a where
