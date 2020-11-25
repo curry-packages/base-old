@@ -26,14 +26,16 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 
 | Old                    | New                             | New Package     |
 | ---------------------- | ------------------------------- | --------------- |
-| `FiniteMap`            | `Data.Map`                      | `finite-map`    |
+| `AllSolutions`         | `Control.AllSolutions`          | `searchtree`    |
+| `AnsiCodes`            | `System.Console.ANSI.Codes`     | `ansi-terminal` |
+| `Array`                | `Data.Array`                    | `array`         |
 | `Distribution`         | `Language.Curry.Distribution`   | `distribution`  |
 | `Directory`            | `System.Directory`              | `directory`     |
 | `FilePath`             | `System.FilePath`               | `filepath`      |
+| `FiniteMap`            | `Data.Map`                      | `finite-map`    |
 | `Random`               | `System.Random`                 | `random`        |
 | `State`                | `Control.Monad.Trans.State`     | `transformers`  |
 | `ErrorState`           | `Control.Monad.Trans.Error`     | `transformers`  |
-| `AnsiCodes`            | `System.Console.ANSI.Codes`     | `ansi-terminal` |
 | `CPNS`                 | `Network.CPNS`                  | `cpns`          |
 | `NamedSocket`          | `Network.NamedSocket`           | `cpns`          |
 | `Socket`               | `Network.Socket`                | `socket`        |
@@ -41,8 +43,8 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `RedBlackTree`         | `Data.RedBlackTree`             | `redblacktree`  |
 | `TableRBT`             | `Data.Table.RBTree`             | `redblacktree`  |
 | `SetRBT`               | `Data.Set.RBTree`               | `redblacktree`  |
-| `AllSolutions`         | `Control.AllSolutions`          | `searchtree`    |
 | `Findall`              | `Control.Findall`               | `searchtree`    |
+| `FunctionInversion`    | `Data.Function.Inversion`       | `inversion`     |
 | `SearchTree`           | `Control.SearchTree`            | `searchtree`    |
 | `ValueSequence`        | `Control.ValueSequence`         | `searchtree`    |
 | `SearchTreeGenerators` | `Control.SearchTree.Generators` | `searchtree`    |
@@ -50,7 +52,7 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Profile`              | `Debug.Profile`                 | `profiling`     |
 | `SCC`                  | `Data.SCC`                      | `scc`           |
 | `Traversal`            | `Data.Traversal`                | `traversal`     |
-| `Array`                | `Data.Array`                    | `array`         |
+| `Time`                 | `Data.Time`                     | `time`          |
 
 ### Moved Modules
 
@@ -59,17 +61,11 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `Control.Monad.Extra`   | `extra`         |
 | `Control.Monad.Trans.*` | `transformers`  |
 | `Data.Tuple.Extra`      | `extra`         |
+| `Global`                | `global`        |
 | `System.Process`        | `process`       |
 | `ReadShowTerm`          | `read-legacy`   |
 | `Test.*`                | `easycheck`     |
 | `Combinatorial`         | `combinatorial` |
-
-### Renamed and Deleted Modules
-
-| Old                 | New                           |
-| ------------------- | ----------------------------- |
-| `FunctionInversion` | `Data.Function.Inversion`     |
-| `Global`            | `Data.Global`                 |
 
 ### Deleted Modules
 
