@@ -1,26 +1,31 @@
 # Curry 2 -> 3 Migration Guide
 
-Between version 2 and 3 the standard library has undergone some notable changes, like aligning module and function names more closely with their Haskell equivalents and moving more specialized functionality into separate packages.
+Between version 2 and 3 the standard library has undergone some
+notable changes, like aligning module and function names more closely
+with their Haskell equivalents and moving more specialized
+functionality into separate packages.
 
-This migration guide aims to provide a comprehensive outline of the changes to make the transition of existing packages more seamless.
+This migration guide aims to provide a comprehensive outline of the
+changes to make the transition of existing packages more seamless.
 
 ## Standard Library
 
 ### Renamed Modules
 
-| Old           | New                     | Notes                       |
-| ------------- | ----------------------- | --------------------------- |
-| `List`        | `Data.List`             |                             |
-| `Maybe`       | `Data.Maybe`            | Now using `Monad` instance. |
-| `Char`        | `Data.Char`             |                             |
-| `Either`      | `Data.Either`           |                             |
-| `Function`    | `Data.Function`         |                             |
-| `IO`          | `System.IO`             |                             |
-| `GetOpt`      | `System.Console.GetOpt` |                             |
-| `ShowS`       | `Text.Show`             |                             |
-| `ReadNumeric` | `Numeric`               | Types changed.              |
-| `Debug`       | `Debug.Trace`           |                             |
-| `IOExts`      | `Data.IORef`            | Only includes the `IORef`   |
+| Old           | New                           | Notes                       |
+| ------------- | ----------------------------- | --------------------------- |
+| `Char`        | `Data.Char`                   |                             |
+| `Debug`       | `Debug.Trace`                 |                             |
+| `Distribution`| `Curry.Compiler.Distribution` | `rcFileName` in `currypath` |
+| `Either`      | `Data.Either`                 |                             |
+| `Function`    | `Data.Function`               |                             |
+| `GetOpt`      | `System.Console.GetOpt`       |                             |
+| `IO`          | `System.IO`                   |                             |
+| `IOExts`      | `Data.IORef`                  | Only includes the `IORef`   |
+| `List`        | `Data.List`                   |                             |
+| `Maybe`       | `Data.Maybe`                  | Now using `Monad` instance. |
+| `ReadNumeric` | `Numeric`                     | Types changed.              |
+| `ShowS`       | `Text.Show`                   |                             |
 
 ### Moved and Renamed Modules
 
@@ -29,35 +34,35 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `AllSolutions`         | `Control.AllSolutions`          | `searchtree`    |
 | `AnsiCodes`            | `System.Console.ANSI.Codes`     | `ansi-terminal` |
 | `Array`                | `Data.Array`                    | `array`         |
-| `Distribution`         | `Language.Curry.Distribution`   | `distribution`  |
+| `CPNS`                 | `Network.CPNS`                  | `cpns`          |
+| `Dequeue`              | `Data.Queue`                    | `queue`         |
 | `Directory`            | `System.Directory`              | `directory`     |
+| `ErrorState`           | `Control.Monad.Trans.Error`     | `transformers`  |
 | `FilePath`             | `System.FilePath`               | `filepath`      |
 | `FiniteMap`            | `Data.Map`                      | `finite-map`    |
-| `Random`               | `System.Random`                 | `random`        |
-| `State`                | `Control.Monad.Trans.State`     | `transformers`  |
-| `ErrorState`           | `Control.Monad.Trans.Error`     | `transformers`  |
-| `CPNS`                 | `Network.CPNS`                  | `cpns`          |
-| `NamedSocket`          | `Network.NamedSocket`           | `cpns`          |
-| `Socket`               | `Network.Socket`                | `socket`        |
-| `Dequeue`              | `Data.Queue`                    | `queue`         |
-| `RedBlackTree`         | `Data.RedBlackTree`             | `redblacktree`  |
-| `TableRBT`             | `Data.Table.RBTree`             | `redblacktree`  |
-| `SetRBT`               | `Data.Set.RBTree`               | `redblacktree`  |
 | `Findall`              | `Control.Findall`               | `searchtree`    |
 | `FunctionInversion`    | `Data.Function.Inversion`       | `inversion`     |
+| `NamedSocket`          | `Network.NamedSocket`           | `cpns`          |
+| `Profile`              | `Debug.Profile`                 | `profiling`     |
+| `Random`               | `System.Random`                 | `random`        |
+| `RedBlackTree`         | `Data.RedBlackTree`             | `redblacktree`  |
 | `SearchTree`           | `Control.SearchTree`            | `searchtree`    |
-| `ValueSequence`        | `Control.ValueSequence`         | `searchtree`    |
 | `SearchTreeGenerators` | `Control.SearchTree.Generators` | `searchtree`    |
 | `SearchTreeTraversal`  | `Control.SearchTree.Traversal`  | `searchtree`    |
-| `Profile`              | `Debug.Profile`                 | `profiling`     |
 | `SCC`                  | `Data.SCC`                      | `scc`           |
+| `SetRBT`               | `Data.Set.RBTree`               | `redblacktree`  |
+| `Socket`               | `Network.Socket`                | `socket`        |
+| `State`                | `Control.Monad.Trans.State`     | `transformers`  |
+| `TableRBT`             | `Data.Table.RBTree`             | `redblacktree`  |
 | `Traversal`            | `Data.Traversal`                | `traversal`     |
 | `Time`                 | `Data.Time`                     | `time`          |
+| `ValueSequence`        | `Control.ValueSequence`         | `searchtree`    |
 
 ### Moved Modules
 
 | Old                     | New Package     |
 | ----------------------- | --------------- |
+| `Combinatorial`         | `combinatorial` |
 | `Control.Monad.Extra`   | `extra`         |
 | `Control.Monad.Trans.*` | `transformers`  |
 | `Data.Tuple.Extra`      | `extra`         |
@@ -65,7 +70,6 @@ This migration guide aims to provide a comprehensive outline of the changes to m
 | `System.Process`        | `process`       |
 | `ReadShowTerm`          | `read-legacy`   |
 | `Test.*`                | `easycheck`     |
-| `Combinatorial`         | `combinatorial` |
 
 ### Deleted Modules
 
