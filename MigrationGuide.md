@@ -7,6 +7,10 @@ functionality into separate packages.
 
 This migration guide aims to provide a comprehensive outline of the
 changes to make the transition of existing packages more seamless.
+In order to find the modules and packages containing a given
+operation, one should try the
+[Currygle](https://www-ps.informatik.uni-kiel.de/kics2/currygle/)
+search tool.
 
 ## Standard Library
 
@@ -39,9 +43,10 @@ changes to make the transition of existing packages more seamless.
 | `Directory`            | `System.Directory`              | `directory`     |
 | `ErrorState`           | `Control.Monad.Trans.Error`     | `transformers`  |
 | `FilePath`             | `System.FilePath`               | `filepath`      |
-| `FiniteMap`            | `Data.Map`                      | `finite-map`    |
+| `FiniteMap`            | `Data.Map`                      | `containers`    |
 | `Findall`              | `Control.Findall`               | `searchtree`    |
 | `FunctionInversion`    | `Data.Function.Inversion`       | `inversion`     |
+| `Nat`                  | `Data.Nat`                      | `peano`         |
 | `NamedSocket`          | `Network.NamedSocket`           | `cpns`          |
 | `Profile`              | `Debug.Profile`                 | `profiling`     |
 | `Random`               | `System.Random`                 | `random`        |
@@ -78,7 +83,6 @@ changes to make the transition of existing packages more seamless.
 | `Sort`                    |                                                      |
 | `FileGoodies`             | Migrated to `System.FilePath` and `System.Directory` |
 | `System`                  | Split into `System.CPUTime` and `System.Environment` |
-| `Nat`                     |                                                      |
 | `Integer`                 | Removed, important functions moved to `Prelude`.     |
 | `Float`                   | Removed, important functions moved to `Prelude`.     |
 | `Read`                    | Use `Read` instance                                  |
@@ -122,7 +126,7 @@ changes to make the transition of existing packages more seamless.
 | `fileSuffix`           | `System.FilePath.takeExtension`          |                   |
 | `splitBaseName`        | `System.FilePath.splitExtension`         |                   |
 | `splitPath`            | `System.FilePath.splitPath`              |                   |
-| `lookupFileInPat`      | `System.FilePath.findFileWithSuffix`     |                   |
+| `lookupFileInPath`     | `Directory.findFileWithSuffix`           |                   |
 | `getFileInPath`        | `System.FilePath.getFileWithSuffix`      |                   |
 
 ### Added Functions
