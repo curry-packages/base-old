@@ -98,6 +98,11 @@ external data Int
 
 external data Float
 
+data Bool = False | True
+
+data Ordering = LT | EQ | GT
+
+------------------------------------------------------------------------------
 --++ data () = ()
 
 --++ data (a, b) = (a, b)
@@ -110,25 +115,21 @@ external data Float
 
 --++ data (->) a b
 
-data Bool = False | True
-
-data Ordering = LT | EQ | GT
-
 class Data a where
   (===)  :: a -> a -> Bool
   aValue :: a
 
 instance Data Char where
   (===) = (==)
-  aValue = a where a free
+  aValue = aValueChar
 
 instance Data Int where
   (===) = (==)
-  aValue = a where a free
+  aValue = aValueInt
 
 instance Data Float where
   (===) = (==)
-  aValue = a where a free
+  aValue = aValueFloat
 
 instance Data a => Data [a] where
   []     === []     = True
@@ -173,6 +174,25 @@ instance (Data a, Data b, Data c, Data d, Data e, Data f, Data g) =>
     f1 === f2 && g1 === g2
   aValue = (aValue, aValue, aValue, aValue, aValue, aValue, aValue)
 
+-- Value generator for integers.
+aValueInt :: Int
+#ifdef __PAKCS__
+aValueInt = genPos 1 ? 0  ?  0 - genPos 1
+ where
+  genPos n = n  ?  genPos (2 * n)  ?  genPos (2 * n + 1)
+#else
+aValueInt = x where x free
+#endif
+
+-- Value generator for floats.
+aValueFloat :: Float
+aValueFloat = x where x free
+
+-- Value generator for chars.
+aValueChar :: Char
+aValueChar = x where x free
+
+------------------------------------------------------------------------------
 
 class Eq a where
   (==), (/=) :: a -> a -> Bool
