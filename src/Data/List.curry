@@ -197,8 +197,8 @@ splitOn sep@(_:_:_) xs = go xs
 --- The resulting components do not contain the separators.
 --- Two adjacent separators result in an empty component in the output.
 ---
---- > split (=='a') "aabbaca" == ["","","bb","c",""]
---- > split (=='a') ""        == [""]
+---     split (=='a') "aabbaca" == ["","","bb","c",""]
+---     split (=='a') ""        == [""]
 split :: (a -> Bool) -> [a] -> [[a]]
 split _ []     = [[]]
 split p (x:xs) | p x       = [] : split p xs

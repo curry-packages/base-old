@@ -72,7 +72,25 @@ module Prelude
 #endif
   ) where
 
+infixr 9 .
+infixl 9 !!
+infixl 7 *, /, `div`, `mod`, `quot`, `rem`
+infixl 6 +, -
+infixr 5 ++
+--++ The (:) operator is built-in syntax with the following fixity:
 --++ infixr 5 :
+infix  4 ==, /=, <, >, <=, >=
+infix  4 =:=, =:<=, ===
+#ifdef __PAKCS__
+infix  4 =:<<=
+#endif
+infix  4 `elem`, `notElem`
+infixl 4 <$, <$>, <*>, <*, *>
+infixl 3 <|>
+infixr 3 &&
+infixr 2 ||
+infixl 1 >>, >>=
+infixr 0 ?, $, $!, $!!, $#, $##, `seq`, &, &>
 
 external data Char
 
@@ -155,7 +173,6 @@ instance (Data a, Data b, Data c, Data d, Data e, Data f, Data g) =>
     f1 === f2 && g1 === g2
   aValue = (aValue, aValue, aValue, aValue, aValue, aValue, aValue)
 
-infix 4 ==, /=
 
 class Eq a where
   (==), (/=) :: a -> a -> Bool
@@ -244,7 +261,6 @@ prim_eqFloat :: Float -> Float -> Bool
 prim_eqFloat external
 #endif
 
-infix 4 <, >, <=, >=
 
 class Eq a => Ord a where
   compare :: a -> a -> Ordering
@@ -767,8 +783,6 @@ instance Enum Ordering where
   enumFrom x = enumFromTo x GT
   enumFromThen x y = enumFromThenTo x y (if x <= y then GT else LT)
 
-infixl 6 +, -
-infixl 7 *
 
 class Num a where
   (+), (-), (*) :: a -> a -> a
@@ -876,7 +890,6 @@ intToFloat x = prim_intToFloat $# x
 prim_intToFloat :: Int -> Float
 prim_intToFloat external
 
-infixl 7 /
 
 class Num a => Fractional a where
   (/) :: a -> a -> a
@@ -906,7 +919,6 @@ instance Real Int where
 instance Real Float where
   toFloat x = x
 
-infixl 7 `div`, `mod`, `quot`, `rem`
 
 class (Real a, Enum a) => Integral a where
   div, mod :: a -> a -> a
@@ -1237,7 +1249,6 @@ instance Monoid Ordering where
   EQ `mappend` y = y
   GT `mappend` _ = GT
 
-infixl 4 <$, <$>
 
 class Functor f where
   fmap :: (a -> b) -> f a -> f b
@@ -1254,7 +1265,6 @@ instance Functor ((->) r) where
 (<$>) :: Functor f => (a -> b) -> f a -> f b
 (<$>) = fmap
 
-infixl 4 <*>, <*, *>
 
 class Functor f => Applicative f where
   pure :: a -> f a
@@ -1279,7 +1289,6 @@ instance Applicative ((->) a) where
   (<*>) f g x = f x (g x)
   liftA2 q f g x = q (f x) (g x)
 
-infixl 3 <|>
 
 -- | A monoid on applicative functors.
 --
@@ -1313,7 +1322,6 @@ instance Alternative [] where
     empty = []
     (<|>) = (++)
 
-infixl 1 >>, >>=
 
 class Applicative m => Monad m where
   (>>=) :: m a -> (a -> m b) -> m b
@@ -1455,7 +1463,6 @@ unwords :: [String] -> String
 unwords ws = if ws == [] then []
                          else foldr1 (\w s -> w ++ ' ' : s) ws
 
-infixr 0 $, $!, $!!, $#, $##, `seq`
 
 --- Right-associative application.
 ($) :: (a -> b) -> a -> b
@@ -1507,7 +1514,6 @@ normalForm x = id $!! x
 groundNormalForm :: a -> a
 groundNormalForm x = id $## x
 
-infixr 9 .
 
 --- Function composition.
 (.) :: (b -> c) -> (a -> b) -> (a -> c)
@@ -1543,8 +1549,6 @@ flip f x y = f y x
 until :: (a -> Bool) -> (a -> a) -> a -> a
 until p f x = if p x then x else until p f (f x)
 
-infixr 3 &&
-infixr 2 ||
 
 --- Sequential conjunction on Booleans.
 (&&) :: Bool -> Bool -> Bool
@@ -1578,9 +1582,6 @@ fst (x, _) = x
 snd :: (_, b) -> b
 snd (_, y) = y
 
-infixr 5 ++
-infixl 9 !!
-infix 4 `elem`, `notElem`
 
 --- Computes the first element of a list.
 head :: [a] -> a
@@ -1975,11 +1976,6 @@ prim_ioError external
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch external
 
-infix 4 =:=, =:<=, ===
-#ifdef __PAKCS__
-infix 4 =:<<=
-#endif
-infixr 0 &, &>
 
 type Success = Bool
 
@@ -2035,8 +2031,6 @@ ifVar external
 --- The expression has no value if the condition does not evaluate to `True`.
 (&>) :: Bool -> a -> a
 True &> x = x
-
-infixr 0 ?
 
 --- Non-deterministic choice _par excellence_.
 --- The value of `x ? y` is either `x` or `y`.
