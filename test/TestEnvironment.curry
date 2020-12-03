@@ -1,8 +1,9 @@
 ------------------------------------------------------------------------------
 --- Some tests for library System.Environment
 ---
---- To run all tests automatically by the currycheck tool, use the command:
---- "curry-check TestEnvironment"
+--- To run all tests automatically by CurryCheck, use the command:
+---
+---     > curry-check TestEnvironment
 ------------------------------------------------------------------------------
 
 import System.Environment

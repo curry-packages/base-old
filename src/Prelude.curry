@@ -176,21 +176,19 @@ instance (Data a, Data b, Data c, Data d, Data e, Data f, Data g) =>
 
 -- Value generator for integers.
 aValueInt :: Int
-#ifdef __PAKCS__
 aValueInt = genPos 1 ? 0  ?  0 - genPos 1
  where
   genPos n = n  ?  genPos (2 * n)  ?  genPos (2 * n + 1)
-#else
-aValueInt = x where x free
-#endif
-
--- Value generator for floats.
-aValueFloat :: Float
-aValueFloat = x where x free
 
 -- Value generator for chars.
 aValueChar :: Char
-aValueChar = x where x free
+aValueChar = foldr1 (?) [minBound .. maxBound]
+
+-- Value generator for floats.
+-- Since there is no good way to enumerate floats, a free variable
+-- is returned.
+aValueFloat :: Float
+aValueFloat = x where x free
 
 ------------------------------------------------------------------------------
 
