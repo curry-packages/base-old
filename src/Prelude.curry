@@ -1845,6 +1845,19 @@ data Either a b = Left a
                 | Right b
   deriving (Eq, Ord, Show, Read)
 
+instance Functor (Either a) where
+  fmap _ (Left e)  = Left e
+  fmap f (Right x) = Right (f x)
+
+instance Applicative (Either a) where
+  pure = Right
+  (<*>) = ap
+
+instance Monad (Either a) where
+  return          = Right
+  (Left e)  >>= _ = Left e
+  (Right x) >>= f = f x
+
 either :: (a -> c) -> (b -> c) -> Either a b -> c
 either left _     (Left  a) = left a
 either _    right (Right b) = right b
