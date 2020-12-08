@@ -2,7 +2,7 @@ module Control.Monad
     ( Functor(..), Applicative(..), Monad(..)
     , filterM, (>=>), (<=<), forever, mapAndUnzipM, zipWithM
     , zipWithM_, foldM, foldM_, replicateM, replicateM_
-    , when, unless, liftM3
+    , when, unless, liftM3, join
     ) where
 
 import Control.Applicative
@@ -89,3 +89,6 @@ liftM3 f ma mb mc = do
   c <- mc
   return (f a b c)
 
+--- Removes one level of monadic structure, i.e. 'flattens' the monad.
+join :: Monad m => m (m a) -> m a
+join = (>>= id)
