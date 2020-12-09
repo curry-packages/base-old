@@ -577,8 +577,8 @@ hnfAndWaitUntilGroundHNF(X,E0,E) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Directed non-strict equality for matching against functional patterns:
 % (first argument must be the functional pattern):
-:- block 'Prelude.=:<='(?,?,?,-,?).
-'Prelude.=:<='(A,B,R,E0,E):-
+:- block 'Prelude.nonstrictEq'(?,?,?,-,?).
+'Prelude.nonstrictEq'(A,B,R,E0,E):-
         user:hnf(A,HA,E0,E1), unifEq1(HA,B,R,E1,E).
 
 :- block unifEq1(?,?,?,-,?).
@@ -631,7 +631,7 @@ getControlVar(X,Below,[control(Y,YBelow,NewVar,NewConstraint)|_],NewX) :- X==Y, 
 	% that is later executed.
 	((Below=inConstructorCall, YBelow=inConstructorCall)
 	 -> (var(NewConstraint)
-	     -> NewConstraint = 'Prelude.=:='(X,NewVar), NewX=X
+	     -> NewConstraint = 'Prelude.constrEq'(X,NewVar), NewX=X
  	      ; NewX=NewVar)
 	  ; % multiple occurrence of a variable X, where one occurrence is in a
 	    % function call, are replaced by an expression that
@@ -644,11 +644,11 @@ getControlVar(X,Below,[control(Y,YBelow,NewVar,NewConstraint)|_],NewX) :- X==Y, 
 	    NewX=NewVar,
 	    (var(NewConstraint)
 	     -> NewVar = 'Prelude.&>'('Prelude.ifVar'(ShareVar,
-				      'Prelude.=:='(ShareVar,'Prelude.()'),
-				      'Prelude.=:='(CtrlVar,'Prelude.()')),X),
+				      'Prelude.constrEq'(ShareVar,'Prelude.()'),
+				      'Prelude.constrEq'(CtrlVar,'Prelude.()')),X),
 	        NewConstraint = 'Prelude.ifVar'(CtrlVar,
 						'Prelude.True',
-						'Prelude.=:='(X,X))
+						'Prelude.constrEq'(X,X))
  	      ; true)).
 getControlVar(X,Below,[_|L],NewVar) :- getControlVar(X,Below,L,NewVar).
 
@@ -668,8 +668,8 @@ replaceMultipleVariablesInArgs([X|Args],Below,Vars,[NewArg|LinArgs]) :-
 replaceMultipleVariablesInArgs([Arg|Args],Below,Vars,[Arg|LinArgs]) :-
 	% avoid repeating replacing already replaced variables
 	Arg = 'Prelude.&>'('Prelude.ifVar'(ShareVar,
-				      'Prelude.=:='(ShareVar,'Prelude.()'),
-				      'Prelude.=:='(_CtrlVar,'Prelude.()')),_),
+				      'Prelude.constrEq'(ShareVar,'Prelude.()'),
+				      'Prelude.constrEq'(_CtrlVar,'Prelude.()')),_),
         !,
 	replaceMultipleVariablesInArgs(Args,Below,Vars,LinArgs).
 replaceMultipleVariablesInArgs([Arg|Args],Below,Vars,[LinArg|LinArgs]) :-
@@ -694,10 +694,10 @@ unifEqHnf(A,B,R,E0,E) :-
 	prim_failure(partcall(2,'Prelude.=:<=',[]),[A,B],R,E0,E).
 
 genUnifEqHnfBody(N,Arity,_,_,'Prelude.True') :- N>Arity, !.
-genUnifEqHnfBody(N,Arity,A,B,'Prelude.=:<='(ArgA,ArgB)):-
+genUnifEqHnfBody(N,Arity,A,B,'Prelude.nonstrictEq'(ArgA,ArgB)):-
 	N=Arity, !,
 	arg(N,A,ArgA), arg(N,B,ArgB).
-genUnifEqHnfBody(N,Arity,A,B,'Prelude.&'('Prelude.=:<='(ArgA,ArgB),G)):-
+genUnifEqHnfBody(N,Arity,A,B,'Prelude.&'('Prelude.nonstrictEq'(ArgA,ArgB),G)):-
 	arg(N,A,ArgA), arg(N,B,ArgB),
 	N1 is N+1,
 	genUnifEqHnfBody(N1,Arity,A,B,G).
@@ -746,10 +746,11 @@ unifEqLinearHnf(A,B,R,E0,E) :-
 	prim_failure(partcall(2,'Prelude.=:<<=',[]),[A,B],R,E0,E).
 
 genUnifEqLinearHnfBody(N,Arity,_,_,'Prelude.True') :- N>Arity, !.
-genUnifEqLinearHnfBody(N,Arity,A,B,'Prelude.=:<<='(ArgA,ArgB)):-
+genUnifEqLinearHnfBody(N,Arity,A,B,'Prelude.unifEqLinear'(ArgA,ArgB)):-
 	N=Arity, !,
 	arg(N,A,ArgA), arg(N,B,ArgB).
-genUnifEqLinearHnfBody(N,Arity,A,B,'Prelude.&'('Prelude.=:<<='(ArgA,ArgB),G)):-
+genUnifEqLinearHnfBody(N,Arity,A,B,
+                       'Prelude.&'('Prelude.unifEqLinear'(ArgA,ArgB),G)):-
 	arg(N,A,ArgA), arg(N,B,ArgB),
 	N1 is N+1,
 	genUnifEqLinearHnfBody(N1,Arity,A,B,G).

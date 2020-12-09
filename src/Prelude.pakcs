@@ -22,11 +22,11 @@
  <primitive name="failed" arity="0">
   <entry>prim_failed[raw]</entry>
  </primitive>
- <primitive name="=:=" arity="2">
-  <entry>Prelude.=:=[raw]</entry>
+ <primitive name="constrEq" arity="2">
+  <entry>Prelude.constrEq[raw]</entry>
  </primitive>
- <primitive name="=:&lt;=" arity="2">
-  <entry>Prelude.=:&lt;=[raw]</entry>
+ <primitive name="nonstrictEq" arity="2">
+  <entry>Prelude.nonstrictEq[raw]</entry>
  </primitive>
  <primitive name="unifEqLinear" arity="2">
   <entry>unifEqLinear[raw]</entry>

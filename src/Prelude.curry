@@ -2029,11 +2029,17 @@ doSolve b | b = return ()
 --- reduced to a unifiable data term (i.e., a term without defined
 --- function symbols).
 (=:=) :: Data a => a -> a -> Bool
-(=:=) external
+x =:= y = constrEq x y
+
+constrEq :: a -> a -> Bool
+constrEq external
 
 --- Non-strict equational constraint. Used to implement functional patterns.
 (=:<=) :: Data a => a -> a -> Bool
-(=:<=) external
+x =:<= y = nonstrictEq x y
+
+nonstrictEq :: a -> a -> Bool
+nonstrictEq external
 
 #ifdef __PAKCS__
 --- Non-strict equational constraint for linear functional patterns.
