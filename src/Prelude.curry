@@ -70,6 +70,7 @@ module Prelude
 #ifdef __PAKCS__
   , letrec, failure
 #endif
+  , DET, PEVAL
   ) where
 
 infixr 9 .
@@ -2112,3 +2113,18 @@ letrec external
 failure :: _ -> _ -> _
 failure external
 #endif
+
+
+----------------------------------------------------------------
+-- Extras used by specific Curry tools.
+
+--- Identity type synonym used to mark deterministic operations.
+--- Used by the Curry preprocessor.
+type DET a = a
+
+--- Identity function used by the partial evaluator
+--- to mark expressions to be partially evaluated.
+PEVAL   :: a -> a
+PEVAL x = x
+
+----------------------------------------------------------------
