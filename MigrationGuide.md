@@ -93,6 +93,9 @@ search tool.
 
 | Old          | New            |
 | ------------ | -------------- |
+| `liftIO`     | `fmap`         |
+| `mapIO`      | `mapM`         |
+| `mapIO_`     | `mapM_`        |
 | `showError`  | `show`         |
 
 #### System (previously)
@@ -106,6 +109,13 @@ search tool.
 
 ### Moved and Renamed Functions
 
+#### Prelude
+
+| Old          | New                    |
+| ------------ | ---------------------- |
+| `when`       | `Control.Monad.when`   |
+| `unless`     | `Control.Monad.unless` |
+
 #### Float (previously)
 
 | Old          | New               |
@@ -114,20 +124,20 @@ search tool.
 
 #### FileGoodies (previously)
 
-| Old                    | New                                      | Notes             |
-| ---------------------- | ---------------------------------------- | ----------------- |
-| `separatorChar`        |                                          | removed           |
-| `pathSeparatorChar`    | `System.FilePath.pathSeparator`          |                   |
-| `suffixSeparatorChar`  | `System.FilePath.extSeparator`           |                   |
-| `dirName`              | `System.FilePath.takeDirectory`          |                   |
-| `baseName`             | `System.FilePath.takeBaseName`           |                   |
-| `splitDirectoryBaseName` | `System.FilePath.splitFileName`        |                   |
-| `stripSuffix`          | `System.FilePath.dropExtension`          |                   |
-| `fileSuffix`           | `System.FilePath.takeExtension`          |                   |
-| `splitBaseName`        | `System.FilePath.splitExtension`         |                   |
-| `splitPath`            | `System.FilePath.splitPath`              |                   |
-| `lookupFileInPath`     | `Directory.findFileWithSuffix`           |                   |
-| `getFileInPath`        | `System.FilePath.getFileWithSuffix`      |                   |
+| Old                      | New                                   | Notes     |
+| ------------------------ | ------------------------------------- | ----------|
+| `separatorChar`          |                                       | removed   |
+| `pathSeparatorChar`      | `System.FilePath.pathSeparator`       |           |
+| `suffixSeparatorChar`    | `System.FilePath.extSeparator`        |           |
+| `dirName`                | `System.FilePath.takeDirectory`       |           |
+| `baseName`               | `System.FilePath.takeBaseName`        |           |
+| `splitDirectoryBaseName` | `System.FilePath.splitFileName`       |           |
+| `stripSuffix`            | `System.FilePath.dropExtension`       |           |
+| `fileSuffix`             | `System.FilePath.takeExtension`       |           |
+| `splitBaseName`          | `System.FilePath.splitExtension`      |           |
+| `splitPath`              | `System.FilePath.splitPath`           |           |
+| `lookupFileInPath`       | `System.Directory.findFileWithSuffix` |           |
+| `getFileInPath`          | `System.FilePath.getFileWithSuffix`   |           |
 
 ### Added Functions
 
