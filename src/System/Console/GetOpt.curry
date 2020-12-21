@@ -1,7 +1,7 @@
 --- -----------------------------------------------------------------
---- This Module is a modified version of the Module
---- System.Console.GetOpt by Sven Panne from the ghc-base package
---- it has been adapted for Curry by Bjoern Peemoeller
+--- This module is a modified version of the module
+--- `System.Console.GetOpt` by Sven Panne from the ghc-base package.
+--- It has been adapted for Curry by Bjoern Peemoeller
 ---
 --- (c) Sven Panne 2002-2005
 

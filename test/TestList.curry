@@ -29,6 +29,7 @@ testAll = always (all (<5) [1,2,3,4])
 lastSpec :: Data a => [a] -> a
 lastSpec (_ ++ [x]) = x
 
+lastCorrect :: Prop
 lastCorrect = last <=> (lastSpec :: [Int] -> Int)
 
 
@@ -38,3 +39,19 @@ initSpec (xs ++ [_]) = xs
 
 initGroundCorrect :: [Int] -> Prop
 initGroundCorrect xs = init xs <~> initSpec xs
+
+
+propDelete :: Int -> [Int] -> Prop
+propDelete x xs = x `notElem` xs ==> delete x xs -=- xs
+
+propUnion1 :: Int -> [Int] -> Prop
+propUnion1 x xs = always (x `elem` union xs [x])
+
+propUnion2 :: Int -> [Int] -> [Int] -> Prop
+propUnion2 x xs ys = x `elem` union xs ys -=- x `elem` xs || x `elem` ys
+
+propIntersect :: Int -> [Int] -> [Int] -> Prop
+propIntersect x xs ys = x `elem` intersect xs ys -=- x `elem` xs && x `elem` ys
+
+propPermutations :: [Int] -> Prop
+propPermutations xs = length (permutations xs) -=- foldr (*) 1 [1 .. length xs]
