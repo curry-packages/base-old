@@ -2035,7 +2035,16 @@ x =:= y = constrEq x y
 constrEq :: a -> a -> Bool
 constrEq external
 
---- Non-strict equational constraint. Used to implement functional patterns.
+--- Non-strict equational constraint.
+--- This operation is not intended to be used in source programs
+--- but it is used to implement
+--- [functional patterns](https://doi.org/10.1007/11680093_2).
+--- Conceptually, `(e1 =:<= e2)` is satisfiable if `e1` can be evaluated
+--- to some pattern (data term) that matches `e2`, i.e., `e2` is
+--- an instance of this pattern.
+--- The `Data` context is required since the resulting pattern might be
+--- non-linear so that it abbreviates some further equational constraints,
+--- see [Section 7](https://doi.org/10.1007/978-3-030-46714-2_15).
 (=:<=) :: Data a => a -> a -> Bool
 x =:<= y = nonstrictEq x y
 
@@ -2044,8 +2053,8 @@ nonstrictEq external
 
 #ifdef __PAKCS__
 --- Non-strict equational constraint for linear functional patterns.
---- Thus, it must be ensured that the first argument is always (after evalutation
---- by narrowing) a linear pattern. Experimental.
+--- Thus, it must be ensured that the first argument is always
+--- (after evalutation by narrowing) a linear pattern. Experimental.
 (=:<<=) :: Data a => a -> a -> Bool
 x =:<<= y = unifEqLinear x y
 
