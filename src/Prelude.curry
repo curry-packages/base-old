@@ -16,7 +16,7 @@ module Prelude
   , Bool (..), Ordering (..), Maybe (..), Either (..)
 
   -- * Type Classes
-  , Data(..), Eq (..) , Ord (..)
+  , Data(..), (/==), Eq (..) , Ord (..)
   , Show (..), ShowS, shows, showChar, showString, showParen
   , Read (..), ReadS, reads, readParen, read, lex
   , Bounded (..), Enum (..)
@@ -81,7 +81,7 @@ infixr 5 ++
 --++ The (:) operator is built-in syntax with the following fixity:
 --++ infixr 5 :
 infix  4 ==, /=, <, >, <=, >=
-infix  4 =:=, =:<=, ===
+infix  4 =:=, =:<=, ===, /==
 #ifdef __PAKCS__
 infix  4 =:<<=
 #endif
@@ -119,6 +119,10 @@ data Ordering = LT | EQ | GT
 class Data a where
   (===)  :: a -> a -> Bool
   aValue :: a
+
+--- The negation of strict equality.
+(/==) :: Data a => a -> a -> Bool
+x /== y = not (x ===y)
 
 instance Data Char where
   (===) = (==)
