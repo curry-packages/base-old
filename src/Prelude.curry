@@ -56,7 +56,7 @@ module Prelude
   , IOError (..), userError, ioError, catch
 
   -- * Constraint Programming
-  , Success, success, solve, doSolve, (=:=), (=:<=)
+  , Success, success, solve, doSolve, (=:=), (=:<=), constrEq
 #ifdef __PAKCS__
   , (=:<<=)
 #endif
@@ -2036,6 +2036,9 @@ doSolve b | b = return ()
 (=:=) :: Data a => a -> a -> Bool
 x =:= y = constrEq x y
 
+--- Internal operation to implement equational constraints.
+--- It is used by the strict equality optimizer but should not be used
+--- in regular programs.
 constrEq :: a -> a -> Bool
 constrEq external
 
