@@ -1329,17 +1329,17 @@ class Applicative f => Alternative f where
 
     -- | One or more.
     some :: f a -> f [a]
-    some v = some_v
+    some v = some_ v
       where
-        many_v = some_v <|> pure []
-        some_v = (:) <$> v <*> many_v
+        many_ v = some_ v <|> pure []
+        some_ v = (:) <$> v <*> many_ v
 
     -- | Zero or more.
     many :: f a -> f [a]
-    many v = many_v
+    many v = many_ v
       where
-        many_v = some_v <|> pure []
-        some_v = (:) <$> v <*> many_v
+        many_ v = some_ v <|> pure []
+        some_ v = (:) <$> v <*> many_ v
 
 instance Alternative [] where
     empty = []
