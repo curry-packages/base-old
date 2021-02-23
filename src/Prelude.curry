@@ -1901,8 +1901,10 @@ instance MonadFail IO where
 bindIO :: IO a -> (a -> IO b) -> IO b
 bindIO external
 
+#ifdef __PAKCS__
 seqIO :: IO a -> IO b -> IO b
 seqIO external
+#endif
 
 returnIO :: a -> IO a
 returnIO external
