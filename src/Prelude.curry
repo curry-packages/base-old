@@ -2036,7 +2036,7 @@ doSolve b | b = return ()
 --- reduced to a unifiable data term (i.e., a term without defined
 --- function symbols).
 (=:=) :: Data a => a -> a -> Bool
-#if __PAKCS__
+#ifdef __PAKCS__
 x =:= y = constrEq x y
 #else
 (=:=) external
@@ -2045,7 +2045,7 @@ x =:= y = constrEq x y
 --- Internal operation to implement equational constraints.
 --- It is used by the strict equality optimizer but should not be used
 --- in regular programs.
-#if __PAKCS__
+#ifdef __PAKCS__
 constrEq :: a -> a -> Bool
 constrEq external
 #endif
@@ -2061,12 +2061,16 @@ constrEq external
 --- non-linear so that it abbreviates some further equational constraints,
 --- see [Section 7](https://doi.org/10.1007/978-3-030-46714-2_15).
 (=:<=) :: Data a => a -> a -> Bool
+#ifdef __PAKCS__
 x =:<= y = nonstrictEq x y
+#else
+(=:<=) external
+#endif
 
+#ifdef __PAKCS__
 nonstrictEq :: a -> a -> Bool
 nonstrictEq external
 
-#ifdef __PAKCS__
 --- Non-strict equational constraint for linear functional patterns.
 --- Thus, it must be ensured that the first argument is always
 --- (after evalutation by narrowing) a linear pattern. Experimental.
