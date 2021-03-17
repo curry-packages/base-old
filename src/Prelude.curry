@@ -255,7 +255,7 @@ instance Eq Ordering where
 eqChar :: Char -> Char -> Bool
 #ifdef __KICS2__
 eqChar external
-#elif defined(__PAKCS__)
+#else
 eqChar x y = (prim_eqChar $# y) $# x
 
 prim_eqChar :: Char -> Char -> Bool
@@ -266,7 +266,7 @@ prim_eqChar external
 eqInt :: Int -> Int -> Bool
 #ifdef __KICS2__
 eqInt external
-#elif defined(__PAKCS__)
+#else
 eqInt x y = (prim_eqInt $# y) $# x
 
 prim_eqInt :: Int -> Int -> Bool
@@ -277,7 +277,7 @@ prim_eqInt external
 eqFloat :: Float -> Float -> Bool
 #ifdef __KICS2__
 eqFloat external
-#elif defined(__PAKCS__)
+#else
 eqFloat x y = (prim_eqFloat $# y) $# x
 
 prim_eqFloat :: Float -> Float -> Bool
@@ -363,7 +363,7 @@ instance Ord Ordering where
 ltEqChar :: Char -> Char -> Bool
 #ifdef __KICS2__
 ltEqChar external
-#elif defined(__PAKCS__)
+#else
 ltEqChar x y = (prim_ltEqChar $# y) $# x
 
 prim_ltEqChar :: Char -> Char -> Bool
@@ -374,7 +374,7 @@ prim_ltEqChar external
 ltEqInt :: Int -> Int -> Bool
 #ifdef __KICS2__
 ltEqInt external
-#elif defined(__PAKCS__)
+#else
 ltEqInt x y = (prim_ltEqInt $# y) $# x
 
 prim_ltEqInt :: Int -> Int -> Bool
@@ -385,7 +385,7 @@ prim_ltEqInt external
 ltEqFloat :: Float -> Float -> Bool
 #ifdef __KICS2__
 ltEqFloat external
-#elif defined(__PAKCS__)
+#else
 ltEqFloat x y = (prim_ltEqFloat $# y) $# x
 
 prim_ltEqFloat :: Float -> Float -> Bool
@@ -845,7 +845,7 @@ instance Num Float where
 plusInt :: Int -> Int -> Int
 #ifdef __KICS2__
 plusInt external
-#elif defined(__PAKCS__)
+#else
 x `plusInt` y = (prim_plusInt $# y) $# x
 
 prim_plusInt :: Int -> Int -> Int
@@ -856,7 +856,7 @@ prim_plusInt external
 minusInt :: Int -> Int -> Int
 #ifdef __KICS2__
 minusInt external
-#elif defined(__PAKCS__)
+#else
 x `minusInt` y = (prim_minusInt $# y) $# x
 
 prim_minusInt :: Int -> Int -> Int
@@ -867,7 +867,7 @@ prim_minusInt external
 timesInt :: Int -> Int -> Int
 #ifdef __KICS2__
 timesInt external
-#elif defined(__PAKCS__)
+#else
 x `timesInt` y = (prim_timesInt $# y) $# x
 
 prim_timesInt :: Int -> Int -> Int
@@ -899,7 +899,7 @@ prim_timesFloat external
 negateFloat :: Float -> Float
 #ifdef __KICS2__
 negateFloat external
-#elif defined(__PAKCS__)
+#else
 negateFloat x = prim_negateFloat $# x
 
 prim_negateFloat :: Float -> Float
@@ -985,7 +985,7 @@ realToFrac = fromFloat . toFloat
 divInt :: Int -> Int -> Int
 #ifdef __KICS2__
 divInt external
-#elif defined(__PAKCS__)
+#else
 x `divInt` y = (prim_divInt $# y) $# x
 
 prim_divInt :: Int -> Int -> Int
@@ -997,7 +997,7 @@ prim_divInt external
 modInt :: Int -> Int -> Int
 #ifdef __KICS2__
 modInt external
-#elif defined(__PAKCS__)
+#else
 x `modInt` y = (prim_modInt $# y) $# x
 
 prim_modInt :: Int -> Int -> Int
@@ -1009,7 +1009,7 @@ prim_modInt external
 quotInt :: Int -> Int -> Int
 #ifdef __KICS2__
 quotInt external
-#elif defined(__PAKCS__)
+#else
 x `quotInt` y = (prim_quotInt $# y) $# x
 
 prim_quotInt :: Int -> Int -> Int
@@ -1021,7 +1021,7 @@ prim_quotInt external
 remInt :: Int -> Int -> Int
 #ifdef __KICS2__
 remInt external
-#elif defined(__PAKCS__)
+#else
 x `remInt` y = (prim_remInt $# y) $# x
 
 prim_remInt :: Int -> Int -> Int
@@ -1996,13 +1996,13 @@ userError = UserError
 
 --- Raises an I/O exception with a given error value.
 ioError :: IOError -> IO _
-#ifdef __PAKCS__
-ioError err = error (show err)
-#else
+#ifdef __KICS2__
 ioError err = prim_ioError $## err
 
 prim_ioError :: IOError -> IO _
 prim_ioError external
+#else
+ioError err = error (show err)
 #endif
 
 --- Catches a possible error or failure during the execution of an
