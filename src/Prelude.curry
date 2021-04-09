@@ -1878,11 +1878,7 @@ instance  Functor IO where
 
 instance Applicative IO where
   pure = returnIO
-#ifdef __PAKCS__
-  (*>) = seqIO
-#else
   m *> k = m >>= \_ -> k
-#endif
   (<*>) = ap
   liftA2 = liftM2
 
@@ -1900,9 +1896,6 @@ instance MonadFail IO where
 
 bindIO :: IO a -> (a -> IO b) -> IO b
 bindIO external
-
-seqIO :: IO a -> IO b -> IO b
-seqIO external
 
 returnIO :: a -> IO a
 returnIO external
