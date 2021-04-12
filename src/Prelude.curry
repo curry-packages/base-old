@@ -1422,7 +1422,7 @@ isAlphaNum c = isAlpha c || isDigit c
 
 --- Returns true if the argument is a binary digit.
 isBinDigit :: Char -> Bool
-isBinDigit c = c >= '0' || c <= '1'
+isBinDigit c = c == '0' || c == '1'
 
 --- Returns true if the argument is an octal digit.
 isOctDigit :: Char -> Bool
