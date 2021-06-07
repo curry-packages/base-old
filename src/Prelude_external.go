@@ -13,6 +13,11 @@ func ExternalPrelude_ensureNotFree(task *Task){
     root := task.GetControl()
     x1 := root.GetChild(0)
     
+    if(!x1.IsHnf()){
+        task.ToHnf(x1)
+        return
+    }
+    
     if(x1.IsFree()){
         if(task.IsBound(x1)){
             task.ToHnf(x1)
@@ -249,7 +254,7 @@ func unifChain(task *Task, root, x1, x2 *Node){
         Prelude__CREATE_And(node.Children[1], Prelude__CREATE_constrEq(task.NewNode(), x1.GetChild(i), x2.GetChild(i)) , task.NewNode())
         node = node.Children[1]                    
     }
-    Prelude__CREATE_constrEq(node.Children[1], x1.GetChild(x1.GetNumArgs() - 1), x2.GetChild(x1.GetNumArgs() - 1))
+    Prelude__CREATE_constrEq(node.Children[1], x1.GetChild(x1.GetArity() - 1), x2.GetChild(x1.GetArity() - 1))
 }
 
 // Nonstrict unification (=:<=)
@@ -352,7 +357,7 @@ func nonstrictUnifChain(task *Task, root, x1, x2 *Node){
         Prelude__CREATE_And(node.Children[1], Prelude__CREATE_nonstrictEq(task.NewNode(), x1.GetChild(i), x2.GetChild(i)) , task.NewNode())
         node = node.Children[1]                    
     }
-    Prelude__CREATE_nonstrictEq(node.Children[1], x1.GetChild(x1.GetNumArgs() - 1), x2.GetChild(x1.GetNumArgs() - 1))
+    Prelude__CREATE_nonstrictEq(node.Children[1], x1.GetChild(x1.GetArity() - 1), x2.GetChild(x1.GetArity() - 1))
 }
 
 ////// Arithmetic on characters
@@ -673,7 +678,7 @@ func ExternalPrelude_prim_showCharLiteral(task *Task){
 
     x1 := root.GetChild(0)
     
-    ListCreate(root, x1)
+    StringCreate(root, "'" + ShowChar(x1.GetChar()) + "'")
 }
 
 func ExternalPrelude_prim_showStringLiteral(task *Task){
@@ -681,7 +686,7 @@ func ExternalPrelude_prim_showStringLiteral(task *Task){
 
     x1 := root.GetChild(0)
     
-    str := ReadString(x1)
+    str := ShowString(x1)
     StringCreate(root, "\"" + str + "\"")
 }
 
@@ -799,27 +804,36 @@ func ExternalPrelude_prim_readCharLiteral(task *Task){
     // read it into a Go byte slice
     data := []rune(ReadString(x1))
 
-    // if the String is empty, return an empty list
-    // TODO FIX
+    // if no char literal possible, return an empty list
     if(len(data) < 3){
         Prelude__CREATE_LSbRSb(root)
         return
     }
 
-    // read a character
+    // test if the string starts with a char literal
     if(data[0] == '\''){
-        if(data[2] == '\''){
-            //TODO fix
-            rest := data[3:]
-            lit := data[1]
-
-            // create list of results
-            ListCreate(root, Prelude__CREATE_LbCommaRb(root.NewNode(), CharLitCreate(root.NewNode(), lit), StringCreate(root.NewNode(), string(rest))))
-        }else{
-            // return an empty list
-            Prelude__CREATE_LSbRSb(root)
+        // find end of char literal
+        for i := 1; i < len(data); i++{
+            if(data[i] == '\''){
+                // return on empty literal
+                if(i == 1){
+                    Prelude__CREATE_LSbRSb(root)
+                    return
+                }
+            
+                // parse char
+                rest := data[i+1:]
+                lit,_ := ParseChar(data[1:i])
+                
+                // return result
+                ListCreate(root, Prelude__CREATE_LbCommaRb(root.NewNode(), CharLitCreate(root.NewNode(), lit), StringCreate(root.NewNode(), string(rest))))
+                return
+            }
         }
-    }else{
+        
+        // return an empty list
+        Prelude__CREATE_LSbRSb(root)
+    } else{
         // return an empty list
         Prelude__CREATE_LSbRSb(root)
     }
@@ -843,6 +857,12 @@ func ExternalPrelude_prim_readStringLiteral(task *Task){
         start := 1
         end := -1
         for i := 1; i < len(data); i++{
+            
+            if (data[i] == '\\'){
+                i += 1
+                continue
+            }
+            
             if (data[i] == '"'){
                 end = i
                 break
@@ -854,7 +874,7 @@ func ExternalPrelude_prim_readStringLiteral(task *Task){
             lit := string(data[start : end])
 
             // create list of results
-            ListCreate(root, Prelude__CREATE_LbCommaRb(root.NewNode(), StringCreate(root.NewNode(), lit), StringCreate(root.NewNode(), rest)))
+            ListCreate(root, Prelude__CREATE_LbCommaRb(root.NewNode(), StringCreate(root.NewNode(), ParseString(lit)), StringCreate(root.NewNode(), rest)))
         }else{
             // return an empty list
         Prelude__CREATE_LSbRSb(root)
