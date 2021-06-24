@@ -14,10 +14,3 @@ other Curry packages, the dependency on this package
 can be specified in other Curry packages.
 This is reasonable to specify the dependency
 on base libraries in a Curry package.
-
-*Technical note:*
-The file `VERSION` must contain the version number of this package
-as specified in the `version` field of `package.json`.
-This file is used during the build process of Curry systems,
-like PAKCS or KICS2,
-in order to avoid reading and parsing the JSON file.
