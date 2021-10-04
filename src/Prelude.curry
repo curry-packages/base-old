@@ -17,7 +17,7 @@ module Prelude
 
   -- * Type Classes
   , Data(..), (/==), Eq (..) , Ord (..)
-  , Show (..), ShowS, shows, showChar, showString, showParen
+  , Show (..), ShowS, shows, showChar, showString, showParen, showTuple
   , Read (..), ReadS, reads, readParen, read, lex
   , Bounded (..), Enum (..)
   -- ** Numerical Typeclasses
@@ -447,12 +447,15 @@ instance Show Ordering where
   showsPrec _ EQ = showString "EQ"
   showsPrec _ GT = showString "GT"
 
+--- Converts a showable value to a show function that prepends this value.
 shows :: Show a => a -> ShowS
 shows = showsPrec 0
 
+--- Converts a character to a show function that prepends the character.
 showChar :: Char -> ShowS
 showChar = (:)
 
+--- Converts a string to a show function that prepends the string.
 showString :: String -> ShowS
 showString str s = foldr showChar s str
 
@@ -462,6 +465,9 @@ showListDefault (x:xs) s = '[' : shows x (showl xs)
  where showl []     = ']' : s
        showl (y:ys) = ',' : shows y (showl ys)
 
+--- If the first argument is `True`, Converts a show function to a
+--- show function adding enclosing brackets, otherwise the show function
+--- is returned unchanged.
 showParen :: Bool -> ShowS -> ShowS
 showParen b s = if b then showChar '(' . s . showChar ')' else s
 
@@ -470,6 +476,8 @@ showSigned showPos p x
   | x < 0     = showParen (p > 6) (showChar '-' . showPos (-x))
   | otherwise = showPos x
 
+--- Converts a list of show functions to a show function combining
+--- the given show functions to a tuple representation.
 showTuple :: [ShowS] -> ShowS
 showTuple ss = showChar '('
              . foldr1 (\s r -> s . showChar ',' . r) ss
