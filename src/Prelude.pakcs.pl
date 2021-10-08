@@ -673,7 +673,7 @@ replaceMultipleVariablesInArgs([share(M)|Args],Below,Vars,[LinArg|LinArgs]) :-
         get_mutable(V,M),
         (V='$eval'(Arg) -> true ; Arg = V),
         replaceMultipleVariablesInArgs([Arg|Args],Below,Vars,[LinArg|LinArgs]).
-rreplaceMultipleVariablesInArgs([Arg|Args],Below,Vars,[Arg|LinArgs]) :-
+replaceMultipleVariablesInArgs([Arg|Args],Below,Vars,[Arg|LinArgs]) :-
 	% avoid repeating replacing already replaced variables
 	Arg = 'Prelude.&>'('Prelude.ifVar'(ShareVar,
 			      'Prelude.constrEq'(ShareVar,'Prelude.()'),
