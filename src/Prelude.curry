@@ -17,7 +17,7 @@ module Prelude
 
   -- * Type Classes
   , Data(..), (/==), Eq (..) , Ord (..)
-  , Show (..), ShowS, shows, showChar, showString, showParen
+  , Show (..), ShowS, shows, showChar, showString, showParen, showTuple
   , Read (..), ReadS, reads, readParen, read, lex
   , Bounded (..), Enum (..)
   -- ** Numerical Typeclasses
@@ -255,7 +255,7 @@ instance Eq Ordering where
 eqChar :: Char -> Char -> Bool
 #ifdef __KICS2__
 eqChar external
-#elif defined(__PAKCS__)
+#else
 eqChar x y = (prim_eqChar $# y) $# x
 
 prim_eqChar :: Char -> Char -> Bool
@@ -266,7 +266,7 @@ prim_eqChar external
 eqInt :: Int -> Int -> Bool
 #ifdef __KICS2__
 eqInt external
-#elif defined(__PAKCS__)
+#else
 eqInt x y = (prim_eqInt $# y) $# x
 
 prim_eqInt :: Int -> Int -> Bool
@@ -277,7 +277,7 @@ prim_eqInt external
 eqFloat :: Float -> Float -> Bool
 #ifdef __KICS2__
 eqFloat external
-#elif defined(__PAKCS__)
+#else
 eqFloat x y = (prim_eqFloat $# y) $# x
 
 prim_eqFloat :: Float -> Float -> Bool
@@ -363,7 +363,7 @@ instance Ord Ordering where
 ltEqChar :: Char -> Char -> Bool
 #ifdef __KICS2__
 ltEqChar external
-#elif defined(__PAKCS__)
+#else
 ltEqChar x y = (prim_ltEqChar $# y) $# x
 
 prim_ltEqChar :: Char -> Char -> Bool
@@ -374,7 +374,7 @@ prim_ltEqChar external
 ltEqInt :: Int -> Int -> Bool
 #ifdef __KICS2__
 ltEqInt external
-#elif defined(__PAKCS__)
+#else
 ltEqInt x y = (prim_ltEqInt $# y) $# x
 
 prim_ltEqInt :: Int -> Int -> Bool
@@ -385,7 +385,7 @@ prim_ltEqInt external
 ltEqFloat :: Float -> Float -> Bool
 #ifdef __KICS2__
 ltEqFloat external
-#elif defined(__PAKCS__)
+#else
 ltEqFloat x y = (prim_ltEqFloat $# y) $# x
 
 prim_ltEqFloat :: Float -> Float -> Bool
@@ -430,6 +430,11 @@ instance (Show a, Show b, Show c, Show d, Show e) => Show (a, b, c, d, e) where
   showsPrec _ (a, b, c, d, e) =
     showTuple [shows a, shows b, shows c, shows d, shows e]
 
+instance (Show a, Show b, Show c, Show d, Show e, Show f) =>
+         Show (a, b, c, d, e, f) where
+  showsPrec _ (a, b, c, d, e, f) =
+    showTuple [shows a, shows b, shows c, shows d, shows e, shows f]
+
 instance Show a => Show [a] where
   showsPrec _ = showList
 
@@ -442,12 +447,15 @@ instance Show Ordering where
   showsPrec _ EQ = showString "EQ"
   showsPrec _ GT = showString "GT"
 
+--- Converts a showable value to a show function that prepends this value.
 shows :: Show a => a -> ShowS
 shows = showsPrec 0
 
+--- Converts a character to a show function that prepends the character.
 showChar :: Char -> ShowS
 showChar = (:)
 
+--- Converts a string to a show function that prepends the string.
 showString :: String -> ShowS
 showString str s = foldr showChar s str
 
@@ -457,6 +465,9 @@ showListDefault (x:xs) s = '[' : shows x (showl xs)
  where showl []     = ']' : s
        showl (y:ys) = ',' : shows y (showl ys)
 
+--- If the first argument is `True`, Converts a show function to a
+--- show function adding enclosing brackets, otherwise the show function
+--- is returned unchanged.
 showParen :: Bool -> ShowS -> ShowS
 showParen b s = if b then showChar '(' . s . showChar ')' else s
 
@@ -465,6 +476,8 @@ showSigned showPos p x
   | x < 0     = showParen (p > 6) (showChar '-' . showPos (-x))
   | otherwise = showPos x
 
+--- Converts a list of show functions to a show function combining
+--- the given show functions to a tuple representation.
 showTuple :: [ShowS] -> ShowS
 showTuple ss = showChar '('
              . foldr1 (\s r -> s . showChar ',' . r) ss
@@ -575,6 +588,23 @@ instance (Read a, Read b, Read c, Read d, Read e) => Read (a, b, c, d, e) where
                                                 , (",", x) <- lex w
                                                 , (e, y) <- reads x
                                                 , (")", z) <- lex y ])
+
+instance (Read a, Read b, Read c, Read d, Read e, Read f) =>
+    Read (a, b, c, d, e, f) where
+  readsPrec _ = readParen False
+                  (\o -> [ ((a, b, c, d, e, f), z) | ("(", p) <- lex o
+                                                   , (a, q) <- reads p
+                                                   , (",", r) <- lex q
+                                                   , (b, s) <- reads r
+                                                   , (",", t) <- lex s
+                                                   , (c, u) <- reads t
+                                                   , (",", v) <- lex u
+                                                   , (d, w) <- reads v
+                                                   , (",", x) <- lex w
+                                                   , (e, y) <- reads x
+                                                   , (",", z1) <- lex y
+                                                   , (f, z2) <- reads z1
+                                                   , (")", z) <- lex z2 ])
 
 instance Read a => Read [a] where
   readsPrec _ = readList
@@ -845,7 +875,7 @@ instance Num Float where
 plusInt :: Int -> Int -> Int
 #ifdef __KICS2__
 plusInt external
-#elif defined(__PAKCS__)
+#else
 x `plusInt` y = (prim_plusInt $# y) $# x
 
 prim_plusInt :: Int -> Int -> Int
@@ -856,7 +886,7 @@ prim_plusInt external
 minusInt :: Int -> Int -> Int
 #ifdef __KICS2__
 minusInt external
-#elif defined(__PAKCS__)
+#else
 x `minusInt` y = (prim_minusInt $# y) $# x
 
 prim_minusInt :: Int -> Int -> Int
@@ -867,7 +897,7 @@ prim_minusInt external
 timesInt :: Int -> Int -> Int
 #ifdef __KICS2__
 timesInt external
-#elif defined(__PAKCS__)
+#else
 x `timesInt` y = (prim_timesInt $# y) $# x
 
 prim_timesInt :: Int -> Int -> Int
@@ -899,7 +929,7 @@ prim_timesFloat external
 negateFloat :: Float -> Float
 #ifdef __KICS2__
 negateFloat external
-#elif defined(__PAKCS__)
+#else
 negateFloat x = prim_negateFloat $# x
 
 prim_negateFloat :: Float -> Float
@@ -985,7 +1015,7 @@ realToFrac = fromFloat . toFloat
 divInt :: Int -> Int -> Int
 #ifdef __KICS2__
 divInt external
-#elif defined(__PAKCS__)
+#else
 x `divInt` y = (prim_divInt $# y) $# x
 
 prim_divInt :: Int -> Int -> Int
@@ -997,7 +1027,7 @@ prim_divInt external
 modInt :: Int -> Int -> Int
 #ifdef __KICS2__
 modInt external
-#elif defined(__PAKCS__)
+#else
 x `modInt` y = (prim_modInt $# y) $# x
 
 prim_modInt :: Int -> Int -> Int
@@ -1009,7 +1039,7 @@ prim_modInt external
 quotInt :: Int -> Int -> Int
 #ifdef __KICS2__
 quotInt external
-#elif defined(__PAKCS__)
+#else
 x `quotInt` y = (prim_quotInt $# y) $# x
 
 prim_quotInt :: Int -> Int -> Int
@@ -1021,7 +1051,7 @@ prim_quotInt external
 remInt :: Int -> Int -> Int
 #ifdef __KICS2__
 remInt external
-#elif defined(__PAKCS__)
+#else
 x `remInt` y = (prim_remInt $# y) $# x
 
 prim_remInt :: Int -> Int -> Int
@@ -1329,17 +1359,17 @@ class Applicative f => Alternative f where
 
     -- | One or more.
     some :: f a -> f [a]
-    some v = some_v
+    some v = some_ v
       where
-        many_v = some_v <|> pure []
-        some_v = (:) <$> v <*> many_v
+        many_ x = some_ x <|> pure []
+        some_ x = (:) <$> x <*> many_ x
 
     -- | Zero or more.
     many :: f a -> f [a]
-    many v = many_v
+    many v = many_ v
       where
-        many_v = some_v <|> pure []
-        some_v = (:) <$> v <*> many_v
+        many_ x = some_ x <|> pure []
+        some_ x = (:) <$> x <*> many_ x
 
 instance Alternative [] where
     empty = []
@@ -1422,7 +1452,7 @@ isAlphaNum c = isAlpha c || isDigit c
 
 --- Returns true if the argument is a binary digit.
 isBinDigit :: Char -> Bool
-isBinDigit c = c >= '0' || c <= '1'
+isBinDigit c = c == '0' || c == '1'
 
 --- Returns true if the argument is an octal digit.
 isOctDigit :: Char -> Bool
@@ -1878,11 +1908,7 @@ instance  Functor IO where
 
 instance Applicative IO where
   pure = returnIO
-#ifdef __PAKCS__
-  (*>) = seqIO
-#else
   m *> k = m >>= \_ -> k
-#endif
   (<*>) = ap
   liftA2 = liftM2
 
@@ -1900,11 +1926,6 @@ instance MonadFail IO where
 
 bindIO :: IO a -> (a -> IO b) -> IO b
 bindIO external
-
-#ifdef __PAKCS__
-seqIO :: IO a -> IO b -> IO b
-seqIO external
-#endif
 
 returnIO :: a -> IO a
 returnIO external
@@ -1998,13 +2019,13 @@ userError = UserError
 
 --- Raises an I/O exception with a given error value.
 ioError :: IOError -> IO _
-#ifdef __PAKCS__
-ioError err = error (show err)
-#else
+#ifdef __KICS2__
 ioError err = prim_ioError $## err
 
 prim_ioError :: IOError -> IO _
 prim_ioError external
+#else
+ioError err = error (show err)
 #endif
 
 --- Catches a possible error or failure during the execution of an

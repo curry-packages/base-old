@@ -139,6 +139,14 @@ search tool.
 | `lookupFileInPath`       | `System.Directory.findFileWithSuffix` |           |
 | `getFileInPath`          | `System.FilePath.getFileWithSuffix`   |           |
 
+#### IO (previously)
+
+| Old                   | New                                   | New Package |
+| --------------------- | ------------------------------------- | ----------- |
+| `hWaitForInputOrMsg`  | `Network.Sockets.hWaitForInputOrMsg`  | `ports`     |
+| `hWaitForInputsOrMsg` | `Network.Sockets.hWaitForInputsOrMsg` | `ports`     |
+
+
 ### Added Functions
 
 #### Prelude

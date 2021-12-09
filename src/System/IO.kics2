@@ -97,11 +97,6 @@ waitOnHandle h v timeout mvar = do
   ready <- myhWaitForInput h timeout
   putMVar mvar (if ready then Just v else Nothing)
 
-external_d_C_prim_hWaitForInputsOrMsg ::
- Curry_Prelude.Curry a => Curry_Prelude.OP_List C_Handle -> Curry_Prelude.OP_List a -> Cover -> ConstStore
-               -> Curry_Prelude.C_IO (Curry_Prelude.C_Either Curry_Prelude.C_Int (Curry_Prelude.OP_List a))
-external_d_C_prim_hWaitForInputsOrMsg = error "hWaitForInputsOrMsg undefined"
-
 external_d_C_prim_hGetChar :: C_Handle -> Cover -> ConstStore -> Curry_Prelude.C_IO Curry_Prelude.C_Char
 external_d_C_prim_hGetChar h _ _ = toCurry (hGetChar . inputHandle) h
 

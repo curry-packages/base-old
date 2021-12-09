@@ -252,8 +252,11 @@ prim_Monad_bindWorld(Action1,FunAction2,W,R,E0,E) :-
 	prim_apply(HAction2,W,R,E2,E).
 
 
-% although (>>) is a defined function,
-% we provide a slightly faster primitive implementation:
+% Although the IO instance of (*>), having the internal name
+% "_impl#*>#Prelude.Applicative#Prelude.IO"
+% (and, thus, the IO instance of (>>)) is a defined function,
+% we provide a slightly faster primitive implementation.
+% The usage of this implementation is specified in Prelude.pakcs
 ?- block prim_Monad_seq(?,?,?,-,?).
 prim_Monad_seq(A1,A2,partcall(1,prim_Monad_seqWorld,[A2,A1]),E,E).
 
@@ -665,11 +668,16 @@ replaceMultipleVariablesInArgs([],_,_,[]).
 replaceMultipleVariablesInArgs([X|Args],Below,Vars,[NewArg|LinArgs]) :-
 	var(X), !, getControlVar(X,Below,Vars,NewArg),
 	replaceMultipleVariablesInArgs(Args,Below,Vars,LinArgs).
+replaceMultipleVariablesInArgs([share(M)|Args],Below,Vars,[LinArg|LinArgs]) :-
+        !,
+        get_mutable(V,M),
+        (V='$eval'(Arg) -> true ; Arg = V),
+        replaceMultipleVariablesInArgs([Arg|Args],Below,Vars,[LinArg|LinArgs]).
 replaceMultipleVariablesInArgs([Arg|Args],Below,Vars,[Arg|LinArgs]) :-
 	% avoid repeating replacing already replaced variables
 	Arg = 'Prelude.&>'('Prelude.ifVar'(ShareVar,
-				      'Prelude.constrEq'(ShareVar,'Prelude.()'),
-				      'Prelude.constrEq'(_CtrlVar,'Prelude.()')),_),
+			      'Prelude.constrEq'(ShareVar,'Prelude.()'),
+			      'Prelude.constrEq'(_CtrlVar,'Prelude.()')),_),
         !,
 	replaceMultipleVariablesInArgs(Args,Below,Vars,LinArgs).
 replaceMultipleVariablesInArgs([Arg|Args],Below,Vars,[LinArg|LinArgs]) :-
