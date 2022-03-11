@@ -8,7 +8,7 @@ module Data.Functor.Const
   ( Const (..)
   ) where
 
-data Const a _ = Const { getConst :: a }
+newtype Const a _ = Const { getConst :: a }
   deriving (Eq, Ord, Read, Show)
 
 instance Functor (Const a) where
