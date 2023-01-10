@@ -996,9 +996,9 @@ external_d_C_bindIO m f cd cs = C_IO $ do
   case res of
     Left err -> return (Left (traceFail ("Prelude.>>=") [show m, show f] err))
     Right x  -> do
-    cs1 <- lookupGlobalCs
-    let cs2 = combineCs cs cs1
-    searchIO errSupply cd cs2 (f x cd cs2)
+      cs1 <- lookupGlobalCs
+      let cs2 = combineCs cs cs1
+      searchIO errSupply cd cs2 (f x cd cs2)
   where errSupply = internalError "Prelude.(>>=): ID supply used"
 
 -- TODO: Investigate if `cs` and `cs'` are in a subset relation
@@ -1012,10 +1012,10 @@ external_nd_C_bindIO m f _ _ cs = HO_C_IO $ \s cd cs' -> do
   case res of
     Left err -> return (Left (traceFail ("Prelude.>>=") [show m, show f] err))
     Right x  -> do
-    cs2 <- lookupGlobalCs
-    let cs3 = combineCs cs1 cs2
-        s'  = rightSupply s
-    searchIO (leftSupply s') cd cs3 (nd_apply f x (rightSupply s') cd cs3)
+      cs2 <- lookupGlobalCs
+      let cs3 = combineCs cs1 cs2
+          s'  = rightSupply s
+      searchIO (leftSupply s') cd cs3 (nd_apply f x (rightSupply s') cd cs3)
 
 -- -----------------------------------------------------------------------------
 -- Primitive operations: Exception handling
