@@ -8,7 +8,8 @@
     "compilerCompatibility": {
         "kics2"   : ">= 3.0.0, < 4.0.0",
         "pakcs"   : ">= 3.0.0, < 4.0.0",
-        "curry2go": ">= 1.0.0"
+        "curry2go": ">= 1.0.0",
+        "kmcc"    : ">= 0.1.0"
     },
     "license": "BSD-3-Clause",
     "licenseFile": "LICENSE",
