@@ -1537,8 +1537,8 @@ words s = let s1 = dropWhile isSpace s
 
 --- Concatenates a list of strings with a blank between two strings.
 unwords :: [String] -> String
-unwords ws = if ws == [] then []
-                         else foldr1 (\w s -> w ++ ' ' : s) ws
+unwords ws = if null ws then []
+                        else foldr1 (\w s -> w ++ ' ' : s) ws
 
 
 --- Right-associative application.
