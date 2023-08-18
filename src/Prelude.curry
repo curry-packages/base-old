@@ -93,19 +93,18 @@ infixr 2 ||
 infixl 1 >>, >>=
 infixr 0 ?, $, $!, $!!, $#, $##, `seq`, &, &>
 
+-- externally defined types for numbers and characters
 external data Char
 
 external data Int
 
 external data Float
 
+--- The type of Boolean values.
 data Bool = False | True
 
+--- Ordering type. Useful as a result of comparison functions.
 data Ordering = LT | EQ | GT
-
---- A logically uninhabited data type.
---- It can be used to indicate that a given value should not exist.
-data Void
 
 ------------------------------------------------------------------------------
 --++ data () = ()
@@ -412,6 +411,9 @@ prim_ltEqFloat :: Float -> Float -> Bool
 prim_ltEqFloat external
 #endif
 
+--- The type synonym `ShowS` represent strings as difference lists.
+--- Composing functions of this type allows concatenation of lists
+--- in constant time.
 type ShowS = String -> String
 
 class Show a where
@@ -531,6 +533,12 @@ showFloatLiteral x = prim_showFloatLiteral $## x
 prim_showFloatLiteral :: Float -> String
 prim_showFloatLiteral external
 
+
+--- The type synonym `ReadS` represent a parser for values of type a.
+--- Such a parser is a function that takes a String and
+--- returns a list of possible parses as `(a,String)` pairs.
+--- Thus, if the result is the empty list, there is no parse, i.e.,
+--- the input string is not valid.
 type ReadS a = String -> [(a, String)]
 
 class Read a where
@@ -1630,6 +1638,8 @@ chr n | n < 0       = prim_chr 0
 prim_chr :: Int -> Char
 prim_chr external
 
+--- The type `String` is a type synonym for list of characters so that
+--- all list operations can be used on strings.
 type String = [Char]
 
 --- Breaks a string into a list of lines where a line is terminated at a
@@ -1979,6 +1989,7 @@ lookup _ []          = Nothing
 lookup k ((x,y):xys) | k == x    = Just y
                      | otherwise = lookup k xys
 
+--- The `Maybe` type can be used for values which could also be absent.
 data Maybe a = Nothing | Just a
  deriving (Eq, Ord, Show, Read)
 
@@ -2023,6 +2034,7 @@ maybe :: b -> (a -> b) -> Maybe a -> b
 maybe n _ Nothing  = n
 maybe _ f (Just x) = f x
 
+--- The `Either` type can be used to combine values of two different types.
 data Either a b = Left a
                 | Right b
   deriving (Eq, Ord, Show, Read)
@@ -2047,6 +2059,7 @@ either :: (a -> c) -> (b -> c) -> Either a b -> c
 either left _     (Left  a) = left a
 either _    right (Right b) = right b
 
+--- The externally defined type of IO actions.
 external data IO _
 
 instance Monoid a => Monoid (IO a) where
@@ -2112,6 +2125,8 @@ putStrLn cs = putStr cs >> putChar '\n'
 print :: Show a => a -> IO ()
 print = putStrLn . show
 
+--- The `FilePath` is j type synonym for strings.
+--- It is useful to mark in type signatures if a file path is required.
 type FilePath = String
 
 --- An action that (lazily) reads a file and returns its contents.
@@ -2185,10 +2200,12 @@ ioError err = error (show err)
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch external
 
-
+--- The type synonym for constraints. It is included for backward
+--- compatibility and should be no longer used.
 type Success = Bool
 
---- The always satisfiable constraint.
+--- The always satisfiable constraint. It is included for backward
+--- compatibility and should be no longer used.
 success :: Success
 success = True
 
