@@ -27,7 +27,7 @@ module Control.Search.Unsafe
   ) where
 
 #ifdef __KICS2__
-import qualified Control.SearchTree as ST
+import qualified Control.Search.SearchTree as ST
 #endif
 
 ------------------------------------------------------------------------------
