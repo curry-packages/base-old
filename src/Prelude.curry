@@ -2294,7 +2294,7 @@ _ ? y = y
 
 --- Returns non-deterministically any element of a list.
 anyOf :: [a] -> a
-anyOf = foldr1 (?)
+anyOf xs = foldr1 (?) xs
 
 --- Evaluates to a fresh free variable.
 unknown :: Data a => a
