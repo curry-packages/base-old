@@ -59,6 +59,8 @@ module Prelude
   , Success, success, solve, doSolve, (=:=), (=:<=)
 #ifdef __PAKCS__
   , constrEq, (=:<<=)
+#elif defined(__CURRY2GO__)
+  , constrEq
 #endif
   , (&), (&>)
 
@@ -2226,6 +2228,8 @@ doSolve b | b = return ()
 (=:=) :: Data a => a -> a -> Bool
 #ifdef __PAKCS__
 x =:= y = constrEq x y
+#elif defined(__CURRY2GO__)
+x =:= y = constrEq x y
 #else
 (=:=) external
 #endif
@@ -2234,6 +2238,9 @@ x =:= y = constrEq x y
 --- It is used by the strict equality optimizer but should not be used
 --- in regular programs.
 #ifdef __PAKCS__
+constrEq :: a -> a -> Bool
+constrEq external
+#elif defined(__CURRY2GO__)
 constrEq :: a -> a -> Bool
 constrEq external
 #endif
@@ -2251,6 +2258,8 @@ constrEq external
 (=:<=) :: Data a => a -> a -> Bool
 #ifdef __PAKCS__
 x =:<= y = nonstrictEq x y
+#elif defined(__CURRY2GO__)
+x =:<= y = nonstrictEq x y
 #else
 (=:<=) external
 #endif
@@ -2258,7 +2267,12 @@ x =:<= y = nonstrictEq x y
 #ifdef __PAKCS__
 nonstrictEq :: a -> a -> Bool
 nonstrictEq external
+#elif defined(__CURRY2GO__)
+nonstrictEq :: a -> a -> Bool
+nonstrictEq external
+#endif
 
+#ifdef __PAKCS__
 --- Non-strict equational constraint for linear functional patterns.
 --- Thus, it must be ensured that the first argument is always
 --- (after evalutation by narrowing) a linear pattern. Experimental.
