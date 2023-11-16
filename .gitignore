@@ -9,3 +9,6 @@ AllLibraries.curry
 
 # documentation
 CDOC
+
+# auto-generated files
+src/Curry/Compiler/Distribution.kmcc.hs
