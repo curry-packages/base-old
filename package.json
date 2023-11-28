@@ -19,7 +19,8 @@
         "src-dir": "test",
         "modules":  [ "TestPrelude", "TestDataChar", "TestList",
                       "TestIORefs", "TestFunction",
-                      "TestEnvironment", "TestTextShow" ]
+                      "TestEnvironment", "TestTextShow",
+                      "TestAllValues", "TestSetFunctions" ]
     },
     "source": {
       "git": "https://git.ps.informatik.uni-kiel.de/curry/curry-libs.git",
