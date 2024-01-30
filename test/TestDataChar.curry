@@ -4,8 +4,8 @@
 
 import Data.Char
 import Test.Prop
-import Control.SearchTree
-import Control.SearchTree.Generators
+import Control.Search.SearchTree
+import Control.Search.SearchTree.Generators
 
 chrOrdId :: Char -> Prop
 chrOrdId c = chr (ord c) -=- c
