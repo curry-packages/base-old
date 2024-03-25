@@ -6,6 +6,7 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_FRONTEND -Wno-incomplete-patterns -Wno-overlapping #-}
+{-# OPTIONS_FRONTEND --case-mode=free #-}
 
 module Prelude
   (
