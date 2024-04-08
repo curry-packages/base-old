@@ -1140,7 +1140,7 @@ cond_Det# :: Bool_Det -> a -> a
 cond_Det# True_Det a = a
 cond_Det# _        _ = failed_Det#
 
-cond_ND# :: Curry (LiftedFunc Bool_ND (LiftedFunc a a))
+cond_ND# :: Curryable a => Curry (LiftedFunc Bool_ND (LiftedFunc a a))
 cond_ND# = returnFunc (\a -> a >>= \case
   True_ND -> returnFunc P.id
   BoolFlat# True_Det -> returnFunc P.id
