@@ -57,11 +57,11 @@ instance Unifiable CurryHandle where
 
   lazyUnifyVar _ _ = P.error "unifying a Handle is not possible"
 
-instance NFDataC CurryHandle where
-  rnfC !_ =  ()
-
 instance Levelable CurryHandle where
   setLevel _ x = x
+
+instance NFDataC CurryHandle where
+  rnfC !_ = ()
 
 instance Curryable CurryHandle
 
