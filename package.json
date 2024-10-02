@@ -6,7 +6,7 @@
     "description": "This package contains the base libraries which are directly distributed with Curry systems like PAKCS, KiCS2, or Curry2Go.",
     "category": [ "Programming" ],
     "compilerCompatibility": {
-        "kics2"   : ">= 3.0.0, < 4.0.0",
+        "kics2"   : ">= 3.0.0, < 3.3.0",
         "pakcs"   : ">= 3.0.0, < 4.0.0",
         "curry2go": ">= 1.0.0",
         "kmcc"    : ">= 0.1.0"
